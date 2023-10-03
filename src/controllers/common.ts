@@ -39,6 +39,31 @@ export function getDate() {
   });
   return formattedDate
 }
+
+export function formatDate(date: any) {
+  date = new Date(date)
+  const formattedDate = date.toLocaleDateString('en-GB', {
+    day: '2-digit', // two-digit day
+    month: '2-digit', // two-digit month
+    year: 'numeric', // four-digit year
+  });
+  return formattedDate
+}
+
+export function formatDateVconFile(date: string) {
+  var d = new Date(date),
+      month = '' + (d.getMonth() + 1),
+      day = '' + d.getDate(),
+      year = d.getFullYear();
+
+  if (month.length < 2) 
+      month = '0' + month;
+  if (day.length < 2) 
+      day = '0' + day;
+
+  return [year, month, day].join('-');
+}
+
 export function getTime() {
   const date = new Date(); // Current date and time
 
@@ -53,6 +78,7 @@ export function getTime() {
 
   return time
 }
+
 export const verifyToken = (req: Request | any, res: Response, next: NextFunction) => {
 
   const token = req.headers.authorization?.split(' ')[1];
@@ -69,3 +95,46 @@ export const verifyToken = (req: Request | any, res: Response, next: NextFunctio
     return res.sendStatus(401)
   }
 };
+
+export function getCurrentDateVconFormat() {
+  // Get current date
+  const date = new Date();
+
+// Get day, month, and year
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based in JavaScript
+  const year = date.getFullYear();
+
+  // Format date as dd/mm/yyyy
+  return `${day}/${month}/${year}`;
+}
+
+export function formateDateNomura(date: string){
+  var d = new Date(date),
+      month = '' + (d.getMonth() + 1),
+      day = '' + d.getDate(),
+      year = d.getFullYear();
+
+  if (month.length < 2) 
+      month = '0' + month;
+  if (day.length < 2) 
+      day = '0' + day;
+
+  return [year, month, day].join('');
+}
+
+export function getSettlementDateYearNomura(date1: string, date2: string) {
+  // Parse the month and year from the first date
+  // console.log(date1, date2)
+  const [month1, day1, year1] = date1.split('/').map(Number);
+
+  // Parse the month from the second date
+  const [month2, day2] = date2.split('/').map(Number);
+
+  // If the month of the second date is less than the month of the first date,
+  // it means we've crossed into a new year, so increment the year
+  const year2 = month2 < month1 ? year1 + 1 : year1;
+
+  // Return the second date with the year appended
+  return `${year2}${month2}${day2}`;
+}

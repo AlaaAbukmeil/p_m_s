@@ -13,13 +13,13 @@ const path = require("path");
 const rateLimit = require('express-rate-limit');
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 1000,
+    max: 10000,
     standardHeaders: true,
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 const cors = require("cors");
 const corsOptions = {
-    origin: ['http://localhost:3000', "http://localhost:3001"],
+    origin: ['http://localhost:3000', "http://localhost:3001", "https://capital-trade-web.de.r.appspot.com"],
     credentials: true,
     optionSuccessStatus: 200
 };
