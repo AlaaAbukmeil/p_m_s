@@ -1,6 +1,7 @@
 const axios = require("axios")
 const FormData = require('form-data');
 import { renderVcon } from "./vconOperation";
+import { getPortfolio } from "./portfolioOperations";
 
 export async function getGraphToken() {
     try {
@@ -19,12 +20,33 @@ export async function getGraphToken() {
     }
 }
 
+export function getSecurityInPortfolioWithoutLocation(portfolio: any, identifier: string) {
+    let object = ""
+    for (let index = 0; index < portfolio.length; index++) {
+        let issue = portfolio[index];
+        if ((identifier.includes(issue["ISIN"]) || identifier.includes(issue["Issue"]))) {
+            if (issue["ISIN"] != "") {
+                
+                object += issue["Location"] + " "
+            }
+        } else if (identifier.includes(issue["BB Ticker"])) {
+            if (issue["BB Ticker"] != "") {
+
+                object += issue["Location"] + " "
+            }
+        }
+    }
+    // If a matching document was found, return it. Otherwise, return a message indicating that no match was found.
+    return object
+
+}
+
 function format_date_ISO(date: string) {
     return new Date(date).toISOString();
 }
 
-export async function getVcons(token: string, start_time: string, end_time: string) {
-
+export async function getVcons(token: string, start_time: string, end_time: string, trades: any) {
+    let portfolio = await getPortfolio()
     try {
         // console.log(object)
         let url = `https://graph.microsoft.com/v1.0/users/vcons@triadacapital.com/messages?$filter=contains(subject,'New BB') and receivedDateTime ge ${format_date_ISO(start_time)} and receivedDateTime le ${format_date_ISO(end_time)}&$top=10000`
@@ -36,9 +58,26 @@ export async function getVcons(token: string, start_time: string, end_time: stri
         let vcons = action.data.value
         // console.log(url)
         let object = []
+        let count = trades.length + 1
+        let id;
         for (let index = 0; index < vcons.length; index++) {
+
             let vcon = vcons[index].body.content
-            object.push(renderVcon(vcon))
+            vcon = renderVcon(vcon)
+            let identifier = (vcon["ISIN"] !== "") ? vcon["ISIN"] : (vcon["BB Ticker"] ? vcon["BB Ticker"] : vcon["Issue"])
+            let securityInPortfolioLocation = getSecurityInPortfolioWithoutLocation(portfolio, identifier)
+            let triadaId = trades.find(function (trade: any) {
+                return trade['Seq No'] === vcon["Seq No"];
+            });
+            if (triadaId) {
+                id = triadaId["Triada Trade Id"]
+            } else {
+                id = `Triada-BBB-${vcon["Trade Date"]}-${count}`
+                count++
+            }
+            vcon["Triada Trade Id"] = id
+            vcon["Location"] = securityInPortfolioLocation.trim()
+            object.push(vcon)
         }
         return object
     } catch (error) {

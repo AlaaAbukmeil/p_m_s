@@ -1,84 +1,182 @@
-date: Sat Sep 30 2023 11:33:57 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696044821157_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Sun Oct 22 2023 21:58:37 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1697983113880_oct5th.xlsx 
 
-date: Sat Sep 30 2023 11:38:03 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696045066914_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Sun Oct 22 2023 22:24:42 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1697984681138_oct6th.xlsx 
 
-date: Sat Sep 30 2023 11:47:00 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696045603420_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Sun Oct 22 2023 22:25:19 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1697984717603_oct6th.xlsx 
 
-date: Sat Sep 30 2023 11:49:00 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696045723648_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Sun Oct 22 2023 22:52:14 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1697986330989_oct2nd.xlsx 
 
-date: Sat Sep 30 2023 11:55:55 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696046137491_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Sun Oct 22 2023 22:53:06 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1697986384612_oct3rd.xlsx 
 
-date: Sat Sep 30 2023 14:47:09 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696056413638_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Sun Oct 22 2023 23:05:51 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1697987149737_oct3rd.xlsx 
 
-date: Sat Sep 30 2023 14:52:32 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696056734694_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Sun Oct 22 2023 23:18:13 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1697987890060_oct3rd.xlsx 
 
-date: Mon Oct 02 2023 16:24:38 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696235045393_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Sun Oct 22 2023 23:19:54 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1697987990701_oct4th.xlsx 
 
-date: Mon Oct 02 2023 16:27:51 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696235268084_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Sun Oct 22 2023 23:24:27 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1697988266165_oct5th.xlsx 
 
-date: Mon Oct 02 2023 16:31:25 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696235482719_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Sun Oct 22 2023 23:25:04 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1697988302615_oct5th.xlsx 
 
-date: Mon Oct 02 2023 16:32:46 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696235562405_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 15:47:23 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698047239900_oct2nd.xlsx 
 
-date: Mon Oct 02 2023 16:46:47 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696236403977_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 15:50:16 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698047413585_oct2nd.xlsx 
 
-date: Mon Oct 02 2023 18:46:56 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696243612882_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 15:55:13 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698047709402_oct2nd.xlsx 
 
-date: Mon Oct 02 2023 18:47:57 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696243673872_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 15:56:50 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698047807705_oct3rd.xlsx 
 
-date: Mon Oct 02 2023 18:56:55 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696244213165_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 15:57:10 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698047826478_oct4th.xlsx 
 
-date: Mon Oct 02 2023 20:09:19 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696248556817_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 16:00:08 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698048005032_oct2nd.xlsx 
 
-date: Mon Oct 02 2023 20:13:29 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696248806538_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 16:01:13 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698048071449_oct3rd.xlsx 
 
-date: Mon Oct 02 2023 23:15:33 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696259731025_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 16:01:25 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698048080891_oct4th.xlsx 
 
-date: Mon Oct 02 2023 23:19:25 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696259958370_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 16:10:25 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698048624025_oct5th.xlsx 
 
-date: Mon Oct 02 2023 23:28:21 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696260494022_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 16:19:52 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698049189573_oct2nd.xlsx 
 
-date: Mon Oct 02 2023 23:31:14 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696260668338_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 16:21:53 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698049311352_oct3rd.xlsx 
 
-date: Mon Oct 02 2023 23:36:05 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696260962412_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 16:22:07 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698049324290_oct4th.xlsx 
 
-date: Mon Oct 02 2023 23:40:10 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696261208398_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 16:23:23 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698049400823_oct5th.xlsx 
 
-date: Mon Oct 02 2023 23:42:40 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696261358467_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 16:30:08 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698049805135_oct2nd.xlsx 
 
-date: Mon Oct 02 2023 23:43:16 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696261394187_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 16:31:51 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698049906214_oct4th.xlsx 
 
-date: Mon Oct 02 2023 23:44:30 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696261467083_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 16:34:02 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698050041124_oct5th.xlsx 
 
-date: Mon Oct 02 2023 23:47:29 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696261645673_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 16:42:55 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698050572595_oct2nd.xlsx 
 
-date: Mon Oct 02 2023 23:49:08 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696261744977_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 16:46:12 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698050769024_oct2nd.xlsx 
 
-date: Mon Oct 02 2023 23:52:56 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696261974927_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 16:46:25 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698050782417_oct2nd.xlsx 
 
-date: Mon Oct 02 2023 23:53:43 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696262019976_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 16:46:54 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698050812800_oct2nd.xlsx 
 
-date: Mon Oct 02 2023 23:55:09 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696262105981_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 16:48:18 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698050895596_oct3rd.xlsx 
 
-date: Mon Oct 02 2023 23:56:08 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696262165253_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 16:48:45 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698050921681_oct4th.xlsx 
 
-date: Mon Oct 02 2023 23:57:12 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696262228900_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 16:49:59 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698050997162_oct4th.xlsx 
 
-date: Tue Oct 03 2023 00:04:43 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696262679688_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 16:52:08 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698051126286_oct5th.xlsx 
 
-date: Tue Oct 03 2023 00:05:45 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696262742327_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 16:53:43 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698051222018_oct6th.xlsx 
 
-date: Tue Oct 03 2023 00:10:58 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696263055029_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 17:00:19 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698051617479_oct6th.xlsx 
 
-date: Tue Oct 03 2023 00:12:10 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696263128344_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 17:27:10 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698053227971_oct9th.xlsx 
 
-date: Tue Oct 03 2023 00:16:20 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696263378508_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 17:27:34 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698053253029_oct9th.xlsx 
 
-date: Tue Oct 03 2023 01:14:41 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696266879869_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 17:27:57 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698053274242_oct9th.xlsx 
 
-date: Tue Oct 03 2023 01:15:41 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696266937870_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 17:32:34 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698053550707_oct9th.xlsx 
 
-date: Tue Oct 03 2023 19:58:57 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696334334113_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 17:45:17 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698054314286_oct2nd.xlsx 
 
-date: Tue Oct 03 2023 20:10:51 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1696335048643_Pricing Sheet 2023.09.23 End Day (NO LINK).xlsx 
+date: Mon Oct 23 2023 17:48:24 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698054502789_oct3rd.xlsx 
+
+date: Mon Oct 23 2023 17:49:11 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698054549876_oct3rd.xlsx 
+
+date: Mon Oct 23 2023 17:49:25 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698054562488_oct4th.xlsx 
+
+date: Mon Oct 23 2023 17:50:40 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698054638582_oct5th.xlsx 
+
+date: Mon Oct 23 2023 17:52:32 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698054748793_oct4th.xlsx 
+
+date: Mon Oct 23 2023 17:53:12 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698054790123_oct5th.xlsx 
+
+date: Mon Oct 23 2023 17:56:24 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698054980903_oct2nd.xlsx 
+
+date: Mon Oct 23 2023 17:56:48 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698055005627_oct2nd.xlsx 
+
+date: Mon Oct 23 2023 18:32:30 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698057148735_oct3rd.xlsx 
+
+date: Mon Oct 23 2023 18:32:49 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698057166507_oct4th.xlsx 
+
+date: Mon Oct 23 2023 18:33:47 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698057225040_oct5th.xlsx 
+
+date: Mon Oct 23 2023 18:34:55 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698057293443_oct6th.xlsx 
+
+date: Mon Oct 23 2023 18:43:18 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698057794748_oct2nd.xlsx 
+
+date: Mon Oct 23 2023 18:43:57 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698057835306_oct3rd.xlsx 
+
+date: Mon Oct 23 2023 18:45:37 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698057934463_oct2nd.xlsx 
+
+date: Mon Oct 23 2023 18:46:25 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698057984101_oct3rd.xlsx 
+
+date: Mon Oct 23 2023 18:48:07 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698058084252_oct2nd.xlsx 
+
+date: Mon Oct 23 2023 18:49:56 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698058194721_oct2nd.xlsx 
+
+date: Mon Oct 23 2023 18:50:32 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698058229362_oct4th.xlsx 
+
+date: Mon Oct 23 2023 18:51:19 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698058277979_oct5th.xlsx 
+
+date: Mon Oct 23 2023 18:52:06 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698058324987_oct6th.xlsx 
+
+date: Mon Oct 23 2023 18:55:19 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698058516069_oct9th.xlsx 
+
+date: Mon Oct 23 2023 19:01:16 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698058874698_oct10th.xlsx 
+
+date: Mon Oct 23 2023 19:05:16 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698059114105_oct10th.xlsx 
+
+date: Mon Oct 23 2023 19:05:38 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698059134627_oct11th.xlsx 
+
+date: Mon Oct 23 2023 19:11:35 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698059491455_oct12th.xlsx 
+
+date: Mon Oct 23 2023 19:12:43 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698059558342_oct13.xlsx 
+
+date: Mon Oct 23 2023 19:15:46 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698059742596_oct16th.xlsx 
+
+date: Mon Oct 23 2023 19:21:44 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698060100488_oct 17th.xlsx 
+
+date: Mon Oct 23 2023 19:25:56 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698060353992_oct18th.xlsx 
+
+date: Mon Oct 23 2023 19:31:34 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698060692508_oct19th.xlsx 
+
+date: Mon Oct 23 2023 19:32:33 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698060751425_oct19th.xlsx 
+
+date: Mon Oct 23 2023 19:43:21 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698061399549_oct20th.xlsx 
+
+date: Tue Oct 31 2023 01:51:13 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698688270959_Pricing Sheet 2023.10.30  End Day (NO LINK).xlsx 
+
+date: Tue Oct 31 2023 01:57:49 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698688666030_Pricing Sheet 2023.10.30  End Day (NO LINK).xlsx 
+
+date: Tue Oct 31 2023 01:58:25 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698688702267_Pricing Sheet 2023.10.30  End Day (NO LINK).xlsx 
+
+date: Tue Oct 31 2023 01:59:20 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698688758415_Pricing Sheet 2023.10.30  End Day (NO LINK).xlsx 
+
+date: Tue Oct 31 2023 14:27:01 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698733618166_Pricing Sheet 2023.10.27  End Day (NO LINK).xlsx 
+
+date: Tue Oct 31 2023 14:27:25 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698733641686_Pricing Sheet 2023.10.30  End Day (NO LINK).xlsx 
+
+date: Fri Nov 03 2023 00:10:35 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698941433489_Pricing Sheet 2023.10.30  End Day (NO LINK).xlsx 
+
+date: Fri Nov 03 2023 00:12:15 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698941531829_Pricing Sheet 2023.10.31  End Day (NO LINK).xlsx 
+
+date: Fri Nov 03 2023 01:37:01 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698946618878_Pricing Sheet 2023.10.30  End Day (NO LINK).xlsx 
+
+date: Fri Nov 03 2023 01:37:32 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698946648540_Pricing Sheet 2023.10.31  End Day (NO LINK).xlsx 
+
+date: Fri Nov 03 2023 15:07:11 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698995228813_Pricing Sheet 2023.10.30  End Day (NO LINK).xlsx 
+
+date: Fri Nov 03 2023 15:07:36 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1698995252739_Pricing Sheet 2023.10.31  End Day (NO LINK).xlsx 
+
+date: Fri Nov 03 2023 17:05:04 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699002301787_Pricing Sheet 2023.10.30  End Day (NO LINK).xlsx 
+
+date: Fri Nov 03 2023 17:05:27 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699002323248_Pricing Sheet 2023.10.31  End Day (NO LINK).xlsx 
+
+date: Fri Nov 03 2023 17:28:35 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699003713377_Pricing Sheet 2023.10.30  End Day (NO LINK).xlsx 
+
+date: Fri Nov 03 2023 17:28:58 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699003734116_Pricing Sheet 2023.10.31  End Day (NO LINK).xlsx 
+
+date: Fri Nov 03 2023 17:31:42 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699003899510_Pricing Sheet 2023.10.31  End Day (NO LINK).xlsx 
 

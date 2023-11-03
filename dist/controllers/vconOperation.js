@@ -1,17 +1,20 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.formatNomuraEBlot = exports.uploadVconAndReturnFilePath = exports.renderVcon = void 0;
+exports.getTriadaTrades = exports.formatNomuraEBlot = exports.uploadVconAndReturnFilePath = exports.renderVcon = void 0;
 require("dotenv").config();
 const portfolioFunctions_1 = require("./portfolioFunctions");
 const common_1 = require("./common");
-// import { getToken } from "./graphApiConnect";
-const Imap = require('node-imap'), inspect = require('util').inspect;
-const fs = require('fs');
-const simpleParser = require('mailparser').simpleParser;
 const xlsx = require("xlsx");
 const { PassThrough } = require('stream');
-const util = require('util');
-const bluebird = require("bluebird");
+const { MongoClient, ServerApiVersion } = require('mongodb');
+const uri = "mongodb+srv://alaa:" + process.env.MONGODBPASSWORD + "@atlascluster.zpfpywq.mongodb.net/?retryWrites=true&w=majority";
+const client = new MongoClient(uri, {
+    serverApi: {
+        version: ServerApiVersion.v1,
+        strict: false,
+        deprecationErrors: true,
+    }
+});
 function extractValues(lines) {
     let variables = [
         "Broker Code",
@@ -106,102 +109,6 @@ function renderVcon(emailContent) {
     return vcon;
 }
 exports.renderVcon = renderVcon;
-// export async function readEmails(start_time: any, end_time: any) {
-//     // let mailId = 'trainee1@triadacapital.com'
-//     // let token = (await getToken())["access_token"]
-//     // let base64Encoded = Buffer.from([`user=${mailId}`, `auth=Bearer ${token}`, '', ''].join('\x01'), 'utf-8').toString('base64');  
-//     const imap = bluebird.promisifyAll(new Imap({
-//         // xoauth2: base64Encoded,
-//         user: 'alaaabukmeil89@gmail.com',//'trainee1@triadacapital.com',//
-//         password: 'syeolnpbnmlrdblv',//'U_#T<c6N','Gux34521',//
-//         host: 'imap.gmail.com',//'outlook.office365.com',
-//         port: 993,
-//         debug: console.log,
-//         tls: true,
-//         // tlsOptions: {
-//         //     rejectUnauthorized: false,
-//         //     servername: 'outlook.office365.com'
-//         // }
-//     }))
-//     // console.log(imap)
-//     const openInbox = util.promisify((cb: any) => imap.openBox('INBOX', true, cb));
-//     return new Promise((resolve, reject) => {
-//         let vcon: any = []
-//         imap.once('ready', async function () {
-//             await openInbox(function (err: any, box: any) {
-//                 if (err) throw err;
-//                 let start: any = new Date(start_time);
-//                 start = start.toISOString().substring(0, 10);
-//                 let end: any = new Date(end_time);
-//                 end = end.toISOString().substring(0, 10);
-//                 const searchCriteria = [
-//                     ['SINCE', start],
-//                     ['BEFORE', end]
-//                 ];
-//                 imap.search(searchCriteria, async (err: any, results: any) => {
-//                     if (err) {
-//                         console.log(err);
-//                         return;
-//                     }
-//                     const fetchOptions = {
-//                         bodies: [''],
-//                         struct: true
-//                     };
-//                     if (results.length > 0) {
-//                         const fetch = imap.fetch(results, fetchOptions);
-//                         fetch.on('message', function (msg: any, seqno: any) {
-//                             let body = '';
-//                             msg.on('body', function (stream: any, info: any) {
-//                                 stream.on('data', function (chunk: any) {
-//                                     body += chunk.toString('utf8');
-//                                 });
-//                                 stream.once('end', function () {
-//                                     simpleParser(body, (err: any, parsedMail: any) => {
-//                                         if (err) {
-//                                             console.log(err);
-//                                         } else {
-//                                             // console.log(parsedMail)
-//                                             if ((parsedMail.subject).includes("New BB Trade")) {
-//                                                 // console.log(`Email ${seqno}:`);
-//                                                 // console.log(parsedMail);
-//                                                 let object = renderVcon(parsedMail.text)
-//                                                 vcon.push(object)
-//                                                 // res.send(object)
-//                                                 // return vcon
-//                                             }
-//                                         }
-//                                     })
-//                                 });
-//                             });
-//                         });
-//                         fetch.once('end', function () {
-//                             // console.log('Done fetching all messages!');
-//                             // console.log(vcon)
-//                             imap.end();
-//                         });
-//                     } else {
-//                         // console.log('No new mail found.');
-//                         // console.log('Done fetching all messages!');
-//                         // console.log(vcon)
-//                         imap.end();
-//                     }
-//                 });
-//             });
-//         });
-//         imap.once('error', function (err: any) {
-//             console.log(err);
-//             // reject(err)
-//             reject(err)
-//         });
-//         imap.once('end', function () {
-//             // console.log('Connection ended');
-//             // console.log(vcon)
-//             imap.end()
-//             resolve(vcon)
-//         });
-//         imap.connect();
-//     })
-// }
 async function uploadVconAndReturnFilePath(vcons, pathName) {
     let binaryWS = xlsx.utils.json_to_sheet(vcons);
     // Create a new Workbook
@@ -251,3 +158,9 @@ function formatNomuraEBlot(vcons) {
     return nomuraEBlot;
 }
 exports.formatNomuraEBlot = formatNomuraEBlot;
+async function getTriadaTrades(tradeType) {
+    const database = client.db("trades");
+    const reportCollection = await database.collection(`${tradeType}`).find().toArray();
+    return reportCollection;
+}
+exports.getTriadaTrades = getTriadaTrades;

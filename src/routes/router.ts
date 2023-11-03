@@ -3,11 +3,17 @@ import { image } from "../models/image";
 import { registerUser, checkIfUserExists } from "../controllers/auth";
 import { Request, Response } from "express"
 import { getDate, verifyToken, formatDateVconFile } from "../controllers/common";
-import { updatePositionPortfolio, getPortfolioWithAnalytics, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, uploadPortfolioFromImagine, getTrades } from "../controllers/portfolioOperations";
-import { bloombergToTriada, uploadTriadaAndReturnFilePath, } from "../controllers/portfolioFunctions";
+import {
+  updatePositionPortfolio, getHistoricalPortfolioWithAnalytics,
+  updatePricesPortfolio, uploadPortfolioFromImagine, getTrades,
+  getAllCollectionDatesSinceStartMonth, uploadPortfolioFromLivePortfolio, uploadPortfolioFromMufg, getPortfolio
+} from "../controllers/portfolioOperations";
+import { bloombergToTriada, uploadTriadaAndReturnFilePath, readMUFGEBlot, readIBEBlot, formatIbTrades } from "../controllers/portfolioFunctions";
 import { checkIfSecurityExist } from "../controllers/tsImagineOperations"
-import { uploadVconAndReturnFilePath, formatNomuraEBlot } from "../controllers/vconOperation";
+import { uploadVconAndReturnFilePath, formatNomuraEBlot, getTriadaTrades } from "../controllers/vconOperation";
 import { getGraphToken, getVcons } from "../controllers/graphApiConnect";
+import { readBBGBlot, createExcelAndReturnPath, formatBBGBlotToMufg, readFxTrades, formatFxTradesToMufg } from "../controllers/mufgOperations"
+import {formatTriadaBlot} from "../controllers/eblot"
 
 require("dotenv").config()
 
@@ -40,11 +46,8 @@ router.get("/auth", verifyToken, async (req: Request, res: Response, next: NextF
 router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
 
   const date: any = req.query.date;
-
-  let report = (date == "current") ? await getPortfolioWithAnalytics() : await getHistoricalPortfolioWithAnalytics(date)
-
+  let report = await getHistoricalPortfolioWithAnalytics(date)
   res.send(report)
-
 
 })
 
@@ -54,7 +57,7 @@ router.get('/trades-logs', verifyToken, async (req, res) => {
     const lastLines = await readLastLines.read(filePath, 500);
     res.send(lastLines);
   } catch (error) {
-    console.error('Error:', error);
+
     res.status(500).send('An error occurred while reading the file.');
   }
 });
@@ -62,21 +65,21 @@ router.get('/trades-logs', verifyToken, async (req, res) => {
 router.get('/prices-logs', verifyToken, async (req, res) => {
   try {
     const filePath = path.resolve('prices-logs.txt');
-    const lastLines = await readLastLines.read(filePath, 500);
+    const lastLines = await readLastLines.read(filePath);
     res.send(lastLines);
   } catch (error) {
-    console.error('Error:', error);
+
     res.status(500).send('An error occurred while reading the file.');
   }
 });
 
 router.get('/trades', verifyToken, async (req, res) => {
   try {
-    let trades = await getTrades()
-    // console.log(trades)
+
+    const tradeType: any = req.query.tradeType;
+    let trades = await getTrades(`${tradeType}`)
     res.send(trades);
   } catch (error) {
-    console.error('Error:', error);
     res.status(500).send('An error occurred while reading the file.');
   }
 });
@@ -120,27 +123,50 @@ router.post("/elec-blot", verifyToken, uploadBeforeExcel.any(), async (req: Requ
 })
 
 router.post("/upload-trades", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  const fileName = req.files[0].filename
-  const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName
   try {
-    let action: any = await updatePositionPortfolio(path)//updatePositionPortfolio
-    res.send(action)
+
+    let files = req.files
+    let bbg = "", ib = "";
+    for (let index = 0; index < files.length; index++) {
+      if (files[index].fieldname == "bbg") {
+        const fileName = req.files[index].filename
+        const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName
+        bbg = path
+      } else if (files[index].fieldname == "ib") {
+        const fileName = req.files[index].filename
+        const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName
+        ib = path
+      }
+
+    }
+
+    let action: any = await updatePositionPortfolio(bbg, ib)//updatePositionPortfolio
+    console.log(action)
+    if (action?.error) {
+      res.send({ "error": action.error })
+    } else {
+      res.sendStatus(200)
+    }
   } catch (error) {
-    res.send({ "error": error })
+    console.log(error)
+    res.send({ "error": "File Template is not correct" })
   }
 
 })
 
 router.post("/update-prices", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  const fileName = req.files[0].filename
-  const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName
-  // console.log(date)
-  let action: any = await updatePricesPortfolio(path)
-  console.log(action)
-  if (action?.error) {
-    res.send({ "error": action.error })
-  } else {
-    res.sendStatus(200)
+  try {
+    const fileName = req.files[0].filename
+    const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName
+    let action: any = await updatePricesPortfolio(path)
+    console.log(action)
+    if (action?.error) {
+      res.send({ "error": action.error })
+    } else {
+      res.sendStatus(200)
+    }
+  } catch (error) {
+    res.send({ "error": "File Template is not correct" })
   }
 })
 
@@ -148,7 +174,7 @@ router.post("/check-isin", verifyToken, uploadBeforeExcel.any(), async (req: Req
   const fileName = req.files[0].filename
   const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName
   let action = await checkIfSecurityExist(path)
-  // console.log(action)
+
   if (action?.error) {
     res.send({ "error": action.error })
   } else {
@@ -159,19 +185,17 @@ router.post("/check-isin", verifyToken, uploadBeforeExcel.any(), async (req: Req
 router.post("/vcon-excel-nomura", uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   let data = req.body
   let pathName = formatDateVconFile(data.timestamp_start) + "xxxx" + formatDateVconFile(data.timestamp_end)
-  // console.log(pathName)
-  //let array: any = []//await readEmails(data.timestamp_start, data.timestamp_end)
+  let trades = await getTriadaTrades("vcons")
   let token = await getGraphToken()
-  let array: any = await getVcons(token, data.timestamp_start, data.timestamp_end)
+  let array: any = await getVcons(token, data.timestamp_start, data.timestamp_end, trades)
   let arrayFormatedNomura = formatNomuraEBlot(array)
-  // console.log(array)
-  // console.log(array)
+
   if (array.length == 0) {
     res.send({ error: "No Trades" })
   } else {
     let vcons = await uploadVconAndReturnFilePath(arrayFormatedNomura, pathName)
     let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + vcons
-    // console.log(array)
+
     res.send(downloadEBlotName)
   }
 })
@@ -179,19 +203,77 @@ router.post("/vcon-excel-nomura", uploadBeforeExcel.any(), async (req: Request |
 router.post("/vcon-excel", uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   let data = req.body
   let pathName = formatDateVconFile(data.timestamp_start) + "xxxx" + formatDateVconFile(data.timestamp_end)
-  // console.log(pathName)
-  //let array: any = []//await readEmails(data.timestamp_start, data.timestamp_end)
   let token = await getGraphToken()
-  let array: any = await getVcons(token, data.timestamp_start, data.timestamp_end)
-  // console.log(array)
+  let trades = await getTriadaTrades("vcons")
+  let array: any = await getVcons(token, data.timestamp_start, data.timestamp_end, trades)
   if (array.length == 0) {
     res.send({ error: "No Trades" })
-  } else {
+  }
+  else {
     let vcons = await uploadVconAndReturnFilePath(array, pathName)
     let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + vcons
-    // console.log(array)
     res.send(downloadEBlotName)
   }
+})
+
+router.post("/ib-excel", uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+
+    let files = req.files
+    const fileName = req.files[0].filename
+    const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName
+    let trades = await getTriadaTrades("ib")
+    let data = await readIBEBlot(path)
+    let portfolio = await getPortfolio()
+    let action = formatIbTrades(data, trades, portfolio)
+
+    if (!action) {
+      res.send({ "error": action })
+    } else {
+      let ib = await uploadVconAndReturnFilePath(action, "ibFromated")
+      let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + ib
+      res.send(downloadEBlotName)
+
+    }
+  } catch (error) {
+    console.log(error)
+    res.send({ "error": "File Template is not correct" })
+  }
+})
+
+router.post("/mufg", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+
+  let action: any = await formatBBGBlotToMufg(req.files)
+  let url = await createExcelAndReturnPath(action, getDate(null))
+  url = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + url
+  res.send(url)
+
+
+})
+
+router.post("/mufg-fx", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+
+  let action: any = await readFxTrades(req.files[0]["filename"])
+  // let url = await uploadMufgTest(action, "test")
+  // url = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + url
+  res.send(200)
+
+
+})
+
+router.post("/centerlized-blotter", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let action: any = await formatTriadaBlot(req.files)
+    console.log(action)
+    let url = await createExcelAndReturnPath(action, "centerlizedBlot")
+    url = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + url
+    console.log(url)
+    res.send(url)
+  } catch (error) {
+    console.log(error)
+    res.send({ error: error })
+  }
+
 })
 
 
