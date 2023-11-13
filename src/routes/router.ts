@@ -6,7 +6,7 @@ import { getDate, verifyToken, formatDateVconFile } from "../controllers/common"
 import {
   updatePositionPortfolio, getHistoricalPortfolioWithAnalytics,
   updatePricesPortfolio, uploadPortfolioFromImagine, getTrades,
-  getAllCollectionDatesSinceStartMonth, uploadPortfolioFromLivePortfolio, uploadPortfolioFromMufg, getPortfolio
+  getAllCollectionDatesSinceStartMonth, uploadPortfolioFromLivePortfolio, uploadPortfolioFromMufg, getPortfolio, editPositionPortfolio
 } from "../controllers/portfolioOperations";
 import { bloombergToTriada, uploadTriadaAndReturnFilePath, readMUFGEBlot, readIBEBlot, formatIbTrades } from "../controllers/portfolioFunctions";
 import { checkIfSecurityExist } from "../controllers/tsImagineOperations"
@@ -78,6 +78,7 @@ router.get('/trades', verifyToken, async (req, res) => {
 
     const tradeType: any = req.query.tradeType;
     let trades = await getTrades(`${tradeType}`)
+    console.log(trades)
     res.send(trades);
   } catch (error) {
     res.status(500).send('An error occurred while reading the file.');
@@ -274,6 +275,23 @@ router.post("/centerlized-blotter", verifyToken, uploadBeforeExcel.any(), async 
     res.send({ error: error })
   }
 
+})
+
+router.post("/bulk-edit", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    const fileName = req.files[0].filename
+    const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName
+    let action: any = await editPositionPortfolio(path)
+    console.log(action)
+    if (action?.error) {
+      res.send({ "error": action.error })
+    } else {
+      res.sendStatus(200)
+    }
+  } catch (error) {
+    console.log(error)
+    res.send({ "error": "File Template is not correct" })
+  }
 })
 
 

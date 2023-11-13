@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.formatDateRlzdDaily = exports.formatUpdatedPositions = exports.sortVconTrades = exports.getAllDatesSinceLastMonthLastDay = exports.uploadTriadaAndReturnFilePath = exports.calculateMonthlyProfitLoss = exports.calculateDailyProfitLoss = exports.readPricingSheet = exports.readBloombergTriadaEBlot = exports.readPortfolioFromLivePorfolio = exports.readPortfolioFromImagine = exports.readMUFGEBlot = exports.readIBEBlot = exports.readIBTrades = exports.formatIbTradesToVcon = exports.formatIbTrades = exports.readVconEBlot = exports.uploadToGCloudBucket = exports.getSettlementDateYear = exports.bloombergToTriada = exports.parseBondIdentifier = exports.formatTradesObj = exports.settlementDatePassed = exports.getAverageCost = exports.formatExcelDate = void 0;
+exports.formatDateRlzdDaily = exports.formatUpdatedPositions = exports.sortVconTrades = exports.getAllDatesSinceLastMonthLastDay = exports.uploadTriadaAndReturnFilePath = exports.calculateMonthlyProfitLoss = exports.calculateDailyProfitLoss = exports.readPricingSheet = exports.readBloombergTriadaEBlot = exports.readPortfolioFromLivePorfolio = exports.readPortfolioFromImagine = exports.readEditInput = exports.readMUFGEBlot = exports.readIBEBlot = exports.readIBTrades = exports.formatIbTradesToVcon = exports.formatIbTrades = exports.readVconEBlot = exports.uploadToGCloudBucket = exports.getSettlementDateYear = exports.bloombergToTriada = exports.parseBondIdentifier = exports.formatTradesObj = exports.settlementDatePassed = exports.getAverageCost = exports.formatExcelDate = void 0;
 const common_1 = require("./common");
 const portfolioOperations_1 = require("./portfolioOperations");
 const graphApiConnect_1 = require("./graphApiConnect");
@@ -421,7 +421,7 @@ function formatIbTradesToVcon(data) {
             updatedTrade["ISIN"] = trade["Symbol"];
             updatedTrade["BB Ticker"] = trade["Symbol"];
             updatedTrade["Issue"] = trade["Symbol"];
-            updatedTrade["Quantity"] = (Math.abs(trade["Quantity"])).toString();
+            updatedTrade["Quantity"] = (Math.abs(trade["Quantity"]) * originalFace).toString();
             //this to pass the bond divider 
             updatedTrade["Price"] = trade["C Price"] * 100.00;
             updatedTrade["Currency"] = trade["Currency"];
@@ -547,14 +547,14 @@ async function readMUFGEBlot(path) {
                 object["BB Ticker"] = position["BB Ticker"] ? position["BB Ticker"].replace("Corp", "").replace("Govt", "").trim() : position["BB Ticker"];
                 object["Quantity"] = position["Quantity MUFG"];
                 object["ISIN"] = position["Investment"];
-                object["Issue"] = position[" Issue "].trim();
-                object["Average Cost"] = parseFloat(position["Price"]) / 100.00;
+                object["Issue"] = position[" Issue "] ? position[" Issue "].trim() : "";
+                object["Average Cost"] = parseFloat(position["BaseCost"]) / parseFloat(position["Quantity MUFG"]);
                 object["Buy/Sell"] = "B";
                 object["Status"] = "Accepted";
                 object["Trade Date"] = "09/29/23";
                 object["Settle Date"] = "09/29";
                 object["Net"] = position["Quantity MUFG"];
-                object["Mid"] = parseFloat(position["Price"]) / 100.00;
+                object["Mid"] = position["Investment"].includes("Index") ? parseFloat(position["Price"]) : parseFloat(position["Price"]) / 100.00;
                 object["Location"] = position["Location"];
                 object["Currency"] = position["CCY"];
                 portfolio.push(object);
@@ -564,6 +564,65 @@ async function readMUFGEBlot(path) {
     }
 }
 exports.readMUFGEBlot = readMUFGEBlot;
+function formartImagineDate(input) {
+    input = input.toString();
+    try {
+        if (parseInt(input)) {
+            const year = input.slice(0, 4);
+            const month = input.slice(4, 6);
+            const day = input.slice(6, 8);
+            return new Date(year, month - 1, day);
+        }
+    }
+    catch (error) {
+        return "";
+    }
+}
+async function readEditInput(path) {
+    const response = await axios.get(path, { responseType: 'arraybuffer' });
+    /* Parse the data */
+    const workbook = xlsx.read(response.data, { type: 'buffer' });
+    /* Get first worksheet */
+    const worksheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[worksheetName];
+    /* Convert worksheet to JSON */
+    // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
+    // Read data
+    const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+    const arraysAreEqual = true;
+    if (!arraysAreEqual) {
+        return { error: "Incompatible format, please upload edit e-blot xlsx/csv file" };
+    }
+    else {
+        let data = xlsx.utils.sheet_to_json(worksheet, { defval: '', range: 'A1:AN10000' });
+        if (data.length > 2500) {
+            return { error: "Max Trades Limit is 250 per minute" };
+        }
+        else {
+            let portfolio = [];
+            for (let index = 0; index < data.length; index++) {
+                let object = {};
+                let position = data[index];
+                object["ISIN"] = position["Isin"];
+                object["Type"] = position["Type"];
+                object["Group"] = position["Group"];
+                object["holdPortfXrate"] = position["holdPortfXrate"];
+                object["Sector"] = position["Text22"];
+                object["Rating Class"] = position["Text23"];
+                object["holdPortfXrate"] = position["holdPortfXrate"];
+                object["Location"] = position["Location"];
+                object["BB Ticker"] = position["BB Ticker"];
+                object["Country"] = position["Text1"];
+                object["Issuer"] = position["Issuer"];
+                object["Call Date"] = formartImagineDate(position["CallDate"]) || "";
+                object["Maturity"] = formartImagineDate(position["Maturity"]) || "";
+                portfolio.push(object);
+            }
+            return portfolio;
+        }
+    }
+}
+exports.readEditInput = readEditInput;
 async function readPortfolioFromImagine(path) {
     const response = await axios.get(path, { responseType: 'arraybuffer' });
     /* Parse the data */
@@ -715,12 +774,12 @@ async function readPricingSheet(path) {
         'Override Ask', "Today's Bid",
         "Today's Ask", "Today's Mid",
     ];
-    const arraysAreEqual = headersFormat.every((value, index) => value === headers[2][index]); //headersFormat.length === headers[2].length && headersFormat.every((value, index) => value === headers[2][index]);
+    const arraysAreEqual = true; //headersFormat.every((value, index) => value === headers[2][index]);//headersFormat.length === headers[2].length && headersFormat.every((value, index) => value === headers[2][index]);
     if (!arraysAreEqual) {
         return { error: "Incompatible format, please upload pricing sheet xlsx/csv file" };
     }
     else {
-        const data = xlsx.utils.sheet_to_json(worksheet, { defval: '', range: 'A3:AN30000' });
+        const data = xlsx.utils.sheet_to_json(worksheet, { defval: '', range: 'A4:AN30000' });
         return data;
     }
 }
@@ -801,13 +860,15 @@ function sortVconTrades(object) {
 exports.sortVconTrades = sortVconTrades;
 function formatUpdatedPositions(positions, portfolio) {
     try {
-        portfolio = portfolio.map((position) => {
-            delete position["_id"];
-            const item1 = positions.find((updatedPosition) => updatedPosition["ISIN"] === position["ISIN"] && updatedPosition["Location"] === position["Location"]);
-            return item1 ? item1 : position;
-        });
-        const arr2 = positions.filter((updatedPosition) => !portfolio.some((position) => position["ISIN"] === updatedPosition["ISIN"] && updatedPosition["Location"] === position["Location"]));
-        portfolio = [...portfolio, ...arr2];
+        for (let indexPositions = 0; indexPositions < positions.length; indexPositions++) {
+            const position = positions[indexPositions];
+            for (let indexPortfolio = 0; indexPortfolio < portfolio.length; indexPortfolio++) {
+                const portfolioPosition = portfolio[indexPortfolio];
+                if ((position["ISIN"] == portfolioPosition["ISIN"] || position["BB Ticker"] == portfolioPosition["BB Ticker"] || position["Issue"] == portfolioPosition["Issue"]) && (position["Location"] == portfolioPosition["Location"])) {
+                    portfolio[indexPortfolio] = position;
+                }
+            }
+        }
         return portfolio;
     }
     catch (error) {

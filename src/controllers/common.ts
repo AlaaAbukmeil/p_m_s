@@ -57,7 +57,7 @@ export function formatDate(date: any) {
 }
 
 export function formatDateVconFile(date: string) {
-  var d = new Date(date),
+  let d = new Date(date),
     month = '' + (d.getMonth() + 1),
     day = '' + d.getDate(),
     year = d.getFullYear();
@@ -68,6 +68,23 @@ export function formatDateVconFile(date: string) {
     day = '0' + day;
 
   return [year, month, day].join('-');
+}
+
+export function formatDateReadable(date: string) {
+  let d = new Date(date),
+    month = '' + (d.getMonth() + 1),
+    day = '' + d.getDate(),
+    year = d.getFullYear();
+  if (year == 1970) {
+    return 0
+  }
+
+  if (month.length < 2)
+    month = '0' + month;
+  if (day.length < 2)
+    day = '0' + day;
+
+  return [month, day, year].join('/');
 }
 
 export function getTime() {
@@ -223,7 +240,7 @@ export function getDateMufg(inputDate: any) {
 }
 
 export function convertExcelDateToJSDate(serial: any) {
-  if(parseFloat(serial) < 45000 ){
+  if (parseFloat(serial) < 45000) {
     return serial
   }
   const excelStartDate = new Date(1900, 0, 1);

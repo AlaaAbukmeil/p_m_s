@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.convertBBGEmexDate = exports.convertExcelDateToJSDate = exports.getDateMufg = exports.monthlyRlzdDate = exports.getTradeDateYearTrades = exports.getSettlementDateYearTrades = exports.formatSettleDateVcon = exports.formatTradeDateVcon = exports.getSettlementDateYearNomura = exports.formateDateNomura = exports.getCurrentDateVconFormat = exports.verifyToken = exports.getTime = exports.formatDateVconFile = exports.formatDate = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = void 0;
+exports.convertBBGEmexDate = exports.convertExcelDateToJSDate = exports.getDateMufg = exports.monthlyRlzdDate = exports.getTradeDateYearTrades = exports.getSettlementDateYearTrades = exports.formatSettleDateVcon = exports.formatTradeDateVcon = exports.getSettlementDateYearNomura = exports.formateDateNomura = exports.getCurrentDateVconFormat = exports.verifyToken = exports.getTime = exports.formatDateReadable = exports.formatDateVconFile = exports.formatDate = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = void 0;
 const jwt = require('jsonwebtoken');
 function getCurrentMonthDateRange() {
     const now = new Date();
@@ -52,7 +52,7 @@ function formatDate(date) {
 }
 exports.formatDate = formatDate;
 function formatDateVconFile(date) {
-    var d = new Date(date), month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
+    let d = new Date(date), month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
     if (month.length < 2)
         month = '0' + month;
     if (day.length < 2)
@@ -60,6 +60,18 @@ function formatDateVconFile(date) {
     return [year, month, day].join('-');
 }
 exports.formatDateVconFile = formatDateVconFile;
+function formatDateReadable(date) {
+    let d = new Date(date), month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
+    if (year == 1970) {
+        return 0;
+    }
+    if (month.length < 2)
+        month = '0' + month;
+    if (day.length < 2)
+        day = '0' + day;
+    return [month, day, year].join('/');
+}
+exports.formatDateReadable = formatDateReadable;
 function getTime() {
     const date = new Date(); // Current date and time
     let hours = date.getHours();

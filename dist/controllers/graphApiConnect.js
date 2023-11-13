@@ -49,7 +49,7 @@ async function getVcons(token, start_time, end_time, trades) {
     let portfolio = await (0, portfolioOperations_1.getPortfolio)();
     try {
         // console.log(object)
-        let url = `https://graph.microsoft.com/v1.0/users/vcons@triadacapital.com/messages?$filter=contains(subject,'New BB') and receivedDateTime ge ${format_date_ISO(start_time)} and receivedDateTime le ${format_date_ISO(end_time)}&$top=10000`;
+        let url = `https://graph.microsoft.com/v1.0/users/vcons@triadacapital.com/messages?$filter=contains(subject,'New BB') and receivedDateTime ge ${format_date_ISO(start_time)} and receivedDateTime le ${format_date_ISO(end_time)}&$top=1000000`;
         let action = await axios.get(url, {
             headers: {
                 "Authorization": `Bearer ${token}`

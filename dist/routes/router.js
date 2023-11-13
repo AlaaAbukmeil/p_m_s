@@ -61,6 +61,7 @@ router.get('/trades', common_1.verifyToken, async (req, res) => {
     try {
         const tradeType = req.query.tradeType;
         let trades = await (0, portfolioOperations_1.getTrades)(`${tradeType}`);
+        console.log(trades);
         res.send(trades);
     }
     catch (error) {
@@ -233,6 +234,24 @@ router.post("/centerlized-blotter", common_1.verifyToken, uploadBeforeExcel.any(
     catch (error) {
         console.log(error);
         res.send({ error: error });
+    }
+});
+router.post("/bulk-edit", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+    try {
+        const fileName = req.files[0].filename;
+        const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+        let action = await (0, portfolioOperations_1.editPositionPortfolio)(path);
+        console.log(action);
+        if (action === null || action === void 0 ? void 0 : action.error) {
+            res.send({ "error": action.error });
+        }
+        else {
+            res.sendStatus(200);
+        }
+    }
+    catch (error) {
+        console.log(error);
+        res.send({ "error": "File Template is not correct" });
     }
 });
 exports.default = router;
