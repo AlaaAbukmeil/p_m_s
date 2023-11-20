@@ -336,3 +336,115 @@ date: 12/11/2023 22:18 e-blot-link: }
 
 date: 13/11/2023 01:27 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699810052112_tradesOctWithLocations.xlsx} 
 
+date: 13/11/2023 16:28 e-blot-link: } 
+
+date: 13/11/2023 16:37 e-blot-link: } 
+
+date: 13/11/2023 16:38 e-blot-link: } 
+
+date: 13/11/2023 16:42 e-blot-link: } 
+
+date: 13/11/2023 16:43 e-blot-link: } 
+
+date: 13/11/2023 16:50 e-blot-link: } 
+
+date: 13/11/2023 16:53 e-blot-link: } 
+
+date: 13/11/2023 16:59 e-blot-link: } 
+
+date: 13/11/2023 17:00 e-blot-link: } 
+
+date: 13/11/2023 17:07 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699866442421_tradesOctWithLocations.xlsx} 
+
+date: 14/11/2023 22:47 e-blot-link: } 
+
+date: 14/11/2023 22:50 e-blot-link: } 
+
+date: 14/11/2023 22:50 e-blot-link: } 
+
+date: 14/11/2023 22:53 e-blot-link: } 
+
+date: 14/11/2023 22:55 e-blot-link: } 
+
+date: 14/11/2023 22:59 e-blot-link: } 
+
+date: 14/11/2023 23:00 e-blot-link: } 
+
+date: 14/11/2023 23:05 e-blot-link: } 
+
+date: 14/11/2023 23:08 e-blot-link: } 
+
+date: 14/11/2023 23:09 e-blot-link: } 
+
+date: 14/11/2023 23:12 e-blot-link: } 
+
+date: 14/11/2023 23:15 e-blot-link: } 
+
+date: 14/11/2023 23:24 e-blot-link: } 
+
+date: 14/11/2023 23:25 e-blot-link: } 
+
+date: 14/11/2023 23:25 e-blot-link: } 
+
+date: 14/11/2023 23:26 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699975559809_tradesOctWithLocations.xlsx} 
+
+date: 14/11/2023 23:29 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699975752390_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 01:44 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699983850223_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 01:49 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699984150417_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 01:51 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699984283032_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 01:53 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699984405446_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 01:54 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699984482538_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 01:59 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699984790844_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 02:13 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699985601638_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 02:14 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699985651239_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 02:14 e-blot-link: } 
+
+date: 15/11/2023 02:16 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699985767026_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 02:18 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699985908265_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 02:20 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699986051430_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 02:22 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699986115608_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 02:24 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699986291952_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 02:29 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699986560887_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 02:31 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699986668589_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 02:34 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699986877024_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 02:40 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699987206863_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 02:41 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699987294048_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 02:43 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699987433496_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 02:46 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699987601817_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 02:48 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699987700138_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 02:49 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699987780728_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 02:52 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699987941787_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 02:55 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699988135280_tradesOctWithLocations.xlsx} 
+
+date: 15/11/2023 02:56 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1699988203499_tradesOctWithLocations.xlsx} 
+
+date: 18/11/2023 14:23 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1700288575405_tradesOctWithLocations.xlsx} 
+
+date: 18/11/2023 15:44 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1700293452744_tradesOctWithLocations.xlsx} 
+
+date: 18/11/2023 16:32 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1700296341405_2023-10-30xxxx2023-11-01_1700295298105_output.xlsx} 
+

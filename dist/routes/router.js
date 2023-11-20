@@ -34,8 +34,9 @@ router.get("/auth", common_1.verifyToken, async (req, res, next) => {
 });
 router.get("/portfolio", common_1.verifyToken, async (req, res, next) => {
     const date = req.query.date;
-    let report = await (0, portfolioOperations_1.getHistoricalPortfolioWithAnalytics)(date);
-    res.send(report);
+    console.log(date);
+    // let report = await getHistoricalPortfolioWithAnalytics(date)
+    res.send(200);
 });
 router.get('/trades-logs', common_1.verifyToken, async (req, res) => {
     try {
@@ -101,7 +102,7 @@ router.post("/elec-blot", common_1.verifyToken, uploadBeforeExcel.any(), async (
 router.post("/upload-trades", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
     try {
         let files = req.files;
-        let bbg = "", ib = "";
+        let bbg = "", ib = "", emsx = "";
         for (let index = 0; index < files.length; index++) {
             if (files[index].fieldname == "bbg") {
                 const fileName = req.files[index].filename;
@@ -113,8 +114,13 @@ router.post("/upload-trades", common_1.verifyToken, uploadBeforeExcel.any(), asy
                 const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
                 ib = path;
             }
+            else if (files[index].fieldname == "emsx") {
+                const fileName = req.files[index].filename;
+                const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+                emsx = path;
+            }
         }
-        let action = await (0, portfolioOperations_1.updatePositionPortfolio)(bbg, ib); //updatePositionPortfolio
+        let action = await (0, portfolioOperations_1.updatePositionPortfolio)(bbg, ib, emsx); //updatePositionPortfolio
         console.log(action);
         if (action === null || action === void 0 ? void 0 : action.error) {
             res.send({ "error": action.error });
@@ -247,6 +253,30 @@ router.post("/bulk-edit", common_1.verifyToken, uploadBeforeExcel.any(), async (
         }
         else {
             res.sendStatus(200);
+        }
+    }
+    catch (error) {
+        console.log(error);
+        res.send({ "error": "File Template is not correct" });
+    }
+});
+router.post("/emsx-excel", uploadBeforeExcel.any(), async (req, res, next) => {
+    try {
+        let files = req.files;
+        const fileName = req.files[0].filename;
+        const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+        let trades = await (0, vconOperation_1.getTriadaTrades)("emsx");
+        let data = await (0, portfolioFunctions_1.readEmsxRawEBlot)(path);
+        let portfolio = await (0, portfolioOperations_1.getPortfolio)();
+        console.log(data);
+        let action = (0, portfolioFunctions_1.formatEmsxTrades)(data, trades, portfolio);
+        if (!action) {
+            res.send({ "error": action });
+        }
+        else {
+            let emsx = await (0, vconOperation_1.uploadVconAndReturnFilePath)(action, "emsxFormated");
+            let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + emsx;
+            res.send(downloadEBlotName);
         }
     }
     catch (error) {

@@ -8,12 +8,12 @@ import {
   updatePricesPortfolio, uploadPortfolioFromImagine, getTrades,
   getAllCollectionDatesSinceStartMonth, uploadPortfolioFromLivePortfolio, uploadPortfolioFromMufg, getPortfolio, editPositionPortfolio
 } from "../controllers/portfolioOperations";
-import { bloombergToTriada, uploadTriadaAndReturnFilePath, readMUFGEBlot, readIBEBlot, formatIbTrades } from "../controllers/portfolioFunctions";
+import { bloombergToTriada, uploadTriadaAndReturnFilePath, readMUFGEBlot, readIBEBlot, formatIbTrades, readEmsxRawEBlot, formatEmsxTrades } from "../controllers/portfolioFunctions";
 import { checkIfSecurityExist } from "../controllers/tsImagineOperations"
 import { uploadVconAndReturnFilePath, formatNomuraEBlot, getTriadaTrades } from "../controllers/vconOperation";
 import { getGraphToken, getVcons } from "../controllers/graphApiConnect";
 import { readBBGBlot, createExcelAndReturnPath, formatBBGBlotToMufg, readFxTrades, formatFxTradesToMufg } from "../controllers/mufgOperations"
-import {formatTriadaBlot} from "../controllers/eblot"
+import { formatTriadaBlot } from "../controllers/eblot"
 
 require("dotenv").config()
 
@@ -46,8 +46,9 @@ router.get("/auth", verifyToken, async (req: Request, res: Response, next: NextF
 router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
 
   const date: any = req.query.date;
-  let report = await getHistoricalPortfolioWithAnalytics(date)
-  res.send(report)
+  console.log(date)
+  // let report = await getHistoricalPortfolioWithAnalytics(date)
+  res.send(200)
 
 })
 
@@ -127,7 +128,7 @@ router.post("/upload-trades", verifyToken, uploadBeforeExcel.any(), async (req: 
   try {
 
     let files = req.files
-    let bbg = "", ib = "";
+    let bbg = "", ib = "", emsx = "";
     for (let index = 0; index < files.length; index++) {
       if (files[index].fieldname == "bbg") {
         const fileName = req.files[index].filename
@@ -137,11 +138,15 @@ router.post("/upload-trades", verifyToken, uploadBeforeExcel.any(), async (req: 
         const fileName = req.files[index].filename
         const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName
         ib = path
+      } else if (files[index].fieldname == "emsx") {
+        const fileName = req.files[index].filename
+        const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName
+        emsx = path
       }
 
     }
 
-    let action: any = await updatePositionPortfolio(bbg, ib)//updatePositionPortfolio
+    let action: any = await updatePositionPortfolio(bbg, ib, emsx)//updatePositionPortfolio
     console.log(action)
     if (action?.error) {
       res.send({ "error": action.error })
@@ -287,6 +292,31 @@ router.post("/bulk-edit", verifyToken, uploadBeforeExcel.any(), async (req: Requ
       res.send({ "error": action.error })
     } else {
       res.sendStatus(200)
+    }
+  } catch (error) {
+    console.log(error)
+    res.send({ "error": "File Template is not correct" })
+  }
+})
+
+router.post("/emsx-excel", uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+
+    let files = req.files
+    const fileName = req.files[0].filename
+    const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName
+    let trades = await getTriadaTrades("emsx")
+    let data = await readEmsxRawEBlot(path)
+    let portfolio = await getPortfolio()
+    console.log(data)
+    let action = formatEmsxTrades(data, trades, portfolio)
+    if (!action) {
+      res.send({ "error": action })
+    } else {
+      let emsx = await uploadVconAndReturnFilePath(action, "emsxFormated")
+      let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + emsx
+      res.send(downloadEBlotName)
+
     }
   } catch (error) {
     console.log(error)

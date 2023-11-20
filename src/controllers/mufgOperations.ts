@@ -1,6 +1,6 @@
 import { getDateMufg, convertExcelDateToJSDate, convertBBGEmexDate } from "./common";
 import { settlementDatePassed, uploadToGCloudBucket } from "./portfolioFunctions";
-import {  getTradeDateYearTrades } from "./common";
+import { getTradeDateYearTrades } from "./common";
 import { getSettlementDateYear } from "./portfolioFunctions";
 
 const xlsx = require("xlsx")
@@ -28,7 +28,7 @@ export async function readBBGBlot(path: string) {
     let headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
     // headers = Object.keys(headers)
 
-    const data = xlsx.utils.sheet_to_json(worksheet, { defval: '', range: 'A1:ZY100000' });
+    const data = xlsx.utils.sheet_to_json(worksheet, { defval: '', range: 'A1:ZY100' });
     return data
 
 }
@@ -132,6 +132,7 @@ export async function formatBBGBlotToMufg(files: any) {
         }
 
     }
+    
     let mufg = []
     let counter = 1
     let bbbCurrency: any = {
@@ -146,6 +147,7 @@ export async function formatBBGBlotToMufg(files: any) {
         let trade = bbbData[index];
         if (trade["Status"] == "Accepted") {
             let settlementDate = getSettlementDateYear(convertExcelDateToJSDate(trade["Trade Date"]), convertExcelDateToJSDate(trade["Settle Date"]))
+            let triadaId = `${parseAndFormat(convertExcelDateToJSDate(trade["Trade Date"]))}` + (counter < 10 ? "0" + counter : counter) 
             obj["File_Type"] = "ExchSec";
             obj["Fund"] = "90104";
             obj["Transaction_Event"] = "N";
@@ -157,7 +159,7 @@ export async function formatBBGBlotToMufg(files: any) {
             obj["Security_ID_Reuters"] = "";
             obj["Security_ID_UGC"] = "";
             obj["Security_Description"] = trade["Issue"];
-            obj["Trade_ID_Client"] = parseAndFormat(trade["Triada Trade Id"], convertExcelDateToJSDate(trade["Trade Date"]))
+            obj["Trade_ID_Client"] =  triadaId
             obj["Quantity"] = parseFloat(trade["Quantity"].replace(/,/g, ''))
             obj["Original_Face"] = "100"
             obj["Price"] = trade["Price (Decimal)"]
@@ -220,8 +222,14 @@ export async function formatBBGBlotToMufg(files: any) {
         let trade = ibData[index2];
         if (trade["Header"] == "Data") {
             let obj: any = {}
+            let triadaId = `${parseAndFormat(getTradeDateYearTrades(getDateMufg(convertExcelDateToJSDate(trade["Date/Time"]))))}` + (counter < 10 ? "0" + counter : counter) 
             let tradeDate = trade["Date/Time"]
-            let originalFace = trade["Symbol"].includes("6") ? 125000 : 50
+            let originalFace: any = {
+                "6BZ3": 62500, "ESZ3": 50, "ECZ3": 125000, "ZN": 1000, "6EX3": 250000, "ZN   DEC 23": 1000, "6EZ3": 125000
+              }
+            let bbTicker: any = {
+                "6BZ3": "BPZ3 Curncy", "ESZ3": "ESZ3 Index", "ECZ3": "ECZ3 Curncy", "ZN": "TYZ3 Comdty", "6EX3": "BPZ3 Curncy", "ZN   DEC 23": "TYZ3 Comdty", "6EZ3": "BPZ3 Curncy"
+            }
             obj["File_Type"] = "ExchSec";
             obj["Fund"] = "90104";
             obj["Transaction_Event"] = "N";
@@ -229,17 +237,17 @@ export async function formatBBGBlotToMufg(files: any) {
             obj["Security_ID_ISIN"] = "";
             obj["Security_ID_CUSIP"] = "";
             obj["Security_ID_SEDOL"] = "";
-            obj["Security_ID_Bloomberg"] = trade["Symbol"] + " Index";
+            obj["Security_ID_Bloomberg"] = bbTicker[trade["Symbol"]]
             obj["Security_ID_Reuters"] = "";
             obj["Security_ID_UGC"] = "";
-            obj["Security_Description"] = trade["Symbol"] + " Index"
-            obj["Trade_ID_Client"] = parseAndFormat(`Triada-IB-${getDateMufg(tradeDate)}-${counter}`, getTradeDateYearTrades(getDateMufg(convertExcelDateToJSDate(trade["Date/Time"]))))
+            obj["Security_Description"] = bbTicker[trade["Symbol"]]
+            obj["Trade_ID_Client"] = triadaId
             obj["Quantity"] = Math.abs(parseFloat(trade["Quantity"]))
-            obj["Original_Face"] = originalFace
+            obj["Original_Face"] = originalFace[trade["Symbol"]]
             obj["Price"] = trade["T. Price"]
             obj["Accrued_Interest"] = 0
-            obj["Net_Money_Settlement"] = (parseFloat(obj["Quantity"]) * originalFace * parseFloat(obj["Price"]))
-            obj["Net_Money_Settlement_calculated"] = (parseFloat(obj["Quantity"]) * originalFace * parseFloat(obj["Price"]))
+            obj["Net_Money_Settlement"] = (parseFloat(obj["Quantity"]) * originalFace[trade["Symbol"]] * parseFloat(obj["Price"]))
+            obj["Net_Money_Settlement_calculated"] = (parseFloat(obj["Quantity"]) * originalFace[trade["Symbol"]] * parseFloat(obj["Price"]))
             obj["Net_Money_Settlement_difference"] = parseFloat(obj["Net_Money_Settlement"]) - parseFloat(obj["Net_Money_Settlement_calculated"])
             obj["Currency_Settlement"] = trade["Currency"];
             obj["Currency_Investment"] = "";
@@ -295,6 +303,7 @@ export async function formatBBGBlotToMufg(files: any) {
         let obj: any = {}
         let trade = bbeData[index3];
         let tradeDate = convertBBGEmexDate(trade["Create Time (As of)"])
+        let triadaId = `${parseAndFormat(convertBBGEmexDate(convertExcelDateToJSDate(trade["Create Time (As of)"])))}` + (counter < 10 ? "0" + counter : counter) 
         let originalFace = 1
         obj["File_Type"] = "ExchSec";
         obj["Fund"] = "90104";
@@ -307,7 +316,7 @@ export async function formatBBGBlotToMufg(files: any) {
         obj["Security_ID_Reuters"] = trade["Security"];
         obj["Security_ID_UGC"] = "";
         obj["Security_Description"] = trade["Security"];
-        obj["Trade_ID_Client"] = parseAndFormat(`Triada-EMSX-${getDateMufg(tradeDate)}-${counter}`, convertBBGEmexDate(convertExcelDateToJSDate(trade["Create Time (As of)"])))
+        obj["Trade_ID_Client"] = triadaId
         obj["Quantity"] = parseFloat(trade["FillQty"])
         obj["Original_Face"] = originalFace
         obj["Price"] = trade["LmtPr"]
@@ -438,14 +447,11 @@ export async function createExcelAndReturnPath(data: any, pathName: string) {
 
 }
 
-function parseAndFormat(str: string, inputDate: string) {
+function parseAndFormat(inputDate: string) {
     // Extract the last part of the input string
-    let parts = str.split('-');
-    let lastPart = parts[parts.length - 1];
+   
 
-    // Check if lastPart is less than 10, if so add a leading zero
-    lastPart = parseInt(lastPart) < 10 ? '0' + lastPart : lastPart;
-
+    
     // Get today's date
     let today = new Date(inputDate);
 
@@ -460,5 +466,5 @@ function parseAndFormat(str: string, inputDate: string) {
     let formattedDate = '' + year + month + day;
 
     // Output formatted date + last character
-    return formattedDate + lastPart;
+    return formattedDate 
 }

@@ -13,7 +13,8 @@ async function formatTriadaBlot(files) {
             bbbData = await (0, mufgOperations_1.readBBGBlot)(file["filename"]);
         }
         else if (file["fieldname"] == "IB") {
-            ibData = await (0, mufgOperations_1.readIB)(file["filename"]);
+            let url = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + file["filename"];
+            ibData = await (0, portfolioFunctions_1.readIBTrades)(url);
         }
         else if (file["fieldname"] == "BBE") {
             bbeData = await (0, mufgOperations_1.readBBE)(file["filename"]);
@@ -43,39 +44,35 @@ async function formatTriadaBlot(files) {
     }
     for (let index2 = 0; index2 < ibData.length; index2++) {
         let trade = ibData[index2];
-        if (trade["Header"] == "Data") {
-            let obj = {};
-            let originalFace = trade["Symbol"].includes("6") ? 125000 : 50;
-            obj["Location"] = trade["Location"];
-            obj["Date"] = (0, common_2.getTradeDateYearTrades)((0, common_1.getDateMufg)((0, common_1.convertExcelDateToJSDate)(trade["Date/Time"])));
-            obj["Time"] = new Date(trade["Date/Time"]).getHours() + ":00";
-            obj["B/S"] = parseFloat(trade["Quantity"]) > 0 ? "B" : "S";
-            obj["Bond/CDS"] = trade["Symbol"] + "Index";
-            obj["Price"] = trade["C. Price"];
-            obj["Notionol Amount"] = parseFloat(trade["Quantity"]);
-            obj["Trader"] = "JM";
-            obj["Counter Party"] = "IB";
-            obj["Settlement Date"] = (0, common_2.getTradeDateYearTrades)((0, common_1.getDateMufg)((0, common_1.convertExcelDateToJSDate)(trade["Date/Time"])));
-            obj["Settlement Amount"] = (Math.abs(parseFloat(trade["Quantity"])) * originalFace * parseFloat(trade["C. Price"]));
-            blot.push(obj);
-            counter++;
-        }
+        let obj = {};
+        obj["Location"] = trade["Location"];
+        obj["Date"] = trade["Date/Time"];
+        obj["Time"] = trade["Trade Date"];
+        obj["B/S"] = parseFloat(trade["Quantity"]) > 0 ? "B" : "S";
+        obj["Bond/CDS"] = trade["Symbol"];
+        obj["Price"] = trade["T Price"];
+        obj["Notionol Amount"] = parseFloat(trade["Quantity"]);
+        obj["Trader"] = "JM";
+        obj["Counter Party"] = "IB";
+        obj["Settlement Date"] = trade["Trade Date"];
+        obj["Settlement Amount"] = trade["Notional Value"];
+        blot.push(obj);
+        counter++;
     }
     for (let index3 = 0; index3 < bbeData.length; index3++) {
         let obj = {};
         let trade = bbeData[index3];
-        let originalFace = 1;
-        obj["Location"] = "";
-        obj["Date"] = (0, common_1.convertBBGEmexDate)((0, common_1.convertExcelDateToJSDate)(trade["Create Time (As of)"]));
+        obj["Location"] = trade["Location"];
+        obj["Date"] = trade["Trade Date"];
         obj["Time"] = "";
-        obj["B/S"] = trade["Side"] == "Sell" ? "S" : "B";
+        obj["B/S"] = trade["Buy/Sell"] == "Sell" ? "S" : "B";
         obj["Bond/CDS"] = trade["Security"];
-        obj["Price"] = trade["LmtPr"];
-        obj["Notionol Amount"] = parseFloat(trade["FillQty"]);
+        obj["Price"] = trade["Price"];
+        obj["Notionol Amount"] = parseFloat(trade["Quantity"]);
         obj["Trader"] = "JM";
         obj["Counter Party"] = "EMSX";
-        obj["Settlement Date"] = (0, common_1.convertBBGEmexDate)((0, common_1.convertExcelDateToJSDate)(trade["Create Time (As of)"]));
-        obj["Settlement Amount"] = parseFloat(trade["FillQty"]) * trade["LmtPr"] * originalFace;
+        obj["Settlement Date"] = trade["Trade Date"];
+        obj["Settlement Amount"] = parseFloat(trade["Quantity"]);
         blot.push(obj);
         counter++;
     }

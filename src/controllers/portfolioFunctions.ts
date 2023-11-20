@@ -379,25 +379,23 @@ export async function readVconEBlot(path: string) {
   }
   else {
     let data = xlsx.utils.sheet_to_json(worksheet, { defval: '', range: 'A1:CZ10000' });
-    if (data.length > 2500) {
-      return { error: "Max Trades Limit is 250 per minute" }
-    } else {
-      let isinRequest = []
-      for (let index = 0; index < data.length; index++) {
-        let trade = data[index];
-        let isinObjReq = { "idType": "ID_ISIN", "idValue": trade["ISIN"] }
-        isinRequest.push(isinObjReq)
-      }
-      let bbTickers = await getBBTicker(isinRequest)
 
-      for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
-        data[rowIndex]["BB Ticker"] = bbTickers[data[rowIndex]["ISIN"]]
-        data[rowIndex]["Price"] = data[rowIndex]["Price (Decimal)"]
-      }
-      data = mergeSort(data)
-
-      return data
+    let isinRequest = []
+    for (let index = 0; index < data.length; index++) {
+      let trade = data[index];
+      let isinObjReq = { "idType": "ID_ISIN", "idValue": trade["ISIN"] }
+      isinRequest.push(isinObjReq)
     }
+    let bbTickers = await getBBTicker(isinRequest)
+
+    for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
+      data[rowIndex]["BB Ticker"] = bbTickers[data[rowIndex]["ISIN"]]
+      data[rowIndex]["Price"] = data[rowIndex]["Price (Decimal)"]
+    }
+    data = mergeSort(data)
+
+    return data
+
   }
 }
 
@@ -424,7 +422,7 @@ export function formatIbTrades(data: any, ibTrades: any, portfolio: any) {
           }
 
         }
-        let identifier = trade["Symbol"] + " Index"
+        let identifier = trade["Symbol"]
         let securityInPortfolioLocation = getSecurityInPortfolioWithoutLocation(portfolio, identifier)
 
         if (existingTrade) {
@@ -434,7 +432,7 @@ export function formatIbTrades(data: any, ibTrades: any, portfolio: any) {
           count++
         }
         object["Currency"] = trade["Currency"]
-        object["Symbol"] = trade["Symbol"] + " Index"
+        object["Symbol"] = trade["Symbol"] + " IB"
         object["Quantity"] = trade["Quantity"]
         object["T Price"] = trade["T. Price"]
         object["C Price"] = data[index]["C. Price"]
@@ -463,17 +461,18 @@ export function formatIbTradesToVcon(data: any) {
     for (let index = 0; index < data.length; index++) {
       let updatedTrade: any = {}
       let trade = data[index];
-
-      let originalFace = trade["Symbol"].includes("6") ? 125000 : 50
+      let originalFace: any = {
+        "6BZ3 IB": 62500, "ESZ3 IB": 50, "ECZ3 IB": 125000, "ZN IB": 1000, "6EX3 IB": 250000, "ZN   DEC 23 IB": 1000, "6EZ3 IB": 125000, "6EV3 IB": 125000
+      }
       updatedTrade["Buy/Sell"] = trade["Quantity"] < 0 ? "S" : "B"
       updatedTrade["ISIN"] = trade["Symbol"]
       updatedTrade["BB Ticker"] = trade["Symbol"]
       updatedTrade["Issue"] = trade["Symbol"]
-      updatedTrade["Quantity"] = (Math.abs(trade["Quantity"]) * originalFace).toString()
+      updatedTrade["Quantity"] = (Math.abs(trade["Quantity"]) * originalFace[trade["Symbol"]]).toString()
       //this to pass the bond divider 
       updatedTrade["Price"] = trade["C Price"] * 100.00
       updatedTrade["Currency"] = trade["Currency"]
-      updatedTrade["Net"] = (Math.abs(parseFloat(trade["Quantity"])) * originalFace * parseFloat(trade["C Price"])).toString()
+      updatedTrade["Net"] = (Math.abs(parseFloat(trade["Quantity"])) * originalFace[trade["Symbol"]] * parseFloat(trade["C Price"])).toString()
       updatedTrade["Trade Date"] = convertExcelDateToJSDate(trade["Trade Date"])
       updatedTrade["Settle Date"] = convertExcelDateToJSDate(trade["Settle Date"])
       updatedTrade["Triada Trade Id"] = trade["Triada Trade Id"]
@@ -486,6 +485,86 @@ export function formatIbTradesToVcon(data: any) {
     return { error: error }
   }
   return object
+}
+
+export function formatEmsxTradesToVcon(data: any) {
+  let object = []
+  try {
+    for (let index = 0; index < data.length; index++) {
+      let updatedTrade: any = {}
+      let trade = data[index];
+      updatedTrade["Buy/Sell"] = trade["Buy/Sell"] == "Sell" ? "S" : "B"
+      updatedTrade["ISIN"] = trade["Security"]
+      updatedTrade["BB Ticker"] = trade["Security"]
+      updatedTrade["Issue"] = trade["Security"]
+      updatedTrade["Quantity"] = (Math.abs(trade["Quantity"])).toString()
+      //this to pass the bond divider 
+      updatedTrade["Price"] = trade["Price"] * 100.00
+      updatedTrade["Currency"] = "USD"
+      updatedTrade["Net"] = (Math.abs(parseFloat(trade["Quantity"])) * parseFloat(trade["Price"])).toString()
+      updatedTrade["Trade Date"] = convertExcelDateToJSDate(trade["Trade Date"])
+      updatedTrade["Settle Date"] = convertExcelDateToJSDate(trade["Settle Date"])
+      updatedTrade["Triada Trade Id"] = trade["Triada Trade Id"]
+      updatedTrade["Location"] = trade["Location"].trim()
+      updatedTrade["Status"] = "Accepted"
+      updatedTrade["Principal"] = (Math.abs(trade["Quantity"])).toString()
+      object.push(updatedTrade) 
+
+    }
+  } catch (error) {
+    return { error: error }
+  }
+  return object
+}
+
+export function formatEmsxTrades(data: any, emsxTrades: any, portfolio: any) {
+  let trades = []
+  try {
+    let count = emsxTrades.length + 1
+    for (let index = 0; index < data.length; index++) {
+
+      let trade = data[index];
+      let id;
+      let object: any = {}
+
+      let existingTrade: any = null
+      let tradeDate = convertExcelDateToJSDate(data[index]["Create Time (As of)"])
+      trade["Trade Date"] = formatTradeDateVcon(tradeDate)
+      trade["Settle Date"] = formatSettleDateVcon(tradeDate)
+      for (let emsxIndex = 0; emsxIndex < emsxTrades.length; emsxIndex++) {
+
+        let emsxTrade = emsxTrades[emsxIndex];
+        if (trade["Create Time (As of)"] == emsxTrade["Create Time (As of)"] && trade["Security"] == trade["Security"] &&
+          emsxTrade["Side"] == trade["Side"] && emsxTrade["Qty"] == trade["Qty"]) {
+          existingTrade = emsxIndex
+        }
+
+      }
+      let identifier = trade["Security"]
+      let securityInPortfolioLocation = getSecurityInPortfolioWithoutLocation(portfolio, identifier)
+
+      if (existingTrade) {
+        id = existingTrade["Triada Trade Id"]
+      } else {
+        id = `Triada-EMSX-${trade["Trade Date"]}-${count}`
+        count++
+      }
+      object["Status"] = trade["Status"]
+      object["Buy/Sell"] = trade["Side"]
+      object["Security"] = trade["Security"]
+      object["Quantity"] = trade["FillQty"]
+      object["Price"] = trade["LmtPr"]
+      object["Trade Date"] = trade["Trade Date"]
+      object["Settle Date"] = trade["Settle Date"]
+      object["Triada Trade Id"] = id
+      object["Location"] = securityInPortfolioLocation
+      trades.push(object)
+
+    }
+  } catch (error) {
+    return { error: error }
+  }
+  return trades
 }
 
 export async function readIBTrades(path: string) {
@@ -509,18 +588,16 @@ export async function readIBTrades(path: string) {
     "Currency", "Symbol", "Quantity", "T Price", "C Price", "Notional Value", "Comm/Fee", "Basis", "Realized P/L", "MTM P/L", "Code", "Trade Date", "Settle Date", "Triada Trade Id", "Location"
 
   ]
-  const arraysAreEqual = headersFormat.every((value, index) => value === headers[0][index] ? true : console.log(value, headers[0][index]));
+  const arraysAreEqual = headersFormat.every((value, index) => value === headers[0][index] ? true : false);
   if (!arraysAreEqual) {
     return { error: "Incompatible format, please upload ib e-blot xlsx/csv file" }
   }
   else {
     let data = xlsx.utils.sheet_to_json(worksheet, { defval: '', range: 'A1:CZ10000' });
-    if (data.length > 2500) {
-      return { error: "Max Trades Limit is 250 per minute" }
-    } else {
 
-      return data
-    }
+
+    return data
+
   }
 }
 
@@ -568,6 +645,78 @@ export async function readIBEBlot(path: string) {
   }
 }
 
+export async function readEmsxRawEBlot(path: string) {
+  try {
+    const response = await axios.get(path, { responseType: 'arraybuffer' });
+
+    /* Parse the data */
+    const workbook = xlsx.read(response.data, { type: 'buffer' });
+
+    /* Get first worksheet */
+    const worksheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[worksheetName];
+
+    /* Convert worksheet to JSON */
+    // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
+
+    // Read data
+
+    const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+    const headersFormat = [
+      "News", "Create Time (As of)", "Status", "Security", "Side", "Qty", "LmtPr", "TIF", "FillQty", "AvgPr", "% Filled", "Working Qty", "Idle", "Data Export Restricted", "Data Export Restricted", "VWAP", "Data Export Restricted", "Last", "Bid", "Ask", "Volume", "%20d ADV"
+
+    ]
+    const arraysAreEqual = headersFormat.every((value, index) => value === headers[0][index + 2] ? true : false);
+    if (!arraysAreEqual) {
+      return { error: "Incompatible format, please upload emsx e-blot xlsx/csv file" }
+    }
+    else {
+      let data = xlsx.utils.sheet_to_json(worksheet, { defval: '', range: 'D1:X10000' });
+
+      return data
+
+    }
+  } catch (error) {
+    return { error: error }
+  }
+}
+
+export async function readEmsxEBlot(path: string) {
+  try {
+    const response = await axios.get(path, { responseType: 'arraybuffer' });
+
+    /* Parse the data */
+    const workbook = xlsx.read(response.data, { type: 'buffer' });
+
+    /* Get first worksheet */
+    const worksheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[worksheetName];
+
+    /* Convert worksheet to JSON */
+    // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
+
+    // Read data
+
+    const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+    const headersFormat = [
+      "Status", "Buy/Sell", "Security", "Quantity", "Price", "Trade Date", "Settle Date", "Triada Trade Id", "Location"]
+
+
+    const arraysAreEqual = headersFormat.every((value, index) => value === headers[0][index] ? true : false);
+    if (!arraysAreEqual) {
+      return { error: "Incompatible format, please upload emsx e-blot xlsx/csv file" }
+    }
+    else {
+      let data = xlsx.utils.sheet_to_json(worksheet, { defval: '', range: 'A1:I10000' });
+
+      return data
+
+    }
+  } catch (error) {
+    return { error: error }
+  }
+}
+
 export async function readMUFGEBlot(path: string) {
   const response = await axios.get(path, { responseType: 'arraybuffer' });
 
@@ -591,41 +740,40 @@ export async function readMUFGEBlot(path: string) {
   }
   else {
     let data = xlsx.utils.sheet_to_json(worksheet, { defval: '', range: 'A1:V10000' });
-    if (data.length > 2500) {
-      return { error: "Max Trades Limit is 250 per minute" }
-    } else {
-      let isinRequest = []
-      for (let index = 0; index < data.length; index++) {
-        let positionMufg = data[index];
-        let isinObjReq = { "idType": "ID_ISIN", "idValue": positionMufg["Investment"] }
-        isinRequest.push(isinObjReq)
-      }
-      let bbTickers = await getBBTicker(isinRequest)
-      for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
-        data[rowIndex]["BB Ticker"] = bbTickers[data[rowIndex]["Investment"]]
-      }
-      let portfolio = []
 
-      for (let index = 0; index < data.length; index++) {
-        let object: any = {}
-        let position = data[index];
-        object["BB Ticker"] = position["BB Ticker"] ? position["BB Ticker"].replace("Corp", "").replace("Govt", "").trim() : position["BB Ticker"]
-        object["Quantity"] = position["Quantity MUFG"]
-        object["ISIN"] = position["Investment"]
-        object["Issue"] = position[" Issue "] ? position[" Issue "].trim() : ""
-        object["Average Cost"] = parseFloat(position["BaseCost"]) / parseFloat(position["Quantity MUFG"])
-        object["Buy/Sell"] = "B"
-        object["Status"] = "Accepted"
-        object["Trade Date"] = "09/29/23"
-        object["Settle Date"] = "09/29"
-        object["Net"] = position["Quantity MUFG"]
-        object["Mid"] = position["Investment"].includes("Index") ? parseFloat(position["Price"]) : parseFloat(position["Price"]) / 100.00
-        object["Location"] = position["Location"]
-        object["Currency"] = position["CCY"]
-        portfolio.push(object)
-      }
-      return portfolio
+
+    let isinRequest = []
+    for (let index = 0; index < data.length; index++) {
+      let positionMufg = data[index];
+      let isinObjReq = { "idType": "ID_ISIN", "idValue": positionMufg["Investment"] }
+      isinRequest.push(isinObjReq)
     }
+    let bbTickers = await getBBTicker(isinRequest)
+    for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
+      data[rowIndex]["BB Ticker"] = bbTickers[data[rowIndex]["Investment"]]
+    }
+    let portfolio = []
+
+    for (let index = 0; index < data.length; index++) {
+      let object: any = {}
+      let position = data[index];
+      object["BB Ticker"] = position["BB Ticker"] ? position["BB Ticker"].replace("Corp", "").replace("Govt", "").trim() : position["BB Ticker"]
+      object["Quantity"] = position["Quantity MUFG"]
+      object["ISIN"] = position["Investment"]
+      object["Issue"] = position[" Issue "] ? position[" Issue "].trim() : ""
+      object["Average Cost"] = Math.round(parseFloat(position["BaseCost"]) / parseFloat(position["Quantity MUFG"])* 10000000000)/10000000000
+      object["Buy/Sell"] = "B"
+      object["Status"] = "Accepted"
+      object["Trade Date"] = "09/29/23"
+      object["Settle Date"] = "09/29"
+      object["Net"] = position["Quantity MUFG"]
+      object["Mid"] = position["Investment"].includes("Index") ? parseFloat(position["Price"]) : parseFloat(position["Price"]) / 100.00
+      object["Location"] = position["Location"]
+      object["Currency"] = position["CCY"]
+      portfolio.push(object)
+    }
+    return portfolio
+
   }
 }
 
@@ -666,32 +814,30 @@ export async function readEditInput(path: string) {
   }
   else {
     let data = xlsx.utils.sheet_to_json(worksheet, { defval: '', range: 'A1:AN10000' });
-    if (data.length > 2500) {
-      return { error: "Max Trades Limit is 250 per minute" }
-    } else {
 
-      let portfolio = []
-      for (let index = 0; index < data.length; index++) {
-        let object: any = {}
-        let position = data[index];
-        object["ISIN"] = position["Isin"]
-        object["Type"] = position["Type"]
-        object["Group"] = position["Group"]
-        object["holdPortfXrate"] = position["holdPortfXrate"]
-        object["Sector"] = position["Text22"]
-        object["Rating Class"] = position["Text23"]
-        object["holdPortfXrate"] = position["holdPortfXrate"]
-        object["Location"] = position["Location"]
-        object["BB Ticker"] = position["BB Ticker"]
-        object["Country"] = position["Text1"]
-        object["Issuer"] = position["Issuer"]
-        object["Call Date"] = formartImagineDate(position["CallDate"]) || ""
-        object["Maturity"] = formartImagineDate(position["Maturity"]) || ""
 
-        portfolio.push(object)
-      }
-      return portfolio
+    let portfolio = []
+    for (let index = 0; index < data.length; index++) {
+      let object: any = {}
+      let position = data[index];
+      object["ISIN"] = position["Isin"]
+      object["Type"] = position["Type"]
+      object["Group"] = position["Group"]
+      object["holdPortfXrate"] = position["holdPortfXrate"]
+      object["Sector"] = position["Text22"]
+      object["Rating Class"] = position["Text23"]
+      object["holdPortfXrate"] = position["holdPortfXrate"]
+      object["Location"] = position["Location"]
+      object["BB Ticker"] = position["BB Ticker"]
+      object["Country"] = position["Text1"]
+      object["Issuer"] = position["Issuer"]
+      object["Call Date"] = formartImagineDate(position["CallDate"]) || ""
+      object["Maturity"] = formartImagineDate(position["Maturity"]) || ""
+
+      portfolio.push(object)
+
     }
+    return portfolio
   }
 }
 
@@ -716,28 +862,26 @@ export async function readPortfolioFromImagine(path: string) {
   else {
     try {
       let data = xlsx.utils.sheet_to_json(worksheet, { defval: '', range: 'A1:AM10000' });
-      if (data.length > 2500) {
-        return { error: "Max Trades Limit is 250 per minute" }
-      } else {
-        let portfolio = []
-        for (let index = 0; index < data.length; index++) {
-          let object: any = {}
-          let position = data[index];
-          object["BB Ticker"] = position["BB Ticker"].replace("Corp", "").replace("Govt", "").trim()
-          object["Quantity"] = position["Notional Total"]
-          object["ISIN"] = position["Isin"]
-          object["Price"] = (parseFloat(position["Average Cost"])) || 0
-          object["Buy/Sell"] = "B"
-          object["Status"] = "Accepted"
-          object["Trade Date"] = "09/29/23"
-          object["Settle Date"] = "09/29"
-          object["Net"] = position["Notional Total"]
-          object["Mid"] = position["Mid"]
-          object["Location"] = position["Location"]
-          object["Currency"] = position["Curr"]
-          portfolio.push(object)
 
-        }
+      let portfolio = []
+      for (let index = 0; index < data.length; index++) {
+        let object: any = {}
+        let position = data[index];
+        object["BB Ticker"] = position["BB Ticker"].replace("Corp", "").replace("Govt", "").trim()
+        object["Quantity"] = position["Notional Total"]
+        object["ISIN"] = position["Isin"]
+        object["Price"] = (parseFloat(position["Average Cost"])) || 0
+        object["Buy/Sell"] = "B"
+        object["Status"] = "Accepted"
+        object["Trade Date"] = "09/29/23"
+        object["Settle Date"] = "09/29"
+        object["Net"] = position["Notional Total"]
+        object["Mid"] = position["Mid"]
+        object["Location"] = position["Location"]
+        object["Currency"] = position["Curr"]
+        portfolio.push(object)
+
+
         return portfolio
       }
     } catch (error) {
@@ -767,28 +911,26 @@ export async function readPortfolioFromLivePorfolio(path: string) {
   else {
     try {
       let data = xlsx.utils.sheet_to_json(worksheet, { defval: '', range: 'A15:BO127' });
-      if (data.length > 2500) {
-        return { error: "Max Trades Limit is 250 per minute" }
-      } else {
-        let portfolio = []
-        for (let index = 0; index < data.length; index++) {
-          let object: any = {}
-          let position = data[index];
-          object["BB Ticker"] = position["BBG Ticker"].replace("Corp", "").trim()
-          object["Quantity"] = position["Notional Total"]
-          object["Average Cost"] = (parseFloat(position["Avg Cost"])) / 100.0
-          object["Buy/Sell"] = "B"
-          object["Status"] = "Accepted"
-          object["Trade Date"] = "09/30/23"
-          object["Settle Date"] = "08/31"
-          object["Net"] = position["Notional Total"]
-          object["Currency"] = position["Curr"]
-          if (object["BB Ticker"] === "") {
-            break
-          }
-          portfolio.push(object)
 
+      let portfolio = []
+      for (let index = 0; index < data.length; index++) {
+        let object: any = {}
+        let position = data[index];
+        object["BB Ticker"] = position["BBG Ticker"].replace("Corp", "").trim()
+        object["Quantity"] = position["Notional Total"]
+        object["Average Cost"] = (parseFloat(position["Avg Cost"])) / 100.0
+        object["Buy/Sell"] = "B"
+        object["Status"] = "Accepted"
+        object["Trade Date"] = "09/30/23"
+        object["Settle Date"] = "08/31"
+        object["Net"] = position["Notional Total"]
+        object["Currency"] = position["Curr"]
+        if (object["BB Ticker"] === "") {
+          break
         }
+        portfolio.push(object)
+
+
         return portfolio
       }
     } catch (error) {
@@ -963,21 +1105,25 @@ export function sortVconTrades(object: any) {
 
 export function formatUpdatedPositions(positions: any, portfolio: any) {
   try {
-
+    let positionsIndexThatExists = []
+    let positionsThatDoNotExists = []
     for (let indexPositions = 0; indexPositions < positions.length; indexPositions++) {
       const position = positions[indexPositions];
       for (let indexPortfolio = 0; indexPortfolio < portfolio.length; indexPortfolio++) {
         const portfolioPosition = portfolio[indexPortfolio]
         if ((position["ISIN"] == portfolioPosition["ISIN"] || position["BB Ticker"] == portfolioPosition["BB Ticker"] || position["Issue"] == portfolioPosition["Issue"]) && (position["Location"] == portfolioPosition["Location"])) {
           portfolio[indexPortfolio] = position
+          positionsIndexThatExists.push(indexPositions)
         }
-
       }
-
+    }
+    for (let indexPositionsExists = 0; indexPositionsExists < positions.length; indexPositionsExists++) {
+      if (!positionsIndexThatExists.includes(indexPositionsExists)) {
+        positionsThatDoNotExists.push(positions[indexPositionsExists])
+      }
     }
 
-
-    return portfolio
+    return [...portfolio, ...positionsThatDoNotExists]
   } catch (error) {
     return error
   }
@@ -990,4 +1136,35 @@ export function formatDateRlzdDaily(date: any) {
   let year = date.getFullYear();
 
   return `${day}/${month}/${year}`;
+}
+
+export function getDateTimeInMongoDBCollectionFormat(date: any) {
+  let today = new Date(date);
+  let formattedDate = today.toISOString().slice(0, 10);
+  let hours: any = today.getHours();
+  let minutes: any = today.getMinutes();
+
+  // Pad single digit minutes or hours with a leading zero
+  if (hours < 10) hours = "0" + hours;
+  if (minutes < 10) minutes = "0" + minutes;
+
+  let formattedDateTime = formattedDate + " " + hours + ":" + minutes;
+  return formattedDateTime
+}
+
+export function mapDatetimeToSameDay(datetimeList: any, daytimeInput: any) {
+  // Convert daytimeInput to a string in the "yyyy-mm-dd" format
+  let dateStr = daytimeInput.toISOString().slice(0, 10);
+
+  // Filter datetimeList to keep only the strings with the same date
+  let sameDateStrings = datetimeList.filter((s: any) => s.includes(dateStr));
+
+  // If there are no strings with the same date, return null
+  if(sameDateStrings.length === 0) {
+    return null;
+  }
+
+  // Sort the remaining strings in descending order and return the first one
+  sameDateStrings.sort().reverse();
+  return sameDateStrings[0];
 }
