@@ -87,3 +87,7 @@ export async function formatTriadaBlot(files: any) {
     return blot
 }
 
+
+export function formatVconToNomuraBulkUpload(data: any){
+    
+}

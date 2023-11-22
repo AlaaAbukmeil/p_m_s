@@ -448,3 +448,33 @@ date: 18/11/2023 15:44 e-blot-link: https://storage.googleapis.com/capital-trade
 
 date: 18/11/2023 16:32 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1700296341405_2023-10-30xxxx2023-11-01_1700295298105_output.xlsx} 
 
+date: 20/11/2023 23:04 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1700492663425_tradesOctWithLocations.xlsx} 
+
+date: 20/11/2023 23:05 e-blot-link: } 
+
+date: 20/11/2023 23:06 e-blot-link: } 
+
+date: 20/11/2023 23:07 e-blot-link: } 
+
+date: 20/11/2023 23:08 e-blot-link: } 
+
+date: 20/11/2023 23:20 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1700493595287_tradesOctWithLocations.xlsx} 
+
+date: 20/11/2023 23:21 e-blot-link: } 
+
+date: 21/11/2023 01:51 e-blot-link: } 
+
+date: 21/11/2023 01:52 e-blot-link: } 
+
+date: 21/11/2023 01:53 e-blot-link: } 
+
+date: 21/11/2023 01:54 e-blot-link: } 
+
+date: 21/11/2023 01:57 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1700503026263_tradesOctWithLocations.xlsx} 
+
+date: 21/11/2023 02:00 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1700503211373_tradesOctWithLocations.xlsx} 
+
+date: 21/11/2023 02:39 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1700505586491_tradesOctWithLocations.xlsx} 
+
+date: 21/11/2023 02:54 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1700506466288_tradesOctWithLocations.xlsx} 
+

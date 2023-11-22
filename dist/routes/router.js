@@ -34,9 +34,8 @@ router.get("/auth", common_1.verifyToken, async (req, res, next) => {
 });
 router.get("/portfolio", common_1.verifyToken, async (req, res, next) => {
     const date = req.query.date;
-    console.log(date);
-    // let report = await getHistoricalPortfolioWithAnalytics(date)
-    res.send(200);
+    let report = await (0, portfolioOperations_1.getHistoricalPortfolioWithAnalytics)(date);
+    res.send(report);
 });
 router.get('/trades-logs', common_1.verifyToken, async (req, res) => {
     try {
@@ -62,7 +61,6 @@ router.get('/trades', common_1.verifyToken, async (req, res) => {
     try {
         const tradeType = req.query.tradeType;
         let trades = await (0, portfolioOperations_1.getTrades)(`${tradeType}`);
-        console.log(trades);
         res.send(trades);
     }
     catch (error) {
@@ -162,18 +160,17 @@ router.post("/check-isin", common_1.verifyToken, uploadBeforeExcel.any(), async 
         res.send(action);
     }
 });
-router.post("/vcon-excel-nomura", uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/nomura-excel", uploadBeforeExcel.any(), async (req, res, next) => {
     let data = req.body;
     let pathName = (0, common_1.formatDateVconFile)(data.timestamp_start) + "xxxx" + (0, common_1.formatDateVconFile)(data.timestamp_end);
-    let trades = await (0, vconOperation_1.getTriadaTrades)("vcons");
     let token = await (0, graphApiConnect_1.getGraphToken)();
+    let trades = await (0, vconOperation_1.getTriadaTrades)("vcons");
     let array = await (0, graphApiConnect_1.getVcons)(token, data.timestamp_start, data.timestamp_end, trades);
-    let arrayFormatedNomura = (0, vconOperation_1.formatNomuraEBlot)(array);
     if (array.length == 0) {
         res.send({ error: "No Trades" });
     }
     else {
-        let vcons = await (0, vconOperation_1.uploadVconAndReturnFilePath)(arrayFormatedNomura, pathName);
+        let vcons = await (0, vconOperation_1.uploadVconAndReturnFilePath)(array, pathName);
         let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + vcons;
         res.send(downloadEBlotName);
     }
@@ -231,10 +228,8 @@ router.post("/mufg-fx", common_1.verifyToken, uploadBeforeExcel.any(), async (re
 router.post("/centerlized-blotter", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
     try {
         let action = await (0, eblot_1.formatTriadaBlot)(req.files);
-        console.log(action);
         let url = await (0, mufgOperations_1.createExcelAndReturnPath)(action, "centerlizedBlot");
         url = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + url;
-        console.log(url);
         res.send(url);
     }
     catch (error) {
@@ -268,7 +263,6 @@ router.post("/emsx-excel", uploadBeforeExcel.any(), async (req, res, next) => {
         let trades = await (0, vconOperation_1.getTriadaTrades)("emsx");
         let data = await (0, portfolioFunctions_1.readEmsxRawEBlot)(path);
         let portfolio = await (0, portfolioOperations_1.getPortfolio)();
-        console.log(data);
         let action = (0, portfolioFunctions_1.formatEmsxTrades)(data, trades, portfolio);
         if (!action) {
             res.send({ "error": action });

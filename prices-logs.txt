@@ -222,3 +222,17 @@ date: Sat Nov 18 2023 15:45:17 GMT+0800 (Hong Kong Standard Time) e-blot-link: h
 
 date: Sat Nov 18 2023 16:32:48 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1700296366531_Pricing Sheet 2023.10.31 DAY END agreed with MUFGtest.xlsx 
 
+date: Mon Nov 20 2023 23:10:45 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1700493043049_Pricing Sheet 2023.10.30 DAY END.xlsx 
+
+date: Mon Nov 20 2023 23:12:12 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1700493128656_Pricing Sheet 2023.10.31 DAY END agreed with MUFGtest.xlsx 
+
+date: Mon Nov 20 2023 23:21:25 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1700493683410_Pricing Sheet 2023.10.30 DAY END.xlsx 
+
+date: Mon Nov 20 2023 23:22:39 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1700493756290_Pricing Sheet 2023.10.30 DAY END.xlsx 
+
+date: Mon Nov 20 2023 23:23:15 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1700493792371_Pricing Sheet 2023.10.31 DAY END agreed with MUFGtest.xlsx 
+
+date: Tue Nov 21 2023 02:40:55 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1700505651697_Pricing Sheet 2023.10.30 DAY END.xlsx 
+
+date: Tue Nov 21 2023 02:41:12 GMT+0800 (Hong Kong Standard Time) e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1700505668709_Pricing Sheet 2023.10.31 DAY END agreed with MUFGtest.xlsx 
+

@@ -6,7 +6,7 @@ import {
   parseBondIdentifier, calculateDailyProfitLoss, calculateMonthlyProfitLoss,
   readVconEBlot, getSettlementDateYear, readPortfolioFromImagine, formatUpdatedPositions, readMUFGEBlot,
   readPortfolioFromLivePorfolio, formatDateRlzdDaily, readIBEBlot, formatIbTradesToVcon, readIBTrades,
-  readEditInput, formatEmsxTradesToVcon, readEmsxEBlot, getDateTimeInMongoDBCollectionFormat
+  readEditInput, formatEmsxTradesToVcon, readEmsxEBlot, getDateTimeInMongoDBCollectionFormat, mapDatetimeToSameDay
 } from "./portfolioFunctions";
 import util from 'util';
 import { getDate, getTime, getCurrentDateVconFormat, formatDate, monthlyRlzdDate, formatDateReadable } from "./common";
@@ -33,8 +33,8 @@ const client = new MongoClient(uri, {
   }
 });
 
-let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 18
- * 24 * 60 * 60 * 1000 + 8 * 60 * 60 * 1000))
+let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 21
+  * 24 * 60 * 60 * 1000))
 
 mongoose.connect(uri, {
   useNewUrlParser: true
@@ -42,10 +42,14 @@ mongoose.connect(uri, {
 
 export async function getHistoricalPortfolioWithAnalytics(date: string) {
   const database = client.db("portfolios");
-  let lastDate = await getEarliestCollectionName(date)
-  let yesterdayPortfolioName = new Date(new Date(date).getTime() - 1 * 24 * 60 * 60 * 1000 + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  let earliestPortfolioName = await getEarliestCollectionName(date)
+
+  let sameDayCollectionsPublished = earliestPortfolioName[1]
+  let yesterdayPortfolioName = new Date(new Date(date).getTime() - 1 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10) + " 23:59"
   let lastDayBeforeToday = await getEarliestCollectionName(yesterdayPortfolioName)
-  const reportCollection = database.collection(`portfolio-${lastDate}`);
+
+  const reportCollection = database.collection(`portfolio-${earliestPortfolioName[0]}`);
+
   let documents = await reportCollection.aggregate([
     {
       $sort: {
@@ -85,13 +89,15 @@ export async function getHistoricalPortfolioWithAnalytics(date: string) {
   });
 
 
-  let currentDayDate = new Date(new Date(date).getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  let currentDayDate: any = new Date(date)
   let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate)
-  let lastMonthLastCollectionName = await getEarliestCollectionName(previousMonthDates[0])
+
+  //+ 23:59 to make sure getEarliestcollectionname get the lastest date on last day of the month
+  let lastMonthLastCollectionName = await getEarliestCollectionName(previousMonthDates[0] + " 23:59")
   try {
-    let lastMonthPortfolio = await getHistoricalPortfolio(lastMonthLastCollectionName)
-    let previousDayDate = new Date(new Date(date).getTime() - 16 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    let previousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeToday)
+    let lastMonthPortfolio = await getHistoricalPortfolio(lastMonthLastCollectionName[0])
+
+    let previousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeToday[0])
     documents = await getMTDParams(documents, lastMonthPortfolio)
     documents = await getPreviousDayMarkPTFURLZD(documents, previousDayPortfolio)
 
@@ -106,17 +112,19 @@ export async function getHistoricalPortfolioWithAnalytics(date: string) {
   documents = calculateMonthlyDailyRlzdPTFPL(documents, date)
   documents = formatFrontEndTable(documents, date)
 
-  return documents
+  return [documents, sameDayCollectionsPublished]
 }
 
 export async function getEarliestCollectionName(originalDate: string) {
   const database = client.db("portfolios");
   let collections = await database.listCollections().toArray()
-  
+  let collectionNames = []
   for (let index = 0; index < collections.length; index++) {
     let collection = collections[index];
-    if (collection.name == `portfolio-${originalDate}`) {
-      return originalDate
+    let collectionDateName = collection.name.split("-")
+    let collectionDate = collectionDateName[1] + "-" + collectionDateName[2] + "-" + collectionDateName[3].split(" ")[0]
+    if (originalDate.includes(collectionDate)) {
+      collectionNames.push(collection.name)
     }
   }
   let dates = []
@@ -124,27 +132,30 @@ export async function getEarliestCollectionName(originalDate: string) {
     let collection = collections[collectionIndex];
     let collectionDateName = collection.name.split("-")
     let collectionDate = collectionDateName[1] + "/" + collectionDateName[2] + "/" + collectionDateName[3]
+
     if (new Date(collectionDate)) {
       dates.push(new Date(collectionDate))
     }
   }
   let inputDate = new Date(originalDate);
+
   let predecessorDates: any = dates.filter(date => date < inputDate);
+
   if (predecessorDates.length == 0) {
-    return null
+    return [null, collectionNames]
   }
   let predecessorDate: any = new Date(Math.max.apply(null, predecessorDates));
   //hong kong time difference with utc
   if (predecessorDate) {
-    predecessorDate = new Date(new Date(predecessorDate).getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    predecessorDate = getDateTimeInMongoDBCollectionFormat(new Date(predecessorDate))
   }
-  return predecessorDate
+  return [predecessorDate, collectionNames]
 }
 
 export async function getAllCollectionDatesSinceStartMonth(originalDate: string) {
   const database = client.db("portfolios");
   let collections = await database.listCollections().toArray()
-  let currentDayDate = new Date(new Date(originalDate).getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  let currentDayDate = new Date(new Date(originalDate).getTime()).toISOString().slice(0, 10);
   let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate)
 
   let dates = []
@@ -154,8 +165,7 @@ export async function getAllCollectionDatesSinceStartMonth(originalDate: string)
     let collectionDate: any = collectionDateName[1] + "/" + collectionDateName[2] + "/" + collectionDateName[3]
     collectionDate = new Date(collectionDate)
     if (collectionDate.getTime() > new Date(previousMonthDates[0]) && collectionDate.getTime() < new Date(previousMonthDates[(previousMonthDates.length - 1)])) {
-      collectionDate = new Date(new Date(collectionDate).getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
-      dates.push(`portfolio-${collectionDate}`)
+      dates.push(collection.name)
     }
   }
 
@@ -165,8 +175,9 @@ export async function getAllCollectionDatesSinceStartMonth(originalDate: string)
 export async function getPortfolio() {
   try {
     const database = client.db("portfolios");
-    let lastDate = await getEarliestCollectionName(day)
-    const reportCollection = database.collection(`portfolio-${lastDate}`);
+    let earliestCollectionName = await getEarliestCollectionName(day)
+
+    const reportCollection = database.collection(`portfolio-${earliestCollectionName[0]}`);
     let documents = await reportCollection.find().toArray()
     return documents
   } catch (error) {
@@ -533,7 +544,7 @@ export async function updatePositionPortfolio(pathBbg: string | null, pathIb: st
   let ibTradesInVcon: any = formatIbTradesToVcon(data2)
   let emsxTradesInVcon: any = formatEmsxTradesToVcon(data3)
   let data = [...data1, ...ibTradesInVcon, ...emsxTradesInVcon]
-  
+
   if (data1.error || data2.error || data3.error) {
     return { error: (data1.error || data2.error || data3.error) }
   } else {
@@ -549,14 +560,14 @@ export async function updatePositionPortfolio(pathBbg: string | null, pathIb: st
         "£": "GBP",
         "SGD": "SGD"
       }
-     
+
       for (let index = 0; index < data.length; index++) {
         let row = data[index];
         let identifier = (row["ISIN"] !== "") ? row["ISIN"] : (row["BB Ticker"] ? row["BB Ticker"] : row["Issue"])
         let object: any = {}
         let location = row["Location"].trim()
         let securityInPortfolio: any = getSecurityInPortfolio(portfolio, identifier, location)
-       
+
         let previousQuantity = securityInPortfolio["Quantity"]
         let previousAverageCost = (securityInPortfolio["Average Cost"]) ? (securityInPortfolio["Average Cost"]) : 0
         let tradeType = row["Buy/Sell"]
@@ -580,7 +591,7 @@ export async function updatePositionPortfolio(pathBbg: string | null, pathIb: st
             rlzdOperation = 1
           }
         } else {
-          let accumlatedQuantityState = previousQuantity >  0 ? 1 : -1
+          let accumlatedQuantityState = previousQuantity > 0 ? 1 : -1
           if (operation == -1 * accumlatedQuantityState && previousQuantity) {
             rlzdOperation = 1
           }
@@ -597,8 +608,8 @@ export async function updatePositionPortfolio(pathBbg: string | null, pathIb: st
             object["Quantity"] = securityInPortfolio !== 404 ? securityInPortfolio["Quantity"] + currentQuantity : currentQuantity
             object["Net"] = securityInPortfolio !== 404 ? securityInPortfolio["Net"] + currentNet : currentNet
             object["Currency"] = currency
-            object["Average Cost"] = rlzdOperation == -1? securityInPortfolio !== 404 ? getAverageCost(currentQuantity, previousQuantity, currentPrice, previousAverageCost) : currentPrice :  securityInPortfolio["Average Cost"]
-            
+            object["Average Cost"] = rlzdOperation == -1 ? securityInPortfolio !== 404 ? getAverageCost(currentQuantity, previousQuantity, currentPrice, previousAverageCost) : currentPrice : securityInPortfolio["Average Cost"]
+
             object["Coupon Rate"] = bondCouponMaturity[0] == "" ? "0" : bondCouponMaturity[0]
             object["Maturity"] = bondCouponMaturity[1] == "Invalid Date" ? "0" : bondCouponMaturity[1];
             object["Interest"] = securityInPortfolio !== 404 ? (securityInPortfolio["Interest"] ? securityInPortfolio["Interest"] : {}) : {};
@@ -647,18 +658,18 @@ export async function updatePositionPortfolio(pathBbg: string | null, pathIb: st
             object["Quantity"] = currentQuantity + updatingPosition["Quantity"]
             object["Net"] = (currentNet) + updatingPosition["Net"]
             object["Average Cost"] = rlzdOperation == -1 ? getAverageCost(currentQuantity + updatingPosition["Quantity"], previousQuantity, currentPrice, parseFloat(updatingPosition["Average Cost"])) : updatingPosition["Average Cost"]
-            
+
             let currentDailyProfitLoss = (parseFloat(currentQuantity) * (parseFloat(updatingPosition["Average Cost"]) - parseFloat(currentPrice)))
             object["Day Rlzd K G/L"] = updatingPosition["Day Rlzd K G/L"]
             object["Day Rlzd K G/L"][thisDay] = object["Day Rlzd K G/L"][thisDay] ? object["Day Rlzd K G/L"][thisDay] : 0
             object["Day Rlzd K G/L"][thisDay] += rlzdOperation == 1 ? currentDailyProfitLoss : 0
-            
-            object["Monthly Capital Gains Rlzd"] = updatingPosition["Monthly Capital Gains Rlzd"]
-            object["Monthly Capital Gains Rlzd"][thisMonth] += rlzdOperation == 1 ?   currentDailyProfitLoss : 0
 
-            
+            object["Monthly Capital Gains Rlzd"] = updatingPosition["Monthly Capital Gains Rlzd"]
+            object["Monthly Capital Gains Rlzd"][thisMonth] += rlzdOperation == 1 ? currentDailyProfitLoss : 0
+
+
             object["Cost MTD Ptf"] = updatingPosition["Cost MTD Ptf"]
-            object["Cost MTD Ptf"][thisMonth] += operation == 1 ?  currentPrincipal : 0
+            object["Cost MTD Ptf"][thisMonth] += operation == 1 ? currentPrincipal : 0
 
             object["Coupon Rate"] = bondCouponMaturity[0] == "" ? "0" : bondCouponMaturity[0]
             object["Maturity"] = bondCouponMaturity[1] == "Invalid Date" ? "0" : bondCouponMaturity[1]
@@ -676,10 +687,10 @@ export async function updatePositionPortfolio(pathBbg: string | null, pathIb: st
         let action1 = await insertTrade(data1, "vcons");
         let action2 = await insertTrade(data2, "ib");
         let action3 = await insertTrade(data3, "emsx");
-        let updatedPortfolio = formatUpdatedPositions(positions, portfolio)
-        let insertion = await insertTradesInPortfolio(updatedPortfolio)
+        // let updatedPortfolio = formatUpdatedPositions(positions, portfolio)
+        // let insertion = await insertTradesInPortfolio(updatedPortfolio)
 
-        return  positions
+        return positions
       } catch (error) {
         return { error: error }
 
@@ -696,14 +707,13 @@ export async function editPositionPortfolio(path: string) {
 
 
   let data: any = await readEditInput(path)
- 
+
   if (data.error) {
     return { error: data.error }
   } else {
     try {
       let positions: any = []
       let portfolio = await getPortfolio()
-
       for (let index = 0; index < data.length; index++) {
         let row = data[index];
         let identifier = row["ISIN"]
@@ -777,6 +787,7 @@ export async function insertTradesInPortfolio(trades: any) {
         "Issue": trade["Issue"], "Location": trade["Location"]
       });
     }
+    delete trade["_id"]
     return {
       updateOne: {
         filter: { $or: filters },
@@ -877,7 +888,7 @@ export async function insertPricesUpdatesInPortfolio(prices: any) {
       });
     }
 
-
+    delete price["_id"]
     return {
       updateOne: {
         filter: { $or: filters },
@@ -967,7 +978,7 @@ function calculateDailyInterestUnRlzdCapitalGains(portfolio: any, date: any) {
 }
 
 function calculateMonthlyInterest(portfolio: any, date: any) {
-  let currentDayDate = new Date(new Date(date).getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  let currentDayDate = new Date(date).toISOString().slice(0, 10);
   let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate)
   let monthlyInterest: any = {}
 
@@ -1090,7 +1101,7 @@ function calculateMonthlyDailyRlzdPTFPL(portfolio: any, date: any) {
 
 function formatFrontEndTable(portfolio: any, date: any) {
   let originalFaceMultiplier: any = {
-    
+
     "6BZ3 IB": 62500, "ESZ3 IB": 50, "ECZ3 IB": 125000, "ZN IB": 1000, "6EX3 IB": 250000, "ZN   DEC 23 IB": 1000, "6EZ3 IB": 125000, "6EV3 IB": 125000
   }
   for (let index = 0; index < portfolio.length; index++) {

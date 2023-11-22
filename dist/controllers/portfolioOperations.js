@@ -23,17 +23,18 @@ const client = new MongoClient(uri, {
         deprecationErrors: true,
     }
 });
-let day = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date(new Date().getTime() - 18
-    * 24 * 60 * 60 * 1000 + 8 * 60 * 60 * 1000));
+let day = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date(new Date().getTime() - 21
+    * 24 * 60 * 60 * 1000));
 mongoose.connect(uri, {
     useNewUrlParser: true
 });
 async function getHistoricalPortfolioWithAnalytics(date) {
     const database = client.db("portfolios");
-    let lastDate = await getEarliestCollectionName(date);
-    let yesterdayPortfolioName = new Date(new Date(date).getTime() - 1 * 24 * 60 * 60 * 1000 + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    let earliestPortfolioName = await getEarliestCollectionName(date);
+    let sameDayCollectionsPublished = earliestPortfolioName[1];
+    let yesterdayPortfolioName = new Date(new Date(date).getTime() - 1 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10) + " 23:59";
     let lastDayBeforeToday = await getEarliestCollectionName(yesterdayPortfolioName);
-    const reportCollection = database.collection(`portfolio-${lastDate}`);
+    const reportCollection = database.collection(`portfolio-${earliestPortfolioName[0]}`);
     let documents = await reportCollection.aggregate([
         {
             $sort: {
@@ -67,13 +68,13 @@ async function getHistoricalPortfolioWithAnalytics(date) {
         // if both a and b have Quantity 0 or both have Quantity not 0, sort alphabetically by name
         return current["Issue"].localeCompare(next["Issue"]);
     });
-    let currentDayDate = new Date(new Date(date).getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    let currentDayDate = new Date(date);
     let previousMonthDates = (0, portfolioFunctions_1.getAllDatesSinceLastMonthLastDay)(currentDayDate);
-    let lastMonthLastCollectionName = await getEarliestCollectionName(previousMonthDates[0]);
+    //+ 23:59 to make sure getEarliestcollectionname get the lastest date on last day of the month
+    let lastMonthLastCollectionName = await getEarliestCollectionName(previousMonthDates[0] + " 23:59");
     try {
-        let lastMonthPortfolio = await getHistoricalPortfolio(lastMonthLastCollectionName);
-        let previousDayDate = new Date(new Date(date).getTime() - 16 * 60 * 60 * 1000).toISOString().slice(0, 10);
-        let previousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeToday);
+        let lastMonthPortfolio = await getHistoricalPortfolio(lastMonthLastCollectionName[0]);
+        let previousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeToday[0]);
         documents = await getMTDParams(documents, lastMonthPortfolio);
         documents = await getPreviousDayMarkPTFURLZD(documents, previousDayPortfolio);
     }
@@ -85,16 +86,19 @@ async function getHistoricalPortfolioWithAnalytics(date) {
     documents = await calculateMonthlyURlzd(documents);
     documents = calculateMonthlyDailyRlzdPTFPL(documents, date);
     documents = formatFrontEndTable(documents, date);
-    return documents;
+    return [documents, sameDayCollectionsPublished];
 }
 exports.getHistoricalPortfolioWithAnalytics = getHistoricalPortfolioWithAnalytics;
 async function getEarliestCollectionName(originalDate) {
     const database = client.db("portfolios");
     let collections = await database.listCollections().toArray();
+    let collectionNames = [];
     for (let index = 0; index < collections.length; index++) {
         let collection = collections[index];
-        if (collection.name == `portfolio-${originalDate}`) {
-            return originalDate;
+        let collectionDateName = collection.name.split("-");
+        let collectionDate = collectionDateName[1] + "-" + collectionDateName[2] + "-" + collectionDateName[3].split(" ")[0];
+        if (originalDate.includes(collectionDate)) {
+            collectionNames.push(collection.name);
         }
     }
     let dates = [];
@@ -109,20 +113,20 @@ async function getEarliestCollectionName(originalDate) {
     let inputDate = new Date(originalDate);
     let predecessorDates = dates.filter(date => date < inputDate);
     if (predecessorDates.length == 0) {
-        return null;
+        return [null, collectionNames];
     }
     let predecessorDate = new Date(Math.max.apply(null, predecessorDates));
     //hong kong time difference with utc
     if (predecessorDate) {
-        predecessorDate = new Date(new Date(predecessorDate).getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+        predecessorDate = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date(predecessorDate));
     }
-    return predecessorDate;
+    return [predecessorDate, collectionNames];
 }
 exports.getEarliestCollectionName = getEarliestCollectionName;
 async function getAllCollectionDatesSinceStartMonth(originalDate) {
     const database = client.db("portfolios");
     let collections = await database.listCollections().toArray();
-    let currentDayDate = new Date(new Date(originalDate).getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    let currentDayDate = new Date(new Date(originalDate).getTime()).toISOString().slice(0, 10);
     let previousMonthDates = (0, portfolioFunctions_1.getAllDatesSinceLastMonthLastDay)(currentDayDate);
     let dates = [];
     for (let collectionIndex = 0; collectionIndex < collections.length; collectionIndex++) {
@@ -131,8 +135,7 @@ async function getAllCollectionDatesSinceStartMonth(originalDate) {
         let collectionDate = collectionDateName[1] + "/" + collectionDateName[2] + "/" + collectionDateName[3];
         collectionDate = new Date(collectionDate);
         if (collectionDate.getTime() > new Date(previousMonthDates[0]) && collectionDate.getTime() < new Date(previousMonthDates[(previousMonthDates.length - 1)])) {
-            collectionDate = new Date(new Date(collectionDate).getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
-            dates.push(`portfolio-${collectionDate}`);
+            dates.push(collection.name);
         }
     }
     return dates;
@@ -141,8 +144,8 @@ exports.getAllCollectionDatesSinceStartMonth = getAllCollectionDatesSinceStartMo
 async function getPortfolio() {
     try {
         const database = client.db("portfolios");
-        let lastDate = await getEarliestCollectionName(day);
-        const reportCollection = database.collection(`portfolio-${lastDate}`);
+        let earliestCollectionName = await getEarliestCollectionName(day);
+        const reportCollection = database.collection(`portfolio-${earliestCollectionName[0]}`);
         let documents = await reportCollection.find().toArray();
         return documents;
     }
@@ -622,8 +625,8 @@ async function updatePositionPortfolio(pathBbg, pathIb, pathEmsx) {
                 let action1 = await insertTrade(data1, "vcons");
                 let action2 = await insertTrade(data2, "ib");
                 let action3 = await insertTrade(data3, "emsx");
-                let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(positions, portfolio);
-                let insertion = await insertTradesInPortfolio(updatedPortfolio);
+                // let updatedPortfolio = formatUpdatedPositions(positions, portfolio)
+                // let insertion = await insertTradesInPortfolio(updatedPortfolio)
                 return positions;
             }
             catch (error) {
@@ -707,6 +710,7 @@ async function insertTradesInPortfolio(trades) {
                 "Issue": trade["Issue"], "Location": trade["Location"]
             });
         }
+        delete trade["_id"];
         return {
             updateOne: {
                 filter: { $or: filters },
@@ -796,6 +800,7 @@ async function insertPricesUpdatesInPortfolio(prices) {
                 "BB Ticker": price["BB Ticker"], "Location": price["Location"]
             });
         }
+        delete price["_id"];
         return {
             updateOne: {
                 filter: { $or: filters },
@@ -871,7 +876,7 @@ function calculateDailyInterestUnRlzdCapitalGains(portfolio, date) {
     return portfolio;
 }
 function calculateMonthlyInterest(portfolio, date) {
-    let currentDayDate = new Date(new Date(date).getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    let currentDayDate = new Date(date).toISOString().slice(0, 10);
     let previousMonthDates = (0, portfolioFunctions_1.getAllDatesSinceLastMonthLastDay)(currentDayDate);
     let monthlyInterest = {};
     for (let index = 0; index < portfolio.length; index++) {

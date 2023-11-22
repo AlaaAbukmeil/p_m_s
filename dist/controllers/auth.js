@@ -60,7 +60,7 @@ async function checkIfUserExists(email, password) {
                 if (result) {
                     const jwtObject = { email: email, accessRole: user["accessRole"] };
                     const token = jwt.sign(jwtObject, jwtSecret, { expiresIn: '24h' });
-                    return { "message": "authenticated", "status": 200, "token": token };
+                    return { "message": "authenticated", "status": 200, "token": token, "email": email };
                 }
                 else {
                     return { "message": "wrong password", "status": 401 };

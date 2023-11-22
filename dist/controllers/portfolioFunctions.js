@@ -1000,29 +1000,42 @@ function formatDateRlzdDaily(date) {
 exports.formatDateRlzdDaily = formatDateRlzdDaily;
 function getDateTimeInMongoDBCollectionFormat(date) {
     let today = new Date(date);
-    let formattedDate = today.toISOString().slice(0, 10);
+    let day = today.getDate();
+    let month = today.getMonth() + 1;
+    let year = today.getFullYear();
     let hours = today.getHours();
     let minutes = today.getMinutes();
+    if (day < 10) {
+        day = "0" + day;
+    }
+    if (month < 10) {
+        month = "0" + month;
+    }
     // Pad single digit minutes or hours with a leading zero
     if (hours < 10)
         hours = "0" + hours;
     if (minutes < 10)
         minutes = "0" + minutes;
-    let formattedDateTime = formattedDate + " " + hours + ":" + minutes;
+    let formattedDateTime = year + "-" + month + "-" + day + " " + hours + ":" + minutes;
     return formattedDateTime;
 }
 exports.getDateTimeInMongoDBCollectionFormat = getDateTimeInMongoDBCollectionFormat;
 function mapDatetimeToSameDay(datetimeList, daytimeInput) {
     // Convert daytimeInput to a string in the "yyyy-mm-dd" format
-    let dateStr = daytimeInput.toISOString().slice(0, 10);
+    let dateStr = new Date(daytimeInput).toISOString().slice(0, 10);
     // Filter datetimeList to keep only the strings with the same date
     let sameDateStrings = datetimeList.filter((s) => s.includes(dateStr));
     // If there are no strings with the same date, return null
     if (sameDateStrings.length === 0) {
         return null;
     }
+    console.log({ "test": [dateStr, daytimeInput, datetimeList, sameDateStrings] });
     // Sort the remaining strings in descending order and return the first one
-    sameDateStrings.sort().reverse();
+    sameDateStrings.sort((a, b) => {
+        let dateA = new Date(a.split('-').slice(1).join('-'));
+        let dateB = new Date(b.split('-').slice(1).join('-'));
+        return dateA - dateB;
+    });
     return sameDateStrings[0];
 }
 exports.mapDatetimeToSameDay = mapDatetimeToSameDay;

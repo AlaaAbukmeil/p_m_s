@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.formatTriadaBlot = void 0;
+exports.formatVconToNomuraBulkUpload = exports.formatTriadaBlot = void 0;
 const mufgOperations_1 = require("./mufgOperations");
 const common_1 = require("./common");
 const common_2 = require("./common");
@@ -79,3 +79,6 @@ async function formatTriadaBlot(files) {
     return blot;
 }
 exports.formatTriadaBlot = formatTriadaBlot;
+function formatVconToNomuraBulkUpload(data) {
+}
+exports.formatVconToNomuraBulkUpload = formatVconToNomuraBulkUpload;

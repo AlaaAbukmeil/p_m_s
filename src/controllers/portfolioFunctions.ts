@@ -508,7 +508,7 @@ export function formatEmsxTradesToVcon(data: any) {
       updatedTrade["Location"] = trade["Location"].trim()
       updatedTrade["Status"] = "Accepted"
       updatedTrade["Principal"] = (Math.abs(trade["Quantity"])).toString()
-      object.push(updatedTrade) 
+      object.push(updatedTrade)
 
     }
   } catch (error) {
@@ -761,7 +761,7 @@ export async function readMUFGEBlot(path: string) {
       object["Quantity"] = position["Quantity MUFG"]
       object["ISIN"] = position["Investment"]
       object["Issue"] = position[" Issue "] ? position[" Issue "].trim() : ""
-      object["Average Cost"] = Math.round(parseFloat(position["BaseCost"]) / parseFloat(position["Quantity MUFG"])* 10000000000)/10000000000
+      object["Average Cost"] = Math.round(parseFloat(position["BaseCost"]) / parseFloat(position["Quantity MUFG"]) * 10000000000) / 10000000000
       object["Buy/Sell"] = "B"
       object["Status"] = "Accepted"
       object["Trade Date"] = "09/29/23"
@@ -1139,32 +1139,45 @@ export function formatDateRlzdDaily(date: any) {
 }
 
 export function getDateTimeInMongoDBCollectionFormat(date: any) {
-  let today = new Date(date);
-  let formattedDate = today.toISOString().slice(0, 10);
+  let today: any = new Date(date)
+
+  let day = today.getDate()
+  let month = today.getMonth() + 1
+  let year = today.getFullYear()
   let hours: any = today.getHours();
   let minutes: any = today.getMinutes();
+  if (day < 10) {
+    day = "0" + day
+  }
+  if (month < 10) {
+    month = "0" + month
+  }
 
   // Pad single digit minutes or hours with a leading zero
   if (hours < 10) hours = "0" + hours;
   if (minutes < 10) minutes = "0" + minutes;
 
-  let formattedDateTime = formattedDate + " " + hours + ":" + minutes;
+  let formattedDateTime = year + "-" + month + "-" + day + " " + hours + ":" + minutes;
   return formattedDateTime
 }
 
 export function mapDatetimeToSameDay(datetimeList: any, daytimeInput: any) {
   // Convert daytimeInput to a string in the "yyyy-mm-dd" format
-  let dateStr = daytimeInput.toISOString().slice(0, 10);
+  let dateStr = new Date(daytimeInput).toISOString().slice(0, 10);
 
   // Filter datetimeList to keep only the strings with the same date
   let sameDateStrings = datetimeList.filter((s: any) => s.includes(dateStr));
-
   // If there are no strings with the same date, return null
-  if(sameDateStrings.length === 0) {
+  if (sameDateStrings.length === 0) {
     return null;
   }
+  console.log({ "test": [dateStr, daytimeInput, datetimeList, sameDateStrings] })
 
   // Sort the remaining strings in descending order and return the first one
-  sameDateStrings.sort().reverse();
+  sameDateStrings.sort((a: any, b: any) => {
+    let dateA: any = new Date(a.split('-').slice(1).join('-'));
+    let dateB: any = new Date(b.split('-').slice(1).join('-'));
+    return dateA - dateB;
+  });
   return sameDateStrings[0];
 }

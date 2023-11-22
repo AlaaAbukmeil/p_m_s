@@ -46,9 +46,8 @@ router.get("/auth", verifyToken, async (req: Request, res: Response, next: NextF
 router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
 
   const date: any = req.query.date;
-  console.log(date)
-  // let report = await getHistoricalPortfolioWithAnalytics(date)
-  res.send(200)
+  let report = await getHistoricalPortfolioWithAnalytics(date)
+  res.send(report)
 
 })
 
@@ -78,8 +77,8 @@ router.get('/trades', verifyToken, async (req, res) => {
   try {
 
     const tradeType: any = req.query.tradeType;
+
     let trades = await getTrades(`${tradeType}`)
-    console.log(trades)
     res.send(trades);
   } catch (error) {
     res.status(500).send('An error occurred while reading the file.');
@@ -188,20 +187,18 @@ router.post("/check-isin", verifyToken, uploadBeforeExcel.any(), async (req: Req
   }
 })
 
-router.post("/vcon-excel-nomura", uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+router.post("/nomura-excel", uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   let data = req.body
   let pathName = formatDateVconFile(data.timestamp_start) + "xxxx" + formatDateVconFile(data.timestamp_end)
-  let trades = await getTriadaTrades("vcons")
   let token = await getGraphToken()
+  let trades = await getTriadaTrades("vcons")
   let array: any = await getVcons(token, data.timestamp_start, data.timestamp_end, trades)
-  let arrayFormatedNomura = formatNomuraEBlot(array)
-
   if (array.length == 0) {
     res.send({ error: "No Trades" })
-  } else {
-    let vcons = await uploadVconAndReturnFilePath(arrayFormatedNomura, pathName)
+  }
+  else {
+    let vcons = await uploadVconAndReturnFilePath(array, pathName)
     let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + vcons
-
     res.send(downloadEBlotName)
   }
 })
@@ -270,10 +267,10 @@ router.post("/mufg-fx", verifyToken, uploadBeforeExcel.any(), async (req: Reques
 router.post("/centerlized-blotter", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let action: any = await formatTriadaBlot(req.files)
-    console.log(action)
+  
     let url = await createExcelAndReturnPath(action, "centerlizedBlot")
     url = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + url
-    console.log(url)
+    
     res.send(url)
   } catch (error) {
     console.log(error)
@@ -287,7 +284,7 @@ router.post("/bulk-edit", verifyToken, uploadBeforeExcel.any(), async (req: Requ
     const fileName = req.files[0].filename
     const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName
     let action: any = await editPositionPortfolio(path)
-    console.log(action)
+  console.log(action)
     if (action?.error) {
       res.send({ "error": action.error })
     } else {
@@ -308,7 +305,7 @@ router.post("/emsx-excel", uploadBeforeExcel.any(), async (req: Request | any, r
     let trades = await getTriadaTrades("emsx")
     let data = await readEmsxRawEBlot(path)
     let portfolio = await getPortfolio()
-    console.log(data)
+
     let action = formatEmsxTrades(data, trades, portfolio)
     if (!action) {
       res.send({ "error": action })
