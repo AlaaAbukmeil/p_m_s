@@ -5,6 +5,7 @@ const common_1 = require("./common");
 const portfolioFunctions_1 = require("./portfolioFunctions");
 const common_2 = require("./common");
 const portfolioFunctions_2 = require("./portfolioFunctions");
+const auth_1 = require("./auth");
 const xlsx = require("xlsx");
 const axios = require("axios");
 const { Storage } = require('@google-cloud/storage');
@@ -79,7 +80,7 @@ async function readBBE(path) {
     /* Convert worksheet to JSON */
     // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
     // Read data
-    const data = xlsx.utils.sheet_to_json(worksheet, { defval: '', range: 'A1:Z30000' });
+    const data = xlsx.utils.sheet_to_json(worksheet, { defval: '', range: 'A1:Z300' });
     return data;
 }
 exports.readBBE = readBBE;
@@ -94,11 +95,11 @@ async function readFxTrades(path) {
     /* Convert worksheet to JSON */
     // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
     // Read data
-    const data = xlsx.utils.sheet_to_json(worksheet, { defval: '', range: 'A2:BR10000' });
+    const data = xlsx.utils.sheet_to_json(worksheet, { defval: '', range: 'A2:BR100' });
     return data;
 }
 exports.readFxTrades = readFxTrades;
-async function formatBBGBlotToMufg(files) {
+async function formatBBGBlotToMufg(files, tradesCount) {
     let bbbData = [], ibData = [], bbeData = [];
     for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
         let file = files[fileIndex];
@@ -113,7 +114,7 @@ async function formatBBGBlotToMufg(files) {
         }
     }
     let mufg = [];
-    let counter = 1;
+    let counter = tradesCount;
     let bbbCurrency = {
         "$": "USD",
         "A$": "AUD",
@@ -191,6 +192,7 @@ async function formatBBGBlotToMufg(files) {
             obj["Underlying_UGC"] = "";
             obj["Underlying_Desc"] = "";
             obj["Underlying_Country"] = "";
+            obj["Location"] = trade["Location"];
             mufg.push(obj);
             counter++;
         }
@@ -271,6 +273,7 @@ async function formatBBGBlotToMufg(files) {
             obj["Underlying_UGC"] = "";
             obj["Underlying_Desc"] = "";
             obj["Underlying_Country"] = "";
+            obj["Location"] = trade["Location"];
             mufg.push(obj);
             counter++;
         }
@@ -345,6 +348,7 @@ async function formatBBGBlotToMufg(files) {
         obj["Underlying_UGC"] = "";
         obj["Underlying_Desc"] = "";
         obj["Underlying_Country"] = "";
+        obj["Location"] = trade["Location"];
         mufg.push(obj);
         counter++;
     }
@@ -402,7 +406,7 @@ async function createExcelAndReturnPath(data, pathName) {
     // export your excel
     const stream = new PassThrough();
     const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
-    let fileName = `after-excel/${pathName}_${new Date().getTime()}_mufg_output.xlsx`;
+    let fileName = `after-excel/${(0, auth_1.generateRandomIntegers)()}_mufg_output.xlsx`;
     (0, portfolioFunctions_1.uploadToGCloudBucket)(buffer, process.env.BUCKET, fileName)
         .then()
         .catch(console.error);

@@ -2,6 +2,7 @@ import { getDateMufg, convertExcelDateToJSDate, convertBBGEmexDate } from "./com
 import { settlementDatePassed, uploadToGCloudBucket } from "./portfolioFunctions";
 import { getTradeDateYearTrades } from "./common";
 import { getSettlementDateYear } from "./portfolioFunctions";
+import { generateRandomIntegers } from "./auth";
 
 const xlsx = require("xlsx")
 const axios = require("axios")
@@ -93,7 +94,7 @@ export async function readBBE(path: string) {
     // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
 
     // Read data
-    const data = xlsx.utils.sheet_to_json(worksheet, { defval: '', range: 'A1:Z30000' });
+    const data = xlsx.utils.sheet_to_json(worksheet, { defval: '', range: 'A1:Z300' });
     return data
 
 }
@@ -113,12 +114,12 @@ export async function readFxTrades(path: string) {
     // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
 
     // Read data
-    const data = xlsx.utils.sheet_to_json(worksheet, { defval: '', range: 'A2:BR10000' });
+    const data = xlsx.utils.sheet_to_json(worksheet, { defval: '', range: 'A2:BR100' });
     return data
 
 }
 
-export async function formatBBGBlotToMufg(files: any) {
+export async function formatBBGBlotToMufg(files: any, tradesCount: number) {
 
     let bbbData = [], ibData = [], bbeData = [];
     for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
@@ -134,7 +135,7 @@ export async function formatBBGBlotToMufg(files: any) {
     }
     
     let mufg = []
-    let counter = 1
+    let counter = tradesCount
     let bbbCurrency: any = {
         "$": "USD",
         "A$": "AUD",
@@ -212,6 +213,7 @@ export async function formatBBGBlotToMufg(files: any) {
             obj["Underlying_UGC"] = "";
             obj["Underlying_Desc"] = "";
             obj["Underlying_Country"] = "";
+            obj["Location"] = trade["Location"];
             mufg.push(obj)
             counter++
         }
@@ -294,6 +296,7 @@ export async function formatBBGBlotToMufg(files: any) {
             obj["Underlying_UGC"] = "";
             obj["Underlying_Desc"] = "";
             obj["Underlying_Country"] = "";
+            obj["Location"] = trade["Location"];
             mufg.push(obj)
             counter++
         }
@@ -369,6 +372,7 @@ export async function formatBBGBlotToMufg(files: any) {
         obj["Underlying_UGC"] = "";
         obj["Underlying_Desc"] = "";
         obj["Underlying_Country"] = "";
+        obj["Location"] = trade["Location"];
         mufg.push(obj)
         counter++
     }
@@ -438,7 +442,7 @@ export async function createExcelAndReturnPath(data: any, pathName: string) {
     // export your excel
     const stream = new PassThrough();
     const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
-    let fileName = `after-excel/${pathName}_${new Date().getTime()}_mufg_output.xlsx`
+    let fileName = `after-excel/${generateRandomIntegers()}_mufg_output.xlsx`
     uploadToGCloudBucket(buffer, process.env.BUCKET, fileName)
         .then()
         .catch(console.error);

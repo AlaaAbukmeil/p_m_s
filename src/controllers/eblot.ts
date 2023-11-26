@@ -51,7 +51,7 @@ export async function formatTriadaBlot(files: any) {
 
         obj["Location"] = trade["Location"]
         obj["Date"] = trade["Date/Time"]
-        obj["Time"] = trade["Trade Date"]
+        obj["Time"] = trade["Trade Time"]
         obj["B/S"] = parseFloat(trade["Quantity"]) > 0 ? "B" : "S"
         obj["Bond/CDS"] = trade["Symbol"]
         obj["Price"] = trade["T Price"]
