@@ -59,15 +59,15 @@ export function formatDate(date: any) {
 export function formatDateVconFile(date: string) {
   let d = new Date(date),
     month = '' + (d.getMonth() + 1),
-    day = '' + d.getDate(),
-    year = d.getFullYear();
+    day = '' + d.getDate();
+
 
   if (month.length < 2)
     month = '0' + month;
   if (day.length < 2)
     day = '0' + day;
 
-  return [year, month, day].join('-');
+  return [month, day].join('-');
 }
 
 export function formatDateReadable(date: string) {
@@ -162,7 +162,7 @@ export function getSettlementDateYearNomura(date1: string, date2: string) {
   return `${year2}${month2}${day2}`;
 }
 
-export function formatTradeDateVcon(date: Date) {
+export function formatTradeDate(date: Date) {
   date = new Date(date)
   const year = date.getFullYear().toString().slice(-2);
   let month = (date.getMonth() + 1).toString();
@@ -266,4 +266,13 @@ export function convertBBGEmexDate(date: string) {
   } catch (error) {
     return date
   }
+}
+export function generateRandomString(length: number) {
+  let result = '';
+  let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let charactersLength = characters.length;
+  for (let i = 0; i < length; i++) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
 }

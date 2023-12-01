@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.convertBBGEmexDate = exports.convertExcelDateToJSDate = exports.getDateMufg = exports.monthlyRlzdDate = exports.getTradeDateYearTrades = exports.getSettlementDateYearTrades = exports.formatSettleDateVcon = exports.formatTradeDateVcon = exports.getSettlementDateYearNomura = exports.formateDateNomura = exports.getCurrentDateVconFormat = exports.verifyToken = exports.getTime = exports.formatDateReadable = exports.formatDateVconFile = exports.formatDate = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = void 0;
+exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDate = exports.getDateMufg = exports.monthlyRlzdDate = exports.getTradeDateYearTrades = exports.getSettlementDateYearTrades = exports.formatSettleDateVcon = exports.formatTradeDate = exports.getSettlementDateYearNomura = exports.formateDateNomura = exports.getCurrentDateVconFormat = exports.verifyToken = exports.getTime = exports.formatDateReadable = exports.formatDateVconFile = exports.formatDate = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = void 0;
 const jwt = require('jsonwebtoken');
 function getCurrentMonthDateRange() {
     const now = new Date();
@@ -52,12 +52,12 @@ function formatDate(date) {
 }
 exports.formatDate = formatDate;
 function formatDateVconFile(date) {
-    let d = new Date(date), month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
+    let d = new Date(date), month = '' + (d.getMonth() + 1), day = '' + d.getDate();
     if (month.length < 2)
         month = '0' + month;
     if (day.length < 2)
         day = '0' + day;
-    return [year, month, day].join('-');
+    return [month, day].join('-');
 }
 exports.formatDateVconFile = formatDateVconFile;
 function formatDateReadable(date) {
@@ -132,7 +132,7 @@ function getSettlementDateYearNomura(date1, date2) {
     return `${year2}${month2}${day2}`;
 }
 exports.getSettlementDateYearNomura = getSettlementDateYearNomura;
-function formatTradeDateVcon(date) {
+function formatTradeDate(date) {
     date = new Date(date);
     const year = date.getFullYear().toString().slice(-2);
     let month = (date.getMonth() + 1).toString();
@@ -141,7 +141,7 @@ function formatTradeDateVcon(date) {
     day = day.length < 2 ? '0' + day : day;
     return `${month}/${day}/${year}`;
 }
-exports.formatTradeDateVcon = formatTradeDateVcon;
+exports.formatTradeDate = formatTradeDate;
 function formatSettleDateVcon(date) {
     date = new Date(date);
     const year = date.getFullYear().toString().slice(-2);
@@ -227,3 +227,13 @@ function convertBBGEmexDate(date) {
     }
 }
 exports.convertBBGEmexDate = convertBBGEmexDate;
+function generateRandomString(length) {
+    let result = '';
+    let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let charactersLength = characters.length;
+    for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+}
+exports.generateRandomString = generateRandomString;

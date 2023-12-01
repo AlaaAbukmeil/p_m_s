@@ -1,30 +1,4920 @@
-date: 27/11/2023 01:00 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1701018038119_tradesOctWithLocations.xlsx} 
-
-date: 27/11/2023 01:34 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1701020083211_tradesOctWithLocations.xlsx} 
-
-date: 27/11/2023 01:41 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1701020488923_tradesOctWithLocations.xlsx} 
-
-date: 27/11/2023 01:42 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1701020545473_tradesOctWithLocations.xlsx} 
-
-date: 27/11/2023 01:54 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1701021242168_tradesOctWithLocations.xlsx} 
-
-date: 27/11/2023 01:56 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1701021388865_tradesOctWithLocations.xlsx} 
-
-date: 27/11/2023 01:57 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1701021432612_tradesOctWithLocations.xlsx} 
-
-date: 27/11/2023 02:07 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1701022062910_tradesOctWithLocations.xlsx} 
-
-date: 27/11/2023 02:18 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1701022687470_tradesOctWithLocations.xlsx} 
-
-date: 27/11/2023 02:28 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1701023299951_tradesOctWithLocations.xlsx} 
-
-date: 27/11/2023 04:07 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1701029270015_2023-11-01xxxx2023-11-25_1700897976698_output (2).xlsx} 
-
-date: 27/11/2023 04:13 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1701029608826_2023-11-01xxxx2023-11-25_1700897976698_output (2).xlsx} 
-
-date: 27/11/2023 04:37 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1701031068324_2023-11-01xxxx2023-11-25_1700897976698_output (2).xlsx} 
-
-date: 27/11/2023 04:40 e-blot-link: } 
-
-date: 27/11/2023 04:44 e-blot-link: https://storage.googleapis.com/capital-trade-396911.appspot.com/before-excel/1701031487865_2023-11-01xxxx2023-11-25_1700897976698_output (2).xlsx} 
-
+[
+  {
+    "_id": "656445e4940f329586a67717",
+    "ISIN": "XS2109438205",
+    "Location": "B091",
+    "Ask": 0.7925,
+    "Average Cost": 0.743828125,
+    "BB Ticker": "ADANEM 3.949 02/12/30 REGS",
+    "Bid": 0.7825,
+    "Call Date": "",
+    "Country": "India",
+    "Coupon Duration": 360,
+    "Coupon Rate": 3.949,
+    "Currency": "USD",
+    "DV01": -329.59222759075146,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.740492
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 800000
+    },
+    "Issue": "ADANI ELECTRICITY MUMBAI 3.949% 12-Feb-2030 RegS",
+    "Issuer": "ADANI ELECTRICITY MUMBAI",
+    "Last Price Update": "2023-11-30T15:29:07.871Z",
+    "Maturity": "02/12/2030",
+    "Mid": 0.7875,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 800000,
+    "Original Face": 1000,
+    "Quantity": 800000,
+    "Rating Class": "HY",
+    "Sector": "Energy",
+    "Type": "BND",
+    "YTM": 8.600529,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6771b",
+    "ISIN": "XS1391575161",
+    "Location": "B102",
+    "Ask": 0.89625,
+    "Average Cost": 0.83875,
+    "BB Ticker": "ADTIN 4 08/03/26 REGS",
+    "Bid": 0.88875,
+    "Call Date": "",
+    "Country": "India",
+    "Coupon Duration": 360,
+    "Coupon Rate": 4,
+    "Currency": "USD",
+    "DV01": -43.59168409037295,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.87779
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 200000
+    },
+    "Issue": "ADANI TRANSMISSION STEPONE 4% 03-Aug-2026 RegS",
+    "Issuer": "ADANI TRANSMISSION STEPO",
+    "Last Price Update": "2023-11-30T15:29:07.872Z",
+    "Maturity": "08/03/2026",
+    "Mid": 0.8925,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 200000,
+    "Original Face": 1000,
+    "Quantity": 200000,
+    "Rating Class": "HY",
+    "Sector": "Electric",
+    "Type": "BND",
+    "YTM": 8.781706,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6771c",
+    "ISIN": "XS2080214864",
+    "Location": "B094",
+    "Ask": 0.775,
+    "Average Cost": 0.7207142638,
+    "BB Ticker": "ADTIN 4.25 05/21/36 REGS",
+    "Bid": 0.755,
+    "Call Date": "11/21/2035",
+    "Country": "India",
+    "Coupon Duration": 360,
+    "Coupon Rate": 4.25,
+    "Currency": "USD",
+    "DV01": -137.93316646803433,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.757346
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 326000
+    },
+    "Issue": "ADANI TRANSMISSION STEPONE 4.25% 21-May-2036 RegS",
+    "Issuer": "ADANI TRANSMISSION STEPO",
+    "Last Price Update": "2023-11-30T15:29:07.872Z",
+    "Maturity": "05/21/2036",
+    "Mid": 0.765,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 326000,
+    "Original Face": 1000,
+    "Quantity": 326000,
+    "Rating Class": "HY",
+    "Sector": "Electric",
+    "Type": "BND",
+    "YTM": 8.778686,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6771f",
+    "ISIN": "XS2385923722",
+    "Location": "B068",
+    "Ask": 0.86,
+    "Average Cost": 0.826,
+    "BB Ticker": "BBNIIJ V4.3 PERP",
+    "Bid": 0.86,
+    "Call Date": "03/24/2027",
+    "Country": "Indonesia",
+    "Coupon Duration": 360,
+    "Coupon Rate": 4.3,
+    "Currency": "USD",
+    "DV01": -254.7790177214182,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.8253530000000001
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 1000000
+    },
+    "Issue": "BANK NEGARA INDONESIA 4.30 PERPETUAL",
+    "Issuer": "PT Bank Negara Indonesia",
+    "Last Price Update": "2023-11-30T15:29:07.872Z",
+    "Maturity": "09/24/2071",
+    "Mid": 0.86,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 1000000,
+    "Original Face": 1000,
+    "Quantity": 1000000,
+    "Rating Class": "IG",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "YTM": 9.530457,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67721",
+    "ISIN": "US06738EBN40",
+    "Location": "B121",
+    "Ask": 0.9325,
+    "Average Cost": 0.9325,
+    "BB Ticker": "BACR V6.125 PERP",
+    "Bid": 0.925,
+    "Call Date": "12/15/2025",
+    "Country": "United Kingdom",
+    "Coupon Duration": 360,
+    "Coupon Rate": 6.125,
+    "Currency": "USD",
+    "DV01": -104.47697361890107,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.910197
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 500000
+    },
+    "Issue": "BARCLAYS PLC 6.125% PERP",
+    "Issuer": "BARCLAYS PLC",
+    "Last Price Update": "2023-11-30T15:29:07.872Z",
+    "Maturity": "12/15/2049",
+    "Mid": 0.92875,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 500000,
+    "Original Face": 1000,
+    "Quantity": 500000,
+    "Rating Class": "IG",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "YTM": 9.647835,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67722",
+    "ISIN": "US06738EBG98",
+    "Location": "B120",
+    "Ask": 0.9875,
+    "Average Cost": 0.98875,
+    "BB Ticker": "BACR V8 PERP",
+    "Bid": 0.98375,
+    "Call Date": "06/15/2024",
+    "Country": "United Kingdom",
+    "Coupon Duration": 360,
+    "Coupon Rate": 8,
+    "Currency": "USD",
+    "DV01": -24.526483912374886,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.9861260000000001
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 500000
+    },
+    "Issue": "BARCLAYS PLC 8.0% PERP",
+    "Issuer": "BARCLAYS PLC",
+    "Last Price Update": "2023-11-30T15:29:07.872Z",
+    "Maturity": "03/15/2079",
+    "Mid": 0.985625,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 500000,
+    "Original Face": 1000,
+    "Quantity": 500000,
+    "Rating Class": "IG",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "YTM": 11.265639,
+    "holdPortfXrate": 1
+  },
+  {
+    "Type": "F",
+    "Group": "Hedge",
+    "Location": "TA3",
+    "Last Modified Date": "2023-12-01T11:23:28.917Z",
+    "BB Ticker": "ESZ3 Index",
+    "Issue": "ESZ3 IB",
+    "ISIN": "ESZ3 IB",
+    "Currency": "USD",
+    "Quantity": -100,
+    "Net": -883698,
+    "Average Cost": 4516.469005165414,
+    "Day Rlzd K G/L": {
+      "03/10/2023": 0,
+      "04/10/2023": 1510.0961538461434,
+      "06/10/2023": 7395.192307692287,
+      "10/10/2023": 0,
+      "12/10/2023": -2391.3136694386594,
+      "19/10/2023": 642.3726611226812,
+      "20/10/2023": 0,
+      "23/10/2023": -454.6610127139047,
+      "24/10/2023": 1020.3389872860953,
+      "25/10/2023": 4109.322025427809,
+      "26/10/2023": -4717.161012713905,
+      "30/10/2023": -3254.6610127139047,
+      "01/11/2023": 0,
+      "02/11/2023": 0,
+      "03/11/2023": -4736.495076957635,
+      "06/11/2023": -3548.8278212286787,
+      "09/11/2023": -2499.7990064920486,
+      "10/11/2023": 0,
+      "13/11/2023": -1249.6295686203212,
+      "14/11/2023": 0,
+      "29/11/2023": -5153.099483458527,
+      "30/11/2023": 0
+    },
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0,
+      "2023/10": 3859.5254277946424,
+      "2023/11": -17187.85095675721
+    },
+    "Cost MTD Ptf": {
+      "2023/11": 227962.5
+    },
+    "Interest": {
+      "09/29/23": 2,
+      "10/03/23": 50,
+      "10/04/23": -50,
+      "10/06/23": -100,
+      "10/10/23": -50,
+      "10/12/23": 50,
+      "10/19/23": 100,
+      "10/20/23": 50,
+      "10/23/23": -50,
+      "10/24/23": -50,
+      "10/25/23": 100,
+      "10/26/23": -50,
+      "10/30/23": -50,
+      "11/01/23": -50,
+      "11/02/23": -50,
+      "11/03/23": 0,
+      "11/06/23": 0,
+      "11/09/23": 100,
+      "11/10/23": -100,
+      "11/13/23": 50,
+      "11/14/23": -100,
+      "11/29/23": 50,
+      "11/30/23": -50
+    },
+    "Original Face": 50,
+    "Coupon Duration": "",
+    "Entry Price": {
+      "2023/11": 4559.25
+    }
+  },
+  {
+    "_id": "656445e4940f329586a67731",
+    "ISIN": "USV3855MAA54",
+    "Location": "B0922",
+    "Ask": 0.838425,
+    "Average Cost": 0.862499982,
+    "BB Ticker": "GRNKEN 4.3 12/13/28 REGS",
+    "Bid": 0.838425,
+    "Call Date": "",
+    "Country": "India",
+    "Coupon Duration": 360,
+    "Coupon Rate": 4.3,
+    "Currency": "USD",
+    "DV01": null,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.8625
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 278250
+    },
+    "Issue": "Greenko Power II Limited 4.3% 13-Dec-2028 RegS",
+    "Issuer": "Greenko Power II Limited",
+    "Last Price Update": "2023-11-27T11:09:59.454Z",
+    "Maturity": "12/13/2028",
+    "Mid": 0.838425,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 278250,
+    "Original Face": 1000,
+    "Quantity": 278250,
+    "Rating Class": "HY",
+    "Sector": "Energy",
+    "Type": "BND",
+    "YTM": null,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67736",
+    "ISIN": "US404280BX62",
+    "Location": "B057",
+    "Ask": 0.97107,
+    "Average Cost": 0.9649,
+    "BB Ticker": "HSBC V4.292 09/12/26",
+    "Bid": 0.96934,
+    "Call Date": "09/12/2025",
+    "Country": "Hong Kong",
+    "Coupon Duration": 360,
+    "Coupon Rate": 4.292,
+    "Currency": "USD",
+    "DV01": -162.51889156151833,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.961083
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 1000000
+    },
+    "Issue": "HSBC HOLDINGS 4.292% 12-Sep-2026",
+    "Issuer": "HSBC HOLDINGS PLC",
+    "Last Price Update": "2023-11-30T15:29:07.874Z",
+    "Maturity": "09/14/2026",
+    "Mid": 0.970205,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 1000000,
+    "Original Face": 1000,
+    "Quantity": 1000000,
+    "Rating Class": "IG",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "YTM": 6.178737,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67737",
+    "ISIN": "US404280AS86",
+    "Location": "B126",
+    "Ask": 0.98625,
+    "Average Cost": 0.9228125,
+    "BB Ticker": "HSBC V6.375 PERP .",
+    "Bid": 0.97125,
+    "Call Date": "09/17/2024",
+    "Country": "Hong Kong",
+    "Coupon Duration": 360,
+    "Coupon Rate": 6.375,
+    "Currency": "USD",
+    "DV01": -58.4731927174289,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.97248
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 800000
+    },
+    "Issue": "HSBC HOLDINGS PLC 5YCMS+370.5 PERPETUAL",
+    "Issuer": "HSBC HOLDINGS PLC",
+    "Last Price Update": "2023-11-30T15:29:07.874Z",
+    "Maturity": "12/29/2049",
+    "Mid": 0.97875,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 800000,
+    "Original Face": 1000,
+    "Quantity": 800000,
+    "Rating Class": "IG",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "YTM": 9.427709,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6773f",
+    "ISIN": "XS2056558088",
+    "Location": "B165",
+    "Ask": 0.90521,
+    "Average Cost": 0.8870714286,
+    "BB Ticker": "KBANK V3.343 10/02/31 EMTN",
+    "Bid": 0.90279,
+    "Call Date": "10/02/2026",
+    "Country": "Thailand",
+    "Coupon Duration": 360,
+    "Coupon Rate": 3.343,
+    "Currency": "USD",
+    "DV01": -331.9146034144893,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.894345
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 1400000
+    },
+    "Issue": "Kasikornbank 3.343% 02-Oct-2031 RegS",
+    "Issuer": "KASIKORNBANK HK",
+    "Last Price Update": "2023-11-30T15:29:07.875Z",
+    "Maturity": "10/02/2031",
+    "Mid": 0.904,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 1400000,
+    "Original Face": 1000,
+    "Quantity": 1400000,
+    "Rating Class": "IG",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "YTM": 7.277972,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67743",
+    "ISIN": "USG5975LAC03",
+    "Location": "B1070",
+    "Ask": 0.915906,
+    "Average Cost": 0.932,
+    "BB Ticker": "MPEL 5.25 04/26/26 REGS",
+    "Bid": 0.915906,
+    "Call Date": "11/02/2023",
+    "Country": "Macau",
+    "Coupon Duration": 360,
+    "Coupon Rate": 5.25,
+    "Currency": "USD",
+    "DV01": null,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.9273699999999999
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 300000
+    },
+    "Issue": "MELCO RESORTS FINANCE 5.25% 26-Apr-2026 RegS",
+    "Issuer": "MELCO RESORTS FINANCE LI",
+    "Last Price Update": "2023-11-27T11:09:59.455Z",
+    "Maturity": "04/26/2026",
+    "Mid": 0.915906,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 300000,
+    "Original Face": 1000,
+    "Quantity": 300000,
+    "Rating Class": "HY",
+    "Sector": "Gaming",
+    "Type": "BND",
+    "YTM": null,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67744",
+    "ISIN": "USG60744AA05",
+    "Location": "B1071",
+    "Ask": 0.986901,
+    "Average Cost": 0.9868,
+    "BB Ticker": "MGMCHI 5.375 05/15/24 REGS",
+    "Bid": 0.986901,
+    "Call Date": "11/02/2023",
+    "Country": "Macau",
+    "Coupon Duration": 360,
+    "Coupon Rate": 5.375,
+    "Currency": "USD",
+    "DV01": null,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.98709
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 300000
+    },
+    "Issue": "MGM China Holdings Limited 5.375% 15-May-2024 RegS",
+    "Issuer": "MGM China Holdings Limit",
+    "Last Price Update": "2023-11-27T11:09:59.455Z",
+    "Maturity": "05/15/2024",
+    "Mid": 0.986901,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 300000,
+    "Original Face": 1000,
+    "Quantity": 300000,
+    "Rating Class": "HY",
+    "Sector": "Gaming",
+    "Type": "BND",
+    "YTM": null,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67718",
+    "ISIN": "XS2383328932",
+    "Location": "B196",
+    "Ask": 0.95875,
+    "Average Cost": 0.92425,
+    "BB Ticker": "ADANIG 4.375 09/08/24 REGS",
+    "Bid": 0.9514400000000001,
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/10": 184200
+    },
+    "Country": "India",
+    "Coupon Rate": 4.375,
+    "Currency": "USD",
+    "DV01": -27.504659728947445,
+    "Day Rlzd K G/L": {
+      "20/10/2023": 0
+    },
+    "Entry Price": {
+      "2023/10": 0.9209999999999999
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 200000,
+      "10/24/23": 200000
+    },
+    "Issue": "ADANIG 4 ⅜ 09/08/24 REGS",
+    "Issuer": "ADANI GREEN ENERGY LIMIT",
+    "Last Modified Date": "2023-11-27T11:08:10.752Z",
+    "Last Price Update": "2023-11-30T15:29:07.871Z",
+    "Maturity": "09/08/2024",
+    "Mid": 0.955095,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0,
+      "2023/10": 0
+    },
+    "Net": 385318.06,
+    "Original Face": 1000,
+    "Quantity": 400000,
+    "Rating Class": "HY",
+    "Sector": "Energy",
+    "Type": "BND",
+    "YTM": 10.936912,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6771d",
+    "ISIN": "USY0606WCC20",
+    "Location": "B180",
+    "Ask": 0.81003,
+    "Average Cost": 0.81078,
+    "BB Ticker": "BBLTB V3.466 09/23/36 REGS",
+    "Bid": 0.8035800000000001,
+    "Call Date": "09/23/2031",
+    "Country": "Thailand",
+    "Coupon Duration": 360,
+    "Coupon Rate": 3.466,
+    "Currency": "USD",
+    "DV01": -529.137007080891,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.781344
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 1000000
+    },
+    "Issue": "Bangkok Bank PLC 3.466% 23-Sep-2036 RegS Termsheet",
+    "Issuer": "Bangkok Bank Public Comp",
+    "Last Price Update": "2023-11-30T15:29:07.872Z",
+    "Maturity": "09/23/2036",
+    "Mid": 0.806805,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 1000000,
+    "Original Face": 1000,
+    "Quantity": 1000000,
+    "Rating Class": "IG",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "YTM": 6.794065,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6771e",
+    "ISIN": "USY06072AF24",
+    "Location": "B206",
+    "Ask": 0.98842,
+    "Average Cost": 0.99289,
+    "BB Ticker": "BBLTB 5.5 09/21/33 REGS",
+    "Bid": 0.9848600000000001,
+    "Call Date": "",
+    "Country": "Thailand",
+    "Coupon Duration": 360,
+    "Coupon Rate": 5.5,
+    "Currency": "USD",
+    "DV01": -1475.3162448037926,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.9634520000000001
+    },
+    "Group": "RV",
+    "Interest": {
+      "09/29/23": 2000000
+    },
+    "Issue": "Bangkok Bank Public Co Ltd 5.5% 21-Sep-2033 RegS",
+    "Issuer": "Bangkok Bank Public Co L",
+    "Last Price Update": "2023-11-30T15:29:07.872Z",
+    "Maturity": "09/21/2033",
+    "Mid": 0.98664,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 2000000,
+    "Original Face": 1000,
+    "Quantity": 2000000,
+    "Rating Class": "IG",
+    "Sector": "Banks",
+    "Type": "BND",
+    "YTM": 5.759039,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67728",
+    "ISIN": "XS2076167456",
+    "Location": "B056",
+    "Ask": 0.91179,
+    "Average Cost": 0.8743269231,
+    "BB Ticker": "CPDEV V5.75 PERP EMTN",
+    "Bid": 0.89619,
+    "Call Date": "11/14/2024",
+    "Country": "China",
+    "Coupon Duration": 360,
+    "Coupon Rate": 5.75,
+    "Currency": "USD",
+    "DV01": -100.97249547016673,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.7719849999999999
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 1300000
+    },
+    "Issue": "Central Plaza Dev 5.75% Perpetual",
+    "Issuer": "Central Plaza VG",
+    "Last Price Update": "2023-11-30T15:29:07.873Z",
+    "Maturity": "11/14/2069",
+    "Mid": 0.90399,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 1300000,
+    "Original Face": 1000,
+    "Quantity": 1300000,
+    "Rating Class": "IG",
+    "Sector": "Real Estate",
+    "Type": "FRN",
+    "YTM": 17.916365,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6772c",
+    "ISIN": "USF2941JAA81",
+    "Location": "B166",
+    "Ask": 1.07875,
+    "Average Cost": 1,
+    "BB Ticker": "EDF V9.125 PERP REGS",
+    "Bid": 1.06875,
+    "Call Date": "03/15/2033",
+    "Country": "France",
+    "Coupon Duration": 360,
+    "Coupon Rate": 9.125,
+    "Currency": "USD",
+    "DV01": -1693.8223808111272,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 1.042108
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 2500000
+    },
+    "Issue": "E.D.F. 9.125% Perp RegS",
+    "Issuer": "ELECTRICITE DE FRANCE SA",
+    "Last Price Update": "2023-11-30T15:29:07.873Z",
+    "Maturity": "06/08/2073",
+    "Mid": 1.07375,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 2500000,
+    "Original Face": 1000,
+    "Quantity": 2500000,
+    "Rating Class": "IG",
+    "Sector": "Industrial",
+    "Type": "FRN",
+    "YTM": 8.145039,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6772f",
+    "ISIN": "XS2050584866",
+    "Location": "B096",
+    "Ask": 0.825,
+    "Average Cost": 0.97,
+    "BB Ticker": "FAEACO V7.375 PERP",
+    "Bid": 0.805,
+    "Call Date": "10/18/2024",
+    "Country": "Hong Kong",
+    "Coupon Duration": 360,
+    "Coupon Rate": 7.375,
+    "Currency": "USD",
+    "DV01": -42.13354537062486,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.872
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 700000
+    },
+    "Issue": "FEC FINANCE 7.375% Perpetual",
+    "Issuer": "FEC Finance Limited",
+    "Last Price Update": "2023-11-30T15:29:07.874Z",
+    "Maturity": "10/18/2069",
+    "Mid": 0.815,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 700000,
+    "Original Face": 1000,
+    "Quantity": 700000,
+    "Rating Class": "HY",
+    "Sector": "Real Estate",
+    "Type": "FRN",
+    "YTM": 36.275393,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6773d",
+    "ISIN": "ITRX XOVER CDSI S39 5Y Curncy",
+    "Location": "H302",
+    "Ask": -16249.7,
+    "Average Cost": -11716.15,
+    "BB Ticker": "ITRX XOVER CDSI S39 5Y Curncy",
+    "Bid": -16249.7,
+    "Call Date": "",
+    "Country": "H",
+    "Coupon Duration": "",
+    "Coupon Rate": "0",
+    "Currency": "EUR",
+    "DV01": "",
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 1.0115779999999999
+    },
+    "Group": "Hedge",
+    "Interest": {
+      "09/29/23": -2000000
+    },
+    "Issue": "ITRX XOVER CDSI S39 5Y Curncy",
+    "Issuer": "iTraxx Europe S39 V1",
+    "Last Price Update": "2023-11-27T11:13:45.641Z",
+    "Maturity": "06/20/2028",
+    "Mid": -16249.7,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": -2000000,
+    "Original Face": 1000000,
+    "Quantity": -2000000,
+    "Rating Class": "CDS",
+    "Sector": "H",
+    "Type": "CDS",
+    "YTM": "#N/A N/A",
+    "holdPortfXrate": 1.0939
+  },
+  {
+    "_id": "656445e4940f329586a6773e",
+    "ISIN": "ITRX XOVER CDSI S39 5Y Curncy",
+    "Location": "H303",
+    "Ask": -7120.870000071208,
+    "Average Cost": -35837.56647,
+    "BB Ticker": "ITRX XOVER CDSI S39 5Y Curncy",
+    "Bid": -712.0870000071208,
+    "Call Date": "",
+    "Country": "H",
+    "Coupon Duration": "",
+    "Coupon Rate": "0",
+    "Currency": "EUR",
+    "DV01": "",
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 1.049801
+    },
+    "Group": "Hedge",
+    "Interest": {
+      "09/29/23": -2959980
+    },
+    "Issue": "ITRX XOVER CDSI S39 5Y Curncy",
+    "Issuer": "iTraxx Eur Xover S39 V1",
+    "Last Price Update": "2023-11-27T11:13:45.641Z",
+    "Maturity": "06/20/2028",
+    "Mid": -7120.870000071208,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": -2959980,
+    "Original Face": 1000000,
+    "Quantity": -2959980,
+    "Rating Class": "CDS",
+    "Sector": "H",
+    "Type": "CDS",
+    "YTM": "#N/A N/A",
+    "holdPortfXrate": 1.0939
+  },
+  {
+    "_id": "656445e4940f329586a67719",
+    "ISIN": "XS1636266832",
+    "Location": "B095",
+    "Ask": 0.8725,
+    "Average Cost": 0.8,
+    "BB Ticker": "ADSEZ 4 07/30/27 REGS",
+    "Bid": 0.8625,
+    "Call Date": "06/30/2027",
+    "Country": "India",
+    "Coupon Duration": 360,
+    "Coupon Rate": 4,
+    "Currency": "USD",
+    "DV01": -142.4091338793687,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.8482219999999999
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 500000
+    },
+    "Issue": "ADANI PORTS AND SPECIAL 4% 30-Jul-2027 RegS",
+    "Issuer": "ADANI PORTS AND SPECIAL",
+    "Last Price Update": "2023-11-30T15:29:07.871Z",
+    "Maturity": "07/30/2027",
+    "Mid": 0.8675,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 500000,
+    "Original Face": 1000,
+    "Quantity": 500000,
+    "Rating Class": "HY",
+    "Sector": "Commercial Services",
+    "Type": "BND",
+    "YTM": 8.442278,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6771a",
+    "ISIN": "USY00130VS35",
+    "Location": "B130",
+    "Ask": 0.8737999999999999,
+    "Average Cost": 0.81203125,
+    "BB Ticker": "ADSEZ 4.2 08/04/27 REGS",
+    "Bid": 0.8637999999999999,
+    "Call Date": "02/03/2027",
+    "Country": "India",
+    "Coupon Duration": 360,
+    "Coupon Rate": 4.2,
+    "Currency": "USD",
+    "DV01": -227.93263312803447,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.852591
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 800000
+    },
+    "Issue": "ADANI PORTS AND SPECIAL 4.2% 04-Aug-2027 RegS",
+    "Issuer": "ADANI PORTS AND SPECIAL",
+    "Last Price Update": "2023-11-30T15:29:07.872Z",
+    "Maturity": "08/04/2027",
+    "Mid": 0.8687999999999999,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 800000,
+    "Original Face": 1000,
+    "Quantity": 800000,
+    "Rating Class": "HY",
+    "Sector": "Commercial Services",
+    "Type": "BND",
+    "YTM": 8.608601,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67720",
+    "ISIN": "XS2423359459",
+    "Location": "B200",
+    "Average Cost": 0.87611,
+    "BB Ticker": "BNKEA V4.875 04/22/32 EMTN",
+    "Cost MTD Ptf": "0",
+    "Coupon Rate": 4.875,
+    "Currency": "USD",
+    "Day Rlzd K G/L": {
+      "30/11/2023": 8044.999999999969
+    },
+    "Entry Price": {
+      "2023/11": 0.8922
+    },
+    "Interest": {
+      "09/29/23": 500000,
+      "12/04/23": -500000
+    },
+    "Issue": "BNKEA 4 ⅞ 04/22/32 REGS EMTN",
+    "Last Modified Date": "2023-11-30T15:21:52.184Z",
+    "Maturity": "22/04/2032",
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0,
+      "2023/11": 8044.999999999969
+    },
+    "Net": 51056.25,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Country": "Hong Kong",
+    "Group": "RV",
+    "Type": "BND",
+    "Ask": 0.895,
+    "Bid": 0.8896200000000001,
+    "DV01": -134.54788574133403,
+    "Last Price Update": "2023-11-30T15:29:07.872Z",
+    "Mid": 0.8923099999999999,
+    "YTM": 8.79357,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67724",
+    "ISIN": "USF1R15XK938",
+    "Location": "B198",
+    "Ask": 0.99875,
+    "Average Cost": 0.987,
+    "BB Ticker": "BNP V6.625 PERP REGS",
+    "Bid": 0.99375,
+    "Call Date": "03/25/2024",
+    "Country": "France",
+    "Coupon Duration": 360,
+    "Coupon Rate": 6.625,
+    "Currency": "USD",
+    "DV01": -9.114363770230227,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.986414
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 300000
+    },
+    "Issue": "BNP Paribas 6.625% PerpectualRegS",
+    "Issuer": "BNP PARIBAS SA",
+    "Last Price Update": "2023-11-30T15:29:07.872Z",
+    "Maturity": "03/25/2069",
+    "Mid": 0.99625,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 300000,
+    "Original Face": 1000,
+    "Quantity": 300000,
+    "Rating Class": "IG",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "YTM": 7.982633,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67725",
+    "ISIN": "USF1067PAE63",
+    "Location": "B191",
+    "Ask": 1.01125,
+    "Average Cost": 1,
+    "BB Ticker": "BNP V8.5 PERP REGS",
+    "Bid": 1.00625,
+    "Call Date": "08/14/2028",
+    "Country": "France",
+    "Coupon Duration": 360,
+    "Coupon Rate": 8.5,
+    "Currency": "USD",
+    "DV01": -577.5064067580971,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.98395
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 1500000
+    },
+    "Issue": "BNP PARIBAS SA 8.5% Perp",
+    "Issuer": "BNP PARIBAS SA",
+    "Last Price Update": "2023-11-30T15:29:07.872Z",
+    "Maturity": "08/07/2073",
+    "Mid": 1.00875,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 1500000,
+    "Original Face": 1000,
+    "Quantity": 1500000,
+    "Rating Class": "IG",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "YTM": 8.436797,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67726",
+    "ISIN": "CDX HY CDSI S39 5Y PRC Curncy",
+    "Location": "T484",
+    "Ask": 14828.013468161746,
+    "Average Cost": -3800,
+    "BB Ticker": "CDX HY CDSI S39 5Y PRC Curncy",
+    "Bid": 14828.013468161746,
+    "Call Date": "",
+    "Country": "H",
+    "Coupon Duration": "",
+    "Coupon Rate": "0",
+    "Currency": "USD",
+    "DV01": "",
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 1.022142
+    },
+    "Group": "Hedge",
+    "Interest": {
+      "09/29/23": -2970000
+    },
+    "Issue": "CDX HY CDSI S39 5Y PRC Curncy",
+    "Issuer": "CDX NA HY S39 V1",
+    "Last Price Update": "2023-11-30T15:29:07.873Z",
+    "Maturity": "12/20/2027",
+    "Mid": 14828.013468161746,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": -2970000,
+    "Original Face": 1000000,
+    "Quantity": -2970000,
+    "Rating Class": "CDS",
+    "Sector": "H",
+    "Type": "CDS",
+    "YTM": "#N/A N/A",
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67729",
+    "ISIN": "XS2098096568",
+    "Location": "B056",
+    "Ask": 0.8504999999999999,
+    "Average Cost": 0.828375,
+    "BB Ticker": "CPDEV 3.85 07/14/25 EMTN",
+    "Bid": 0.83488,
+    "Call Date": "",
+    "Country": "China",
+    "Coupon Duration": 360,
+    "Coupon Rate": 3.85,
+    "Currency": "USD",
+    "DV01": -49.349615377565215,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.769053
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 400000
+    },
+    "Issue": "CENTRAL PLAZA DEVELOPMENT LTD 3.85% 14-Jul-2025",
+    "Issuer": "CENTRAL PLAZA DEVELOPMEN",
+    "Last Price Update": "2023-11-30T15:29:07.873Z",
+    "Maturity": "07/14/2025",
+    "Mid": 0.84269,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 400000,
+    "Original Face": 1000,
+    "Quantity": 400000,
+    "Rating Class": "IG",
+    "Sector": "Real Estate",
+    "Type": "BND",
+    "YTM": 15.794786,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6772a",
+    "ISIN": "XS2581879207",
+    "Location": "NB1",
+    "Ask": 0.07,
+    "Average Cost": 0,
+    "BB Ticker": "CHFOTN 2.5 01/31/31 REGS",
+    "Bid": 0.06,
+    "Call Date": "11/29/2023",
+    "Country": "China",
+    "Coupon Duration": 360,
+    "Coupon Rate": 2.5,
+    "Currency": "USD",
+    "DV01": -19.857453498837074,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.07125
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 4491000
+    },
+    "Issue": "CFLD Cayman 2.5% 31-Jan-2031 RegS (NB1)",
+    "Issuer": "CFLD CAYMAN INVESTMENT L",
+    "Last Price Update": "2023-11-30T15:29:07.873Z",
+    "Maturity": "01/31/2031",
+    "Mid": 0.065,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 4491000,
+    "Original Face": 1000,
+    "Quantity": 4491000,
+    "Rating Class": "HY",
+    "Sector": "Real Estate",
+    "Type": "BND",
+    "YTM": 44.508314,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6772b",
+    "ISIN": "USY1758JAD55",
+    "Location": "B197",
+    "Ask": 1.01,
+    "Average Cost": 0.9937,
+    "BB Ticker": "COGREN 9.5 02/24/27 REGS",
+    "Bid": 1.0075,
+    "Call Date": "02/24/2025",
+    "Cost MTD Ptf": {
+      "2023/11": 298350
+    },
+    "Country": "Singapore",
+    "Coupon Rate": 9.5,
+    "Currency": "USD",
+    "DV01": -118.98846289145837,
+    "Day Rlzd K G/L": {
+      "02/11/2023": 0
+    },
+    "Entry Price": {
+      "2023/11": 0.9945
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 200000,
+      "11/06/23": 300000
+    },
+    "Issue": "COGREN 9 ½ 02/24/27 REGS",
+    "Issuer": "CONTINUUM ENERGY AURA PT",
+    "Last Modified Date": "2023-11-27T11:11:28.720Z",
+    "Last Price Update": "2023-11-30T15:29:07.873Z",
+    "Maturity": "02/24/2027",
+    "Mid": 1.00875,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0,
+      "2023/11": 0
+    },
+    "Net": 504050,
+    "Original Face": 1000,
+    "Quantity": 500000,
+    "Rating Class": "HY",
+    "Sector": "Energy",
+    "Type": "BND",
+    "YTM": 9.326599,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67730",
+    "ISIN": "USN3700LAD75",
+    "Location": "B0920",
+    "Ask": 0.89125,
+    "Average Cost": 0.8995,
+    "BB Ticker": "GRNKEN 3.85 03/29/26 REGS",
+    "Bid": 0.89125,
+    "Call Date": "11/02/2023",
+    "Country": "India",
+    "Coupon Duration": 360,
+    "Coupon Rate": 3.85,
+    "Currency": "USD",
+    "DV01": null,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.904268
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 277500
+    },
+    "Issue": "Greenko Dutch BV 3.85% 29-Mar-2026 RegS",
+    "Issuer": "Greenko Dutch BV",
+    "Last Price Update": "2023-11-27T11:09:59.454Z",
+    "Maturity": "03/29/2026",
+    "Mid": 0.89125,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 277500,
+    "Original Face": 1000,
+    "Quantity": 277500,
+    "Rating Class": "HY",
+    "Sector": "Energy",
+    "Type": "BND",
+    "YTM": null,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67738",
+    "ISIN": "US404280BL25",
+    "Location": "B112",
+    "Ask": 0.91375,
+    "Average Cost": 0.9365,
+    "BB Ticker": "HSBC V6 PERP *",
+    "Bid": 0.89875,
+    "Call Date": "05/22/2027",
+    "Country": "Hong Kong",
+    "Coupon Duration": 360,
+    "Coupon Rate": 6,
+    "Currency": "USD",
+    "DV01": -411.21490750118284,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.892901
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 1500000
+    },
+    "Issue": "HSBC HOLDINGS PLC 6.0% Perpetual",
+    "Issuer": "HSBC BANK PLC",
+    "Last Price Update": "2023-11-30T15:29:07.875Z",
+    "Maturity": "05/22/2065",
+    "Mid": 0.90625,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 1500000,
+    "Original Face": 1000,
+    "Quantity": 1500000,
+    "Rating Class": "IG",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "YTM": 9.431873,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6773b",
+    "ISIN": "US456837AF06",
+    "Location": "B194",
+    "Ask": 0.943536,
+    "Average Cost": 0.9545833333,
+    "BB Ticker": "INTNED V6.5 PERP",
+    "Bid": 0.943536,
+    "Call Date": "04/16/2025",
+    "Country": "Netherlands",
+    "Coupon Duration": 360,
+    "Coupon Rate": 6.5,
+    "Currency": "USD",
+    "DV01": null,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.9479380000000001
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 1500000
+    },
+    "Issue": "ING GROEP 6.5% Perpetual",
+    "Issuer": "ING Groep NV",
+    "Last Price Update": "2023-11-27T11:09:59.455Z",
+    "Maturity": "04/16/2065",
+    "Mid": 0.943536,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 1500000,
+    "Original Face": 1000,
+    "Quantity": 1500000,
+    "Rating Class": "IG",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "YTM": null,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6773c",
+    "ISIN": "XS1956051145",
+    "Location": "B193",
+    "Ask": 0.99375,
+    "Average Cost": 0.98,
+    "BB Ticker": "INTNED V6.75 PERP",
+    "Bid": 0.98375,
+    "Call Date": "04/16/2024",
+    "Country": "Netherlands",
+    "Coupon Duration": 360,
+    "Coupon Rate": 6.75,
+    "Currency": "USD",
+    "DV01": -35.3101352720131,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.984658
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 1000000
+    },
+    "Issue": "ING GROEP 6.75% Perpetual",
+    "Issuer": "ING Groep NV",
+    "Last Price Update": "2023-11-30T15:29:07.875Z",
+    "Maturity": "04/16/2069",
+    "Mid": 0.98875,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 1000000,
+    "Original Face": 1000,
+    "Quantity": 1000000,
+    "Rating Class": "IG",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "YTM": 10.149633,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "65681c2a30e5ed81bc615f63",
+    "ISIN": "XS2611617700",
+    "Location": "B135",
+    "Ask": 1.0303,
+    "Average Cost": 1.00132,
+    "BB Ticker": "BHRAIN 7.75 04/18/35 REGS",
+    "Bid": 1.0215,
+    "Cost MTD Ptf": "0",
+    "Country": "UAE",
+    "Coupon Duration": 360,
+    "Coupon Rate": 7.75,
+    "Currency": "USD",
+    "DV01": -1932.0030027101252,
+    "Day Rlzd K G/L": {
+      "27/11/2023": 23280.000000000055
+    },
+    "Entry Price": {
+      "2023/11": 1.0255
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 2500000,
+      "11/29/23": -1000000
+    },
+    "Issue": "BHRAIN 7 ¾ 04/18/35 REGS",
+    "Last Modified Date": "2023-11-30T05:22:50.095Z",
+    "Last Price Update": "2023-11-30T15:29:07.875Z",
+    "Maturity": "18/04/2035",
+    "Mid": 1.0259,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0,
+      "2023/11": 23280.000000000055
+    },
+    "Net": 1466573.61,
+    "Original Face": 1000,
+    "Quantity": 1500000,
+    "Type": "BND",
+    "YTM": 7.544471,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67723",
+    "ISIN": "XS1526108235",
+    "Location": "T798",
+    "Ask": 0.05,
+    "Average Cost": 0.8038664706,
+    "BB Ticker": "HONAIR V0 PERP",
+    "Bid": 0.02,
+    "Call Date": "01/26/2024",
+    "Country": "China",
+    "Coupon Duration": "",
+    "Coupon Rate": "0",
+    "Currency": "USD",
+    "DV01": "",
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.035
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 8500000
+    },
+    "Issue": "BLUE SKYVIEW COMPANY 7.125% Perpetual",
+    "Issuer": "BLUE SKYVIEW COMPANY LTD",
+    "Last Price Update": "2023-11-30T15:29:07.872Z",
+    "Maturity": "07/26/2049",
+    "Mid": 0.035,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 8500000,
+    "Original Face": 1000,
+    "Quantity": 8500000,
+    "Rating Class": "HY",
+    "Sector": "Consumer, Cyclical",
+    "Type": "FRN",
+    "YTM": "#N/A N/A",
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67727",
+    "ISIN": "XS1940852145",
+    "Location": "B047",
+    "Ask": 0.9975,
+    "Average Cost": 0.9044444444,
+    "BB Ticker": "NWSZF V5.75 PERP",
+    "Bid": 0.9875,
+    "Call Date": "01/31/2024",
+    "Cost MTD Ptf": {
+      "2023/11": 0
+    },
+    "Country": "Hong Kong",
+    "Coupon Rate": 5.75,
+    "Currency": "USD",
+    "DV01": -14.923005269395162,
+    "Day Rlzd K G/L": {
+      "22/11/2023": 77000.00003999996
+    },
+    "Entry Price": {
+      "2023/11": 0.99
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 900000,
+      "11/27/23": -900000
+    },
+    "Issue": "NWSZF 5 ¾ PERP",
+    "Issuer": "CELESTIAL MILES LIMITED",
+    "Last Modified Date": "2023-11-27T11:11:28.728Z",
+    "Last Price Update": "2023-11-30T09:29:32.932Z",
+    "Maturity": "01/31/2069",
+    "Mid": 0.9925,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0,
+      "2023/11": 77000.00003999996
+    },
+    "Net": -7818.75,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "IG",
+    "Sector": "Industrial",
+    "Type": "FRN",
+    "YTM": 10.569271,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67732",
+    "ISIN": "USV3855GAB69",
+    "Location": "B0921",
+    "Ask": 0.92537,
+    "Average Cost": 0.935,
+    "BB Ticker": "GRNKEN 5.95 07/29/26 REGS",
+    "Bid": 0.92537,
+    "Call Date": "11/02/2023",
+    "Country": "India",
+    "Coupon Duration": 360,
+    "Coupon Rate": 5.95,
+    "Currency": "USD",
+    "DV01": null,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.936239
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 300000
+    },
+    "Issue": "Greenko Solar Mauritius 5.95% 29-Jul-2026 RegS",
+    "Issuer": "Greenko Solar Mauritius",
+    "Last Price Update": "2023-11-27T11:09:59.454Z",
+    "Maturity": "07/29/2026",
+    "Mid": 0.92537,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 300000,
+    "Original Face": 1000,
+    "Quantity": 300000,
+    "Rating Class": "HY",
+    "Sector": "Energy",
+    "Type": "BND",
+    "YTM": null,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67733",
+    "ISIN": "USY3119PFH74",
+    "Location": "B211",
+    "Ask": 0.90625,
+    "Average Cost": 0.8649,
+    "BB Ticker": "HDFCB V3.7 PERP REGS",
+    "Bid": 0.89875,
+    "Call Date": "08/25/2026",
+    "Country": "India",
+    "Coupon Duration": 360,
+    "Coupon Rate": 3.7,
+    "Currency": "USD",
+    "DV01": -266.7607542891659,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.864665
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 1000000
+    },
+    "Issue": "HDFC Bank 3.7% Perpetual Regs",
+    "Issuer": "HDFC BANK LIMITED",
+    "Last Price Update": "2023-11-30T15:29:07.874Z",
+    "Maturity": "02/25/2072",
+    "Mid": 0.9025,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 1000000,
+    "Original Face": 1000,
+    "Quantity": 1000000,
+    "Rating Class": "IG",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "YTM": 7.262231,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "65647960d76b3f9988ec67db",
+    "ISIN": "1393 HK",
+    "Location": "E004",
+    "Ask": 0.09,
+    "Average Cost": 0.4102175528,
+    "BB Ticker": "1393 HK",
+    "Bid": 0.09,
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/11": 0
+    },
+    "Country": "China",
+    "Coupon Duration": "",
+    "Coupon Rate": null,
+    "Currency": "HKD",
+    "DV01": "",
+    "Day Rlzd K G/L": {
+      "19/10/2023": -30721.75528,
+      "23/11/2023": -1260.8702111999999,
+      "06/11/2023": -30921.755279999998
+    },
+    "Entry Price": {
+      "2023/11": 0.095
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 14834743,
+      "10/19/23": -100000,
+      "11/23/23": -4000,
+      "11/06/23": -100000
+    },
+    "Issue": "1393 HK",
+    "Issuer": "HIDILI INDUSTRY INTERNAT",
+    "Last Modified Date": "2023-11-27T11:11:28.732Z",
+    "Last Price Update": "2023-11-30T15:29:07.875Z",
+    "Maturity": "",
+    "Mid": 0.09,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0,
+      "2023/10": -30721.75528,
+      "2023/11": -32182.625491199997
+    },
+    "Net": 14813963,
+    "Original Face": 1000,
+    "Quantity": 14630743,
+    "Rating Class": "Equity",
+    "Sector": "Energy",
+    "Type": "S",
+    "YTM": "#N/A N/A",
+    "holdPortfXrate": 7.811
+  },
+  {
+    "_id": "656445e4940f329586a67735",
+    "ISIN": "US404280DT33",
+    "Location": "B143",
+    "Ask": 1.01375,
+    "Average Cost": 0.98375,
+    "BB Ticker": "HSBC V8 PERP",
+    "Bid": 1.00375,
+    "Call Date": "03/07/2028",
+    "Country": "Hong Kong",
+    "Coupon Duration": 360,
+    "Coupon Rate": 8,
+    "Currency": "USD",
+    "DV01": -118.1689535383441,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.9923909999999999
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 300000
+    },
+    "Issue": "HSBC 8.0% PERP Corp",
+    "Issuer": "HSBC HOLDINGS PLC",
+    "Last Price Update": "2023-11-30T15:29:07.874Z",
+    "Maturity": "02/28/2073",
+    "Mid": 1.00875,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 300000,
+    "Original Face": 1000,
+    "Quantity": 300000,
+    "Rating Class": "IG",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "YTM": 7.922644,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67739",
+    "ISIN": "XS2660425401",
+    "Location": "B183",
+    "Ask": 1.0025,
+    "Average Cost": 0.985625,
+    "BB Ticker": "ICELTD F 12/15/27 REGS",
+    "Bid": 0.995,
+    "Call Date": "08/15/2024",
+    "Cost MTD Ptf": {
+      "2023/11": 0
+    },
+    "Country": "Iceland",
+    "Coupon Rate": "0",
+    "Currency": "EUR",
+    "DV01": -12.597069567476638,
+    "Day Rlzd K G/L": {
+      "23/11/2023": 7125.000000000048
+    },
+    "Entry Price": {
+      "2023/11": 0.9975
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 600000,
+      "11/27/23": -600000
+    },
+    "Issue": "ICELTD Float 12/15/27 REGS",
+    "Issuer": "ICELAND BONDCO PLC",
+    "Last Modified Date": "2023-11-27T11:11:28.729Z",
+    "Last Price Update": "2023-11-30T09:29:32.932Z",
+    "Maturity": "12/15/2027",
+    "Mid": 0.99875,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0,
+      "2023/11": 7125.000000000048
+    },
+    "Net": -400.4000000000233,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "HY",
+    "Sector": "Food & Beverage",
+    "Type": "FRN",
+    "YTM": 9.489324,
+    "holdPortfXrate": 1.0949
+  },
+  {
+    "_id": "656445e4940f329586a6773a",
+    "ISIN": "XS2660424008",
+    "Location": "B184",
+    "Ask": 1.03657,
+    "Average Cost": 0.99204,
+    "BB Ticker": "ICELTD 10.875 12/15/27 REGS",
+    "Bid": 1.02776,
+    "Call Date": "08/15/2025",
+    "Cost MTD Ptf": {
+      "2023/11": 0
+    },
+    "Country": "Iceland",
+    "Coupon Rate": 10.875,
+    "Currency": "GBP",
+    "DV01": -309.9604118280297,
+    "Day Rlzd K G/L": {
+      "22/11/2023": 13979.999999999993
+    },
+    "Entry Price": {
+      "2023/11": 1.02
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 1000000,
+      "11/24/23": -500000
+    },
+    "Issue": "ICELTD 10 ⅞ 12/15/27 REGS",
+    "Issuer": "ICELAND BONDCO PLC",
+    "Last Modified Date": "2023-11-27T11:11:28.728Z",
+    "Last Price Update": "2023-11-30T15:29:07.875Z",
+    "Maturity": "12/15/2027",
+    "Mid": 1.032165,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0,
+      "2023/11": 13979.999999999993
+    },
+    "Net": 488640.62,
+    "Original Face": 1000,
+    "Quantity": 500000,
+    "Rating Class": "HY",
+    "Sector": "Food & Beverages",
+    "Type": "BND",
+    "YTM": 10.061177,
+    "holdPortfXrate": 1.26525
+  },
+  {
+    "_id": "656445e4940f329586a67741",
+    "ISIN": "USU5007TAD73",
+    "Location": "B199",
+    "Ask": 0.93,
+    "Average Cost": 0.91,
+    "BB Ticker": "KOS 7.75 05/01/27 REGS",
+    "Bid": 0.92,
+    "Call Date": "11/29/2023",
+    "Country": "USA",
+    "Coupon Duration": 360,
+    "Coupon Rate": 7.75,
+    "Currency": "USD",
+    "DV01": -80.33335127911556,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.92651
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 300000
+    },
+    "Issue": "KOSMOS ENERGY LTD 7.75% 01-May-2027 RegS",
+    "Issuer": "KOSMOS ENERGY LTD",
+    "Last Price Update": "2023-11-30T15:29:07.875Z",
+    "Maturity": "05/01/2027",
+    "Mid": 0.925,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 300000,
+    "Original Face": 1000,
+    "Quantity": 300000,
+    "Rating Class": "HY",
+    "Sector": "Energy",
+    "Type": "BND",
+    "YTM": 10.686321,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67742",
+    "ISIN": "USY59505AA82",
+    "Location": "T562",
+    "Ask": 1.01208,
+    "Average Cost": 0.9446874875,
+    "BB Ticker": "MEDCIJ 6.75 01/30/25 REGS",
+    "Bid": 1.00387,
+    "Call Date": "11/29/2023",
+    "Country": "Indonesia",
+    "Coupon Duration": 360,
+    "Coupon Rate": 6.75,
+    "Currency": "USD",
+    "DV01": -67.24548328267723,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 1.0019660000000001
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 601000
+    },
+    "Issue": "MEDCO PLATINUM ROAD PTE LTD 6.75% 30-Jan-2025 RegS",
+    "Issuer": "MEDCO PLATINUM ROAD PTE",
+    "Last Price Update": "2023-11-30T09:29:32.933Z",
+    "Maturity": "01/30/2025",
+    "Mid": 1.007975,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 601000,
+    "Original Face": 1000,
+    "Quantity": 601000,
+    "Rating Class": "HY",
+    "Sector": "Energy",
+    "Type": "BND",
+    "YTM": 6.112523,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67745",
+    "ISIN": "US603051AE37",
+    "Location": "B213",
+    "Ask": 1.02733,
+    "Average Cost": 1,
+    "BB Ticker": "MINAU 9.25 10/01/28 144A",
+    "Bid": 1.01967,
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/10": 0
+    },
+    "Country": "Australia",
+    "Coupon Rate": 9.25,
+    "Currency": "USD",
+    "DV01": -651.3421867363434,
+    "Day Rlzd K G/L": {
+      "06/10/2023": 1249.9999999999734
+    },
+    "Entry Price": {
+      "2023/10": 1.0025
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 2500000,
+      "10/11/23": -500000
+    },
+    "Issue": "MINAU 9 ¼ 10/01/28 144A",
+    "Issuer": "MINERAL RESOURCES LIMITE",
+    "Last Modified Date": "2023-11-27T11:08:10.747Z",
+    "Last Price Update": "2023-11-30T15:29:07.876Z",
+    "Maturity": "10/01/2028",
+    "Mid": 1.0234999999999999,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0,
+      "2023/10": 1249.9999999999734
+    },
+    "Net": 1997722.22,
+    "Original Face": 1000,
+    "Quantity": 2000000,
+    "Rating Class": "HY",
+    "Sector": "Mining",
+    "Type": "BND",
+    "YTM": 8.692028,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6774a",
+    "ISIN": "USY7S272AH57",
+    "Location": "B070",
+    "Ask": 1.01453,
+    "Average Cost": 0.98849,
+    "BB Ticker": "POHANG 5.875 01/17/33 REGS",
+    "Bid": 1.01453,
+    "Call Date": "",
+    "Country": "Korea",
+    "Coupon Duration": 360,
+    "Coupon Rate": 5.875,
+    "Currency": "USD",
+    "DV01": -355.4749324820605,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.999552
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 500000
+    },
+    "Issue": "POSCO Holdings Inc 5.875% 17-Jan-2033 RegS",
+    "Issuer": "POSCO Holdings Inc",
+    "Last Price Update": "2023-11-30T15:29:07.876Z",
+    "Maturity": "01/17/2033",
+    "Mid": 1.01453,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 500000,
+    "Original Face": 1000,
+    "Quantity": 500000,
+    "Rating Class": "IG",
+    "Sector": "Basic Materials",
+    "Type": "BND",
+    "YTM": 5.74801,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67753",
+    "ISIN": "US91282CHC82",
+    "Location": "B180",
+    "Ask": 0.92828125,
+    "Average Cost": 0.942578,
+    "BB Ticker": "T 3.375 05/15/33",
+    "Bid": 0.92796875,
+    "Call Date": "",
+    "Country": "Thailand",
+    "Coupon Duration": 360,
+    "Coupon Rate": 3.375,
+    "Currency": "USD",
+    "DV01": 516.0582157836302,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.9071089999999999
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": -700000
+    },
+    "Issue": "U.S. GOVT -TREASURY DEPT 3.375% 15-May-2033",
+    "Issuer": "U.S. GOVT -TREASURY DEPT",
+    "Last Price Update": "2023-11-30T15:29:07.877Z",
+    "Maturity": "05/15/2033",
+    "Mid": 0.928125,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": -700000,
+    "Original Face": 1000,
+    "Quantity": -700000,
+    "Rating Class": "IG",
+    "Sector": "Government",
+    "Type": "TBD",
+    "YTM": 4.354671,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67760",
+    "ISIN": "XS1699845068",
+    "Location": "B126",
+    "Ask": 1,
+    "Average Cost": 0.9775,
+    "BB Ticker": "UOBSP V3.875 PERP EMTN",
+    "Bid": 0.9995,
+    "Call Date": "04/19/2024",
+    "Country": "Singapore",
+    "Coupon Duration": 360,
+    "Coupon Rate": 3.875,
+    "Currency": "USD",
+    "DV01": null,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.9994
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 1000000
+    },
+    "Issue": "UNITED OVERSEAS BANK LTD 3.875% PERPETUAL",
+    "Issuer": "Unit OVERSEAS BANK LIMIT",
+    "Last Price Update": "2023-11-27T11:09:43.073Z",
+    "Maturity": "10/19/2050",
+    "Mid": 0.9997499999999999,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 1000000,
+    "Original Face": 1000,
+    "Quantity": 1000000,
+    "Rating Class": "IG",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "YTM": null,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67762",
+    "ISIN": "USG98149AD29",
+    "Location": "B1070",
+    "Ask": 0.87625,
+    "Average Cost": 0.895,
+    "BB Ticker": "WYNMAC 5.5 10/01/27 REGS",
+    "Bid": 0.87,
+    "Call Date": "11/02/2023",
+    "Country": "Macau",
+    "Coupon Duration": 360,
+    "Coupon Rate": 5.5,
+    "Currency": "USD",
+    "DV01": null,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.8951290000000001
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 500000
+    },
+    "Issue": "Wynn Macau Limited 5.5% 01-Oct-2027 RegS",
+    "Issuer": "Wynn Macau Limited",
+    "Last Price Update": "2023-11-27T11:09:43.073Z",
+    "Maturity": "10/01/2027",
+    "Mid": 0.873125,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 500000,
+    "Original Face": 1000,
+    "Quantity": 500000,
+    "Rating Class": "HY",
+    "Sector": "Gaming",
+    "Type": "BND",
+    "YTM": null,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67764",
+    "ISIN": "USG98149AH33",
+    "Location": "B1072",
+    "Ask": 0.84125,
+    "Average Cost": 0.845,
+    "BB Ticker": "WYNMAC 5.625 08/26/28 REGS",
+    "Bid": 0.83625,
+    "Call Date": "11/02/2023",
+    "Country": "Macau",
+    "Coupon Duration": 360,
+    "Coupon Rate": 5.625,
+    "Currency": "USD",
+    "DV01": null,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.86875
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 300000
+    },
+    "Issue": "Wynn Macau Limited 5.625% 26-Aug-2028 RegS",
+    "Issuer": "Wynn Macau Limited",
+    "Last Price Update": "2023-11-27T11:09:43.073Z",
+    "Maturity": "08/26/2028",
+    "Mid": 0.83875,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 300000,
+    "Original Face": 1000,
+    "Quantity": 300000,
+    "Rating Class": "HY",
+    "Sector": "Gaming",
+    "Type": "BND",
+    "YTM": null,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "6564789ac6f3e68771359fd1",
+    "ISIN": "US912810TT51",
+    "Location": "H304",
+    "Ask": 0.9415625,
+    "Average Cost": 0.8806640625,
+    "BB Ticker": "T 4.125 08/15/53",
+    "Bid": 0.94109375,
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/10": 0
+    },
+    "Country": "H",
+    "Coupon Rate": 4.125,
+    "Currency": "USD",
+    "DV01": 1564.5139545860332,
+    "Day Rlzd K G/L": {
+      "05/10/2023": 0
+    },
+    "Entry Price": {
+      "2023/10": 0.8806640625
+    },
+    "Group": "Hedge",
+    "Interest": {
+      "10/06/23": -1000000
+    },
+    "Issue": "T 4 ⅛ 08/15/53",
+    "Issuer": "U.S. GOVT -TREASURY DEPT",
+    "Last Modified Date": "2023-11-27T11:08:10.746Z",
+    "Last Price Update": "2023-11-30T15:29:07.878Z",
+    "Maturity": "08/15/2053",
+    "Mid": 0.941328125,
+    "Monthly Capital Gains Rlzd": {
+      "2023/10": 0
+    },
+    "Net": -886492.86,
+    "Original Face": 1000,
+    "Quantity": -1000000,
+    "Rating Class": "H",
+    "Sector": "Government",
+    "Type": "TBD",
+    "YTM": 4.534257,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "65647960d76b3f9988ec67dc",
+    "ISIN": "XS2699906512",
+    "Location": "B222",
+    "Average Cost": 1.0059,
+    "BB Ticker": "TCZIRA 9.375 11/12/26",
+    "Cost MTD Ptf": "0",
+    "Country": "Turkey",
+    "Coupon Rate": 9.375,
+    "Currency": "USD",
+    "Day Rlzd K G/L": {
+      "01/11/2023": 0,
+      "31/10/2023": 5940.000000000056
+    },
+    "Entry Price": {
+      "2023/10": 0.99996
+    },
+    "Group": "VI",
+    "Interest": {
+      "11/06/23": 0
+    },
+    "Issue": "TCZIRA 9 ⅜ 11/12/26",
+    "Last Modified Date": "2023-11-27T11:49:06.813Z",
+    "Maturity": "12/11/2026",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 0,
+      "2023/10": 5940.000000000056
+    },
+    "Net": -5940,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Type": "BND"
+  },
+  {
+    "_id": "65647960d76b3f9988ec67dd",
+    "ISIN": "AU3FN0082640",
+    "Location": "B224",
+    "Average Cost": 1.0010061224489797,
+    "BB Ticker": "IAGAU F 12/15/38 MTN",
+    "Call Date": "12/15/2028",
+    "Cost MTD Ptf": {
+      "2023/11": 2451225
+    },
+    "Country": "Australia",
+    "Coupon Duration": 360,
+    "Coupon Rate": "0",
+    "Currency": "AUD",
+    "Day Rlzd K G/L": {
+      "01/11/2023": 1240.0000000003631
+    },
+    "Entry Price": {
+      "2023/11": 1.0017
+    },
+    "Group": "VI",
+    "Interest": {
+      "11/08/23": 0
+    },
+    "Issue": "IAGAU Float 12/15/38 MTN",
+    "Issuer": "INSURANCE AUSTRALIA GROU",
+    "Last Modified Date": "2023-11-27T11:11:28.720Z",
+    "Maturity": "12/15/2038",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 1240.0000000003631
+    },
+    "Net": -1240,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "IG",
+    "Sector": "Insurance",
+    "Type": "FRN",
+    "holdPortfXrate": 1.536216525843082
+  },
+  {
+    "_id": "65647960d76b3f9988ec67e1",
+    "ISIN": "USF8600KAA46",
+    "Location": "B227",
+    "Ask": 1.0275,
+    "Average Cost": 1,
+    "BB Ticker": "SOCGEN V10 PERP REGS",
+    "Bid": 1.02125,
+    "Call Date": "11/14/2028",
+    "Cost MTD Ptf": {
+      "2023/11": 1000000
+    },
+    "Country": "France",
+    "Coupon Rate": 10,
+    "Currency": "USD",
+    "DV01": -394.6729550591499,
+    "Day Rlzd K G/L": {
+      "07/11/2023": 0
+    },
+    "Entry Price": {
+      "2023/11": 1
+    },
+    "Group": "CE",
+    "Interest": {
+      "11/14/23": 1000000
+    },
+    "Issue": "SOCGEN 10 PERP REGS",
+    "Issuer": "SOCIETE GENERALE SA",
+    "Last Modified Date": "2023-11-27T11:11:28.721Z",
+    "Last Price Update": "2023-11-30T15:29:07.876Z",
+    "Maturity": "11/14/2093",
+    "Mid": 1.024375,
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 0
+    },
+    "Net": 1000000,
+    "Original Face": 1000,
+    "Quantity": 1000000,
+    "Rating Class": "IG",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "YTM": 9.589375,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67747",
+    "ISIN": "USJ54675BC69",
+    "Location": "B204",
+    "Ask": 1.02,
+    "Average Cost": 1,
+    "BB Ticker": "NIPLIF V6.25 09/13/53 REGS",
+    "Bid": 1.0125,
+    "Call Date": "09/13/2033",
+    "Country": "Japan",
+    "Coupon Duration": 360,
+    "Coupon Rate": 6.25,
+    "Currency": "USD",
+    "DV01": -369.12946000995817,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.991197
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 500000
+    },
+    "Issue": "NIPPON LIFE INSURANCE CO 6.250% 13-Sep-2053",
+    "Issuer": "Nippon Life Ins",
+    "Last Price Update": "2023-11-30T15:29:07.876Z",
+    "Maturity": "09/13/2053",
+    "Mid": 1.01625,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 500000,
+    "Original Face": 1000,
+    "Quantity": 500000,
+    "Rating Class": "IG",
+    "Sector": "Insurance",
+    "Type": "FRN",
+    "YTM": 6.116809,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6774c",
+    "ISIN": "USG82296AJ69",
+    "Location": "B189",
+    "Ask": 0.96281,
+    "Average Cost": 0.97411445,
+    "BB Ticker": "SMBCAC 5.7 07/25/33 REGS",
+    "Bid": 0.96281,
+    "Call Date": "04/25/2033",
+    "Country": "Japan",
+    "Coupon Duration": 360,
+    "Coupon Rate": 5.7,
+    "Currency": "USD",
+    "DV01": -700.6992660167555,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.929919
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 1000000
+    },
+    "Issue": "SMBC Aviation Capital 5.7% 25-Jul-2033 RegS",
+    "Issuer": "SMBC Aviation Capital Fi",
+    "Last Price Update": "2023-11-30T15:29:07.876Z",
+    "Maturity": "07/25/2033",
+    "Mid": 0.96281,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 1000000,
+    "Original Face": 1000,
+    "Quantity": 1000000,
+    "Rating Class": "IG",
+    "Sector": "Financials",
+    "Type": "BND",
+    "YTM": 6.314009,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67754",
+    "ISIN": "US91282CHC82",
+    "Location": "H301",
+    "Ask": 0.92828125,
+    "Average Cost": 0.942578,
+    "BB Ticker": "T 3.375 05/15/33",
+    "Bid": 0.92796875,
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/10": 266882.81
+    },
+    "Country": "H",
+    "Coupon Rate": 3.375,
+    "Currency": "USD",
+    "DV01": 147.44520450960863,
+    "Day Rlzd K G/L": {
+      "17/10/2023": 15890.587499999998
+    },
+    "Entry Price": {
+      "2023/10": 0.889609375
+    },
+    "Group": "Hedge",
+    "Interest": {
+      "09/29/23": -500000,
+      "10/18/23": 300000
+    },
+    "Issue": "T 3 ⅜ 05/15/33",
+    "Issuer": "U.S. GOVT -TREASURY DEPT",
+    "Last Modified Date": "2023-11-27T11:08:10.749Z",
+    "Last Price Update": "2023-11-30T15:29:07.877Z",
+    "Maturity": "05/15/2033",
+    "Mid": 0.928125,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0,
+      "2023/10": 15890.587499999998
+    },
+    "Net": -228825.07,
+    "Original Face": 1000,
+    "Quantity": -200000,
+    "Rating Class": "IG",
+    "Sector": "Government",
+    "Type": "TBD",
+    "YTM": 4.354671,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6775d",
+    "ISIN": "US91282CHT18",
+    "Location": "B206",
+    "Ask": 0.96625,
+    "Average Cost": 0.96765625,
+    "BB Ticker": "T 3.875 08/15/33",
+    "Bid": 0.96578125,
+    "Call Date": "",
+    "Country": "Thailand",
+    "Coupon Duration": 360,
+    "Coupon Rate": 3.875,
+    "Currency": "USD",
+    "DV01": 1479.929576920631,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.9450780000000001
+    },
+    "Group": "RV",
+    "Interest": {
+      "09/29/23": -1920000
+    },
+    "Issue": "U.S. GOVT -TREASURY DEPT 3.875% 15-Aug-2033",
+    "Issuer": "U.S. GOVT -TREASURY DEPT",
+    "Last Price Update": "2023-11-30T15:29:07.878Z",
+    "Maturity": "08/15/2033",
+    "Mid": 0.966015625,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": -1920000,
+    "Original Face": 1000,
+    "Quantity": -1920000,
+    "Rating Class": "IG",
+    "Sector": "Government",
+    "Type": "TBD",
+    "YTM": 4.352808,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6775e",
+    "ISIN": "US91282CHX20",
+    "Location": "B200",
+    "Average Cost": 0.9957812698,
+    "BB Ticker": "T 4.375 08/31/28",
+    "Cost MTD Ptf": "316698.05",
+    "Coupon Rate": 4.375,
+    "Currency": "USD",
+    "Day Rlzd K G/L": {
+      "30/11/2023": -3026.9468879999836
+    },
+    "Entry Price": {
+      "2023/11": 1.005390625
+    },
+    "Interest": {
+      "09/29/23": -315000,
+      "12/01/23": 315000
+    },
+    "Issue": "T 4 ⅜ 08/31/28",
+    "Last Modified Date": "2023-11-30T15:21:52.185Z",
+    "Maturity": "31/08/2028",
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0,
+      "2023/11": -3026.9468879999836
+    },
+    "Net": 5181.219999999972,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Country": "Hong Kong",
+    "Group": "RV",
+    "Type": "BND",
+    "Ask": 1.005234375,
+    "Bid": 1.005,
+    "DV01": 134.57357116118587,
+    "Last Price Update": "2023-11-30T15:29:07.878Z",
+    "Mid": 1.0051171875,
+    "YTM": 4.298699,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67761",
+    "ISIN": "USV9667MAA00",
+    "Location": "T09",
+    "Ask": 0.8939499999999999,
+    "Average Cost": 0.9339652167,
+    "BB Ticker": "VEDLN 13.875 01/21/24 REGS",
+    "Bid": 0.88086,
+    "Call Date": "11/29/2023",
+    "Country": "India",
+    "Coupon Duration": 360,
+    "Coupon Rate": 13.875,
+    "Currency": "USD",
+    "DV01": 10.756895885251083,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.900465
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 1200000
+    },
+    "Issue": "VEDANTA RESOURCES FINANCE 13.875% 21-Jan-2024 RegS",
+    "Issuer": "VEDANTA RESOURCES FINANC",
+    "Last Price Update": "2023-11-30T15:29:07.878Z",
+    "Maturity": "01/21/2024",
+    "Mid": 0.887405,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 1200000,
+    "Original Face": 1000,
+    "Quantity": 1200000,
+    "Rating Class": "HY",
+    "Sector": "Basic Materials",
+    "Type": "BND",
+    "YTM": 171.443253,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "6564789ac6f3e68771359fd4",
+    "ISIN": "US912810TT51",
+    "Location": "H306",
+    "Ask": 0.9415625,
+    "Average Cost": 0.887890625,
+    "BB Ticker": "T 4.125 08/15/53",
+    "Bid": 0.94109375,
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/10": 0
+    },
+    "Country": "H",
+    "Coupon Rate": 4.125,
+    "Currency": "USD",
+    "DV01": 1564.5139545860332,
+    "Day Rlzd K G/L": {
+      "10/10/2023": 0
+    },
+    "Entry Price": {
+      "2023/10": 0.887890625
+    },
+    "Group": "Hedge",
+    "Interest": {
+      "10/11/23": -1000000
+    },
+    "Issue": "T 4 ⅛ 08/15/53",
+    "Issuer": "U.S. GOVT -TREASURY DEPT",
+    "Last Modified Date": "2023-11-27T11:08:10.748Z",
+    "Last Price Update": "2023-11-30T15:29:07.878Z",
+    "Maturity": "08/15/2053",
+    "Mid": 0.941328125,
+    "Monthly Capital Gains Rlzd": {
+      "2023/10": 0
+    },
+    "Net": -894279.9,
+    "Original Face": 1000,
+    "Quantity": -1000000,
+    "Rating Class": "H",
+    "Sector": "Government",
+    "Type": "TBD",
+    "YTM": 4.534257,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "65647960d76b3f9988ec67de",
+    "ISIN": "US91282CJF95",
+    "Location": "B226",
+    "Average Cost": 1.010625,
+    "BB Ticker": "T 4.875 10/31/28",
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/11": 970050
+    },
+    "Country": "China",
+    "Coupon Duration": 365,
+    "Coupon Rate": 4.875,
+    "Currency": "USD",
+    "Day Rlzd K G/L": {
+      "02/11/2023": 0,
+      "03/11/2023": 150.00000000007674
+    },
+    "Entry Price": {
+      "2023/11": 1.010625
+    },
+    "Group": "VI",
+    "Interest": {
+      "11/06/23": -960000,
+      "11/03/23": 960000
+    },
+    "Issue": "T 4 ⅞ 10/31/28",
+    "Issuer": "U.S. GOVT -TREASURY DEPT",
+    "Last Modified Date": "2023-11-27T11:11:28.721Z",
+    "Maturity": "10/31/2028",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 150.00000000007674
+    },
+    "Net": -535.7200000000885,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "",
+    "Sector": "",
+    "Type": "TBD",
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "65647960d76b3f9988ec67df",
+    "ISIN": "US66980Q2D87",
+    "Location": "B226",
+    "Average Cost": 0.99214,
+    "BB Ticker": "BOCAVI 5.75 11/09/28 REGS",
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/11": 992140
+    },
+    "Country": "China",
+    "Coupon Duration": 360,
+    "Coupon Rate": 5.75,
+    "Currency": "USD",
+    "Day Rlzd K G/L": {
+      "02/11/2023": 0,
+      "03/11/2023": 4560.000000000008
+    },
+    "Entry Price": {
+      "2023/11": 0.99214
+    },
+    "Group": "VI",
+    "Interest": {
+      "11/09/23": 0
+    },
+    "Issue": "BOCAVI 5 ¾ 11/09/28 REGS",
+    "Issuer": "BOC AVIATION USA CORPORA",
+    "Last Modified Date": "2023-11-27T11:11:28.721Z",
+    "Maturity": "11/09/2028",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 4560.000000000008
+    },
+    "Net": -4560,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "IG",
+    "Sector": "Financials",
+    "Type": "BND",
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "65647960d76b3f9988ec67e0",
+    "ISIN": "USY00130RP42",
+    "Location": "B225",
+    "Ask": 0.83196,
+    "Average Cost": 0.7709999999999999,
+    "BB Ticker": "ADSEZ 4.375 07/03/29 REGS",
+    "Bid": 0.8240999999999999,
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/11": 231300
+    },
+    "Country": "India",
+    "Coupon Rate": 4.375,
+    "Currency": "USD",
+    "DV01": -117.91169797482581,
+    "Day Rlzd K G/L": {
+      "02/11/2023": 0
+    },
+    "Entry Price": {
+      "2023/11": 0.7709999999999999
+    },
+    "Group": "CE",
+    "Interest": {
+      "11/06/23": 300000
+    },
+    "Issue": "ADSEZ 4 ⅜ 07/03/29 REGS",
+    "Issuer": "ADANI PORTS AND SPECIAL",
+    "Last Modified Date": "2023-11-27T11:11:28.720Z",
+    "Last Price Update": "2023-11-30T15:29:07.872Z",
+    "Maturity": "07/03/2029",
+    "Mid": 0.8280299999999999,
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 0
+    },
+    "Net": 235784.38,
+    "Original Face": 1000,
+    "Quantity": 300000,
+    "Rating Class": "",
+    "Sector": "Commercial Services",
+    "Type": "BND",
+    "YTM": 8.456147,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "65647960d76b3f9988ec67e5",
+    "ISIN": "USH42097ER43",
+    "Location": "B230",
+    "Average Cost": 1,
+    "BB Ticker": "UBS V9.25 PERP REGS",
+    "Call Date": "11/13/2033",
+    "Cost MTD Ptf": {
+      "2023/11": 200000
+    },
+    "Country": "Switzerland",
+    "Coupon Duration": 360,
+    "Coupon Rate": 9.25,
+    "Currency": "USD",
+    "Day Rlzd K G/L": {
+      "08/11/2023": 0,
+      "09/11/2023": 4000.0000000000036
+    },
+    "Entry Price": {
+      "2023/11": 1
+    },
+    "Group": "CE",
+    "Interest": {
+      "11/13/23": 0
+    },
+    "Issue": "UBS 9 ¼ PERP REGS",
+    "Issuer": "UBS Group Inc",
+    "Last Modified Date": "2023-11-27T11:11:28.723Z",
+    "Maturity": "11/13/2093",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 4000.0000000000036
+    },
+    "Net": -4000,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67746",
+    "ISIN": "USQ66345AB78",
+    "Location": "B168",
+    "Ask": 0.8589600000000001,
+    "Average Cost": 0.81,
+    "BB Ticker": "NCIAU 4.7 05/12/31 REGS",
+    "Bid": 0.8461,
+    "Call Date": "02/12/2031",
+    "Country": "Australia",
+    "Coupon Duration": 360,
+    "Coupon Rate": 4.7,
+    "Currency": "USD",
+    "DV01": -257.2250568442058,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.80411
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 500000
+    },
+    "Issue": "NEWCASTLE COAL 4.7% 12-May-2031 RegS",
+    "Issuer": "NEWCASTLE COAL INFRASTRU",
+    "Last Price Update": "2023-11-30T15:29:07.876Z",
+    "Maturity": "05/12/2031",
+    "Mid": 0.85253,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 500000,
+    "Original Face": 1000,
+    "Quantity": 500000,
+    "Rating Class": "IG",
+    "Sector": "Basic Materials",
+    "Type": "BND",
+    "YTM": 7.437191,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67749",
+    "ISIN": "US718286CY18",
+    "Location": "B0711",
+    "Ask": 0.941643,
+    "Average Cost": 1.011,
+    "BB Ticker": "PHILIP 4.625 07/17/28",
+    "Bid": 0.941643,
+    "Call Date": "",
+    "Country": "Philippines",
+    "Coupon Duration": 360,
+    "Coupon Rate": 4.625,
+    "Currency": "USD",
+    "DV01": null,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.9703459999999999
+    },
+    "Group": "RV",
+    "Interest": {
+      "09/29/23": 1000000
+    },
+    "Issue": "Philippines 5% 17-Jul-2033",
+    "Issuer": "Philippines",
+    "Last Price Update": "2023-11-27T11:09:59.455Z",
+    "Maturity": "07/17/2028",
+    "Mid": 0.941643,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 1000000,
+    "Original Face": 1000,
+    "Quantity": 1000000,
+    "Rating Class": "IG",
+    "Sector": "Government",
+    "Type": "TBD",
+    "YTM": null,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6774f",
+    "ISIN": "USG84228FJ22",
+    "Location": "B0570",
+    "Ask": 0.9607340000000001,
+    "Average Cost": 0.995,
+    "BB Ticker": "STANLN V7.75 PERP REGs",
+    "Bid": 0.9607340000000001,
+    "Call Date": "08/15/2027",
+    "Country": "Singapore",
+    "Coupon Duration": 360,
+    "Coupon Rate": 7.75,
+    "Currency": "USD",
+    "DV01": null,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.973159
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 1000000
+    },
+    "Issue": "Standard Chartered PLC 7.75% Perpetual RegS",
+    "Issuer": "STANDARD CHARTERED PLC",
+    "Last Price Update": "2023-11-27T11:09:59.455Z",
+    "Maturity": "08/15/2072",
+    "Mid": 0.9607340000000001,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 1000000,
+    "Original Face": 1000,
+    "Quantity": 1000000,
+    "Rating Class": "IG",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "YTM": null,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67751",
+    "ISIN": "US88323AAE29",
+    "Location": "B161",
+    "Ask": 0.62445,
+    "Average Cost": 0.6322,
+    "BB Ticker": "TOPTB 3.5 10/17/49 REGS",
+    "Bid": 0.61135,
+    "Call Date": "",
+    "Country": "Thailand",
+    "Coupon Duration": 360,
+    "Coupon Rate": 3.5,
+    "Currency": "USD",
+    "DV01": -873.2569532736889,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.579469
+    },
+    "Group": "RV",
+    "Interest": {
+      "09/29/23": 1000000
+    },
+    "Issue": "Thaioil TSY Center Company 3.5% 17-Oct-2049 RegS",
+    "Issuer": "Thaioil TSY Center Compa",
+    "Last Price Update": "2023-11-30T15:29:07.877Z",
+    "Maturity": "10/17/2049",
+    "Mid": 0.6179,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 1000000,
+    "Original Face": 1000,
+    "Quantity": 1000000,
+    "Rating Class": "IG",
+    "Sector": "Energy",
+    "Type": "BND",
+    "YTM": 6.707761,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67756",
+    "ISIN": "US91282CHC82",
+    "Location": "B182",
+    "Ask": 0.92828125,
+    "Average Cost": 0.942578,
+    "BB Ticker": "T 3.375 05/15/33",
+    "Bid": 0.92796875,
+    "Call Date": "",
+    "Country": "Australia",
+    "Coupon Duration": 360,
+    "Coupon Rate": 3.375,
+    "Currency": "USD",
+    "DV01": 331.7517101466194,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.9071089999999999
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": -450000
+    },
+    "Issue": "U.S. GOVT -TREASURY DEPT 3.375% 15-May-2033",
+    "Issuer": "U.S. GOVT -TREASURY DEPT",
+    "Last Price Update": "2023-11-30T15:29:07.877Z",
+    "Maturity": "05/15/2033",
+    "Mid": 0.928125,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": -450000,
+    "Original Face": 1000,
+    "Quantity": -450000,
+    "Rating Class": "IG",
+    "Sector": "Government",
+    "Type": "TBD",
+    "YTM": 4.354671,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67757",
+    "ISIN": "US91282CHC82",
+    "Location": "B189",
+    "Ask": 0.92828125,
+    "Average Cost": 0.942578,
+    "BB Ticker": "T 3.375 05/15/33",
+    "Bid": 0.92796875,
+    "Call Date": "",
+    "Country": "Japan",
+    "Coupon Duration": 360,
+    "Coupon Rate": 3.375,
+    "Currency": "USD",
+    "DV01": 700.364721420641,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.9071089999999999
+    },
+    "Group": "RV",
+    "Interest": {
+      "09/29/23": -950000
+    },
+    "Issue": "U.S. GOVT -TREASURY DEPT 3.375% 15-May-2033",
+    "Issuer": "U.S. GOVT -TREASURY DEPT",
+    "Last Price Update": "2023-11-30T15:29:07.877Z",
+    "Maturity": "05/15/2033",
+    "Mid": 0.928125,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": -950000,
+    "Original Face": 1000,
+    "Quantity": -950000,
+    "Rating Class": "IG",
+    "Sector": "Government",
+    "Type": "TBD",
+    "YTM": 4.354671,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67758",
+    "ISIN": "US91282CGM73",
+    "Location": "B070",
+    "Ask": 0.895352,
+    "Average Cost": 0.952813,
+    "BB Ticker": "T 3.5 02/15/33",
+    "Bid": 0.895352,
+    "Call Date": "",
+    "Country": "Korea",
+    "Coupon Duration": 360,
+    "Coupon Rate": 3.5,
+    "Currency": "USD",
+    "DV01": null,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.9177339999999999
+    },
+    "Group": "RV",
+    "Interest": {
+      "09/29/23": -438000
+    },
+    "Issue": "U.S. GOVT -TREASURY DEPT 3.5% 15-Feb-2033",
+    "Issuer": "U.S. GOVT -TREASURY DEPT",
+    "Last Price Update": "2023-11-27T11:09:59.456Z",
+    "Maturity": "02/15/2033",
+    "Mid": 0.895352,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": -438000,
+    "Original Face": 1000,
+    "Quantity": -438000,
+    "Rating Class": "IG",
+    "Sector": "Government",
+    "Type": "TBD",
+    "YTM": null,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6775b",
+    "ISIN": "US91282CGH88",
+    "Location": "B0711",
+    "Ask": 0.948477,
+    "Average Cost": 0.96428516,
+    "BB Ticker": "T 3.5 01/31/28",
+    "Bid": 0.948477,
+    "Call Date": "",
+    "Country": "Philippines",
+    "Coupon Duration": 360,
+    "Coupon Rate": 3.5,
+    "Currency": "USD",
+    "DV01": null,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.954688
+    },
+    "Group": "RV",
+    "Interest": {
+      "09/29/23": -1000000
+    },
+    "Issue": "U.S. GOVT -TREASURY DEPT 3.5% 31-Jan-2028",
+    "Issuer": "U.S. GOVT -TREASURY DEPT",
+    "Last Price Update": "2023-11-27T11:09:59.456Z",
+    "Maturity": "01/31/2028",
+    "Mid": 0.948477,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": -1000000,
+    "Original Face": 1000,
+    "Quantity": -1000000,
+    "Rating Class": "IG",
+    "Sector": "Government",
+    "Type": "TBD",
+    "YTM": null,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "6564789ac6f3e68771359fd8",
+    "ISIN": "USY5951MAA00",
+    "Location": "B219",
+    "Ask": 0.99878,
+    "Average Cost": 0.98425,
+    "BB Ticker": "MEDCIJ 8.96 04/27/29 REGS",
+    "Bid": 0.9921800000000001,
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/10": 196850
+    },
+    "Country": "Singapore",
+    "Coupon Rate": 8.96,
+    "Currency": "USD",
+    "DV01": -83.71061237342303,
+    "Day Rlzd K G/L": {
+      "20/10/2023": 0
+    },
+    "Entry Price": {
+      "2023/10": 0.98425
+    },
+    "Group": "CE",
+    "Interest": {
+      "10/27/23": 200000
+    },
+    "Issue": "MEDCIJ 8.96 04/27/29 REGS",
+    "Issuer": "MEDCO MAPLE TREE PTE LTD",
+    "Last Modified Date": "2023-11-27T11:08:10.751Z",
+    "Last Price Update": "2023-11-30T15:29:07.875Z",
+    "Maturity": "04/27/2029",
+    "Mid": 0.99548,
+    "Monthly Capital Gains Rlzd": {
+      "2023/10": 0
+    },
+    "Net": 196850,
+    "Original Face": 1000,
+    "Quantity": 200000,
+    "Rating Class": "HY",
+    "Sector": "Energy",
+    "Type": "BND",
+    "YTM": 9.26928,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "65647960d76b3f9988ec67e2",
+    "ISIN": "XS2673651217",
+    "Location": "B228",
+    "Average Cost": 1,
+    "BB Ticker": "FUKOKU V6.8 PERP",
+    "Call Date": "11/14/2033",
+    "Cost MTD Ptf": {
+      "2023/11": 1000000
+    },
+    "Country": "Japan",
+    "Coupon Duration": 360,
+    "Coupon Rate": 6.8,
+    "Currency": "USD",
+    "Day Rlzd K G/L": {
+      "07/11/2023": 0,
+      "08/11/2023": 2999.9999999998918
+    },
+    "Entry Price": {
+      "2023/11": 1
+    },
+    "Group": "CE",
+    "Interest": {
+      "11/14/23": 0
+    },
+    "Issue": "FUKOKU 6.8 PERP",
+    "Issuer": "Fukoku Life Ins",
+    "Last Modified Date": "2023-11-27T11:11:28.722Z",
+    "Maturity": "11/14/2093",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 2999.9999999998918
+    },
+    "Net": -3000,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "IG",
+    "Sector": "Insurance",
+    "Type": "FRN",
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "65647960d76b3f9988ec67e3",
+    "ISIN": "AU3CB0304376",
+    "Location": "B229",
+    "Average Cost": 1.0043125,
+    "BB Ticker": "WSTP V7.199 11/15/38 MTN",
+    "Call Date": "11/15/2033",
+    "Cost MTD Ptf": {
+      "2023/11": 1600800
+    },
+    "Country": "Australia",
+    "Coupon Duration": 360,
+    "Coupon Rate": 7.199,
+    "Currency": "AUD",
+    "Day Rlzd K G/L": {
+      "08/11/2023": 6099.9999999999945
+    },
+    "Entry Price": {
+      "2023/11": 1.005
+    },
+    "Group": "VI",
+    "Interest": {
+      "11/15/23": 0
+    },
+    "Issue": "WSTP 7.199 11/15/38 MTN",
+    "Issuer": "WESTPAC BANKING CORPORAT",
+    "Last Modified Date": "2023-11-27T11:11:28.722Z",
+    "Maturity": "11/15/2038",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 6099.9999999999945
+    },
+    "Net": -6100,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "holdPortfXrate": 1.536216525843082
+  },
+  {
+    "_id": "656445e4940f329586a67748",
+    "ISIN": "US718286CW51",
+    "Location": "B0710",
+    "Ask": 0.9664790000000001,
+    "Average Cost": 1.019375,
+    "BB Ticker": "PHILIP 5 07/17/33",
+    "Bid": 0.9664790000000001,
+    "Call Date": "",
+    "Country": "Philippines",
+    "Coupon Duration": 360,
+    "Coupon Rate": 5,
+    "Currency": "USD",
+    "DV01": null,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.964825
+    },
+    "Group": "RV",
+    "Interest": {
+      "09/29/23": 800000
+    },
+    "Issue": "Philippines 4.625% 17-Jul-2028",
+    "Issuer": "Philippines",
+    "Last Price Update": "2023-11-27T11:09:59.455Z",
+    "Maturity": "07/17/2033",
+    "Mid": 0.9664790000000001,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 800000,
+    "Original Face": 1000,
+    "Quantity": 800000,
+    "Rating Class": "IG",
+    "Sector": "Government",
+    "Type": "TBD",
+    "YTM": null,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6774d",
+    "ISIN": "USG84228EH74",
+    "Location": "B129",
+    "Ask": 0.97625,
+    "Average Cost": 0.8675,
+    "BB Ticker": "STANLN V6 PERP REGS",
+    "Bid": 0.96125,
+    "Call Date": "07/26/2025",
+    "Country": "Singapore",
+    "Coupon Duration": 360,
+    "Coupon Rate": 6,
+    "Currency": "USD",
+    "DV01": -38.15247115529985,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.9562999999999999
+    },
+    "Group": "VI",
+    "Interest": {
+      "09/29/23": 200000
+    },
+    "Issue": "STANDARD CHARTERED BANK 6.0% Perpr Regs",
+    "Issuer": "STANDARD CHARTERED BANK",
+    "Last Price Update": "2023-11-30T15:29:07.876Z",
+    "Maturity": "07/28/2070",
+    "Mid": 0.96875,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": 200000,
+    "Original Face": 1000,
+    "Quantity": 200000,
+    "Rating Class": "IG",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "YTM": 7.745204,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6774e",
+    "ISIN": "XS2428496637",
+    "Location": "B0571",
+    "Average Cost": 0.884,
+    "BB Ticker": "STANLN V2.608 01/12/28 REGS",
+    "Cost MTD Ptf": "0",
+    "Country": "Singapore",
+    "Coupon Rate": 2.608,
+    "Currency": "USD",
+    "Day Rlzd K G/L": {
+      "27/11/2023": 5049.999999999999
+    },
+    "Entry Price": {
+      "2023/11": 0.8941
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 500000,
+      "11/29/23": -500000
+    },
+    "Issue": "STANLN 2.608 01/12/28 REGS",
+    "Last Modified Date": "2023-11-30T05:22:50.095Z",
+    "Maturity": "12/01/2028",
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0,
+      "2023/11": 5049.999999999999
+    },
+    "Net": 47987.56,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Type": "FRN"
+  },
+  {
+    "_id": "656445e4940f329586a67759",
+    "ISIN": "US91282CGM73",
+    "Location": "H2991",
+    "Ask": 0.895352,
+    "Average Cost": 0.952813,
+    "BB Ticker": "T 3.5 02/15/33",
+    "Bid": 0.895352,
+    "Call Date": "",
+    "Country": "H",
+    "Coupon Duration": 360,
+    "Coupon Rate": 3.5,
+    "Currency": "USD",
+    "DV01": null,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.9177339999999999
+    },
+    "Group": "Hedge",
+    "Interest": {
+      "09/29/23": -750000
+    },
+    "Issue": "U.S. GOVT -TREASURY DEPT 3.5% 15-Feb-2033",
+    "Issuer": "U.S. GOVT -TREASURY DEPT",
+    "Last Price Update": "2023-11-27T11:09:59.456Z",
+    "Maturity": "02/15/2033",
+    "Mid": 0.895352,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": -750000,
+    "Original Face": 1000,
+    "Quantity": -750000,
+    "Rating Class": "IG",
+    "Sector": "Government",
+    "Type": "TBD",
+    "YTM": null,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6775a",
+    "ISIN": "US91282CGM73",
+    "Location": "B0710",
+    "Ask": 0.895352,
+    "Average Cost": 0.952813,
+    "BB Ticker": "T 3.5 02/15/33",
+    "Bid": 0.895352,
+    "Call Date": "",
+    "Country": "Philippines",
+    "Coupon Duration": 360,
+    "Coupon Rate": 3.5,
+    "Currency": "USD",
+    "DV01": null,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.9177339999999999
+    },
+    "Group": "RV",
+    "Interest": {
+      "09/29/23": -950000
+    },
+    "Issue": "U.S. GOVT -TREASURY DEPT 3.5% 15-Feb-2033",
+    "Issuer": "U.S. GOVT -TREASURY DEPT",
+    "Last Price Update": "2023-11-27T11:09:59.456Z",
+    "Maturity": "02/15/2033",
+    "Mid": 0.895352,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": -950000,
+    "Original Face": 1000,
+    "Quantity": -950000,
+    "Rating Class": "IG",
+    "Sector": "Government",
+    "Type": "TBD",
+    "YTM": null,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a6775c",
+    "ISIN": "US912810TN81",
+    "Location": "B161",
+    "Ask": 0.85921875,
+    "Average Cost": 0.9523437593,
+    "BB Ticker": "T 3.625 02/15/53",
+    "Bid": 0.85875,
+    "Call Date": "",
+    "Country": "Thailand",
+    "Coupon Duration": 360,
+    "Coupon Rate": 3.625,
+    "Currency": "USD",
+    "DV01": 785.5678334362309,
+    "Daily P&L Rlzd": 0,
+    "Day Rlzd K G/L": {},
+    "Entry Price": {
+      "2023/09": 0.827422
+    },
+    "Group": "RV",
+    "Interest": {
+      "09/29/23": -540000
+    },
+    "Issue": "U.S. GOVT -TREASURY DEPT 3.625% 15-Feb-2053",
+    "Issuer": "U.S. GOVT -TREASURY DEPT",
+    "Last Price Update": "2023-11-30T15:29:07.878Z",
+    "Maturity": "02/15/2053",
+    "Mid": 0.858984375,
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0
+    },
+    "Net": -540000,
+    "Original Face": 1000,
+    "Quantity": -540000,
+    "Rating Class": "IG",
+    "Sector": "Government",
+    "Type": "TBD",
+    "YTM": 4.547314,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "656445e4940f329586a67763",
+    "ISIN": "USG98149AG59",
+    "Location": "B1071",
+    "Average Cost": 0.9245,
+    "BB Ticker": "WYNMAC 5.5 01/15/26 REGS",
+    "Cost MTD Ptf": "0",
+    "Country": "Macau",
+    "Coupon Rate": 5.5,
+    "Currency": "USD",
+    "Day Rlzd K G/L": {
+      "27/11/2023": 14399.999999999945
+    },
+    "Entry Price": {
+      "2023/11": 0.9484999999999999
+    },
+    "Group": "CE",
+    "Interest": {
+      "09/29/23": 600000,
+      "11/29/23": -600000
+    },
+    "Issue": "WYNMAC 5 ½ 01/15/26 REGS",
+    "Last Modified Date": "2023-11-30T05:22:50.094Z",
+    "Maturity": "15/01/2026",
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0,
+      "2023/11": 14399.999999999945
+    },
+    "Net": 18616.670000000042,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Type": "BND"
+  },
+  {
+    "_id": "6564789ac6f3e68771359fd2",
+    "ISIN": "USN6000DAA11",
+    "Location": "B214",
+    "Ask": 0.9263800000000001,
+    "Average Cost": 0.907,
+    "BB Ticker": "MONDFI 5.125 05/07/29 REGS",
+    "Bid": 0.9186799999999999,
+    "Call Date": "11/29/2023",
+    "Cost MTD Ptf": {
+      "2023/10": 453500
+    },
+    "Country": "Vietnam",
+    "Coupon Rate": 5.125,
+    "Currency": "USD",
+    "DV01": -104.2281240753357,
+    "Day Rlzd K G/L": {
+      "06/10/2023": 0
+    },
+    "Entry Price": {
+      "2023/10": 0.907
+    },
+    "Group": "CE",
+    "Interest": {
+      "10/11/23": 500000
+    },
+    "Issue": "MONDFI 5 ⅛ 05/07/29 REGS REGS",
+    "Issuer": "Mong Duong Finance Holdi",
+    "Last Modified Date": "2023-11-27T11:08:10.747Z",
+    "Last Price Update": "2023-11-30T15:29:07.876Z",
+    "Maturity": "05/07/2029",
+    "Mid": 0.92253,
+    "Monthly Capital Gains Rlzd": {
+      "2023/10": 0
+    },
+    "Net": 464461.81,
+    "Original Face": 1000,
+    "Quantity": 500000,
+    "Rating Class": "IG",
+    "Sector": "infrastructure",
+    "Type": "BND",
+    "YTM": 8.519984000000001,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "65647960d76b3f9988ec67e4",
+    "ISIN": "USH42097ES26",
+    "Location": "B231",
+    "Average Cost": 1.0002777777777778,
+    "BB Ticker": "UBS V9.25 PERP REGs",
+    "Call Date": "11/13/2028",
+    "Cost MTD Ptf": {
+      "2023/11": 450125
+    },
+    "Country": "Switzerland",
+    "Coupon Duration": 360,
+    "Coupon Rate": 9.25,
+    "Currency": "USD",
+    "Day Rlzd K G/L": {
+      "08/11/2023": 0,
+      "09/11/2023": 5499.999999999961
+    },
+    "Entry Price": {
+      "2023/11": 1.0005
+    },
+    "Group": "CE",
+    "Interest": {
+      "11/13/23": 0
+    },
+    "Issue": "UBS 9 ¼ PERP REGS REGs",
+    "Issuer": "UBS Group Inc",
+    "Last Modified Date": "2023-11-27T11:11:28.722Z",
+    "Maturity": "11/13/2093",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 5499.999999999961
+    },
+    "Net": -5500,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "65647960d76b3f9988ec67e6",
+    "ISIN": "XS2713768807",
+    "Location": "B232",
+    "Average Cost": 1,
+    "BB Ticker": "ADIBUH 5.695 11/15/28",
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/11": 2000000
+    },
+    "Country": "AUE",
+    "Coupon Duration": 360,
+    "Coupon Rate": 5.695,
+    "Currency": "USD",
+    "Day Rlzd K G/L": {
+      "08/11/2023": 0,
+      "09/11/2023": 9349.999999999925
+    },
+    "Entry Price": {
+      "2023/11": 1
+    },
+    "Group": "VI",
+    "Interest": {
+      "11/15/23": 0
+    },
+    "Issue": "ADIBUH 5.695 11/15/28 DMTN",
+    "Issuer": "ADIB SUKUK COMPANY II LT",
+    "Last Modified Date": "2023-11-27T11:11:28.723Z",
+    "Maturity": "11/15/2028",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 9349.999999999925
+    },
+    "Net": -9350,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "IG",
+    "Sector": "Financials",
+    "Type": "BND",
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "65647960d76b3f9988ec67e8",
+    "ISIN": "DE000BU25000",
+    "Location": "B234",
+    "Average Cost": 0.9837,
+    "BB Ticker": "OBL 2.2 04/13/28 187",
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/11": 482356
+    },
+    "Country": "USA",
+    "Coupon Duration": 360,
+    "Coupon Rate": 2.2,
+    "Currency": "EUR",
+    "Day Rlzd K G/L": {
+      "15/11/2023": 0,
+      "16/11/2023": -342.9999999999622
+    },
+    "Entry Price": {
+      "2023/11": 0.9837
+    },
+    "Group": "VI",
+    "Interest": {
+      "11/16/23": -490000,
+      "11/20/23": 490000
+    },
+    "Issue": "OBL 2.2 04/13/28 #187 187",
+    "Issuer": "Germany Fed  Govt",
+    "Last Modified Date": "2023-11-27T11:11:28.725Z",
+    "Maturity": "04/13/2028",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": -342.9999999999622
+    },
+    "Net": 460.8099999999977,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "IG",
+    "Sector": "",
+    "Type": "TBD",
+    "holdPortfXrate": 0.9174732805214854
+  },
+  {
+    "_id": "65647960d76b3f9988ec67f3",
+    "ISIN": "DE000BU2Z015",
+    "Location": "B241",
+    "Average Cost": 0.99905,
+    "BB Ticker": "DBR 2.6 08/15/33",
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/11": 929107.2
+    },
+    "Country": "France",
+    "Coupon Duration": 360,
+    "Coupon Rate": 2.6,
+    "Currency": "EUR",
+    "Day Rlzd K G/L": {
+      "20/11/2023": 9.300000000060926
+    },
+    "Entry Price": {
+      "2023/11": 0.99905
+    },
+    "Group": "VI",
+    "Interest": {
+      "11/22/23": 0
+    },
+    "Issue": "DBR 2.6 08/15/33",
+    "Issuer": "Germany Fed  Govt",
+    "Last Modified Date": "2023-11-27T11:11:28.726Z",
+    "Maturity": "08/15/2033",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 9.300000000060926
+    },
+    "Net": -9.300000000046566,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "",
+    "Sector": "",
+    "Type": "TBD",
+    "holdPortfXrate": 0.9174732805214854
+  },
+  {
+    "Type": "F",
+    "Group": "Hedge",
+    "Location": "TA4",
+    "Last Modified Date": "2023-12-01T11:23:28.918Z",
+    "BB Ticker": "TYZ3 Comdty",
+    "Issue": "ZN   DEC 23 IB",
+    "ISIN": "ZN   DEC 23 IB",
+    "Currency": "USD",
+    "Quantity": 0,
+    "Net": 3968.75,
+    "Average Cost": 109.9375,
+    "Day Rlzd K G/L": {
+      "02/11/2023": 0,
+      "28/11/2023": -4906.25,
+      "29/11/2023": 937.5
+    },
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": -3968.75
+    },
+    "Cost MTD Ptf": {
+      "2023/11": 438812.5
+    },
+    "Interest": {
+      "11/02/23": -2000,
+      "11/28/23": 2000,
+      "11/29/23": 0
+    },
+    "Original Face": 1000,
+    "Coupon Duration": "",
+    "Entry Price": {
+      "2023/11": 109.9375
+    }
+  },
+  {
+    "_id": "65647960d76b3f9988ec67ef",
+    "ISIN": "US06738ECN31",
+    "Location": "B233",
+    "Ask": 1.00915,
+    "Average Cost": 1,
+    "BB Ticker": "BACR V9.625 PERP",
+    "Bid": 1.00376,
+    "Call Date": "12/15/2029",
+    "Cost MTD Ptf": {
+      "2023/11": 1000000
+    },
+    "Country": "UK",
+    "Coupon Duration": 360,
+    "Coupon Rate": 9.625,
+    "Currency": "USD",
+    "DV01": 0,
+    "Day Rlzd K G/L": {
+      "15/11/2023": 0,
+      "17/11/2023": 249.99999999997246
+    },
+    "Entry Price": {
+      "2023/11": 1
+    },
+    "Group": "CE",
+    "Interest": {
+      "11/22/23": 500000
+    },
+    "Issue": "BACR 9 ⅝ PERP",
+    "Issuer": "BARCLAYS PLC",
+    "Last Modified Date": "2023-11-27T11:11:28.726Z",
+    "Last Price Update": "2023-11-30T15:29:07.872Z",
+    "Maturity": "11/15/2099",
+    "Mid": 1.0064549999999999,
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 249.99999999997246
+    },
+    "Net": 499750,
+    "Original Face": 1000,
+    "Quantity": 500000,
+    "Rating Class": "IG",
+    "Sector": "Banks",
+    "Type": "FRN",
+    "YTM": 9.822986,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "65647960d76b3f9988ec67f1",
+    "ISIN": "XS2724532333",
+    "Location": "B240",
+    "Ask": 1.0325,
+    "Average Cost": 0.9903400000000001,
+    "BB Ticker": "AMSSW 10.5 03/30/29 REGs",
+    "Bid": 1.0275,
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/11": 495170
+    },
+    "Country": "Austria",
+    "Coupon Rate": 10.5,
+    "Currency": "EUR",
+    "DV01": 3.367467450447492,
+    "Day Rlzd K G/L": {
+      "16/11/2023": 0
+    },
+    "Entry Price": {
+      "2023/11": 0.9903400000000001
+    },
+    "Group": "CE",
+    "Interest": {
+      "11/30/23": 500000
+    },
+    "Issue": "AMSSW 10 ½ 03/30/29 REGs",
+    "Issuer": "amsOSRAM AG",
+    "Last Modified Date": "2023-11-27T11:11:28.726Z",
+    "Last Price Update": "2023-11-30T15:29:07.879Z",
+    "Maturity": "03/30/2029",
+    "Mid": 1.03,
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 0
+    },
+    "Net": 495170,
+    "Original Face": 1000,
+    "Quantity": 500000,
+    "Rating Class": "HY",
+    "Sector": "Technology",
+    "Type": "BND",
+    "YTM": 9.874249,
+    "holdPortfXrate": 1.0928499999999999
+  },
+  {
+    "_id": "65647960d76b3f9988ec67f5",
+    "ISIN": "XS2725803162",
+    "Location": "B242",
+    "Average Cost": 1,
+    "BB Ticker": "ADCBUH V8 PERP",
+    "Call Date": "11/27/2028",
+    "Cost MTD Ptf": {
+      "2023/11": 500000
+    },
+    "Country": "AUE",
+    "Coupon Duration": 360,
+    "Coupon Rate": 8,
+    "Currency": "USD",
+    "Day Rlzd K G/L": {
+      "20/11/2023": 0,
+      "21/11/2023": 8249.99999999998
+    },
+    "Entry Price": {
+      "2023/11": 1
+    },
+    "Group": "CE",
+    "Interest": {
+      "11/27/23": 0
+    },
+    "Issue": "ADCBUH 8 PERP",
+    "Issuer": "Abu Dhabi Commercial Ban",
+    "Last Modified Date": "2023-11-27T11:11:28.727Z",
+    "Maturity": "11/27/2073",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 8249.99999999998
+    },
+    "Net": -8250,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "",
+    "Sector": "",
+    "Type": "FRN",
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "65647960d76b3f9988ec67f6",
+    "ISIN": "AU3CB0304772",
+    "Location": "B243",
+    "Average Cost": 1.0017357142857144,
+    "BB Ticker": "CGJAU 6.208 11/28/33 MTN",
+    "Call Date": "08/30/2033",
+    "Cost MTD Ptf": {
+      "2023/11": 2801150
+    },
+    "Country": "Australia",
+    "Coupon Duration": 360,
+    "Coupon Rate": 6.208,
+    "Currency": "AUD",
+    "Day Rlzd K G/L": {
+      "21/11/2023": 3710.0000000004347
+    },
+    "Entry Price": {
+      "2023/11": 1.0017
+    },
+    "Group": "VI",
+    "Interest": {
+      "11/28/23": 0
+    },
+    "Issue": "CGJAU 6.208 11/28/33 MTN",
+    "Issuer": "COLES GROUP TSY PTY LTD",
+    "Last Modified Date": "2023-11-27T11:11:28.728Z",
+    "Maturity": "11/28/2033",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 3710.0000000004347
+    },
+    "Net": -3710,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "",
+    "Sector": "",
+    "Type": "BND",
+    "holdPortfXrate": 1.536216525843082
+  },
+  {
+    "Type": "CF",
+    "Group": "VI",
+    "Location": "B184",
+    "Last Modified Date": "2023-12-01T11:23:28.917Z",
+    "BB Ticker": "BPZ3 Curncy",
+    "Issue": "6BZ3 IB",
+    "ISIN": "6BZ3 IB",
+    "Currency": "USD",
+    "Quantity": -937500,
+    "Net": -1167293.75,
+    "Average Cost": 1.2510769547325105,
+    "Day Rlzd K G/L": {
+      "09/11/2023": 0,
+      "14/11/2023": 0,
+      "15/11/2023": 0,
+      "22/11/2023": -2322.2222222222254,
+      "24/11/2023": -3268.672839506159,
+      "28/11/2023": 0,
+      "30/11/2023": 0
+    },
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": -5590.8950617283845
+    },
+    "Cost MTD Ptf": {
+      "2023/11": 0
+    },
+    "Interest": {
+      "11/09/23": -375000,
+      "11/14/23": -125000,
+      "11/15/23": -62500,
+      "11/22/23": 0,
+      "11/24/23": 0,
+      "11/28/23": -187500,
+      "11/30/23": -187500
+    },
+    "Original Face": 62500,
+    "Coupon Duration": "",
+    "Entry Price": {
+      "2023/11": 1.2709
+    }
+  },
+  {
+    "_id": "65647960d76b3f9988ec67ed",
+    "ISIN": "USU1453PAQ47",
+    "Location": "B235",
+    "Average Cost": 0.99835,
+    "BB Ticker": "CARR 6.2 03/15/54 REGS",
+    "Call Date": "09/15/2053",
+    "Cost MTD Ptf": {
+      "2023/11": 499175
+    },
+    "Country": "USA",
+    "Coupon Duration": 360,
+    "Coupon Rate": 6.2,
+    "Currency": "USD",
+    "Day Rlzd K G/L": {
+      "15/11/2023": 0,
+      "16/11/2023": 5470.00000000003
+    },
+    "Entry Price": {
+      "2023/11": 0.99835
+    },
+    "Group": "VI",
+    "Interest": {
+      "11/30/23": 0
+    },
+    "Issue": "CARR 6.2 03/15/54 REGS",
+    "Issuer": "CARRIER GLOBAL CORPORATI",
+    "Last Modified Date": "2023-11-27T11:11:28.725Z",
+    "Maturity": "03/15/2054",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 5470.00000000003
+    },
+    "Net": -5470,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "IG",
+    "Sector": "Technology",
+    "Type": "BND",
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "65647960d76b3f9988ec67f0",
+    "ISIN": "XS2723536970",
+    "Location": "B238",
+    "Average Cost": 1,
+    "BB Ticker": "QIBKQD 5.581 11/22/28",
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/11": 1000000
+    },
+    "Country": "UAE",
+    "Coupon Duration": 360,
+    "Coupon Rate": 5.581,
+    "Currency": "USD",
+    "Day Rlzd K G/L": {
+      "16/11/2023": 0,
+      "17/11/2023": 1500.0000000000568
+    },
+    "Entry Price": {
+      "2023/11": 1
+    },
+    "Group": "VI",
+    "Interest": {
+      "11/22/23": 0
+    },
+    "Issue": "QIBKQD 5.581 11/22/28",
+    "Issuer": "Qatar Islamic Bank QPSC",
+    "Last Modified Date": "2023-11-27T11:11:28.726Z",
+    "Maturity": "11/22/2028",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 1500.0000000000568
+    },
+    "Net": -1500,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "IG",
+    "Sector": "Banks",
+    "Type": "BND",
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "65647960d76b3f9988ec67f4",
+    "ISIN": "FR001400M4O2",
+    "Location": "B241",
+    "Average Cost": 1.0023900000000001,
+    "BB Ticker": "ACAFP 4.375 11/27/33 EMTN",
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/11": 995710
+    },
+    "Country": "France",
+    "Coupon Duration": 360,
+    "Coupon Rate": 4.375,
+    "Currency": "EUR",
+    "Day Rlzd K G/L": {
+      "20/11/2023": 6680.00000000013
+    },
+    "Entry Price": {
+      "2023/11": 1.0023900000000001
+    },
+    "Group": "VI",
+    "Interest": {
+      "11/27/23": 0
+    },
+    "Issue": "ACAFP 4 ⅜ 11/27/33 EMTN",
+    "Issuer": "CREDIT AGRICOLE SA",
+    "Last Modified Date": "2023-11-27T11:11:28.727Z",
+    "Maturity": "11/27/2033",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 6680.00000000013
+    },
+    "Net": -6680,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "",
+    "Sector": "",
+    "Type": "BND",
+    "holdPortfXrate": 0.9174732805214854
+  },
+  {
+    "_id": "65647960d76b3f9988ec67f8",
+    "ISIN": "XS2541917105",
+    "Location": "B245",
+    "Ask": 1.0055,
+    "Average Cost": 1,
+    "BB Ticker": "CBGLN V11.125 PERP",
+    "Bid": 1.003,
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/11": 500000
+    },
+    "Country": "UK",
+    "Coupon Rate": 11.125,
+    "Currency": "GBP",
+    "DV01": -944.1115098059782,
+    "Day Rlzd K G/L": {
+      "22/11/2023": 0
+    },
+    "Entry Price": {
+      "2023/11": 1
+    },
+    "Group": "CE",
+    "Interest": {
+      "11/29/23": 500000
+    },
+    "Issue": "CBGLN 11 ⅛ PERP",
+    "Issuer": "CLOSE BROTHERS GROUP PLC",
+    "Last Modified Date": "2023-11-27T11:11:28.728Z",
+    "Last Price Update": "2023-11-30T09:29:32.932Z",
+    "Maturity": "05/29/2074",
+    "Mid": 1.0042499999999999,
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 0
+    },
+    "Net": 500000,
+    "Original Face": 1000,
+    "Quantity": 500000,
+    "Rating Class": "",
+    "Sector": "",
+    "Type": "BND",
+    "YTM": 11.315096,
+    "holdPortfXrate": 1.2630499999999998
+  },
+  {
+    "_id": "65647960d76b3f9988ec67e7",
+    "ISIN": "US912810TT51",
+    "Location": "B235",
+    "Average Cost": 0.9094140625,
+    "BB Ticker": "T 4.125 08/15/53",
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/11": 415151.95
+    },
+    "Country": "USA",
+    "Coupon Duration": 365,
+    "Coupon Rate": 4.125,
+    "Currency": "USD",
+    "Day Rlzd K G/L": {
+      "15/11/2023": 0,
+      "16/11/2023": -1368.5569625000044
+    },
+    "Entry Price": {
+      "2023/11": 0.9094140625
+    },
+    "Group": "VI",
+    "Interest": {
+      "11/17/23": 0
+    },
+    "Issue": "T 4 ⅛ 08/15/53",
+    "Issuer": "U.S. GOVT -TREASURY DEPT",
+    "Last Modified Date": "2023-11-27T11:11:28.725Z",
+    "Maturity": "08/15/2053",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": -1368.5569625000044
+    },
+    "Net": 1368.5499999999884,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "IG",
+    "Sector": "",
+    "Type": "TBD",
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "65647960d76b3f9988ec67e9",
+    "ISIN": "DE0001135432",
+    "Location": "B236",
+    "Average Cost": 1.0484,
+    "BB Ticker": "DBR 3.25 07/04/42",
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/11": 671213.27
+    },
+    "Country": "Germany",
+    "Coupon Duration": 360,
+    "Coupon Rate": 3.25,
+    "Currency": "EUR",
+    "Day Rlzd K G/L": {
+      "15/11/2023": 0,
+      "16/11/2023": -3382.469999999953
+    },
+    "Entry Price": {
+      "2023/11": 1.0484
+    },
+    "Group": "VI",
+    "Interest": {
+      "11/17/23": -637000,
+      "11/20/23": 637000
+    },
+    "Issue": "DBR 3 ¼ 07/04/42",
+    "Issuer": "Germany Fed  Govt",
+    "Last Modified Date": "2023-11-27T11:11:28.725Z",
+    "Maturity": "07/04/2042",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": -3382.469999999953
+    },
+    "Net": 3552.159999999916,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "IG",
+    "Sector": "",
+    "Type": "TBD",
+    "holdPortfXrate": 0.9174732805214854
+  },
+  {
+    "_id": "65647960d76b3f9988ec67ea",
+    "ISIN": "DE0001102564",
+    "Location": "B237",
+    "Average Cost": 0.8233499999999999,
+    "BB Ticker": "DBR 0 08/15/31",
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/11": 165264
+    },
+    "Country": "Germany",
+    "Coupon Duration": 360,
+    "Coupon Rate": "0",
+    "Currency": "EUR",
+    "Day Rlzd K G/L": {
+      "15/11/2023": 0,
+      "16/11/2023": -594.0000000000279
+    },
+    "Entry Price": {
+      "2023/11": 0.8233499999999999
+    },
+    "Group": "VI",
+    "Interest": {
+      "11/17/23": -200000,
+      "11/20/23": 200000
+    },
+    "Issue": "DBR 0 08/15/31",
+    "Issuer": "Germany Fed  Govt",
+    "Last Modified Date": "2023-11-27T11:11:28.726Z",
+    "Maturity": "08/15/2031",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": -594.0000000000279
+    },
+    "Net": 594,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "IG",
+    "Sector": "",
+    "Type": "TBD",
+    "holdPortfXrate": 0.9174732805214854
+  },
+  {
+    "_id": "65647960d76b3f9988ec67eb",
+    "ISIN": "FR001400M2G2",
+    "Location": "B237",
+    "Average Cost": 0.9910800000000001,
+    "BB Ticker": "RCFFP 5.75 11/22/31 EMTN",
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/11": 198216
+    },
+    "Country": "Germany",
+    "Coupon Duration": 360,
+    "Coupon Rate": 5.75,
+    "Currency": "EUR",
+    "Day Rlzd K G/L": {
+      "15/11/2023": 0,
+      "16/11/2023": 1633.99999999998
+    },
+    "Entry Price": {
+      "2023/11": 0.9910800000000001
+    },
+    "Group": "VI",
+    "Interest": {
+      "11/22/23": 0
+    },
+    "Issue": "RCFFP 5 ¾ 11/22/31 EMTN",
+    "Issuer": "TELEPERFORMANCE SE",
+    "Last Modified Date": "2023-11-27T11:11:28.725Z",
+    "Maturity": "11/22/2031",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 1633.99999999998
+    },
+    "Net": -1634,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "IG",
+    "Sector": "Technology",
+    "Type": "BND",
+    "holdPortfXrate": 0.9174732805214854
+  },
+  {
+    "_id": "65647960d76b3f9988ec67ec",
+    "ISIN": "XS2722190795",
+    "Location": "B236",
+    "Average Cost": 0.98466,
+    "BB Ticker": "DBHNGR 4 11/23/43 EMTN",
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/11": 689262
+    },
+    "Country": "Germany",
+    "Coupon Duration": 360,
+    "Coupon Rate": 4,
+    "Currency": "EUR",
+    "Day Rlzd K G/L": {
+      "15/11/2023": 0,
+      "16/11/2023": 11424
+    },
+    "Entry Price": {
+      "2023/11": 0.98466
+    },
+    "Group": "VI",
+    "Interest": {
+      "11/23/23": 0
+    },
+    "Issue": "DBHNGR 4 11/23/43 EMTN",
+    "Issuer": "Deutsche Bahn Finance Gm",
+    "Last Modified Date": "2023-11-27T11:11:28.725Z",
+    "Maturity": "11/23/2043",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 11424
+    },
+    "Net": -11424,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "IG",
+    "Sector": "Financials",
+    "Type": "BND",
+    "holdPortfXrate": 0.9174732805214854
+  },
+  {
+    "_id": "65647960d76b3f9988ec67ee",
+    "ISIN": "XS2723575879",
+    "Location": "B234",
+    "Average Cost": 0.9968699999999999,
+    "BB Ticker": "CARR 4.125 05/29/28 REGS",
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/11": 498435
+    },
+    "Country": "USA",
+    "Coupon Duration": 360,
+    "Coupon Rate": 4.125,
+    "Currency": "EUR",
+    "Day Rlzd K G/L": {
+      "15/11/2023": 0,
+      "16/11/2023": 1415.000000000055
+    },
+    "Entry Price": {
+      "2023/11": 0.9968699999999999
+    },
+    "Group": "VI",
+    "Interest": {
+      "11/29/23": 0
+    },
+    "Issue": "CARR 4 ⅛ 05/29/28 REGS",
+    "Issuer": "CARRIER GLOBAL CORPORATI",
+    "Last Modified Date": "2023-11-27T11:11:28.725Z",
+    "Maturity": "05/29/2028",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 1415.000000000055
+    },
+    "Net": -1415,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "IG",
+    "Sector": "Technology",
+    "Type": "BND",
+    "holdPortfXrate": 0.9174732805214854
+  },
+  {
+    "_id": "65647960d76b3f9988ec67f2",
+    "ISIN": "US03217CAB28",
+    "Location": "B239",
+    "Ask": 1.03375,
+    "Average Cost": 0.99087,
+    "BB Ticker": "AMSSW 12.25 03/30/29 144A",
+    "Bid": 1.02625,
+    "Call Date": "",
+    "Cost MTD Ptf": {
+      "2023/11": 990870
+    },
+    "Country": "Austria",
+    "Coupon Rate": 12.25,
+    "Currency": "USD",
+    "DV01": 3.402594736097342,
+    "Day Rlzd K G/L": {
+      "17/11/2023": 0
+    },
+    "Entry Price": {
+      "2023/11": 0.99087
+    },
+    "Group": "CE",
+    "Interest": {
+      "11/30/23": 1000000
+    },
+    "Issue": "AMSSW 12 ¼ 03/30/29 144A",
+    "Issuer": "amsOSRAM AG",
+    "Last Modified Date": "2023-11-27T11:11:28.726Z",
+    "Last Price Update": "2023-11-30T15:29:07.879Z",
+    "Maturity": "03/30/2029",
+    "Mid": 1.03,
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 0
+    },
+    "Net": 990870,
+    "Original Face": 1000,
+    "Quantity": 1000000,
+    "Rating Class": "HY",
+    "Sector": "Technology",
+    "Type": "BND",
+    "YTM": 11.684978,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "65647960d76b3f9988ec67f7",
+    "ISIN": "AU3CB0304756",
+    "Location": "B244",
+    "Average Cost": 1.0000414285714285,
+    "BB Ticker": "CGJAU 5.8 07/15/31 MTN",
+    "Call Date": "04/16/2031",
+    "Cost MTD Ptf": {
+      "2023/11": 2795246
+    },
+    "Country": "Australia",
+    "Coupon Duration": 360,
+    "Coupon Rate": 5.8,
+    "Currency": "AUD",
+    "Day Rlzd K G/L": {
+      "21/11/2023": 4869.999999999908
+    },
+    "Entry Price": {
+      "2023/11": 0.9994700000000001
+    },
+    "Group": "VI",
+    "Interest": {
+      "11/28/23": 0
+    },
+    "Issue": "CGJAU 5.8 07/15/31 MTN",
+    "Issuer": "COLES GROUP TSY PTY LTD",
+    "Last Modified Date": "2023-11-27T11:11:28.728Z",
+    "Maturity": "07/15/2031",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 4869.999999999908
+    },
+    "Net": -4870,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Rating Class": "",
+    "Sector": "",
+    "Type": "BND",
+    "holdPortfXrate": 1.536216525843082
+  },
+  {
+    "_id": "65647960d76b3f9988ec67f9",
+    "ISIN": "AU3CB0267847",
+    "Location": "B246",
+    "Average Cost": 0.90375,
+    "BB Ticker": "ORGAU 2.65 11/11/27 MTN",
+    "Call Date": "08/11/2027",
+    "Cost MTD Ptf": {
+      "2023/11": 271125
+    },
+    "Country": "Australia",
+    "Coupon Rate": 2.65,
+    "Currency": "AUD",
+    "Day Rlzd K G/L": {
+      "24/11/2023": 0
+    },
+    "Entry Price": {
+      "2023/11": 0.90375
+    },
+    "Group": "CE",
+    "Interest": {
+      "11/28/23": 300000
+    },
+    "Issue": "ORGAU 2.65 11/11/27 MTN",
+    "Issuer": "ORIGIN ENERGY FINANCE LI",
+    "Last Modified Date": "2023-11-27T11:11:28.729Z",
+    "Maturity": "11/11/2027",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 0
+    },
+    "Net": 271497,
+    "Original Face": 1000,
+    "Quantity": 300000,
+    "Rating Class": "IG",
+    "Sector": "Energy",
+    "Type": "BND",
+    "holdPortfXrate": 1.536216525843082
+  },
+  {
+    "_id": "65647960d76b3f9988ec67fc",
+    "ISIN": "6EZ3 IB",
+    "Location": "B240",
+    "Ask": 1.09905,
+    "Average Cost": 1.0683,
+    "BB Ticker": "6EZ3 IB",
+    "Bid": 1.099,
+    "Cost MTD Ptf": "0",
+    "Country": "Hedge",
+    "Coupon Duration": "",
+    "Coupon Rate": null,
+    "Currency": "USD",
+    "DV01": "#N/A Field Not Applicable",
+    "Day Rlzd K G/L": {
+      "09/11/2023": 0,
+      "23/11/2023": -3343.7500000000064
+    },
+    "Entry Price": {
+      "2023/11": 1.0683
+    },
+    "Group": "VI",
+    "Interest": {
+      "11/09/23": -625000,
+      "11/23/23": 125000
+    },
+    "Issue": "6EZ3 IB",
+    "Last Modified Date": "2023-11-27T11:11:28.731Z",
+    "Last Price Update": "2023-11-30T10:03:07.316Z",
+    "Maturity": null,
+    "Mid": 1.0990250000000001,
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": -3343.7500000000064
+    },
+    "Net": -530806.25,
+    "Original Face": 125000,
+    "Quantity": -500000,
+    "Type": "BF",
+    "YTM": "#N/A Field Not Applicable",
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "65681c2a30e5ed81bc615f64",
+    "ISIN": "GB00BM8Z2S21",
+    "Location": "B247",
+    "Average Cost": 0.7373999999999999,
+    "BB Ticker": "UKT 0.875 07/31/33",
+    "Cost MTD Ptf": "1509406.2",
+    "Coupon Duration": 360,
+    "Coupon Rate": 0.875,
+    "Currency": "GBP",
+    "Day Rlzd K G/L": {
+      "28/11/2023": 0,
+      "29/11/2023": -5110.199999999958
+    },
+    "Entry Price": {
+      "2023/11": 0.7373999999999999
+    },
+    "Group": "RV",
+    "Interest": {
+      "11/29/23": -2040000,
+      "11/30/23": 2040000
+    },
+    "Issue": "UKT 0 ⅞ 07/31/33",
+    "Last Modified Date": "2023-11-30T05:22:50.097Z",
+    "Maturity": "31/07/2033",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": -5110.199999999958
+    },
+    "Net": 5158.700000000186,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Type": "TBD"
+  },
+  {
+    "_id": "65681c2a30e5ed81bc615f65",
+    "ISIN": "XS2726389427",
+    "Location": "B247",
+    "Average Cost": 0.9928199999999999,
+    "BB Ticker": "PHNXLN V7.75 12/06/53 EMTN",
+    "Cost MTD Ptf": "1985640",
+    "Country": "UK",
+    "Coupon Duration": 360,
+    "Coupon Rate": 7.75,
+    "Currency": "GBP",
+    "Day Rlzd K G/L": {
+      "28/11/2023": 0,
+      "29/11/2023": 11840.000000000073
+    },
+    "Entry Price": {
+      "2023/11": 0.9928199999999999
+    },
+    "Group": "VI",
+    "Interest": {
+      "12/06/23": 0
+    },
+    "Issue": "PHNXLN 7 ¾ 12/06/53 EMTN",
+    "Last Modified Date": "2023-11-30T05:22:50.097Z",
+    "Maturity": "12/06/2053",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 11840.000000000073
+    },
+    "Net": -11840,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Type": "BND"
+  },
+  {
+    "_id": "65681c2a30e5ed81bc615f66",
+    "ISIN": "USY6142NAH18",
+    "Location": "B248",
+    "Ask": 1.00338,
+    "Average Cost": 0.99017,
+    "BB Ticker": "MONGOL 7.875 06/05/29 REGS",
+    "Bid": 1.00041,
+    "Cost MTD Ptf": "693119",
+    "Country": "Mongolia",
+    "Coupon Rate": 7.875,
+    "Currency": "USD",
+    "DV01": -88.10558885311082,
+    "Day Rlzd K G/L": {
+      "28/11/2023": 0
+    },
+    "Entry Price": {
+      "2023/11": 0.99017
+    },
+    "Group": "VI",
+    "Interest": {
+      "12/05/23": 700000
+    },
+    "Issue": "MONGOL 7 ⅞ 06/05/29 REGS",
+    "Last Modified Date": "2023-11-30T05:22:50.096Z",
+    "Last Price Update": "2023-11-30T15:29:07.874Z",
+    "Maturity": "06/05/2029",
+    "Mid": 1.001895,
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 0
+    },
+    "Net": 693119,
+    "Original Face": 1000,
+    "Quantity": 700000,
+    "Type": "BND",
+    "YTM": 7.985281,
+    "holdPortfXrate": 1
+  },
+  {
+    "_id": "6568a8905617e1d6916954c5",
+    "ISIN": "US91282CJN20",
+    "Location": "B250",
+    "Average Cost": 1.00578125,
+    "BB Ticker": "T 4.375 11/30/28",
+    "Cost MTD Ptf": "1067991.41",
+    "Coupon Duration": 365,
+    "Coupon Rate": 4.375,
+    "Currency": "USD",
+    "Day Rlzd K G/L": {
+      "29/11/2023": 0,
+      "30/11/2023": -1863.281249999953
+    },
+    "Entry Price": {
+      "2023/11": 1.00578125
+    },
+    "Interest": {
+      "12/01/23": 0
+    },
+    "Issue": "T 4 ⅜ 11/30/28",
+    "Last Modified Date": "2023-11-30T15:21:52.185Z",
+    "Maturity": "30/11/2028",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": -1863.281249999953
+    },
+    "Net": 1863.280000000028,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Country": "Philippines ",
+    "Group": "RV",
+    "Type": "BND"
+  },
+  {
+    "_id": "6568a8905617e1d6916954c6",
+    "ISIN": "XS2718145779",
+    "Location": "B249",
+    "Average Cost": 1,
+    "BB Ticker": "VMUKLN V0 PERP",
+    "Cost MTD Ptf": "1000000",
+    "Coupon Rate": 0,
+    "Currency": "GBP",
+    "Day Rlzd K G/L": {
+      "29/11/2023": 0
+    },
+    "Entry Price": {
+      "2023/11": 1
+    },
+    "Interest": {
+      "12/08/23": 1000000
+    },
+    "Issue": "VMUKLN 11 PERP",
+    "Last Modified Date": "2023-11-30T15:21:52.183Z",
+    "Maturity": "0",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 0
+    },
+    "Net": 1000000,
+    "Original Face": 1000,
+    "Quantity": 1000000,
+    "Country": "UK",
+    "Group": "VI",
+    "Rating Class": "IG",
+    "Sector": "Financials",
+    "Type": "BND",
+    "Ask": 1.01,
+    "Bid": 1.0070000000000001,
+    "DV01": 409.0352788377771,
+    "Last Price Update": "2023-11-30T15:29:07.878Z",
+    "Mid": 1.0085,
+    "YTM": 11.082183,
+    "holdPortfXrate": 1.26525
+  },
+  {
+    "_id": "6568a8905617e1d6916954c7",
+    "ISIN": "USY7329CAA37",
+    "Location": "B250",
+    "Average Cost": 1,
+    "BB Ticker": "PHILIP 5.045 06/06/29 REGS",
+    "Cost MTD Ptf": "1000000",
+    "Coupon Duration": 360,
+    "Coupon Rate": 5.045,
+    "Currency": "USD",
+    "Day Rlzd K G/L": {
+      "29/11/2023": 0,
+      "30/11/2023": 1299.9999999998568
+    },
+    "Entry Price": {
+      "2023/11": 1
+    },
+    "Interest": {
+      "12/06/23": 0
+    },
+    "Issue": "PHILIP 5.045 06/06/29 REGS",
+    "Last Modified Date": "2023-11-30T15:21:52.184Z",
+    "Maturity": "06/06/2029",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 1299.9999999998568
+    },
+    "Net": -1300,
+    "Original Face": 1000,
+    "Quantity": 0,
+    "Country": "Philippines ",
+    "Group": "RV",
+    "Type": "BND"
+  },
+  {
+    "_id": "6568a8905617e1d6916954c8",
+    "ISIN": "XS2730249997",
+    "Location": "B251",
+    "Average Cost": 1,
+    "BB Ticker": "ISTNBL 10.5 12/06/28 REGS",
+    "Cost MTD Ptf": "500000",
+    "Coupon Rate": 10.5,
+    "Currency": "USD",
+    "Day Rlzd K G/L": {
+      "29/11/2023": 0
+    },
+    "Entry Price": {
+      "2023/11": 1
+    },
+    "Interest": {
+      "12/06/23": 500000
+    },
+    "Issue": "ISTNBL 10 ½ 12/06/28 REGS",
+    "Last Modified Date": "2023-11-30T15:21:52.184Z",
+    "Maturity": "12/06/2028",
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 0
+    },
+    "Net": 500000,
+    "Original Face": 1000,
+    "Quantity": 500000,
+    "Country": "Turkey",
+    "Group": "VI",
+    "Type": "BND",
+    "Ask": 1.0125,
+    "Bid": 1.0075,
+    "DV01": -371.08188692563715,
+    "Last Price Update": "2023-11-30T15:29:07.875Z",
+    "Mid": 1.01,
+    "YTM": 10.496317,
+    "holdPortfXrate": 1
+  },
+  {
+    "Location": "TA4",
+    "Last Modified Date": "2023-12-01T11:23:28.919Z",
+    "BB Ticker": "TYH4 Comdty",
+    "Issue": "ZN   MAR 24 IB",
+    "ISIN": "ZN   MAR 24 IB",
+    "Quantity": -2000,
+    "Net": -219593.75,
+    "Currency": "USD",
+    "Average Cost": 109.796875,
+    "Interest": {
+      "11/29/23": -2000
+    },
+    "Day Rlzd K G/L": {
+      "29/11/2023": 0
+    },
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 0
+    },
+    "Cost MTD Ptf": {
+      "2023/11": 0
+    },
+    "Original Face": 1000,
+    "Entry Price": {
+      "2023/11": 109.796875
+    }
+  }
+][
+  {
+    "Type": "CF",
+    "Group": "VI",
+    "Location": "B184",
+    "Last Modified Date": "2023-12-01T11:25:12.496Z",
+    "BB Ticker": "BPZ3 Curncy",
+    "Issue": "6BZ3 IB",
+    "ISIN": "6BZ3 IB",
+    "Currency": "USD",
+    "Quantity": -937500,
+    "Net": -1167293.75,
+    "Average Cost": 1.2510769547325105,
+    "Day Rlzd K G/L": {
+      "09/11/2023": 0,
+      "14/11/2023": 0,
+      "15/11/2023": 0,
+      "22/11/2023": -2322.2222222222254,
+      "24/11/2023": -3268.672839506159,
+      "28/11/2023": 0,
+      "30/11/2023": 0
+    },
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": -5590.8950617283845
+    },
+    "Cost MTD Ptf": {
+      "2023/11": 0
+    },
+    "Interest": {
+      "11/09/23": -375000,
+      "11/14/23": -125000,
+      "11/15/23": -62500,
+      "11/22/23": 0,
+      "11/24/23": 0,
+      "11/28/23": -187500,
+      "11/30/23": -187500
+    },
+    "Original Face": 62500,
+    "Coupon Duration": "",
+    "Entry Price": {
+      "2023/11": 1.2709
+    }
+  },
+  {
+    "Type": "F",
+    "Group": "Hedge",
+    "Location": "TA3",
+    "Last Modified Date": "2023-12-01T11:25:12.497Z",
+    "BB Ticker": "ESZ3 Index",
+    "Issue": "ESZ3 IB",
+    "ISIN": "ESZ3 IB",
+    "Currency": "USD",
+    "Quantity": -100,
+    "Net": -883698,
+    "Average Cost": 4516.469005165414,
+    "Day Rlzd K G/L": {
+      "03/10/2023": 0,
+      "04/10/2023": 1510.0961538461434,
+      "06/10/2023": 7395.192307692287,
+      "10/10/2023": 0,
+      "12/10/2023": -2391.3136694386594,
+      "19/10/2023": 642.3726611226812,
+      "20/10/2023": 0,
+      "23/10/2023": -454.6610127139047,
+      "24/10/2023": 1020.3389872860953,
+      "25/10/2023": 4109.322025427809,
+      "26/10/2023": -4717.161012713905,
+      "30/10/2023": -3254.6610127139047,
+      "01/11/2023": 0,
+      "02/11/2023": 0,
+      "03/11/2023": -4736.495076957635,
+      "06/11/2023": -3548.8278212286787,
+      "09/11/2023": -2499.7990064920486,
+      "10/11/2023": 0,
+      "13/11/2023": -1249.6295686203212,
+      "14/11/2023": 0,
+      "29/11/2023": -5153.099483458527,
+      "30/11/2023": 0
+    },
+    "Monthly Capital Gains Rlzd": {
+      "2023/09": 0,
+      "2023/10": 3859.5254277946424,
+      "2023/11": -17187.85095675721
+    },
+    "Cost MTD Ptf": {
+      "2023/11": 227962.5
+    },
+    "Interest": {
+      "09/29/23": 2,
+      "10/03/23": 50,
+      "10/04/23": -50,
+      "10/06/23": -100,
+      "10/10/23": -50,
+      "10/12/23": 50,
+      "10/19/23": 100,
+      "10/20/23": 50,
+      "10/23/23": -50,
+      "10/24/23": -50,
+      "10/25/23": 100,
+      "10/26/23": -50,
+      "10/30/23": -50,
+      "11/01/23": -50,
+      "11/02/23": -50,
+      "11/03/23": 0,
+      "11/06/23": 0,
+      "11/09/23": 100,
+      "11/10/23": -100,
+      "11/13/23": 50,
+      "11/14/23": -100,
+      "11/29/23": 50,
+      "11/30/23": -50
+    },
+    "Original Face": 50,
+    "Coupon Duration": "",
+    "Entry Price": {
+      "2023/11": 4559.25
+    }
+  },
+  {
+    "Type": "F",
+    "Group": "Hedge",
+    "Location": "TA4",
+    "Last Modified Date": "2023-12-01T11:25:12.498Z",
+    "BB Ticker": "TYZ3 Comdty",
+    "Issue": "ZN   DEC 23 IB",
+    "ISIN": "ZN   DEC 23 IB",
+    "Currency": "USD",
+    "Quantity": 0,
+    "Net": 3968.75,
+    "Average Cost": 109.9375,
+    "Day Rlzd K G/L": {
+      "02/11/2023": 0,
+      "28/11/2023": -4906.25,
+      "29/11/2023": 937.5
+    },
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": -3968.75
+    },
+    "Cost MTD Ptf": {
+      "2023/11": 438812.5
+    },
+    "Interest": {
+      "11/02/23": -2000,
+      "11/28/23": 2000,
+      "11/29/23": 0
+    },
+    "Original Face": 1000,
+    "Coupon Duration": "",
+    "Entry Price": {
+      "2023/11": 109.9375
+    }
+  },
+  {
+    "Location": "TA4",
+    "Last Modified Date": "2023-12-01T11:25:12.499Z",
+    "BB Ticker": "TYH4 Comdty",
+    "Issue": "ZN   MAR 24 IB",
+    "ISIN": "ZN   MAR 24 IB",
+    "Quantity": -2000,
+    "Net": -219593.75,
+    "Currency": "USD",
+    "Average Cost": 109.796875,
+    "Interest": {
+      "11/29/23": -2000
+    },
+    "Day Rlzd K G/L": {
+      "29/11/2023": 0
+    },
+    "Monthly Capital Gains Rlzd": {
+      "2023/11": 0
+    },
+    "Cost MTD Ptf": {
+      "2023/11": 0
+    },
+    "Original Face": 1000,
+    "Entry Price": {
+      "2023/11": 109.796875
+    }
+  }
+]

@@ -1,54 +1,14 @@
 import { NextFunction, Router } from "express";
 import { image } from "../models/image";
-import {
-  registerUser,
-  checkIfUserExists,
-  sendResetPasswordRequest,
-  resetPassword,
-} from "../controllers/auth";
+import { registerUser, checkIfUserExists, sendResetPasswordRequest, resetPassword } from "../controllers/auth";
 import { Request, Response } from "express";
-import {
-  getDate,
-  verifyToken,
-  formatDateVconFile,
-} from "../controllers/common";
-import {
-  updatePositionPortfolio,
-  getHistoricalPortfolioWithAnalytics,
-  updatePricesPortfolio,
-  uploadPortfolioFromImagine,
-  getTrades,
-  getAllCollectionDatesSinceStartMonth,
-  uploadPortfolioFromLivePortfolio,
-  uploadPortfolioFromMufg,
-  getPortfolio,
-  editPositionPortfolio,
-  editPosition,
-} from "../controllers/portfolioOperations";
-import {
-  bloombergToTriada,
-  uploadTriadaAndReturnFilePath,
-  readMUFGEBlot,
-  readIBEBlot,
-  formatIbTrades,
-  readEmsxRawEBlot,
-  formatEmsxTrades,
-} from "../controllers/portfolioFunctions";
+import { getDate, verifyToken, formatDateVconFile } from "../controllers/common";
+import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, uploadPortfolioFromImagine, getTrades, getAllCollectionDatesSinceStartMonth, uploadPortfolioFromLivePortfolio, uploadPortfolioFromMufg, getPortfolio, editPositionPortfolio, editPosition } from "../controllers/portfolioOperations";
+import { bloombergToTriada, uploadTriadaAndReturnFilePath, readMUFGEBlot, readIBEblot, readIBRawExcel } from "../controllers/portfolioFunctions";
 import { checkIfSecurityExist } from "../controllers/tsImagineOperations";
-import {
-  uploadVconAndReturnFilePath,
-  formatNomuraEBlot,
-  getTriadaTrades,
-} from "../controllers/vconOperation";
-import { getGraphToken, getVcons } from "../controllers/graphApiConnect";
-import {
-  readBBGBlot,
-  createExcelAndReturnPath,
-  formatBBGBlotToMufg,
-  readFxTrades,
-  formatFxTradesToMufg,
-} from "../controllers/mufgOperations";
-import { formatTriadaBlot } from "../controllers/eblot";
+import { uploadArrayAndReturnFilePath, formatNomuraEBlot, getTriadaTrades, formatTriadaBlot, formatIbTrades, formatEmsxTrades, readEmsxRawExcel } from "../controllers/excelFormat";
+import { getFxTrades, getGraphToken, getVcons } from "../controllers/graphApiConnect";
+import { readBBGBlot, createExcelAndReturnPath, formatMufg, formatFxMufg } from "../controllers/mufgOperations";
 
 require("dotenv").config();
 
@@ -65,11 +25,7 @@ const uploadBeforeExcel = multer({
     bucket: process.env.BUCKET,
     projectId: process.env.PROJECTID,
     keyFilename: process.env.KEYPATHFILE,
-    filename: (
-      req: Request,
-      file: image,
-      cb: (err: boolean, fileName: string) => void
-    ) => {
+    filename: (req: Request, file: image, cb: (err: boolean, fileName: string) => void) => {
       cb(false, `/before-excel/${Date.now()}_${file.originalname}`);
     },
   }),
@@ -77,28 +33,20 @@ const uploadBeforeExcel = multer({
 
 const router = Router();
 
-router.get(
-  "/auth",
-  verifyToken,
-  async (req: Request, res: Response, next: NextFunction) => {
-    res.sendStatus(200);
-  }
-);
+router.get("/auth", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+  res.sendStatus(200);
+});
 
-router.get(
-  "/portfolio",
-  verifyToken,
-  async (req: Request, res: Response, next: NextFunction) => {
-    const date: any = req.query.date;
-    let report = await getHistoricalPortfolioWithAnalytics(date);
-    res.send(report);
-  }
-);
+router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+  const date: any = req.query.date;
+  let report = await getHistoricalPortfolioWithAnalytics(date);
+  res.send(report);
+});
 
 router.get("/trades-logs", verifyToken, async (req, res) => {
   try {
     const filePath = path.resolve("trades-logs.txt");
-    const lastLines = await readLastLines.read(filePath, 500);
+    const lastLines = await readLastLines.read(filePath, 4000);
     res.send(lastLines);
   } catch (error) {
     res.status(500).send("An error occurred while reading the file.");
@@ -126,373 +74,266 @@ router.get("/trades", verifyToken, async (req, res) => {
   }
 });
 
-router.post(
-  "/login",
-  async (req: Request, res: Response, next: NextFunction) => {
-    let data = req.body;
-    let username = data.username;
-    let password = data.password;
-    let user = await checkIfUserExists(username, password);
-    res.send(user);
-  }
-);
+router.post("/login", async (req: Request, res: Response, next: NextFunction) => {
+  let data = req.body;
+  let username = data.username;
+  let password = data.password;
+  let user = await checkIfUserExists(username, password);
+  res.send(user);
+});
 
-router.post(
-  "/signUp",
-  async (req: Request, res: Response, next: NextFunction) => {
-    let data = req.body;
-    let email = data.email;
-    let password = data.password;
-    let verificationCode = data.verificationCode;
-    let result = await registerUser(email, password, verificationCode);
-    res.send(result);
-  }
-);
+router.post("/signUp", async (req: Request, res: Response, next: NextFunction) => {
+  let data = req.body;
+  let email = data.email;
+  let password = data.password;
+  let verificationCode = data.verificationCode;
+  let result = await registerUser(email, password, verificationCode);
+  res.send(result);
+});
 
-router.post(
-  "/elec-blot",
-  verifyToken,
-  uploadBeforeExcel.any(),
-  async (req: Request | any, res: Response, next: NextFunction) => {
-    const fileName = req.files[0].filename;
-    const path =
-      "https://storage.googleapis.com/capital-trade-396911.appspot.com" +
-      fileName;
-    const trader = req.body.trader;
-    const startegy = req.body.startegy;
-    let arr: any = await bloombergToTriada(path, trader, startegy); // array
-    if (arr.error) {
-      res.send(arr.error);
-    } else {
-      let eBlotName = await uploadTriadaAndReturnFilePath(arr); //
-      let downloadEBlotName =
-        "https://storage.googleapis.com/capital-trade-396911.appspot.com/" +
-        eBlotName;
-      res.send(downloadEBlotName);
-    }
+router.post("/elec-blot", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  const fileName = req.files[0].filename;
+  const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+  const trader = req.body.trader;
+  const startegy = req.body.startegy;
+  let arr: any = await bloombergToTriada(path, trader, startegy); // array
+  if (arr.error) {
+    res.send(arr.error);
+  } else {
+    let eBlotName = await uploadTriadaAndReturnFilePath(arr); //
+    let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + eBlotName;
+    res.send(downloadEBlotName);
   }
-);
+});
 
-router.post(
-  "/upload-trades",
-  verifyToken,
-  uploadBeforeExcel.any(),
-  async (req: Request | any, res: Response, next: NextFunction) => {
-    try {
-      let files = req.files;
-      let bbg = "",
-        ib = "",
-        emsx = "";
-      for (let index = 0; index < files.length; index++) {
-        if (files[index].fieldname == "bbg") {
-          const fileName = req.files[index].filename;
-          const path =
-            "https://storage.googleapis.com/capital-trade-396911.appspot.com" +
-            fileName;
-          bbg = path;
-        } else if (files[index].fieldname == "ib") {
-          const fileName = req.files[index].filename;
-          const path =
-            "https://storage.googleapis.com/capital-trade-396911.appspot.com" +
-            fileName;
-          ib = path;
-        } else if (files[index].fieldname == "emsx") {
-          const fileName = req.files[index].filename;
-          const path =
-            "https://storage.googleapis.com/capital-trade-396911.appspot.com" +
-            fileName;
-          emsx = path;
-        }
+router.post("/upload-trades", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let files = req.files;
+    let bbg = "",
+      ib = "",
+      emsx = "";
+    for (let index = 0; index < files.length; index++) {
+      if (files[index].fieldname == "bbg") {
+        const fileName = req.files[index].filename;
+        const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+        bbg = path;
+      } else if (files[index].fieldname == "ib") {
+        const fileName = req.files[index].filename;
+        const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+        ib = path;
+      } else if (files[index].fieldname == "emsx") {
+        const fileName = req.files[index].filename;
+        const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+        emsx = path;
       }
-
-      let action: any = await updatePositionPortfolio(bbg, ib, emsx); //updatePositionPortfolio
-      console.log(action);
-      if (action?.error) {
-        res.send({ error: action.error });
-      } else {
-        res.sendStatus(200);
-      }
-    } catch (error) {
-      console.log(error);
-      res.send({ error: "File Template is not correct" });
     }
-  }
-);
 
-router.post(
-  "/update-prices",
-  verifyToken,
-  uploadBeforeExcel.any(),
-  async (req: Request | any, res: Response, next: NextFunction) => {
-    try {
-      const fileName = req.files[0].filename;
-      const path =
-        "https://storage.googleapis.com/capital-trade-396911.appspot.com" +
-        fileName;
-      let action: any = await updatePricesPortfolio(path);
-      console.log(action);
-      if (action?.error) {
-        res.send({ error: action.error });
-      } else {
-        res.sendStatus(200);
-      }
-    } catch (error) {
-      res.send({ error: "File Template is not correct" });
-    }
-  }
-);
-
-router.post(
-  "/check-isin",
-  verifyToken,
-  uploadBeforeExcel.any(),
-  async (req: Request | any, res: Response, next: NextFunction) => {
-    const fileName = req.files[0].filename;
-    const path =
-      "https://storage.googleapis.com/capital-trade-396911.appspot.com" +
-      fileName;
-    let action = await checkIfSecurityExist(path);
-
+    let action: any = await updatePositionPortfolio(bbg, ib, emsx); //updatePositionPortfolio
+    console.log(action);
     if (action?.error) {
       res.send({ error: action.error });
     } else {
-      res.send(action);
+      res.sendStatus(200);
     }
+  } catch (error) {
+    console.log(error);
+    res.send({ error: "File Template is not correct" });
   }
-);
+});
 
-router.post(
-  "/nomura-excel",
-  verifyToken,
-  uploadBeforeExcel.any(),
-  async (req: Request | any, res: Response, next: NextFunction) => {
-    let data = req.body;
-    let pathName =
-      formatDateVconFile(data.timestamp_start) +
-      "xxxx" +
-      formatDateVconFile(data.timestamp_end);
-    let token = await getGraphToken();
-    let trades = await getTriadaTrades("vcons");
-    let array: any = await getVcons(
-      token,
-      data.timestamp_start,
-      data.timestamp_end,
-      trades
-    );
-    if (array.length == 0) {
-      res.send({ error: "No Trades" });
+router.post("/update-prices", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    const fileName = req.files[0].filename;
+    const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+    let action: any = await updatePricesPortfolio(path);
+    console.log(action);
+    if (action?.error) {
+      res.send({ error: action.error });
     } else {
-      let vcons = await uploadVconAndReturnFilePath(array, pathName);
-      let downloadEBlotName =
-        "https://storage.googleapis.com/capital-trade-396911.appspot.com/" +
-        vcons;
+      res.sendStatus(200);
+    }
+  } catch (error) {
+    res.send({ error: "File Template is not correct" });
+  }
+});
+
+router.post("/check-isin", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  const fileName = req.files[0].filename;
+  const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+  let action = await checkIfSecurityExist(path);
+
+  if (action?.error) {
+    res.send({ error: action.error });
+  } else {
+    res.send(action);
+  }
+});
+
+router.post("/nomura-excel", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  let data = req.body;
+  let pathName = formatDateVconFile(data.timestamp_start) + "_" + formatDateVconFile(data.timestamp_end) + "_";
+  let token = await getGraphToken();
+  let trades = await getTriadaTrades("vcons");
+  let array: any = await getVcons(token, data.timestamp_start, data.timestamp_end, trades);
+  if (array.length == 0) {
+    res.send({ error: "No Trades" });
+  } else {
+    let vcons = await uploadArrayAndReturnFilePath(array, pathName);
+    let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + vcons;
+    res.send(downloadEBlotName);
+  }
+});
+
+router.post("/vcon-excel", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  let data = req.body;
+  let pathName = "vcon_" + formatDateVconFile(data.timestamp_start) + "_" + formatDateVconFile(data.timestamp_end) + "_";
+  let token = await getGraphToken();
+  let trades = await getTriadaTrades("vcons");
+  let array: any = await getVcons(token, data.timestamp_start, data.timestamp_end, trades);
+  if (array.length == 0) {
+    res.send({ error: "No Trades" });
+  } else {
+    let vcons = await uploadArrayAndReturnFilePath(array, pathName);
+    let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + vcons;
+    res.send(downloadEBlotName);
+  }
+});
+
+router.post("/ib-excel", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let files = req.files;
+    const fileName = req.files[0].filename;
+    const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+    let trades = await getTriadaTrades("ib");
+    let data = await readIBRawExcel(path);
+    let portfolio = await getPortfolio();
+    let action = formatIbTrades(data, trades, portfolio);
+
+    if (!action) {
+      res.send({ error: action });
+    } else {
+      let ib = await uploadArrayAndReturnFilePath(action, "ib_formatted");
+      let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + ib;
       res.send(downloadEBlotName);
     }
+  } catch (error) {
+    console.log(error);
+    res.send({ error: "File Template is not correct" });
   }
-);
+});
 
-router.post(
-  "/vcon-excel",
-  verifyToken,
-  uploadBeforeExcel.any(),
-  async (req: Request | any, res: Response, next: NextFunction) => {
-    let data = req.body;
-    let pathName =
-      formatDateVconFile(data.timestamp_start) +
-      "xxxx" +
-      formatDateVconFile(data.timestamp_end);
-    let token = await getGraphToken();
-    let trades = await getTriadaTrades("vcons");
-    let array: any = await getVcons(
-      token,
-      data.timestamp_start,
-      data.timestamp_end,
-      trades
-    );
-    if (array.length == 0) {
-      res.send({ error: "No Trades" });
-    } else {
-      let vcons = await uploadVconAndReturnFilePath(array, pathName);
-      let downloadEBlotName =
-        "https://storage.googleapis.com/capital-trade-396911.appspot.com/" +
-        vcons;
-      res.send(downloadEBlotName);
-    }
-  }
-);
+router.post("/mufg", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  let tradesCount: number = req.body.tradesCount;
+  let action: any = await formatMufg(req.files, tradesCount);
 
-router.post(
-  "/ib-excel",
-  verifyToken,
-  uploadBeforeExcel.any(),
-  async (req: Request | any, res: Response, next: NextFunction) => {
-    try {
-      let files = req.files;
-      const fileName = req.files[0].filename;
-      const path =
-        "https://storage.googleapis.com/capital-trade-396911.appspot.com" +
-        fileName;
-      let trades = await getTriadaTrades("ib");
-      let data = await readIBEBlot(path);
-      let portfolio = await getPortfolio();
-      let action = formatIbTrades(data, trades, portfolio);
+  let url = await uploadArrayAndReturnFilePath(action, "mufg_formatted");
+  url = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + url;
+  res.send(url);
+});
 
-      if (!action) {
-        res.send({ error: action });
-      } else {
-        let ib = await uploadVconAndReturnFilePath(action, "ibFromated");
-        let downloadEBlotName =
-          "https://storage.googleapis.com/capital-trade-396911.appspot.com/" +
-          ib;
-        res.send(downloadEBlotName);
-      }
-    } catch (error) {
-      console.log(error);
-      res.send({ error: "File Template is not correct" });
-    }
-  }
-);
+router.post("/mufg-fx", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  let tradesCount: number = req.body.tradesCount;
 
-router.post(
-  "/mufg",
-  verifyToken,
-  uploadBeforeExcel.any(),
-  async (req: Request | any, res: Response, next: NextFunction) => {
-    let tradesCount: number = req.body.countTrades;
-    let action: any = await formatBBGBlotToMufg(req.files, tradesCount);
-    console.log(req.body);
-    let url = await createExcelAndReturnPath(action, getDate(null));
+  let action: any = await formatFxMufg(req.files, tradesCount);
+  let url = await uploadArrayAndReturnFilePath(action, "fx_mufg_formatted");
+  url = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + url;
+  res.send(url);
+});
+
+router.post("/centerlized-blotter", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let action: any = await formatTriadaBlot(req.files);
+
+    let url = await createExcelAndReturnPath(action, "centerlizedBlot");
     url = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + url;
-      res.send(url);
+
+    res.send(url);
+  } catch (error) {
+    console.log(error);
+    res.send({ error: error });
   }
-);
+});
 
-router.post(
-  "/mufg-fx",
-  verifyToken,
-  uploadBeforeExcel.any(),
-  async (req: Request | any, res: Response, next: NextFunction) => {
-    let action: any = await readFxTrades(req.files[0]["filename"]);
-    // let url = await uploadMufgTest(action, "test")
-    // url = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + url
-    res.send(200);
-  }
-);
-
-router.post(
-  "/centerlized-blotter",
-  verifyToken,
-  uploadBeforeExcel.any(),
-  async (req: Request | any, res: Response, next: NextFunction) => {
-    try {
-      let action: any = await formatTriadaBlot(req.files);
-
-      let url = await createExcelAndReturnPath(action, "centerlizedBlot");
-      url =
-        "https://storage.googleapis.com/capital-trade-396911.appspot.com/" +
-        url;
-
-      res.send(url);
-    } catch (error) {
-      console.log(error);
-      res.send({ error: error });
+router.post("/bulk-edit", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    const fileName = req.files[0].filename;
+    const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+    let action: any = await editPositionPortfolio(path);
+    console.log(action);
+    if (action?.error) {
+      res.send({ error: action.error });
+    } else {
+      res.sendStatus(200);
     }
+  } catch (error) {
+    console.log(error);
+    res.send({ error: "File Template is not correct" });
   }
-);
+});
 
-router.post(
-  "/bulk-edit",
-  verifyToken,
-  uploadBeforeExcel.any(),
-  async (req: Request | any, res: Response, next: NextFunction) => {
-    try {
-      const fileName = req.files[0].filename;
-      const path =
-        "https://storage.googleapis.com/capital-trade-396911.appspot.com" +
-        fileName;
-      let action: any = await editPositionPortfolio(path);
-      console.log(action);
-      if (action?.error) {
-        res.send({ error: action.error });
-      } else {
-        res.sendStatus(200);
-      }
-    } catch (error) {
-      console.log(error);
-      res.send({ error: "File Template is not correct" });
+router.post("/emsx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let files = req.files;
+    const fileName = req.files[0].filename;
+    const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+    let trades = await getTriadaTrades("emsx");
+    let data = await readEmsxRawExcel(path);
+    let portfolio = await getPortfolio();
+
+    let action = formatEmsxTrades(data, trades, portfolio);
+    if (!action) {
+      res.send({ error: action });
+    } else {
+      let emsx = await uploadArrayAndReturnFilePath(action, "emsx_formated");
+      let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + emsx;
+      res.send(downloadEBlotName);
     }
+  } catch (error) {
+    console.log(error);
+    res.send({ error: "File Template is not correct" });
   }
-);
+});
 
-router.post(
-  "/emsx-excel",
-  verifyToken,
-  uploadBeforeExcel.any(),
-  async (req: Request | any, res: Response, next: NextFunction) => {
-    try {
-      let files = req.files;
-      const fileName = req.files[0].filename;
-      const path =
-        "https://storage.googleapis.com/capital-trade-396911.appspot.com" +
-        fileName;
-      let trades = await getTriadaTrades("emsx");
-      let data = await readEmsxRawEBlot(path);
-      let portfolio = await getPortfolio();
+router.post("/send-reset-code", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+  let data = req.body;
+  console.log(data, "x");
+  let result = await sendResetPasswordRequest(data.email);
+  console.log(result);
+  res.send(result);
+});
 
-      let action = formatEmsxTrades(data, trades, portfolio);
-      if (!action) {
-        res.send({ error: action });
-      } else {
-        let emsx = await uploadVconAndReturnFilePath(action, "emsxFormated");
-        let downloadEBlotName =
-          "https://storage.googleapis.com/capital-trade-396911.appspot.com/" +
-          emsx;
-        res.send(downloadEBlotName);
-      }
-    } catch (error) {
-      console.log(error);
-      res.send({ error: "File Template is not correct" });
-    }
+router.post("/reset-password", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+  let data = req.body;
+  let result = await resetPassword(data.email, data.code, data.password);
+
+  res.send(result);
+});
+
+router.post("/edit-position", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let action = await editPosition(req.body);
+
+    res.send(action);
+  } catch (error) {
+    console.log(error);
+    res.send({ error: "Template is not correct" });
   }
-);
+});
 
-router.post(
-  "/send-reset-code",
-  verifyToken,
-  async (req: Request, res: Response, next: NextFunction) => {
-    let data = req.body;
-    console.log(data, "x");
-    let result = await sendResetPasswordRequest(data.email);
-    console.log(result);
-    res.send(result);
+router.post("/fx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  let data = req.body;
+  let pathName = "fx_" + formatDateVconFile(data.timestamp_start) + "_" + formatDateVconFile(data.timestamp_end) + "_";
+  let token = await getGraphToken();
+  // let trades = await getTriadaTrades("fx");
+  let array: any = await getFxTrades(token, data.timestamp_start, data.timestamp_end, []);
+
+  if (array.length == 0) {
+    res.send({ error: "No Trades" });
+  } else {
+    let fxTrades = await uploadArrayAndReturnFilePath(array, pathName);
+    let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + fxTrades;
+    res.send(downloadEBlotName);
   }
-);
-
-router.post(
-  "/reset-password",
-  verifyToken,
-  async (req: Request, res: Response, next: NextFunction) => {
-    let data = req.body;
-    let result = await resetPassword(data.email, data.code, data.password);
-
-    res.send(result);
-  }
-);
-
-router.post(
-  "/edit-position",
-  verifyToken,
-  uploadBeforeExcel.any(),
-  async (req: Request | any, res: Response, next: NextFunction) => {
-    try {
-      let action = await editPosition(req.body);
-      console.log("xxxxxxx", action);
-      res.send(action);
-    } catch (error) {
-      console.log(error);
-      res.send({ error: "File Template is not correct" });
-    }
-  }
-);
+});
 
 export default router;
