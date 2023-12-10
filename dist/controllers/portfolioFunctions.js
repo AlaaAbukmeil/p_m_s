@@ -10,15 +10,15 @@ const storage = new Storage({ keyFilename: process.env.KEYPATHFILE });
 const { PassThrough } = require("stream");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const mongoose = require("mongoose");
-const uri = "mongodb+srv://alaa:" + process.env.MONGODBPASSWORD + "@atlascluster.zpfpywq.mongodb.net/?retryWrites=true&w=majority";
-const client = new MongoClient(uri, {
+const common_2 = require("./common");
+const client = new MongoClient(common_2.uri, {
     serverApi: {
         version: ServerApiVersion.v1,
         strict: true,
         deprecationErrors: true,
     },
 });
-mongoose.connect(uri, {
+mongoose.connect(common_2.uri, {
     useNewUrlParser: true,
 });
 function calculateUSTreasuryPrice(input) {
@@ -371,8 +371,8 @@ function formatIbTradesToVcon(data) {
             updatedTrade["Price"] = trade["C Price"] * 100.0;
             updatedTrade["Currency"] = trade["Currency"];
             updatedTrade["Net"] = (Math.abs(parseFloat(trade["Quantity"])) * originalFace * parseFloat(trade["C Price"])).toString();
-            updatedTrade["Trade Date"] = (0, common_1.convertExcelDateToJSDate)(trade["Trade Date"]);
-            updatedTrade["Settle Date"] = (0, common_1.convertExcelDateToJSDate)(trade["Settle Date"]);
+            updatedTrade["Trade Date"] = trade["Trade Date"];
+            updatedTrade["Settle Date"] = trade["Settle Date"];
             updatedTrade["Triada Trade Id"] = trade["Triada Trade Id"];
             updatedTrade["Location"] = trade["Location"].trim().toUpperCase();
             updatedTrade["Status"] = "Accepted";
@@ -396,13 +396,14 @@ function formatEmsxTradesToVcon(data) {
             updatedTrade["ISIN"] = trade["Security"];
             updatedTrade["BB Ticker"] = trade["Security"];
             updatedTrade["Issue"] = trade["Security"];
+            // net -change
             updatedTrade["Quantity"] = Math.abs(trade["Quantity"]).toString();
             //this to pass the bond divider
             updatedTrade["Price"] = trade["Price"] * 100.0;
             updatedTrade["Currency"] = "HKD";
             updatedTrade["Net"] = (Math.abs(parseFloat(trade["Quantity"])) * parseFloat(trade["Price"])).toString();
-            updatedTrade["Trade Date"] = (0, common_1.convertExcelDateToJSDate)(trade["Trade Date"]);
-            updatedTrade["Settle Date"] = (0, common_1.convertExcelDateToJSDate)(trade["Settle Date"]);
+            updatedTrade["Trade Date"] = trade["Trade Date"];
+            updatedTrade["Settle Date"] = trade["Settle Date"];
             updatedTrade["Triada Trade Id"] = trade["Triada Trade Id"];
             updatedTrade["Location"] = trade["Location"].trim().toUpperCase();
             updatedTrade["Status"] = "Accepted";
@@ -427,11 +428,11 @@ async function readIBEblot(path) {
     // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
     // Read data
     const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-    const headersFormat = ["Currency", "Symbol", "Quantity", "T Price", "C Price", "Notional Value", "Comm/Fee", "Basis", "Realized P/L", "MTM P/L", "Code", "Trade Date", "Settle Date", "Triada Trade Id", "Location"];
+    const headersFormat = ["Currency", "Symbol", "Quantity", "T Price", "C Price", "Notional Value", "Comm/Fee", "Basis", "Realized P/L", "MTM P/L", "Code", "Trade Date", "Trade Date Time", "Settle Date", "Triada Trade Id", "Location"];
     const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : false));
     if (!arraysAreEqual) {
         return {
-            error: "Incompatible format, please upload ib e-blot xlsx/csv file",
+            error: "Incompatible format, please upload ib formatted excel xlsx/csv file",
         };
     }
     else {
@@ -498,7 +499,7 @@ async function readEmsxEBlot(path) {
         // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
         // Read data
         const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-        const headersFormat = ["Status", "Buy/Sell", "Security", "Quantity", "Price", "Trade Date", "Settle Date", "Triada Trade Id", "Location"];
+        const headersFormat = ["Status", "Buy/Sell", "Security", "Quantity", "Net", "Price", "Trade Date", "Settle Date", "Triada Trade Id", "Location", "Trade App Status"];
         const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : false));
         if (!arraysAreEqual) {
             return {
@@ -508,7 +509,7 @@ async function readEmsxEBlot(path) {
         else {
             let data = xlsx.utils.sheet_to_json(worksheet, {
                 defval: "",
-                range: "A1:I300",
+                range: "A1:K300",
             });
             return data;
         }
@@ -765,7 +766,9 @@ async function readPricingSheet(path) {
     const workbook = xlsx.read(response.data, { type: "buffer" });
     /* Get first worksheet */
     const worksheetName = workbook.SheetNames[0];
+    const worksheetName2 = workbook.SheetNames[2];
     const worksheet = workbook.Sheets[worksheetName];
+    const worksheet2 = workbook.Sheets[worksheetName2];
     /* Convert worksheet to JSON */
     // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
     // Read data
@@ -782,7 +785,11 @@ async function readPricingSheet(path) {
             defval: "",
             range: "A3:AN300",
         });
-        return data;
+        const data2 = xlsx.utils.sheet_to_json(worksheet2, {
+            defval: "",
+            range: "G1:J40",
+        });
+        return [data, data2];
     }
 }
 exports.readPricingSheet = readPricingSheet;
@@ -866,7 +873,7 @@ function formatUpdatedPositions(positions, portfolio) {
             const position = positions[indexPositions];
             for (let indexPortfolio = 0; indexPortfolio < portfolio.length; indexPortfolio++) {
                 const portfolioPosition = portfolio[indexPortfolio];
-                if ((position["ISIN"] == portfolioPosition["ISIN"] || position["BB Ticker"] == portfolioPosition["BB Ticker"] || position["Issue"] == portfolioPosition["Issue"]) && position["Location"] == portfolioPosition["Location"]) {
+                if ((position["ISIN"] == portfolioPosition["ISIN"] || position["Issue"] == portfolioPosition["Issue"]) && position["Location"] == portfolioPosition["Location"]) {
                     portfolio[indexPortfolio] = position;
                     positionsIndexThatExists.push(indexPositions);
                 }
@@ -877,7 +884,8 @@ function formatUpdatedPositions(positions, portfolio) {
                 positionsThatDoNotExists.push(positions[indexPositionsExists]);
             }
         }
-        return [...portfolio, ...positionsThatDoNotExists];
+        let data = [...portfolio, ...positionsThatDoNotExists];
+        return data;
     }
     catch (error) {
         return error;

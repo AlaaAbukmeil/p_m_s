@@ -124,10 +124,10 @@ function renderVcon(emailContent) {
     return vcon;
 }
 exports.renderVcon = renderVcon;
-async function uploadArrayAndReturnFilePath(vcons, pathName) {
-    let binaryWS = xlsx.utils.json_to_sheet(vcons);
+async function uploadArrayAndReturnFilePath(data, pathName, rules) {
     // Create a new Workbook
     var wb = xlsx.utils.book_new();
+    let binaryWS = xlsx.utils.json_to_sheet(data);
     // Name your sheet
     xlsx.utils.book_append_sheet(wb, binaryWS, "Binary values");
     // export your excel
@@ -184,33 +184,58 @@ async function formatTriadaBlot(files) {
         let file = files[fileIndex];
         if (file["fieldname"] == "BBB") {
             bbbData = await (0, mufgOperations_1.readBBGBlot)(file["filename"]);
+            if (bbbData.error) {
+                return bbbData;
+            }
         }
         else if (file["fieldname"] == "IB") {
             let url = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + file["filename"];
             ibData = await (0, portfolioFunctions_2.readIBEblot)(url);
+            if (ibData.error) {
+                return ibData;
+            }
         }
         else if (file["fieldname"] == "BBE") {
-            bbeData = await (0, mufgOperations_1.readBBE)(file["filename"]);
+            let url = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + file["filename"];
+            bbeData = await (0, portfolioFunctions_2.readEmsxEBlot)(url);
+            if (bbeData.error) {
+                return bbeData;
+            }
         }
     }
     let blot = [];
     let counter = 1;
+    let bbbCurrency = {
+        $: "USD",
+        A$: "AUD",
+        "€": "EUR",
+        "£": "GBP",
+        SGD: "SGD",
+    };
     for (let index = 0; index < bbbData.length; index++) {
         let obj = {};
         let trade = bbbData[index];
         if (trade["Status"] == "Accepted") {
             let settlementDate = (0, portfolioFunctions_2.getSettlementDateYear)((0, common_1.convertExcelDateToJSDate)(trade["Trade Date"]), (0, common_1.convertExcelDateToJSDate)(trade["Settle Date"]));
-            obj["Location"] = trade["Location"];
-            obj["Date"] = (0, common_1.getTradeDateYearTrades)((0, common_1.convertExcelDateToJSDate)(trade["Trade Date"]));
-            obj["Time"] = trade["Entry Time"].split(" ")[1] + ":00";
             obj["B/S"] = trade["Buy/Sell"];
             obj["Bond/CDS"] = trade["Issue"];
+            obj["Location"] = trade["Location"];
+            obj["Trade Date"] = (0, common_1.getTradeDateYearTradesWithoutTheCentury)((0, common_1.convertExcelDateToJSDate)(trade["Trade Date"]));
+            obj["Trade Time"] = trade["Entry Time"].split(" ")[1] + ":00";
+            obj["Settle Date"] = (0, common_1.getTradeDateYearTradesWithoutTheCentury)(settlementDate);
             obj["Price"] = trade["Price (Decimal)"];
             obj["Notionol Amount"] = parseFloat(trade["Quantity"].replace(/,/g, ""));
-            obj["Trader"] = "JM";
-            obj["Counter Party"] = trade["Broker Code"];
-            obj["Settlement Date"] = (0, common_1.getTradeDateYearTrades)(settlementDate);
             obj["Settlement Amount"] = parseFloat(trade["Net"].replace(/,/g, ""));
+            obj["Counter Party"] = trade["Broker Code"];
+            obj["Triada Trade Id"] = trade["Triada Trade Id"];
+            obj["Seq No"] = trade["Seq No"];
+            obj["Cuisp"] = trade["Cusip"];
+            obj["Currency"] = bbbCurrency[trade["Currency Symbol"]];
+            obj["Yield"] = trade["Yield"];
+            obj["Accrued Interest"] = trade["Accrued Interest"];
+            obj["Original Face"] = "1000";
+            obj["Trade Type"] = "vcon";
+            obj["Trade App Status"] = trade["Trade App Status"];
             blot.push(obj);
             counter++;
         }
@@ -218,34 +243,52 @@ async function formatTriadaBlot(files) {
     for (let index2 = 0; index2 < ibData.length; index2++) {
         let trade = ibData[index2];
         let obj = {};
-        obj["Location"] = trade["Location"];
-        obj["Date"] = trade["Date/Time"];
-        obj["Time"] = trade["Trade Time"];
+        let originalFace = Math.abs(trade["Notional Value"] / trade["T Price"] / Math.abs(trade["Quantity"]));
         obj["B/S"] = parseFloat(trade["Quantity"]) > 0 ? "B" : "S";
         obj["Bond/CDS"] = trade["Symbol"];
-        obj["Price"] = trade["T Price"];
+        obj["Location"] = trade["Location"];
+        obj["Trade Date"] = trade["Trade Date"];
+        obj["Trade Time"] = trade["Trade Date Time"];
+        obj["Settle Date"] = trade["Trade Date"];
+        obj["Price"] = trade["C Price"];
         obj["Notionol Amount"] = parseFloat(trade["Quantity"]);
-        obj["Trader"] = "JM";
-        obj["Counter Party"] = "IB";
-        obj["Settlement Date"] = trade["Trade Date"];
         obj["Settlement Amount"] = trade["Notional Value"];
+        obj["Counter Party"] = "IB";
+        obj["Triada Trade Id"] = trade["Triada Trade Id"];
+        obj["Seq No"] = "";
+        obj["Cuisp"] = "";
+        obj["Currency"] = "USD";
+        obj["Yield"] = "";
+        obj["Accrued Interest"] = "";
+        obj["Original Face"] = originalFace;
+        obj["Trade Type"] = "ib";
+        obj["Trade App Status"] = trade["Trade App Status"];
         blot.push(obj);
         counter++;
     }
+    console.log(bbeData);
     for (let index3 = 0; index3 < bbeData.length; index3++) {
         let obj = {};
         let trade = bbeData[index3];
-        obj["Location"] = trade["Location"];
-        obj["Date"] = trade["Trade Date"];
-        obj["Time"] = "";
         obj["B/S"] = trade["Buy/Sell"] == "Sell" ? "S" : "B";
         obj["Bond/CDS"] = trade["Security"];
+        obj["Location"] = trade["Location"];
+        obj["Trade Date"] = trade["Trade Date"];
+        obj["Trade Time"] = "";
+        obj["Settle Date"] = trade["Trade Date"];
         obj["Price"] = trade["Price"];
         obj["Notionol Amount"] = parseFloat(trade["Quantity"]);
-        obj["Trader"] = "JM";
+        obj["Settlement Amount"] = trade["Net"];
         obj["Counter Party"] = "EMSX";
-        obj["Settlement Date"] = trade["Trade Date"];
-        obj["Settlement Amount"] = parseFloat(trade["Quantity"]);
+        obj["Triada Trade Id"] = trade["Triada Trade Id"];
+        obj["Seq No"] = "";
+        obj["Cuisp"] = "";
+        obj["Currency"] = "USD";
+        obj["Yield"] = "";
+        obj["Accrued Interest"] = "";
+        obj["Original Face"] = "1000";
+        obj["Trade Type"] = "emsx";
+        obj["Trade App Status"] = trade["Trade App Status"];
         blot.push(obj);
         counter++;
     }
@@ -269,6 +312,7 @@ function extractValuesFx(text) {
 }
 function formatIbTrades(data, ibTrades, portfolio) {
     let trades = [];
+    // console.log(ibTrades[ibTrades.length - 1], data[0], "test")
     try {
         let count = ibTrades.length + 1;
         for (let index = 0; index < data.length; index++) {
@@ -277,8 +321,11 @@ function formatIbTrades(data, ibTrades, portfolio) {
             let object = {};
             if (trade["Header"] == "Data") {
                 let tradeDate = (0, common_1.convertExcelDateToJSDate)(data[index]["Date/Time"]);
+                let tradeDateTime = (0, common_1.convertExcelDateToJSDateTime)(data[index]["Date/Time"]);
+                let trade_status = "new";
                 trade["Trade Date"] = (0, common_2.formatTradeDate)(tradeDate);
                 trade["Settle Date"] = (0, common_2.formatTradeDate)(tradeDate);
+                trade["Symbol"] += " IB";
                 let existingTrade = null;
                 for (let ibIndex = 0; ibIndex < ibTrades.length; ibIndex++) {
                     let ibTrade = ibTrades[ibIndex];
@@ -290,13 +337,14 @@ function formatIbTrades(data, ibTrades, portfolio) {
                 let securityInPortfolioLocation = (0, graphApiConnect_1.getSecurityInPortfolioWithoutLocation)(portfolio, identifier);
                 if (existingTrade) {
                     id = existingTrade["Triada Trade Id"];
+                    trade_status = "uploaded_to_app";
                 }
                 else {
                     id = `Triada-IB-${trade["Trade Date"]}-${count}`;
                     count++;
                 }
                 object["Currency"] = trade["Currency"];
-                object["Symbol"] = trade["Symbol"] + " IB";
+                object["Symbol"] = trade["Symbol"];
                 object["Quantity"] = trade["Quantity"];
                 object["T Price"] = trade["T. Price"];
                 object["C Price"] = data[index]["C. Price"];
@@ -307,10 +355,11 @@ function formatIbTrades(data, ibTrades, portfolio) {
                 object["MTM P/L"] = trade["MTM P/L"];
                 object["Code"] = trade["Code"];
                 object["Trade Date"] = trade["Trade Date"];
+                object["Trade Date Time"] = tradeDateTime;
                 object["Settle Date"] = trade["Settle Date"];
                 object["Triada Trade Id"] = id;
                 object["Location"] = securityInPortfolioLocation && securityInPortfolioLocation != "" ? securityInPortfolioLocation : trade["Location"].toUpperCase();
-                // object["Original Face"] = table API
+                object["Trade App Status"] = trade_status;
                 trades.push(object);
             }
         }
@@ -375,17 +424,20 @@ function formatEmsxTrades(data, emsxTrades, portfolio) {
             let existingTrade = null;
             for (let emsxIndex = 0; emsxIndex < emsxTrades.length; emsxIndex++) {
                 let emsxTrade = emsxTrades[emsxIndex];
-                if (trade["Trade Date"] == emsxTrade["Create Time (As of)"] && trade["Security"] == emsxTrade["Security"] && trade["Buy/Sell"] == emsxTrade["Side"] && trade["Quantity"] == emsxTrade["Qty"]) {
-                    existingTrade = emsxIndex;
+                // net because previous trade counted quantity as fill quantity
+                if (trade["Create Time (As of)"] == emsxTrade["Trade Date"] && trade["Security"] == emsxTrade["Security"] && trade["Side"] == emsxTrade["Buy/Sell"] && (trade["FillQty"] == emsxTrade["Quantity"] || trade["FillQty"] == emsxTrade["Quantity"])) {
+                    existingTrade = emsxTrade;
                 }
             }
             let tradeDate = (0, common_1.convertExcelDateToJSDate)(data[index]["Create Time (As of)"]);
             trade["Trade Date"] = (0, common_2.formatTradeDate)(tradeDate);
-            trade["Settle Date"] = (0, common_2.formatTradeDate)(tradeDate);
+            trade["Trade Date Time"] = trade["Settle Date"] = (0, common_2.formatTradeDate)(tradeDate);
             let identifier = trade["Security"];
             let securityInPortfolioLocation = (0, graphApiConnect_1.getSecurityInPortfolioWithoutLocation)(portfolio, identifier);
+            let trade_status = "new";
             if (existingTrade) {
                 id = existingTrade["Triada Trade Id"];
+                trade_status = "uploaded_to_app";
             }
             else {
                 id = `Triada-EMSX-${trade["Trade Date"]}-${count}`;
@@ -394,12 +446,14 @@ function formatEmsxTrades(data, emsxTrades, portfolio) {
             object["Status"] = trade["Status"];
             object["Buy/Sell"] = trade["Side"];
             object["Security"] = trade["Security"];
-            object["Quantity"] = trade["FillQty"];
+            object["Quantity"] = trade["Qty"];
+            object["Net"] = trade["FillQty"];
             object["Price"] = trade["LmtPr"];
             object["Trade Date"] = trade["Trade Date"];
             object["Settle Date"] = trade["Settle Date"];
             object["Triada Trade Id"] = id;
             object["Location"] = securityInPortfolioLocation;
+            object["Trade App Status"] = trade_status;
             trades.push(object);
         }
     }

@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from "express"
+require("dotenv").config();
 
 const jwt = require('jsonwebtoken');
+
+export const uri = "mongodb+srv://alaa:" + process.env.MONGODBPASSWORD + "@atlascluster.zpfpywq.mongodb.net/?retryWrites=true&w=majority";
 
 export function getCurrentMonthDateRange(): string {
   const now = new Date();
@@ -222,6 +225,12 @@ export function getTradeDateYearTrades(date: any) {
   let dateComponenets = date.split("/")
   return `${dateComponenets[0]}/${dateComponenets[1]}/${"20" + dateComponenets[2]}`;
 }
+export function getTradeDateYearTradesWithoutTheCentury(date: any) {
+  // Parse the month and year from the first date
+  // console.log(date1, date2)
+  let dateComponenets = date.split("/")
+  return `${dateComponenets[0]}/${dateComponenets[1]}/${dateComponenets[2]}`;
+}
 
 export function monthlyRlzdDate(dateInput: string) {
   let date = new Date(dateInput);
@@ -257,6 +266,32 @@ export function convertExcelDateToJSDate(serial: any) {
   const formattedDay = day < 10 ? '0' + day : day;
 
   return `${formattedMonth}/${formattedDay}/${year}`;
+}
+export function convertExcelDateToJSDateTime(serial: any) {
+  if (parseFloat(serial) < 45000) {
+    return serial;
+  }
+
+  const excelStartDate = new Date(1900, 0, 1);
+  const correctSerial = serial - 2; //Excel and JS have different leap year behaviors
+  const millisecondsInDay = 24 * 60 * 60 * 1000;
+
+  const jsDate = new Date(excelStartDate.getTime() + correctSerial * millisecondsInDay);
+
+  const year = jsDate.getFullYear();
+  const month = jsDate.getMonth() + 1; // JavaScript months start at 0
+  const day = jsDate.getDate();
+  const hours = jsDate.getHours();
+  const minutes = jsDate.getMinutes();
+  const seconds = jsDate.getSeconds();
+
+  const formattedMonth = month < 10 ? '0' + month : month;
+  const formattedDay = day < 10 ? '0' + day : day;
+  const formattedHours = hours < 10 ? '0' + hours : hours;
+  const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
+  const formattedSeconds = seconds < 10 ? '0' + seconds : seconds;
+
+  return `${formattedHours}:${formattedMinutes}`;
 }
 
 export function convertBBGEmexDate(date: string) {

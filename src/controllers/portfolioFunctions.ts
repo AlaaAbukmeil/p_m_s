@@ -11,7 +11,7 @@ const { PassThrough } = require("stream");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const mongoose = require("mongoose");
 
-const uri = "mongodb+srv://alaa:" + process.env.MONGODBPASSWORD + "@atlascluster.zpfpywq.mongodb.net/?retryWrites=true&w=majority";
+import { uri } from "./common";
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -408,8 +408,8 @@ export function formatIbTradesToVcon(data: any) {
       updatedTrade["Price"] = trade["C Price"] * 100.0;
       updatedTrade["Currency"] = trade["Currency"];
       updatedTrade["Net"] = (Math.abs(parseFloat(trade["Quantity"])) * originalFace * parseFloat(trade["C Price"])).toString();
-      updatedTrade["Trade Date"] = convertExcelDateToJSDate(trade["Trade Date"]);
-      updatedTrade["Settle Date"] = convertExcelDateToJSDate(trade["Settle Date"]);
+      updatedTrade["Trade Date"] = trade["Trade Date"]
+      updatedTrade["Settle Date"] = trade["Settle Date"]
       updatedTrade["Triada Trade Id"] = trade["Triada Trade Id"];
       updatedTrade["Location"] = trade["Location"].trim().toUpperCase();
       updatedTrade["Status"] = "Accepted";
@@ -432,13 +432,14 @@ export function formatEmsxTradesToVcon(data: any) {
       updatedTrade["ISIN"] = trade["Security"];
       updatedTrade["BB Ticker"] = trade["Security"];
       updatedTrade["Issue"] = trade["Security"];
+      // net -change
       updatedTrade["Quantity"] = Math.abs(trade["Quantity"]).toString();
       //this to pass the bond divider
       updatedTrade["Price"] = trade["Price"] * 100.0;
       updatedTrade["Currency"] = "HKD";
       updatedTrade["Net"] = (Math.abs(parseFloat(trade["Quantity"])) * parseFloat(trade["Price"])).toString();
-      updatedTrade["Trade Date"] = convertExcelDateToJSDate(trade["Trade Date"]);
-      updatedTrade["Settle Date"] = convertExcelDateToJSDate(trade["Settle Date"]);
+      updatedTrade["Trade Date"] = trade["Trade Date"]
+      updatedTrade["Settle Date"] = trade["Settle Date"]
       updatedTrade["Triada Trade Id"] = trade["Triada Trade Id"];
       updatedTrade["Location"] = trade["Location"].trim().toUpperCase();
       updatedTrade["Status"] = "Accepted";
@@ -467,11 +468,11 @@ export async function readIBEblot(path: string) {
   // Read data
 
   const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-  const headersFormat = ["Currency", "Symbol", "Quantity", "T Price", "C Price", "Notional Value", "Comm/Fee", "Basis", "Realized P/L", "MTM P/L", "Code", "Trade Date", "Settle Date", "Triada Trade Id", "Location"];
+  const headersFormat = ["Currency", "Symbol", "Quantity", "T Price", "C Price", "Notional Value", "Comm/Fee", "Basis", "Realized P/L", "MTM P/L", "Code", "Trade Date", "Trade Date Time","Settle Date", "Triada Trade Id", "Location"];
   const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : false));
   if (!arraysAreEqual) {
     return {
-      error: "Incompatible format, please upload ib e-blot xlsx/csv file",
+      error: "Incompatible format, please upload ib formatted excel xlsx/csv file",
     };
   } else {
     let data = xlsx.utils.sheet_to_json(worksheet, {
@@ -517,6 +518,7 @@ export async function readIBRawExcel(path: string) {
         }
       }
     }
+    
     data = xlsx.utils.sheet_to_json(worksheet, {
       defval: "",
       range: `A${tradesRowIndex}:Q${tradesRowEndIndex}`,
@@ -544,7 +546,7 @@ export async function readEmsxEBlot(path: string) {
     // Read data
 
     const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-    const headersFormat = ["Status", "Buy/Sell", "Security", "Quantity", "Price", "Trade Date", "Settle Date", "Triada Trade Id", "Location"];
+    const headersFormat = ["Status", "Buy/Sell", "Security", "Quantity", "Net","Price", "Trade Date", "Settle Date", "Triada Trade Id", "Location", "Trade App Status"];
 
     const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : false));
     if (!arraysAreEqual) {
@@ -554,7 +556,7 @@ export async function readEmsxEBlot(path: string) {
     } else {
       let data = xlsx.utils.sheet_to_json(worksheet, {
         defval: "",
-        range: "A1:I300",
+        range: "A1:K300",
       });
 
       return data;
@@ -840,8 +842,9 @@ export async function readPricingSheet(path: string) {
 
   /* Get first worksheet */
   const worksheetName = workbook.SheetNames[0];
+  const worksheetName2 = workbook.SheetNames[2];
   const worksheet = workbook.Sheets[worksheetName];
-
+  const worksheet2 = workbook.Sheets[worksheetName2];
   /* Convert worksheet to JSON */
   // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
 
@@ -860,7 +863,11 @@ export async function readPricingSheet(path: string) {
       defval: "",
       range: "A3:AN300",
     });
-    return data;
+    const data2 = xlsx.utils.sheet_to_json(worksheet2, {
+      defval: "",
+      range: "G1:J40",
+    });
+    return [data, data2];
   }
 }
 
@@ -949,10 +956,12 @@ export function formatUpdatedPositions(positions: any, portfolio: any) {
       const position = positions[indexPositions];
       for (let indexPortfolio = 0; indexPortfolio < portfolio.length; indexPortfolio++) {
         const portfolioPosition = portfolio[indexPortfolio];
-        if ((position["ISIN"] == portfolioPosition["ISIN"] || position["BB Ticker"] == portfolioPosition["BB Ticker"] || position["Issue"] == portfolioPosition["Issue"]) && position["Location"] == portfolioPosition["Location"]) {
+       
+        if ((position["ISIN"] == portfolioPosition["ISIN"] || position["Issue"] == portfolioPosition["Issue"]) && position["Location"] == portfolioPosition["Location"]) {
           portfolio[indexPortfolio] = position;
           positionsIndexThatExists.push(indexPositions);
         }
+        
       }
     }
     
@@ -962,8 +971,9 @@ export function formatUpdatedPositions(positions: any, portfolio: any) {
       }
     }
     
-
-    return [...portfolio, ...positionsThatDoNotExists];
+    let data = [...portfolio, ...positionsThatDoNotExists];
+    
+    return data
   } catch (error) {
     return error;
   }

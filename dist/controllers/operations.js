@@ -1,0 +1,266 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.updatePreviousPricesPortfolioBloomberg = exports.getSecurityInPortfolioWithoutLocation = exports.getPortfolioOnSpecificDate = exports.insertPreviousPricesUpdatesInPortfolio = exports.updatePreviousPricesPortfolioMUFG = exports.readMUFGPrices = exports.getCollectionDays = void 0;
+const axios = require("axios");
+const { MongoClient, ServerApiVersion } = require("mongodb");
+const mongoose = require("mongoose");
+const ObjectId = require("mongodb").ObjectId;
+const common_1 = require("./common");
+const common_2 = require("./common");
+const portfolioOperations_1 = require("./portfolioOperations");
+const portfolioFunctions_1 = require("./portfolioFunctions");
+const client = new MongoClient(common_1.uri, {
+    serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+    },
+});
+mongoose.connect(common_1.uri, {
+    useNewUrlParser: true,
+});
+const xlsx = require("xlsx");
+async function getCollectionDays() {
+    try {
+        const database = client.db("portfolios");
+        let collections = await database.listCollections().toArray();
+        let dates = [];
+        for (let index = 0; index < collections.length; index++) {
+            let collectionTime = collections[index].name.split("portfolio")[1];
+            let date = (0, common_2.formatDateReadable)(collectionTime);
+            if (!dates.includes(date)) {
+                dates.push(date);
+            }
+        }
+        dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+        return dates;
+    }
+    catch (error) {
+        return error.toString();
+    }
+}
+exports.getCollectionDays = getCollectionDays;
+async function readMUFGPrices(path) {
+    const response = await axios.get(path, { responseType: "arraybuffer" });
+    /* Parse the data */
+    const workbook = xlsx.read(response.data, { type: "buffer" });
+    /* Get first worksheet */
+    const worksheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[worksheetName];
+    /* Convert worksheet to JSON */
+    // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
+    // Read data
+    let data = xlsx.utils.sheet_to_json(worksheet, {
+        defval: "",
+        range: "A1:R300",
+    });
+    return data;
+}
+exports.readMUFGPrices = readMUFGPrices;
+async function updatePreviousPricesPortfolioMUFG(data, collectionDate) {
+    try {
+        if (data.error) {
+            return data;
+        }
+        else {
+            let updatedPricePortfolio = [];
+            let action = await getPortfolioOnSpecificDate(collectionDate);
+            let portfolio = action[0];
+            collectionDate = action[1];
+            console.log(collectionDate, "collection day used");
+            for (let index = 0; index < data.length; index++) {
+                let row = data[index];
+                let object = getSecurityInPortfolioWithoutLocation(portfolio, row["ISIN"]);
+                if (object == 404) {
+                    continue;
+                }
+                let faceValue = object["ISIN"].includes("CDX") || object["ISIN"].includes("ITRX") ? 100 / (-object["Quantity"] / object["Original Face"]) : object["ISIN"].includes("1393") || object["ISIN"].includes("IB") ? 100 : 1;
+                object["Mid"] = (parseFloat(row["Mid"]) / 100.0) * faceValue;
+                updatedPricePortfolio.push(object);
+            }
+            try {
+                let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(updatedPricePortfolio, portfolio);
+                let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio, collectionDate);
+                console.log(updatedPricePortfolio.length, "number of positions prices updated");
+                return insertion;
+            }
+            catch (error) {
+                console.log(error);
+                return { error: "Template does not match" };
+            }
+        }
+    }
+    catch (error) {
+        return { error: "error" };
+    }
+}
+exports.updatePreviousPricesPortfolioMUFG = updatePreviousPricesPortfolioMUFG;
+async function insertPreviousPricesUpdatesInPortfolio(updatedPortfolio, collectionDate) {
+    const database = client.db("portfolios");
+    let portfolio = updatedPortfolio;
+    // Create an array of updateOne operations
+    // Execute the operations in bulk
+    let day = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(collectionDate);
+    console.log(day, "updated collection");
+    try {
+        //so the latest updated version portfolio profits will not be copied into a new instance
+        const updatedOperations = portfolio.map((position) => {
+            // Start with the known filters
+            const filters = [];
+            // Only add the "Issue" filter if it's present in the trade object
+            if (position["ISIN"]) {
+                filters.push({
+                    ISIN: position["ISIN"],
+                    Location: position["Location"],
+                    _id: new ObjectId(position["_id"]),
+                });
+            }
+            else if (position["Issue"]) {
+                filters.push({
+                    Issue: position["Issue"],
+                    Location: position["Location"],
+                    _id: new ObjectId(position["_id"]),
+                });
+            }
+            else if (position["BB Ticker"]) {
+                filters.push({
+                    "BB Ticker": position["BB Ticker"],
+                    Location: position["Location"],
+                    _id: new ObjectId(position["_id"]),
+                });
+            }
+            return {
+                updateOne: {
+                    filter: { $or: filters },
+                    update: { $set: position },
+                },
+            };
+        });
+        let updatedCollection = database.collection(`portfolio-${day}`);
+        let updatedResult = await updatedCollection.bulkWrite(updatedOperations);
+        return updatedResult;
+    }
+    catch (error) {
+        return error;
+    }
+}
+exports.insertPreviousPricesUpdatesInPortfolio = insertPreviousPricesUpdatesInPortfolio;
+async function getPortfolioOnSpecificDate(collectionDate) {
+    try {
+        const database = client.db("portfolios");
+        let date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date(collectionDate)).split(" ")[0] + " 23:59";
+        let earliestCollectionName = await (0, portfolioOperations_1.getEarliestCollectionName)(date);
+        const reportCollection = database.collection(`portfolio-${earliestCollectionName[0]}`);
+        let documents = await reportCollection.find().toArray();
+        return [documents, earliestCollectionName[0]];
+    }
+    catch (error) {
+        return error;
+    }
+}
+exports.getPortfolioOnSpecificDate = getPortfolioOnSpecificDate;
+function getSecurityInPortfolioWithoutLocation(portfolio, identifier) {
+    let document = 404;
+    if (identifier == "" || !identifier) {
+        return document;
+    }
+    for (let index = 0; index < portfolio.length; index++) {
+        let issue = portfolio[index];
+        if (identifier.includes(issue["ISIN"]) || identifier.includes(issue["Issue"])) {
+            if (issue["ISIN"] != "") {
+                document = issue;
+            }
+        }
+        else if (identifier.includes(issue["BB Ticker"])) {
+            if (issue["BB Ticker"] != "") {
+                document = issue;
+            }
+        }
+        else if (identifier == new ObjectId(issue["_id"])) {
+            document = issue;
+        }
+    }
+    // If a matching document was found, return it. Otherwise, return a message indicating that no match was found.
+    return document;
+}
+exports.getSecurityInPortfolioWithoutLocation = getSecurityInPortfolioWithoutLocation;
+async function updatePreviousPricesPortfolioBloomberg(data, collectionDate) {
+    try {
+        // let data2 = Rawdata[1]
+        // return data2
+        if (data.error) {
+            return data;
+        }
+        else {
+            let updatedPricePortfolio = [];
+            let action = await getPortfolioOnSpecificDate(collectionDate);
+            let portfolio = action[0];
+            collectionDate = action[1];
+            let currencyInUSD = {};
+            currencyInUSD["USD"] = 1;
+            for (let index = 0; index < data.length; index++) {
+                let row = data[index];
+                if (!row["Long Security Name"].includes("Spot") && !row["Long Security Name"].includes("ignore")) {
+                    let object = (0, portfolioOperations_1.getSecurityInPortfolio)(portfolio, row["ISIN"], row["Trade Idea Code"]);
+                    console.log(object);
+                    if (object == 404) {
+                        object = (0, portfolioOperations_1.getSecurityInPortfolio)(portfolio, row["BB Ticker"], row["Trade Idea Code"]);
+                    }
+                    if (object == 404) {
+                        object = (0, portfolioOperations_1.getSecurityInPortfolio)(portfolio, row["Long Security Name"], row["Trade Idea Code"]);
+                    }
+                    if (object == 404) {
+                        continue;
+                    }
+                    let faceValue = object["ISIN"].includes("CDX") || object["ISIN"].includes("ITRX") ? 100 / (-object["Quantity"] / object["Original Face"]) : object["ISIN"].includes("1393") || object["ISIN"].includes("IB") ? 100 : 1;
+                    object["Mid"] = (parseFloat(row["Today's Mid"]) / 100.0) * faceValue;
+                    object["Ask"] = parseFloat(row["Override Ask"]) > 0 ? (parseFloat(row["Override Ask"]) / 100.0) * faceValue : (parseFloat(row["Today's Ask"]) / 100.0) * faceValue;
+                    object["Bid"] = parseFloat(row["Override Bid"]) > 0 ? (parseFloat(row["Override Bid"]) / 100.0) * faceValue : (parseFloat(row["Today's Bid"]) / 100.0) * faceValue;
+                    object["YTM"] = row["Mid Yield Maturity"];
+                    object["DV01"] = row["DV01"];
+                    if (object["ISIN"] == "AU3CB0267847") {
+                        console.log(object);
+                    }
+                    if (currencyInUSD[object["Currency"]]) {
+                        object["holdPortfXrate"] = currencyInUSD[object["Currency"]];
+                    }
+                    object["Last Price Update"] = new Date();
+                    if (!object["Country"] && row["Country"] && !row["Country"].includes("#N/A")) {
+                        object["Country"] = row["Country"];
+                    }
+                    if (!object["Sector"] && row["Country2"]) {
+                        object["Sector"] = row["Country2"];
+                    }
+                    updatedPricePortfolio.push(object);
+                }
+                else if (row["Long Security Name"].includes("Spot") && !row["Long Security Name"].includes("ignore")) {
+                    let firstCurrency = row["Long Security Name"].split(" ")[0];
+                    let secondCurrency = row["Long Security Name"].split(" ")[1];
+                    let rate = row["Today's Mid"];
+                    if (firstCurrency !== "USD") {
+                        currencyInUSD[firstCurrency] = rate;
+                    }
+                    else {
+                        rate = 1 / rate;
+                        currencyInUSD[secondCurrency] = rate;
+                    }
+                }
+            }
+            console.log(currencyInUSD, "currency prices");
+            try {
+                console.log(updatedPricePortfolio.length, "number of positions prices updated");
+                let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(updatedPricePortfolio, portfolio);
+                let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio, collectionDate);
+                return insertion;
+            }
+            catch (error) {
+                console.log(error);
+                return { error: "Template does not match" };
+            }
+        }
+    }
+    catch (error) {
+        return { error: "error" };
+    }
+}
+exports.updatePreviousPricesPortfolioBloomberg = updatePreviousPricesPortfolioBloomberg;

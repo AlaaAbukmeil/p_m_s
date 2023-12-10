@@ -63,17 +63,20 @@ export async function getVcons(token: string, start_time: string, end_time: stri
       let identifier = vcon["ISIN"] !== "" ? vcon["ISIN"] : vcon["BB Ticker"] ? vcon["BB Ticker"] : vcon["Issue"];
       let securityInPortfolioLocation = getSecurityInPortfolioWithoutLocation(portfolio, identifier);
       let location = securityInPortfolioLocation.trim()
+      let trade_status = "new"
       let triadaId = trades.find(function (trade: any) {
         return trade["Seq No"] === vcon["Seq No"];
       });
       if (triadaId) {
         id = triadaId["Triada Trade Id"];
         location = triadaId["Location"]
+        trade_status = "uploaded_to_app"
       } else {
         id = `Triada-BBB-${vcon["Trade Date"]}-${count}`;
         count++;
       }
       vcon["Triada Trade Id"] = id;
+      vcon["Trade App Status"] = trade_status
       vcon["Location"] = location
       object.push(vcon);
     }

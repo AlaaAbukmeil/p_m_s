@@ -232,7 +232,7 @@ export async function formatMufg(files: any, tradesCount: number) {
         "6EZ3": "ECZ3 Curncy",
         "ZN   MAR 24 IB": "TYH4 Comdty",
       };
-      trade["Symbol"] = trade["Symbol"].split(" ")[0];
+      trade["Symbol"] = trade["Symbol"].split("IB")[0];
       obj["File_Type"] = "ExchSec";
       obj["Fund"] = "90104";
       obj["Transaction_Event"] = "N";

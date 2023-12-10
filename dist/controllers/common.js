@@ -1,7 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDate = exports.getDateMufg = exports.monthlyRlzdDate = exports.getTradeDateYearTrades = exports.getSettlementDateYearTrades = exports.formatSettleDateVcon = exports.formatTradeDate = exports.getSettlementDateYearNomura = exports.formateDateNomura = exports.getCurrentDateVconFormat = exports.verifyToken = exports.getTime = exports.formatDateReadable = exports.formatDateVconFile = exports.formatDate = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = void 0;
+exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDateTime = exports.convertExcelDateToJSDate = exports.getDateMufg = exports.monthlyRlzdDate = exports.getTradeDateYearTradesWithoutTheCentury = exports.getTradeDateYearTrades = exports.getSettlementDateYearTrades = exports.formatSettleDateVcon = exports.formatTradeDate = exports.getSettlementDateYearNomura = exports.formateDateNomura = exports.getCurrentDateVconFormat = exports.verifyToken = exports.getTime = exports.formatDateReadable = exports.formatDateVconFile = exports.formatDate = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = exports.uri = void 0;
+require("dotenv").config();
 const jwt = require('jsonwebtoken');
+exports.uri = "mongodb+srv://alaa:" + process.env.MONGODBPASSWORD + "@atlascluster.zpfpywq.mongodb.net/?retryWrites=true&w=majority";
 function getCurrentMonthDateRange() {
     const now = new Date();
     const currentMonth = now.getMonth();
@@ -186,6 +188,13 @@ function getTradeDateYearTrades(date) {
     return `${dateComponenets[0]}/${dateComponenets[1]}/${"20" + dateComponenets[2]}`;
 }
 exports.getTradeDateYearTrades = getTradeDateYearTrades;
+function getTradeDateYearTradesWithoutTheCentury(date) {
+    // Parse the month and year from the first date
+    // console.log(date1, date2)
+    let dateComponenets = date.split("/");
+    return `${dateComponenets[0]}/${dateComponenets[1]}/${dateComponenets[2]}`;
+}
+exports.getTradeDateYearTradesWithoutTheCentury = getTradeDateYearTradesWithoutTheCentury;
 function monthlyRlzdDate(dateInput) {
     let date = new Date(dateInput);
     const year = date.getFullYear();
@@ -217,6 +226,28 @@ function convertExcelDateToJSDate(serial) {
     return `${formattedMonth}/${formattedDay}/${year}`;
 }
 exports.convertExcelDateToJSDate = convertExcelDateToJSDate;
+function convertExcelDateToJSDateTime(serial) {
+    if (parseFloat(serial) < 45000) {
+        return serial;
+    }
+    const excelStartDate = new Date(1900, 0, 1);
+    const correctSerial = serial - 2; //Excel and JS have different leap year behaviors
+    const millisecondsInDay = 24 * 60 * 60 * 1000;
+    const jsDate = new Date(excelStartDate.getTime() + correctSerial * millisecondsInDay);
+    const year = jsDate.getFullYear();
+    const month = jsDate.getMonth() + 1; // JavaScript months start at 0
+    const day = jsDate.getDate();
+    const hours = jsDate.getHours();
+    const minutes = jsDate.getMinutes();
+    const seconds = jsDate.getSeconds();
+    const formattedMonth = month < 10 ? '0' + month : month;
+    const formattedDay = day < 10 ? '0' + day : day;
+    const formattedHours = hours < 10 ? '0' + hours : hours;
+    const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
+    const formattedSeconds = seconds < 10 ? '0' + seconds : seconds;
+    return `${formattedHours}:${formattedMinutes}`;
+}
+exports.convertExcelDateToJSDateTime = convertExcelDateToJSDateTime;
 function convertBBGEmexDate(date) {
     try {
         let dateComponenets = date.split("/");

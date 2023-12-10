@@ -4,11 +4,13 @@ import { registerUser, checkIfUserExists, sendResetPasswordRequest, resetPasswor
 import { Request, Response } from "express";
 import { getDate, verifyToken, formatDateVconFile } from "../controllers/common";
 import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, uploadPortfolioFromImagine, getTrades, getAllCollectionDatesSinceStartMonth, uploadPortfolioFromLivePortfolio, uploadPortfolioFromMufg, getPortfolio, editPositionPortfolio, editPosition } from "../controllers/portfolioOperations";
-import { bloombergToTriada, uploadTriadaAndReturnFilePath, readMUFGEBlot, readIBEblot, readIBRawExcel } from "../controllers/portfolioFunctions";
+import { bloombergToTriada, uploadTriadaAndReturnFilePath, readMUFGEBlot, readIBEblot, readIBRawExcel, readPricingSheet } from "../controllers/portfolioFunctions";
 import { checkIfSecurityExist } from "../controllers/tsImagineOperations";
 import { uploadArrayAndReturnFilePath, formatNomuraEBlot, getTriadaTrades, formatTriadaBlot, formatIbTrades, formatEmsxTrades, readEmsxRawExcel } from "../controllers/excelFormat";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/graphApiConnect";
 import { readBBGBlot, createExcelAndReturnPath, formatMufg, formatFxMufg } from "../controllers/mufgOperations";
+import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg } from "../controllers/operations";
+
 
 require("dotenv").config();
 
@@ -69,6 +71,15 @@ router.get("/trades", verifyToken, async (req, res) => {
 
     let trades = await getTrades(`${tradeType}`);
     res.send(trades);
+  } catch (error) {
+    res.status(500).send("An error occurred while reading the file.");
+  }
+});
+
+router.get("/previous-collections", verifyToken, async (req, res) => {
+  try {
+    let previousCollections = await getCollectionDays()
+    res.send(previousCollections)
   } catch (error) {
     res.status(500).send("An error occurred while reading the file.");
   }
@@ -178,7 +189,7 @@ router.post("/nomura-excel", verifyToken, uploadBeforeExcel.any(), async (req: R
   if (array.length == 0) {
     res.send({ error: "No Trades" });
   } else {
-    let vcons = await uploadArrayAndReturnFilePath(array, pathName);
+    let vcons = await uploadArrayAndReturnFilePath(array, pathName, null);
     let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + vcons;
     res.send(downloadEBlotName);
   }
@@ -193,7 +204,7 @@ router.post("/vcon-excel", verifyToken, uploadBeforeExcel.any(), async (req: Req
   if (array.length == 0) {
     res.send({ error: "No Trades" });
   } else {
-    let vcons = await uploadArrayAndReturnFilePath(array, pathName);
+    let vcons = await uploadArrayAndReturnFilePath(array, pathName, {rule: "Location", color : "#FF0000"});
     let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + vcons;
     res.send(downloadEBlotName);
   }
@@ -206,13 +217,14 @@ router.post("/ib-excel", verifyToken, uploadBeforeExcel.any(), async (req: Reque
     const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
     let trades = await getTriadaTrades("ib");
     let data = await readIBRawExcel(path);
+
     let portfolio = await getPortfolio();
     let action = formatIbTrades(data, trades, portfolio);
 
     if (!action) {
       res.send({ error: action });
     } else {
-      let ib = await uploadArrayAndReturnFilePath(action, "ib_formatted");
+      let ib = await uploadArrayAndReturnFilePath(action, "ib_formatted", null);
       let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + ib;
       res.send(downloadEBlotName);
     }
@@ -226,7 +238,7 @@ router.post("/mufg", verifyToken, uploadBeforeExcel.any(), async (req: Request |
   let tradesCount: number = req.body.tradesCount;
   let action: any = await formatMufg(req.files, tradesCount);
 
-  let url = await uploadArrayAndReturnFilePath(action, "mufg_formatted");
+  let url = await uploadArrayAndReturnFilePath(action, "mufg_formatted", null);
   url = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + url;
   res.send(url);
 });
@@ -235,7 +247,7 @@ router.post("/mufg-fx", verifyToken, uploadBeforeExcel.any(), async (req: Reques
   let tradesCount: number = req.body.tradesCount;
 
   let action: any = await formatFxMufg(req.files, tradesCount);
-  let url = await uploadArrayAndReturnFilePath(action, "fx_mufg_formatted");
+  let url = await uploadArrayAndReturnFilePath(action, "fx_mufg_formatted", null);
   url = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + url;
   res.send(url);
 });
@@ -243,11 +255,16 @@ router.post("/mufg-fx", verifyToken, uploadBeforeExcel.any(), async (req: Reques
 router.post("/centerlized-blotter", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let action: any = await formatTriadaBlot(req.files);
+    
+    if(action.error){
+      res.send({error: action.error})
+    }else{
 
-    let url = await createExcelAndReturnPath(action, "centerlizedBlot");
+    let url = await uploadArrayAndReturnFilePath(action, "centerlized_blot", null);
     url = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + url;
 
     res.send(url);
+    }
   } catch (error) {
     console.log(error);
     res.send({ error: error });
@@ -284,7 +301,7 @@ router.post("/emsx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Req
     if (!action) {
       res.send({ error: action });
     } else {
-      let emsx = await uploadArrayAndReturnFilePath(action, "emsx_formated");
+      let emsx = await uploadArrayAndReturnFilePath(action, "emsx_formated", null);
       let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + emsx;
       res.send(downloadEBlotName);
     }
@@ -330,10 +347,21 @@ router.post("/fx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Reque
   if (array.length == 0) {
     res.send({ error: "No Trades" });
   } else {
-    let fxTrades = await uploadArrayAndReturnFilePath(array, pathName);
+    let fxTrades = await uploadArrayAndReturnFilePath(array, pathName, null);
     let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + fxTrades;
     res.send(downloadEBlotName);
   }
+});
+
+router.post("/update-previous-prices", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  let collectionDate: string = req.body.collectionDate;
+  let collectionType: string = req.body.collectionType
+  const fileName = req.files[0].filename;
+  const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+  let data: any =collectionType == "MUFG" ?  await readMUFGPrices(path) : await readPricingSheet(path);
+  let action = collectionType == "MUFG" ? await updatePreviousPricesPortfolioMUFG(data, collectionDate) :  await updatePreviousPricesPortfolioBloomberg(data[0], collectionDate)
+  console.log(action)
+  res.send(200);
 });
 
 export default router;
