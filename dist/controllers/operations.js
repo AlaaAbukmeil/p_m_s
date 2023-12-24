@@ -1,13 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updatePreviousPricesPortfolioBloomberg = exports.getSecurityInPortfolioWithoutLocation = exports.getPortfolioOnSpecificDate = exports.insertPreviousPricesUpdatesInPortfolio = exports.updatePreviousPricesPortfolioMUFG = exports.readMUFGPrices = exports.getCollectionDays = void 0;
+exports.getEditLogs = exports.insertEditLogs = exports.updatePreviousPricesPortfolioBloomberg = exports.getSecurityInPortfolioWithoutLocation = exports.getPortfolioOnSpecificDate = exports.insertPreviousPricesUpdatesInPortfolio = exports.updatePreviousPricesPortfolioMUFG = exports.readMUFGPrices = exports.getCollectionDays = void 0;
 const axios = require("axios");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const mongoose = require("mongoose");
 const ObjectId = require("mongodb").ObjectId;
 const common_1 = require("./common");
-const common_2 = require("./common");
-const portfolioOperations_1 = require("./portfolioOperations");
+const reports_1 = require("./reports");
 const portfolioFunctions_1 = require("./portfolioFunctions");
 const client = new MongoClient(common_1.uri, {
     serverApi: {
@@ -27,7 +26,7 @@ async function getCollectionDays() {
         let dates = [];
         for (let index = 0; index < collections.length; index++) {
             let collectionTime = collections[index].name.split("portfolio")[1];
-            let date = (0, common_2.formatDateReadable)(collectionTime);
+            let date = (0, common_1.formatDateReadable)(collectionTime);
             if (!dates.includes(date)) {
                 dates.push(date);
             }
@@ -57,8 +56,9 @@ async function readMUFGPrices(path) {
     return data;
 }
 exports.readMUFGPrices = readMUFGPrices;
-async function updatePreviousPricesPortfolioMUFG(data, collectionDate) {
+async function updatePreviousPricesPortfolioMUFG(data, collectionDate, path) {
     try {
+        path = "https://storage.cloud.google.com/capital-trade-396911.appspot.com" + path.split(".com/")[2];
         if (data.error) {
             return data;
         }
@@ -82,6 +82,9 @@ async function updatePreviousPricesPortfolioMUFG(data, collectionDate) {
                 let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(updatedPricePortfolio, portfolio);
                 let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio, collectionDate);
                 console.log(updatedPricePortfolio.length, "number of positions prices updated");
+                console.log(updatedPortfolio[0], "positions that did not update");
+                let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
+                await insertEditLogs(["prices update"], "Update Prices", dateTime, "MUFG Previous Pricing Sheet on" + collectionDate, "Link: " + path);
                 return insertion;
             }
             catch (error) {
@@ -149,7 +152,7 @@ async function getPortfolioOnSpecificDate(collectionDate) {
     try {
         const database = client.db("portfolios");
         let date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date(collectionDate)).split(" ")[0] + " 23:59";
-        let earliestCollectionName = await (0, portfolioOperations_1.getEarliestCollectionName)(date);
+        let earliestCollectionName = await (0, reports_1.getEarliestCollectionName)(date);
         const reportCollection = database.collection(`portfolio-${earliestCollectionName[0]}`);
         let documents = await reportCollection.find().toArray();
         return [documents, earliestCollectionName[0]];
@@ -184,10 +187,9 @@ function getSecurityInPortfolioWithoutLocation(portfolio, identifier) {
     return document;
 }
 exports.getSecurityInPortfolioWithoutLocation = getSecurityInPortfolioWithoutLocation;
-async function updatePreviousPricesPortfolioBloomberg(data, collectionDate) {
+async function updatePreviousPricesPortfolioBloomberg(data, collectionDate, path) {
     try {
-        // let data2 = Rawdata[1]
-        // return data2
+        path = "https://storage.cloud.google.com/capital-trade-396911.appspot.com" + path.split(".appspot.com")[1];
         if (data.error) {
             return data;
         }
@@ -201,26 +203,22 @@ async function updatePreviousPricesPortfolioBloomberg(data, collectionDate) {
             for (let index = 0; index < data.length; index++) {
                 let row = data[index];
                 if (!row["Long Security Name"].includes("Spot") && !row["Long Security Name"].includes("ignore")) {
-                    let object = (0, portfolioOperations_1.getSecurityInPortfolio)(portfolio, row["ISIN"], row["Trade Idea Code"]);
-                    console.log(object);
+                    let object = (0, reports_1.getSecurityInPortfolio)(portfolio, row["ISIN"], row["Trade Idea Code"]);
                     if (object == 404) {
-                        object = (0, portfolioOperations_1.getSecurityInPortfolio)(portfolio, row["BB Ticker"], row["Trade Idea Code"]);
+                        object = (0, reports_1.getSecurityInPortfolio)(portfolio, row["BB Ticker"], row["Trade Idea Code"]);
                     }
                     if (object == 404) {
-                        object = (0, portfolioOperations_1.getSecurityInPortfolio)(portfolio, row["Long Security Name"], row["Trade Idea Code"]);
+                        object = (0, reports_1.getSecurityInPortfolio)(portfolio, row["Long Security Name"], row["Trade Idea Code"]);
                     }
                     if (object == 404) {
                         continue;
                     }
-                    let faceValue = object["ISIN"].includes("CDX") || object["ISIN"].includes("ITRX") ? 100 / (-object["Quantity"] / object["Original Face"]) : object["ISIN"].includes("1393") || object["ISIN"].includes("IB") ? 100 : 1;
+                    let faceValue = object["ISIN"].includes("CDX") || object["ISIN"].includes("ITRX") || object["ISIN"].includes("1393") || object["ISIN"].includes("IB") ? 100 : 1;
                     object["Mid"] = (parseFloat(row["Today's Mid"]) / 100.0) * faceValue;
                     object["Ask"] = parseFloat(row["Override Ask"]) > 0 ? (parseFloat(row["Override Ask"]) / 100.0) * faceValue : (parseFloat(row["Today's Ask"]) / 100.0) * faceValue;
                     object["Bid"] = parseFloat(row["Override Bid"]) > 0 ? (parseFloat(row["Override Bid"]) / 100.0) * faceValue : (parseFloat(row["Today's Bid"]) / 100.0) * faceValue;
                     object["YTM"] = row["Mid Yield Maturity"];
                     object["DV01"] = row["DV01"];
-                    if (object["ISIN"] == "AU3CB0267847") {
-                        console.log(object);
-                    }
                     if (currencyInUSD[object["Currency"]]) {
                         object["holdPortfXrate"] = currencyInUSD[object["Currency"]];
                     }
@@ -249,9 +247,11 @@ async function updatePreviousPricesPortfolioBloomberg(data, collectionDate) {
             console.log(currencyInUSD, "currency prices");
             try {
                 console.log(updatedPricePortfolio.length, "number of positions prices updated");
+                let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
+                await insertEditLogs(["prices update"], "Update Prices", dateTime, "Bloomberg Previous Pricing Sheet on " + collectionDate, "Link: " + path);
                 let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(updatedPricePortfolio, portfolio);
-                let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio, collectionDate);
-                return insertion;
+                let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio[0], collectionDate);
+                return "insertion";
             }
             catch (error) {
                 console.log(error);
@@ -264,3 +264,34 @@ async function updatePreviousPricesPortfolioBloomberg(data, collectionDate) {
     }
 }
 exports.updatePreviousPricesPortfolioBloomberg = updatePreviousPricesPortfolioBloomberg;
+async function insertEditLogs(changes, type, dateTime, editNote, identifier) {
+    let object = {
+        changes: changes,
+        type: type,
+        dateTime: dateTime,
+        editNote: editNote,
+        identifier: identifier,
+    };
+    const database = client.db("edit_logs");
+    const reportCollection = database.collection(`${type}`);
+    try {
+        const result = await reportCollection.insertOne(object);
+        console.log(`Successfully inserted item with _id: ${result.insertedId}`);
+    }
+    catch (err) {
+        console.error(`Failed to insert item: ${err}`);
+    }
+}
+exports.insertEditLogs = insertEditLogs;
+async function getEditLogs(logsType) {
+    try {
+        const database = client.db("edit_logs");
+        const reportCollection = database.collection(`${logsType}`);
+        let documents = await reportCollection.find().sort({ dateTime: -1 }).toArray();
+        return documents;
+    }
+    catch (error) {
+        return error;
+    }
+}
+exports.getEditLogs = getEditLogs;

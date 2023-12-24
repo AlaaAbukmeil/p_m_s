@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../controllers/auth");
 const common_1 = require("../controllers/common");
-const portfolioOperations_1 = require("../controllers/portfolioOperations");
+const reports_1 = require("../controllers/reports");
 const portfolioFunctions_1 = require("../controllers/portfolioFunctions");
 const tsImagineOperations_1 = require("../controllers/tsImagineOperations");
 const excelFormat_1 = require("../controllers/excelFormat");
@@ -34,7 +34,12 @@ router.get("/auth", common_1.verifyToken, async (req, res, next) => {
 });
 router.get("/portfolio", common_1.verifyToken, async (req, res, next) => {
     const date = req.query.date;
-    let report = await (0, portfolioOperations_1.getHistoricalPortfolioWithAnalytics)(date);
+    let report = await (0, reports_1.getHistoricalPortfolioWithAnalytics)(date);
+    res.send(report);
+});
+router.get("/risk-report", common_1.verifyToken, async (req, res, next) => {
+    const date = req.query.date;
+    let report = await (0, reports_1.getHistoricalRiskReportWithAnalytics)(date);
     res.send(report);
 });
 router.get("/trades-logs", common_1.verifyToken, async (req, res) => {
@@ -60,8 +65,19 @@ router.get("/prices-logs", common_1.verifyToken, async (req, res) => {
 router.get("/trades", common_1.verifyToken, async (req, res) => {
     try {
         const tradeType = req.query.tradeType;
-        let trades = await (0, portfolioOperations_1.getTrades)(`${tradeType}`);
+        let trades = await (0, reports_1.getTrades)(`${tradeType}`);
         res.send(trades);
+    }
+    catch (error) {
+        res.status(500).send("An error occurred while reading the file.");
+    }
+});
+router.get("/edit-logs", common_1.verifyToken, async (req, res) => {
+    try {
+        const editLogsType = req.query.logsType;
+        let editLogs = await (0, operations_1.getEditLogs)(`${editLogsType}`);
+        console.log(editLogs, editLogsType);
+        res.send(editLogs);
     }
     catch (error) {
         res.status(500).send("An error occurred while reading the file.");
@@ -78,9 +94,9 @@ router.get("/previous-collections", common_1.verifyToken, async (req, res) => {
 });
 router.post("/login", async (req, res, next) => {
     let data = req.body;
-    let username = data.username;
+    let email = data.email;
     let password = data.password;
-    let user = await (0, auth_1.checkIfUserExists)(username, password);
+    let user = await (0, auth_1.checkIfUserExists)(email, password);
     res.send(user);
 });
 router.post("/signUp", async (req, res, next) => {
@@ -109,25 +125,9 @@ router.post("/elec-blot", common_1.verifyToken, uploadBeforeExcel.any(), async (
 router.post("/upload-trades", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
     try {
         let files = req.files;
-        let bbg = "", ib = "", emsx = "";
-        for (let index = 0; index < files.length; index++) {
-            if (files[index].fieldname == "bbg") {
-                const fileName = req.files[index].filename;
-                const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
-                bbg = path;
-            }
-            else if (files[index].fieldname == "ib") {
-                const fileName = req.files[index].filename;
-                const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
-                ib = path;
-            }
-            else if (files[index].fieldname == "emsx") {
-                const fileName = req.files[index].filename;
-                const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
-                emsx = path;
-            }
-        }
-        let action = await (0, portfolioOperations_1.updatePositionPortfolio)(bbg, ib, emsx); //updatePositionPortfolio
+        const fileName = req.files[0].filename;
+        const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+        let action = await (0, reports_1.updatePositionPortfolio)(path); //updatePositionPortfolio
         console.log(action);
         if (action === null || action === void 0 ? void 0 : action.error) {
             res.send({ error: action.error });
@@ -145,7 +145,7 @@ router.post("/update-prices", common_1.verifyToken, uploadBeforeExcel.any(), asy
     try {
         const fileName = req.files[0].filename;
         const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
-        let action = await (0, portfolioOperations_1.updatePricesPortfolio)(path);
+        let action = await (0, reports_1.updatePricesPortfolio)(path);
         console.log(action);
         if (action === null || action === void 0 ? void 0 : action.error) {
             res.send({ error: action.error });
@@ -179,7 +179,7 @@ router.post("/nomura-excel", common_1.verifyToken, uploadBeforeExcel.any(), asyn
         res.send({ error: "No Trades" });
     }
     else {
-        let vcons = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(array, pathName, null);
+        let vcons = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(array, pathName);
         let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + vcons;
         res.send(downloadEBlotName);
     }
@@ -194,7 +194,7 @@ router.post("/vcon-excel", common_1.verifyToken, uploadBeforeExcel.any(), async 
         res.send({ error: "No Trades" });
     }
     else {
-        let vcons = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(array, pathName, { rule: "Location", color: "#FF0000" });
+        let vcons = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(array, pathName);
         let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + vcons;
         res.send(downloadEBlotName);
     }
@@ -206,13 +206,14 @@ router.post("/ib-excel", common_1.verifyToken, uploadBeforeExcel.any(), async (r
         const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
         let trades = await (0, excelFormat_1.getTriadaTrades)("ib");
         let data = await (0, portfolioFunctions_1.readIBRawExcel)(path);
-        let portfolio = await (0, portfolioOperations_1.getPortfolio)();
+        console.log(data, "xxxxxx");
+        let portfolio = await (0, reports_1.getPortfolio)();
         let action = (0, excelFormat_1.formatIbTrades)(data, trades, portfolio);
         if (!action) {
             res.send({ error: action });
         }
         else {
-            let ib = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(action, "ib_formatted", null);
+            let ib = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(action, "ib_formatted");
             let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + ib;
             res.send(downloadEBlotName);
         }
@@ -222,28 +223,36 @@ router.post("/ib-excel", common_1.verifyToken, uploadBeforeExcel.any(), async (r
         res.send({ error: "File Template is not correct" });
     }
 });
-router.post("/mufg", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
-    let tradesCount = req.body.tradesCount;
-    let action = await (0, mufgOperations_1.formatMufg)(req.files, tradesCount);
-    let url = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(action, "mufg_formatted", null);
-    url = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + url;
-    res.send(url);
+router.post("/mufg-excel", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+    let data = req.body;
+    let pathName = "mufg_" + (0, common_1.formatDateVconFile)(data.timestamp_start) + "_" + (0, common_1.formatDateVconFile)(data.timestamp_end) + "_";
+    let trades = await (0, mufgOperations_1.tradesTriada)();
+    let array = await (0, mufgOperations_1.formatMufg)(trades, data.timestamp_start, data.timestamp_end);
+    console.log(array);
+    if (array.length == 0) {
+        res.send({ error: "No Trades" });
+    }
+    else {
+        let mufgTrades = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(array, pathName);
+        let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + mufgTrades;
+        res.send(downloadEBlotName);
+    }
 });
 router.post("/mufg-fx", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
     let tradesCount = req.body.tradesCount;
     let action = await (0, mufgOperations_1.formatFxMufg)(req.files, tradesCount);
-    let url = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(action, "fx_mufg_formatted", null);
+    let url = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(action, "fx_mufg_formatted");
     url = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + url;
     res.send(url);
 });
-router.post("/centerlized-blotter", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/centralized-blotter", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
     try {
-        let action = await (0, excelFormat_1.formatTriadaBlot)(req.files);
+        let action = await (0, excelFormat_1.formatCentralizedRawFiles)(req.files);
         if (action.error) {
             res.send({ error: action.error });
         }
         else {
-            let url = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(action, "centerlized_blot", null);
+            let url = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(action, "centralized_blot");
             url = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + url;
             res.send(url);
         }
@@ -257,7 +266,7 @@ router.post("/bulk-edit", common_1.verifyToken, uploadBeforeExcel.any(), async (
     try {
         const fileName = req.files[0].filename;
         const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
-        let action = await (0, portfolioOperations_1.editPositionPortfolio)(path);
+        let action = await (0, reports_1.editPositionPortfolio)(path);
         console.log(action);
         if (action === null || action === void 0 ? void 0 : action.error) {
             res.send({ error: action.error });
@@ -278,13 +287,13 @@ router.post("/emsx-excel", common_1.verifyToken, uploadBeforeExcel.any(), async 
         const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
         let trades = await (0, excelFormat_1.getTriadaTrades)("emsx");
         let data = await (0, excelFormat_1.readEmsxRawExcel)(path);
-        let portfolio = await (0, portfolioOperations_1.getPortfolio)();
+        let portfolio = await (0, reports_1.getPortfolio)();
         let action = (0, excelFormat_1.formatEmsxTrades)(data, trades, portfolio);
         if (!action) {
             res.send({ error: action });
         }
         else {
-            let emsx = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(action, "emsx_formated", null);
+            let emsx = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(action, "emsx_formated");
             let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + emsx;
             res.send(downloadEBlotName);
         }
@@ -308,8 +317,8 @@ router.post("/reset-password", common_1.verifyToken, async (req, res, next) => {
 });
 router.post("/edit-position", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
     try {
-        let action = await (0, portfolioOperations_1.editPosition)(req.body);
-        res.send(action);
+        let action = await (0, reports_1.editPosition)(req.body);
+        res.sendStatus(200);
     }
     catch (error) {
         console.log(error);
@@ -326,19 +335,40 @@ router.post("/fx-excel", common_1.verifyToken, uploadBeforeExcel.any(), async (r
         res.send({ error: "No Trades" });
     }
     else {
-        let fxTrades = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(array, pathName, null);
+        let fxTrades = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(array, pathName);
         let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + fxTrades;
         res.send(downloadEBlotName);
     }
 });
 router.post("/update-previous-prices", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
-    let collectionDate = req.body.collectionDate;
-    let collectionType = req.body.collectionType;
-    const fileName = req.files[0].filename;
-    const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
-    let data = collectionType == "MUFG" ? await (0, operations_1.readMUFGPrices)(path) : await (0, portfolioFunctions_1.readPricingSheet)(path);
-    let action = collectionType == "MUFG" ? await (0, operations_1.updatePreviousPricesPortfolioMUFG)(data, collectionDate) : await (0, operations_1.updatePreviousPricesPortfolioBloomberg)(data[0], collectionDate);
-    console.log(action);
-    res.send(200);
+    try {
+        let collectionDate = req.body.collectionDate;
+        let collectionType = req.body.collectionType;
+        const fileName = req.files[0].filename;
+        const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+        let data = collectionType == "MUFG" ? await (0, operations_1.readMUFGPrices)(path) : await (0, portfolioFunctions_1.readPricingSheet)(path);
+        let action = collectionType == "MUFG" ? await (0, operations_1.updatePreviousPricesPortfolioMUFG)(data, collectionDate, path) : await (0, operations_1.updatePreviousPricesPortfolioBloomberg)(data, collectionDate, path);
+        // console.log(action);
+        res.send(200);
+    }
+    catch (error) {
+        res.send({ error: "fatal error" });
+    }
+});
+router.post("/update-prices-cron", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+    try {
+        let data;
+        let action = await (0, reports_1.updatePricesPortfolio)(path);
+        console.log(action);
+        if (action === null || action === void 0 ? void 0 : action.error) {
+            res.send({ error: action.error });
+        }
+        else {
+            res.sendStatus(200);
+        }
+    }
+    catch (error) {
+        res.send({ error: "File Template is not correct" });
+    }
 });
 exports.default = router;

@@ -1,5 +1,7 @@
 require("dotenv").config();
 
+import { uri } from "./common";
+
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const jwtSecret = process.env.SECRET;
@@ -7,10 +9,6 @@ const bcrypt = require("bcrypt");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const saltRounds: any = process.env.SALT_ROUNDS;
 
-const uri =
-  "mongodb+srv://alaa:" +
-  process.env.MONGODBPASSWORD +
-  "@atlascluster.zpfpywq.mongodb.net/?retryWrites=true&w=majority";
 
 const client = new MongoClient(uri, {
   serverApi: {

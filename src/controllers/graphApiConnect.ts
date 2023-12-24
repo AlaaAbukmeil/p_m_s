@@ -1,17 +1,19 @@
+require("dotenv").config();
+
 const axios = require("axios");
 const FormData = require("form-data");
 import { renderVcon, renderFx } from "./excelFormat";
-import { getPortfolio } from "./portfolioOperations";
+import { getPortfolio } from "./reports";
+import { mergeSort } from "./portfolioFunctions";
+import { convertExcelDateToJSDate, getTradeDateYearTrades } from "./common";
 
 export async function getGraphToken() {
   try {
     let form = new FormData();
     form.append("grant_type", "client_credentials");
-    // form.append('username', 'vcons@triadacapital.com');
-    // form.append('password', 'Jon63977');
-    form.append("client_id", "43e02cc4-3327-41f6-86a2-2da01d65e641");
+    form.append("client_id", process.env.GRAPH_CLIENT_ID);
     form.append("scope", "https://graph.microsoft.com/.default");
-    form.append("client_secret", "zt58Q~NTqG4OrbCG32TvhJBD2e0VHXxIBb1UNbyd");
+    form.append("client_secret", process.env.GRAPH_CLIENT_SECRET);
     let url = `https://login.microsoftonline.com/cb7b2398-24e7-4982-ba78-31f3ad6aee9f/oauth2/v2.0/token`;
     let action = await axios.post(url, form);
     return action.data["access_token"];
@@ -60,25 +62,34 @@ export async function getVcons(token: string, start_time: string, end_time: stri
     for (let index = 0; index < vcons.length; index++) {
       let vcon = vcons[index].body.content;
       vcon = renderVcon(vcon);
-      let identifier = vcon["ISIN"] !== "" ? vcon["ISIN"] : vcon["BB Ticker"] ? vcon["BB Ticker"] : vcon["Issue"];
+      let identifier = vcon["ISIN"] 
       let securityInPortfolioLocation = getSecurityInPortfolioWithoutLocation(portfolio, identifier);
-      let location = securityInPortfolioLocation.trim()
-      let trade_status = "new"
+      let location = securityInPortfolioLocation.trim();
+      let trade_status = "new";
       let triadaId = trades.find(function (trade: any) {
         return trade["Seq No"] === vcon["Seq No"];
       });
+      console.log(triadaId, vcon["Issue"]);
       if (triadaId) {
         id = triadaId["Triada Trade Id"];
-        location = triadaId["Location"]
-        trade_status = "uploaded_to_app"
-      } else {
-        id = `Triada-BBB-${vcon["Trade Date"]}-${count}`;
+        location = triadaId["Location"];
+        trade_status = "uploaded_to_app";
+        vcon["Triada Trade Id"] = id;
+      }
+      vcon["Location"] = location;
+
+      vcon["Trade App Status"] = trade_status;
+      object.push(vcon);
+    }
+    object = mergeSort(object);
+    for (let customIndex = 0; customIndex < object.length; customIndex++) {
+      let trade = object[customIndex];
+      if (!trade["Triada Trade Id"]) {
+        let tradeDate = getTradeDateYearTrades(convertExcelDateToJSDate(trade["Trade Date"]));
+        id = `Triada-BBB-${tradeDate}-${count}`;
+        trade["Triada Trade Id"] = id;
         count++;
       }
-      vcon["Triada Trade Id"] = id;
-      vcon["Trade App Status"] = trade_status
-      vcon["Location"] = location
-      object.push(vcon);
     }
     return object;
   } catch (error) {

@@ -2,23 +2,21 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.resetPassword = exports.generateRandomIntegers = exports.sendResetPasswordRequest = exports.checkIfUserExists = exports.registerUser = void 0;
 require("dotenv").config();
+const common_1 = require("./common");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const jwtSecret = process.env.SECRET;
 const bcrypt = require("bcrypt");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const saltRounds = process.env.SALT_ROUNDS;
-const uri = "mongodb+srv://alaa:" +
-    process.env.MONGODBPASSWORD +
-    "@atlascluster.zpfpywq.mongodb.net/?retryWrites=true&w=majority";
-const client = new MongoClient(uri, {
+const client = new MongoClient(common_1.uri, {
     serverApi: {
         version: ServerApiVersion.v1,
         strict: true,
         deprecationErrors: true,
     },
 });
-mongoose.connect(uri, {
+mongoose.connect(common_1.uri, {
     useNewUrlParser: true,
 });
 const SibApiV3Sdk = require("sib-api-v3-sdk");

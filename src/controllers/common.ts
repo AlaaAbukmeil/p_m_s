@@ -135,39 +135,11 @@ export function getCurrentDateVconFormat() {
   return `${day}/${month}/${year}`;
 }
 
-export function formateDateNomura(date: string) {
-  var d = new Date(date),
-    month = '' + (d.getMonth() + 1),
-    day = '' + d.getDate(),
-    year = d.getFullYear();
 
-  if (month.length < 2)
-    month = '0' + month;
-  if (day.length < 2)
-    day = '0' + day;
-
-  return [year, month, day].join('');
-}
-
-export function getSettlementDateYearNomura(date1: string, date2: string) {
-  // Parse the month and year from the first date
-  // console.log(date1, date2)
-  const [month1, day1, year1] = date1.split('/').map(Number);
-
-  // Parse the month from the second date
-  const [month2, day2] = date2.split('/').map(Number);
-
-  // If the month of the second date is less than the month of the first date,
-  // it means we've crossed into a new year, so increment the year
-  const year2 = month2 < month1 ? year1 + 1 : year1;
-
-  // Return the second date with the year appended
-  return `${year2}${month2}${day2}`;
-}
 
 export function formatTradeDate(date: Date) {
   date = new Date(date)
-  const year = date.getFullYear().toString().slice(-2);
+  const year = date.getFullYear().toString()
   let month = (date.getMonth() + 1).toString();
   let day = date.getDate().toString();
 
@@ -310,4 +282,17 @@ export function generateRandomString(length: number) {
       result += characters.charAt(Math.floor(Math.random() * charactersLength));
   }
   return result;
+}
+
+export function getCurrentDateTime() {
+  const now = new Date();
+
+  const month = String(now.getMonth() + 1).padStart(2, '0');  // Months are 0-11 in JavaScript
+  const day = String(now.getDate()).padStart(2, '0');
+  const year = now.getFullYear();
+
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+
+  return `${month}/${day}/${year} ${hours}:${minutes}`;
 }

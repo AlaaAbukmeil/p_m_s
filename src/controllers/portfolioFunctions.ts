@@ -1,5 +1,5 @@
 import { formatDate, getDate, getTime, convertExcelDateToJSDate, formatTradeDate, formatSettleDateVcon } from "./common";
-import { getBBTicker } from "./portfolioOperations";
+import { getBBTicker } from "./reports";
 import { readIB } from "./mufgOperations";
 import { getSecurityInPortfolioWithoutLocation } from "./graphApiConnect";
 
@@ -282,7 +282,7 @@ async function readBloombergEBlot(path: string) {
   }
 }
 
-function mergeSort(array: any[]): any {
+export function mergeSort(array: any[]): any {
   if (array.length <= 1) {
     return array;
   }
@@ -381,6 +381,86 @@ export async function readVconEBlot(path: string) {
   }
 }
 
+export async function readCenterlizedEBlot(path: string) {
+  const response = await axios.get(path, { responseType: "arraybuffer" });
+
+  /* Parse the data */
+  const workbook = xlsx.read(response.data, { type: "buffer" });
+
+  /* Get first worksheet */
+  const worksheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[worksheetName];
+
+  /* Convert worksheet to JSON */
+  // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
+
+  // Read data
+
+  const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+  const headersFormat = ["B/S", "Issue", "Location", "Trade Date", "Trade Time", 
+  "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee","Trade Type", "Trade App Status"];
+ const arraysAreEqual = headersFormat.every((value, index) => value === headers[0][index] ? true : console.log(value, headers[0][index]));
+  if (!arraysAreEqual) {
+    return {
+      error: "Incompatible format, please upload centerlized e-blot xlsx/csv file",
+    };
+  } else {
+    let data = xlsx.utils.sheet_to_json(worksheet, {
+      defval: "",
+      range: "A1:V300",
+    });
+    let bbTicker: any = {
+      "6BZ3 IB": "BPZ3 Curncy",
+      "ESZ3 IB": "ESZ3 Index",
+      "ECZ3 IB": "ECZ3 Curncy",
+      "6EX3 IB": "ECX3 Curncy",
+      "ZN   DEC 23 IB": "TYZ3 Comdty",
+      "6EZ3 IB": "ECZ3 Curncy",
+      "ZN   MAR 24 IB": "TYH4 Comdty",
+      "6BG4 IB": "BPG4 Curncy",
+      "6EG4 IB":"ECG4 Curncy"
+     
+    };
+
+    let filtered = data.filter((trade: any, index: any) => trade["Trade App Status"] == "new");
+    let missingLocation = data.filter((trade: any, index: any) => trade["Location"] == "");
+    if (missingLocation.length) {
+      return { error: `Issue ${missingLocation[0]["Issue"]} has missing location` };
+    }
+    let vconTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "vcon");
+    let ibTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "ib");
+    let emsxTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "emsx");
+   
+    let isinRequest = [];
+    for (let index = 0; index < vconTrades.length; index++) {
+      let trade = vconTrades[index];
+      let isinObjReq = { idType: "ID_ISIN", idValue: trade["ISIN"] };
+      isinRequest.push(isinObjReq);
+    }
+    let bbTickers = await getBBTicker(isinRequest);
+    for (let rowIndex = 0; rowIndex < vconTrades.length; rowIndex++) {
+      vconTrades[rowIndex]["BB Ticker"] = bbTickers[vconTrades[rowIndex]["ISIN"]];
+      vconTrades[rowIndex]["Quantity"] = vconTrades[rowIndex]["Notional Amount"]
+      vconTrades[rowIndex]["Triada Trade Id"] = vconTrades[rowIndex]["Triada Trade Id"]
+    }
+
+    for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
+      let trade = ibTrades[ibTradesIndex];
+      ibTrades[ibTradesIndex]["BB Ticker"] = bbTicker[ibTrades[ibTradesIndex]["Issue"]];
+      ibTrades[ibTradesIndex]["Quantity"] = Math.abs(ibTrades[ibTradesIndex]["Notional Amount"])
+      ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["Issue"]
+    }
+
+    for (let emsxTradesIndex = 0; emsxTradesIndex < emsxTrades.length; emsxTradesIndex++) {
+      let trade = emsxTrades[emsxTradesIndex];
+      emsxTrades[emsxTradesIndex]["Quantity"] = emsxTrades[emsxTradesIndex]["Settlement Amount"]
+      emsxTrades[emsxTradesIndex]["ISIN"] = emsxTrades[emsxTradesIndex]["Issue"]
+    }
+
+    return [vconTrades, ibTrades, emsxTrades, [...vconTrades, ...ibTrades, ...emsxTrades]];
+  }
+}
+
 export function formatIbTradesToVcon(data: any) {
   let object = [];
   try {
@@ -392,7 +472,6 @@ export function formatIbTradesToVcon(data: any) {
         "6BZ3 IB": "BPZ3 Curncy",
         "ESZ3 IB": "ESZ3 Index",
         "ECZ3 IB": "ECZ3 Curncy",
-        
         "6EX3 IB": "ECX3 Curncy",
         "ZN   DEC 23 IB": "TYZ3 Comdty",
         "6EZ3 IB": "ECZ3 Curncy",
@@ -408,8 +487,8 @@ export function formatIbTradesToVcon(data: any) {
       updatedTrade["Price"] = trade["C Price"] * 100.0;
       updatedTrade["Currency"] = trade["Currency"];
       updatedTrade["Net"] = (Math.abs(parseFloat(trade["Quantity"])) * originalFace * parseFloat(trade["C Price"])).toString();
-      updatedTrade["Trade Date"] = trade["Trade Date"]
-      updatedTrade["Settle Date"] = trade["Settle Date"]
+      updatedTrade["Trade Date"] = trade["Trade Date"];
+      updatedTrade["Settle Date"] = trade["Settle Date"];
       updatedTrade["Triada Trade Id"] = trade["Triada Trade Id"];
       updatedTrade["Location"] = trade["Location"].trim().toUpperCase();
       updatedTrade["Status"] = "Accepted";
@@ -438,8 +517,8 @@ export function formatEmsxTradesToVcon(data: any) {
       updatedTrade["Price"] = trade["Price"] * 100.0;
       updatedTrade["Currency"] = "HKD";
       updatedTrade["Net"] = (Math.abs(parseFloat(trade["Quantity"])) * parseFloat(trade["Price"])).toString();
-      updatedTrade["Trade Date"] = trade["Trade Date"]
-      updatedTrade["Settle Date"] = trade["Settle Date"]
+      updatedTrade["Trade Date"] = trade["Trade Date"];
+      updatedTrade["Settle Date"] = trade["Settle Date"];
       updatedTrade["Triada Trade Id"] = trade["Triada Trade Id"];
       updatedTrade["Location"] = trade["Location"].trim().toUpperCase();
       updatedTrade["Status"] = "Accepted";
@@ -468,7 +547,7 @@ export async function readIBEblot(path: string) {
   // Read data
 
   const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-  const headersFormat = ["Currency", "Symbol", "Quantity", "T Price", "C Price", "Notional Value", "Comm/Fee", "Basis", "Realized P/L", "MTM P/L", "Code", "Trade Date", "Trade Date Time","Settle Date", "Triada Trade Id", "Location"];
+  const headersFormat = ["Currency", "Symbol", "Quantity", "T Price", "C Price", "Notional Value", "Comm/Fee", "Basis", "Realized P/L", "MTM P/L", "Code", "Trade Date", "Trade Date Time", "Settle Date", "Triada Trade Id", "Location"];
   const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : false));
   if (!arraysAreEqual) {
     return {
@@ -518,7 +597,7 @@ export async function readIBRawExcel(path: string) {
         }
       }
     }
-    
+
     data = xlsx.utils.sheet_to_json(worksheet, {
       defval: "",
       range: `A${tradesRowIndex}:Q${tradesRowEndIndex}`,
@@ -546,7 +625,7 @@ export async function readEmsxEBlot(path: string) {
     // Read data
 
     const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-    const headersFormat = ["Status", "Buy/Sell", "Security", "Quantity", "Net","Price", "Trade Date", "Settle Date", "Triada Trade Id", "Location", "Trade App Status"];
+    const headersFormat = ["Status", "Buy/Sell", "Security", "Quantity", "Net", "Price", "Trade Date", "Settle Date", "Triada Trade Id", "Location", "Trade App Status"];
 
     const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : false));
     if (!arraysAreEqual) {
@@ -674,7 +753,7 @@ export async function readEditInput(path: string) {
     });
 
     let portfolio = [];
-    
+
     for (let index = 0; index < data.length; index++) {
       let object: any = {};
       let position = data[index];
@@ -689,7 +768,7 @@ export async function readEditInput(path: string) {
       object["BB Ticker"] = position["BB Ticker"];
       object["Country"] = position["Text1"];
       object["Issuer"] = position["Issuer"];
-      object["Issue"] = position["Long Security Name"]
+      object["Issue"] = position["Long Security Name"];
       object["Call Date"] = formartImagineDate(position["CallDate"]) || "";
       object["Maturity"] = formartImagineDate(position["Maturity"]) || "";
 
@@ -842,9 +921,9 @@ export async function readPricingSheet(path: string) {
 
   /* Get first worksheet */
   const worksheetName = workbook.SheetNames[0];
-  const worksheetName2 = workbook.SheetNames[2];
+
   const worksheet = workbook.Sheets[worksheetName];
-  const worksheet2 = workbook.Sheets[worksheetName2];
+
   /* Convert worksheet to JSON */
   // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
 
@@ -853,7 +932,7 @@ export async function readPricingSheet(path: string) {
   const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
   const headersFormat = ["#", "Trade Idea Code", "Long Security Name", "BB Ticker", "Column1", "Bid", "Ask", "Mid", "Broker", "Override Bid", "Override Ask", "Today's Bid", "Today's Ask", "Today's Mid"];
 
-  const arraysAreEqual = true; //headersFormat.every((value, index) => value === headers[2][index]); //headersFormat.length === headers[2].length && headersFormat.every((value, index) => value === headers[2][index]);
+  const arraysAreEqual = headersFormat.every((value, index) => value === headers[2][index]); //headersFormat.length === headers[2].length && headersFormat.every((value, index) => value === headers[2][index]);
   if (!arraysAreEqual) {
     return {
       error: "Incompatible format, please upload pricing sheet xlsx/csv file",
@@ -861,13 +940,10 @@ export async function readPricingSheet(path: string) {
   } else {
     const data = xlsx.utils.sheet_to_json(worksheet, {
       defval: "",
-      range: "A3:AN300",
+      range: "A3:AQ300",
     });
-    const data2 = xlsx.utils.sheet_to_json(worksheet2, {
-      defval: "",
-      range: "G1:J40",
-    });
-    return [data, data2];
+   
+    return data;
   }
 }
 
@@ -952,28 +1028,35 @@ export function formatUpdatedPositions(positions: any, portfolio: any) {
   try {
     let positionsIndexThatExists = [];
     let positionsThatDoNotExists = [];
+    let positionsThatDoNotExistsNames = [];
     for (let indexPositions = 0; indexPositions < positions.length; indexPositions++) {
       const position = positions[indexPositions];
       for (let indexPortfolio = 0; indexPortfolio < portfolio.length; indexPortfolio++) {
         const portfolioPosition = portfolio[indexPortfolio];
-       
+
         if ((position["ISIN"] == portfolioPosition["ISIN"] || position["Issue"] == portfolioPosition["Issue"]) && position["Location"] == portfolioPosition["Location"]) {
           portfolio[indexPortfolio] = position;
           positionsIndexThatExists.push(indexPositions);
         }
-        
       }
     }
-    
+
     for (let indexPositionsExists = 0; indexPositionsExists < positions.length; indexPositionsExists++) {
       if (!positionsIndexThatExists.includes(indexPositionsExists)) {
         positionsThatDoNotExists.push(positions[indexPositionsExists]);
+       
       }
     }
-    
-    let data = [...portfolio, ...positionsThatDoNotExists];
-    
-    return data
+
+    for (let indexPositions = 0; indexPositions < positions.length; indexPositions++) {
+      if (!positionsIndexThatExists.includes(indexPositions)) {
+        positionsThatDoNotExistsNames.push(positions[indexPositions]["Issue"])
+      }
+    }
+
+    let data = [[...portfolio, ...positionsThatDoNotExists], positionsThatDoNotExistsNames];
+
+    return data;
   } catch (error) {
     return error;
   }
@@ -1021,7 +1104,7 @@ export function mapDatetimeToSameDay(datetimeList: any, daytimeInput: any) {
   if (sameDateStrings.length === 0) {
     return null;
   }
- 
+
   // Sort the remaining strings in descending order and return the first one
   sameDateStrings.sort((a: any, b: any) => {
     let dateA: any = new Date(a.split("-").slice(1).join("-"));

@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mapDatetimeToSameDay = exports.getDateTimeInMongoDBCollectionFormat = exports.formatDateRlzdDaily = exports.formatUpdatedPositions = exports.sortVconTrades = exports.getAllDatesSinceLastMonthLastDay = exports.uploadTriadaAndReturnFilePath = exports.calculateMonthlyProfitLoss = exports.calculateDailyProfitLoss = exports.readPricingSheet = exports.readBloombergTriadaEBlot = exports.readPortfolioFromLivePorfolio = exports.readPortfolioFromImagine = exports.readEditInput = exports.readMUFGEBlot = exports.readEmsxEBlot = exports.readIBRawExcel = exports.readIBEblot = exports.formatEmsxTradesToVcon = exports.formatIbTradesToVcon = exports.readVconEBlot = exports.uploadToGCloudBucket = exports.getSettlementDateYear = exports.bloombergToTriada = exports.parseBondIdentifier = exports.formatTradesObj = exports.settlementDatePassed = exports.getAverageCost = exports.formatExcelDate = void 0;
+exports.mapDatetimeToSameDay = exports.getDateTimeInMongoDBCollectionFormat = exports.formatDateRlzdDaily = exports.formatUpdatedPositions = exports.sortVconTrades = exports.getAllDatesSinceLastMonthLastDay = exports.uploadTriadaAndReturnFilePath = exports.calculateMonthlyProfitLoss = exports.calculateDailyProfitLoss = exports.readPricingSheet = exports.readBloombergTriadaEBlot = exports.readPortfolioFromLivePorfolio = exports.readPortfolioFromImagine = exports.readEditInput = exports.readMUFGEBlot = exports.readEmsxEBlot = exports.readIBRawExcel = exports.readIBEblot = exports.formatEmsxTradesToVcon = exports.formatIbTradesToVcon = exports.readCenterlizedEBlot = exports.readVconEBlot = exports.mergeSort = exports.uploadToGCloudBucket = exports.getSettlementDateYear = exports.bloombergToTriada = exports.parseBondIdentifier = exports.formatTradesObj = exports.settlementDatePassed = exports.getAverageCost = exports.formatExcelDate = void 0;
 const common_1 = require("./common");
-const portfolioOperations_1 = require("./portfolioOperations");
+const reports_1 = require("./reports");
 const xlsx = require("xlsx");
 const axios = require("axios");
 const { Storage } = require("@google-cloud/storage");
@@ -270,6 +270,7 @@ function mergeSort(array) {
     const right = array.slice(middle);
     return merge(mergeSort(left), mergeSort(right));
 }
+exports.mergeSort = mergeSort;
 function merge(left, right) {
     let resultArray = [], leftIndex = 0, rightIndex = 0;
     while (leftIndex < left.length && rightIndex < right.length) {
@@ -334,7 +335,7 @@ async function readVconEBlot(path) {
             let isinObjReq = { idType: "ID_ISIN", idValue: trade["ISIN"] };
             isinRequest.push(isinObjReq);
         }
-        let bbTickers = await (0, portfolioOperations_1.getBBTicker)(isinRequest);
+        let bbTickers = await (0, reports_1.getBBTicker)(isinRequest);
         for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
             data[rowIndex]["BB Ticker"] = bbTickers[data[rowIndex]["ISIN"]];
             data[rowIndex]["Price"] = data[rowIndex]["Price (Decimal)"];
@@ -345,6 +346,76 @@ async function readVconEBlot(path) {
     }
 }
 exports.readVconEBlot = readVconEBlot;
+async function readCenterlizedEBlot(path) {
+    const response = await axios.get(path, { responseType: "arraybuffer" });
+    /* Parse the data */
+    const workbook = xlsx.read(response.data, { type: "buffer" });
+    /* Get first worksheet */
+    const worksheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[worksheetName];
+    /* Convert worksheet to JSON */
+    // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
+    // Read data
+    const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+    const headersFormat = ["B/S", "Issue", "Location", "Trade Date", "Trade Time",
+        "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Trade App Status"];
+    const arraysAreEqual = headersFormat.every((value, index) => value === headers[0][index] ? true : console.log(value, headers[0][index]));
+    if (!arraysAreEqual) {
+        return {
+            error: "Incompatible format, please upload centerlized e-blot xlsx/csv file",
+        };
+    }
+    else {
+        let data = xlsx.utils.sheet_to_json(worksheet, {
+            defval: "",
+            range: "A1:V300",
+        });
+        let bbTicker = {
+            "6BZ3 IB": "BPZ3 Curncy",
+            "ESZ3 IB": "ESZ3 Index",
+            "ECZ3 IB": "ECZ3 Curncy",
+            "6EX3 IB": "ECX3 Curncy",
+            "ZN   DEC 23 IB": "TYZ3 Comdty",
+            "6EZ3 IB": "ECZ3 Curncy",
+            "ZN   MAR 24 IB": "TYH4 Comdty",
+            "6BG4 IB": "BPG4 Curncy",
+            "6EG4 IB": "ECG4 Curncy"
+        };
+        let filtered = data.filter((trade, index) => trade["Trade App Status"] == "new");
+        let missingLocation = data.filter((trade, index) => trade["Location"] == "");
+        if (missingLocation.length) {
+            return { error: `Issue ${missingLocation[0]["Issue"]} has missing location` };
+        }
+        let vconTrades = filtered.filter((trade, index) => trade["Trade Type"] == "vcon");
+        let ibTrades = filtered.filter((trade, index) => trade["Trade Type"] == "ib");
+        let emsxTrades = filtered.filter((trade, index) => trade["Trade Type"] == "emsx");
+        let isinRequest = [];
+        for (let index = 0; index < vconTrades.length; index++) {
+            let trade = vconTrades[index];
+            let isinObjReq = { idType: "ID_ISIN", idValue: trade["ISIN"] };
+            isinRequest.push(isinObjReq);
+        }
+        let bbTickers = await (0, reports_1.getBBTicker)(isinRequest);
+        for (let rowIndex = 0; rowIndex < vconTrades.length; rowIndex++) {
+            vconTrades[rowIndex]["BB Ticker"] = bbTickers[vconTrades[rowIndex]["ISIN"]];
+            vconTrades[rowIndex]["Quantity"] = vconTrades[rowIndex]["Notional Amount"];
+            vconTrades[rowIndex]["Triada Trade Id"] = vconTrades[rowIndex]["Triada Trade Id"];
+        }
+        for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
+            let trade = ibTrades[ibTradesIndex];
+            ibTrades[ibTradesIndex]["BB Ticker"] = bbTicker[ibTrades[ibTradesIndex]["Issue"]];
+            ibTrades[ibTradesIndex]["Quantity"] = Math.abs(ibTrades[ibTradesIndex]["Notional Amount"]);
+            ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["Issue"];
+        }
+        for (let emsxTradesIndex = 0; emsxTradesIndex < emsxTrades.length; emsxTradesIndex++) {
+            let trade = emsxTrades[emsxTradesIndex];
+            emsxTrades[emsxTradesIndex]["Quantity"] = emsxTrades[emsxTradesIndex]["Settlement Amount"];
+            emsxTrades[emsxTradesIndex]["ISIN"] = emsxTrades[emsxTradesIndex]["Issue"];
+        }
+        return [vconTrades, ibTrades, emsxTrades, [...vconTrades, ...ibTrades, ...emsxTrades]];
+    }
+}
+exports.readCenterlizedEBlot = readCenterlizedEBlot;
 function formatIbTradesToVcon(data) {
     let object = [];
     try {
@@ -550,7 +621,7 @@ async function readMUFGEBlot(path) {
             };
             isinRequest.push(isinObjReq);
         }
-        let bbTickers = await (0, portfolioOperations_1.getBBTicker)(isinRequest);
+        let bbTickers = await (0, reports_1.getBBTicker)(isinRequest);
         for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
             data[rowIndex]["BB Ticker"] = bbTickers[data[rowIndex]["Investment"]];
         }
@@ -766,15 +837,13 @@ async function readPricingSheet(path) {
     const workbook = xlsx.read(response.data, { type: "buffer" });
     /* Get first worksheet */
     const worksheetName = workbook.SheetNames[0];
-    const worksheetName2 = workbook.SheetNames[2];
     const worksheet = workbook.Sheets[worksheetName];
-    const worksheet2 = workbook.Sheets[worksheetName2];
     /* Convert worksheet to JSON */
     // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
     // Read data
     const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
     const headersFormat = ["#", "Trade Idea Code", "Long Security Name", "BB Ticker", "Column1", "Bid", "Ask", "Mid", "Broker", "Override Bid", "Override Ask", "Today's Bid", "Today's Ask", "Today's Mid"];
-    const arraysAreEqual = true; //headersFormat.every((value, index) => value === headers[2][index]); //headersFormat.length === headers[2].length && headersFormat.every((value, index) => value === headers[2][index]);
+    const arraysAreEqual = headersFormat.every((value, index) => value === headers[2][index]); //headersFormat.length === headers[2].length && headersFormat.every((value, index) => value === headers[2][index]);
     if (!arraysAreEqual) {
         return {
             error: "Incompatible format, please upload pricing sheet xlsx/csv file",
@@ -783,13 +852,9 @@ async function readPricingSheet(path) {
     else {
         const data = xlsx.utils.sheet_to_json(worksheet, {
             defval: "",
-            range: "A3:AN300",
+            range: "A3:AQ300",
         });
-        const data2 = xlsx.utils.sheet_to_json(worksheet2, {
-            defval: "",
-            range: "G1:J40",
-        });
-        return [data, data2];
+        return data;
     }
 }
 exports.readPricingSheet = readPricingSheet;
@@ -869,6 +934,7 @@ function formatUpdatedPositions(positions, portfolio) {
     try {
         let positionsIndexThatExists = [];
         let positionsThatDoNotExists = [];
+        let positionsThatDoNotExistsNames = [];
         for (let indexPositions = 0; indexPositions < positions.length; indexPositions++) {
             const position = positions[indexPositions];
             for (let indexPortfolio = 0; indexPortfolio < portfolio.length; indexPortfolio++) {
@@ -884,7 +950,12 @@ function formatUpdatedPositions(positions, portfolio) {
                 positionsThatDoNotExists.push(positions[indexPositionsExists]);
             }
         }
-        let data = [...portfolio, ...positionsThatDoNotExists];
+        for (let indexPositions = 0; indexPositions < positions.length; indexPositions++) {
+            if (!positionsIndexThatExists.includes(indexPositions)) {
+                positionsThatDoNotExistsNames.push(positions[indexPositions]["Issue"]);
+            }
+        }
+        let data = [[...portfolio, ...positionsThatDoNotExists], positionsThatDoNotExistsNames];
         return data;
     }
     catch (error) {

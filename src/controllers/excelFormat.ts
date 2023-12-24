@@ -2,7 +2,7 @@ require("dotenv").config();
 
 import { uploadToGCloudBucket } from "./portfolioFunctions";
 import { readBBGBlot, readIB, readBBE } from "./mufgOperations";
-import { getTradeDateYearTrades, getTradeDateYearTradesWithoutTheCentury, formatDateReadable, convertExcelDateToJSDate, convertExcelDateToJSDateTime, formateDateNomura, getSettlementDateYearNomura, generateRandomString } from "./common";
+import { getTradeDateYearTrades, getTradeDateYearTradesWithoutTheCentury, formatDateReadable, convertExcelDateToJSDate, convertExcelDateToJSDateTime, generateRandomString } from "./common";
 import { getSettlementDateYear, readIBEblot, getDateTimeInMongoDBCollectionFormat, readEmsxEBlot } from "./portfolioFunctions";
 import { formatDateVconFile } from "./common";
 import { getSecurityInPortfolioWithoutLocation } from "./graphApiConnect";
@@ -138,7 +138,7 @@ export function renderVcon(emailContent: string) {
   return vcon;
 }
 
-export async function uploadArrayAndReturnFilePath(data: any, pathName: string, rules: rules | null) {
+export async function uploadArrayAndReturnFilePath(data: any, pathName: string) {
   // Create a new Workbook
   var wb = xlsx.utils.book_new();
 
@@ -156,46 +156,15 @@ export async function uploadArrayAndReturnFilePath(data: any, pathName: string, 
   return fileName;
 }
 
-export function formatNomuraEBlot(vcons: any) {
-  let nomuraEBlot = [];
-  for (let index = 0; index < vcons.length; index++) {
-    let vcon = vcons[index];
-    let tradeDateFormated = formateDateNomura(vcon["Trade Date"]);
-    let settlementDateFormated = getSettlementDateYearNomura(vcon["Trade Date"], vcon["Settle Date"]);
-    let object: any = {};
-    object["Transaction-Type-Indicator"] = "BS";
-    object["Client-Ref"] = "";
-    object["Shaped-Trade-Ref"] = "";
-    object["Account-Number"] = "CPB10728";
-    object["Trade-Version"] = "NEW";
-    object["Trade-Date"] = tradeDateFormated;
-    object["Settlement-Date"] = settlementDateFormated;
-    object["BS-Indicator"] = vcon["Buy/Sell"];
-    object["Security-Indicator-Type"] = "IS";
-    object["Security-Val"] = vcon["ISIN"];
-    object["Security-Description"] = vcon["Issue"];
-    object["Issue-Currency"] = vcon["Application"];
-    object["Broker"] = vcon["Broker Name"];
-    object["Quantity"] = parseInt(vcon["Quantity"].replace(/,/g, ""));
-    object["Price"] = vcon["Price (Decimal)"];
-    object["Commission-Type"];
-    object["Commission-Value"] = "0";
-    object["Tax	Proceeds"];
-    object["Proceeds-Currency"];
-    object["Interest"] = vcon["Accrued Interest"];
-    object["Prefigured-Indicator"];
-    nomuraEBlot.push(object);
-  }
-  return nomuraEBlot;
-}
+
 
 export async function getTriadaTrades(tradeType: any) {
-  const database = client.db("trades");
+  const database = client.db("trades_v_2");
   const reportCollection = await database.collection(`${tradeType}`).find().toArray();
   return reportCollection;
 }
 
-export async function formatTriadaBlot(files: any) {
+export async function formatCentralizedRawFiles(files: any) {
   let bbbData = [],
     ibData = [],
     bbeData = [];
@@ -235,22 +204,25 @@ export async function formatTriadaBlot(files: any) {
     if (trade["Status"] == "Accepted") {
       let settlementDate = getSettlementDateYear(convertExcelDateToJSDate(trade["Trade Date"]), convertExcelDateToJSDate(trade["Settle Date"]));
       obj["B/S"] = trade["Buy/Sell"];
-      obj["Bond/CDS"] = trade["Issue"];
-      obj["Location"] = trade["Location"];
-      obj["Trade Date"] = getTradeDateYearTradesWithoutTheCentury(convertExcelDateToJSDate(trade["Trade Date"]));
+      obj["Issue"] = trade["Issue"];
+      obj["Location"] = trade["Location"].trim()
+      obj["Trade Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(trade["Trade Date"]))
       obj["Trade Time"] = trade["Entry Time"].split(" ")[1] + ":00";
-      obj["Settle Date"] = getTradeDateYearTradesWithoutTheCentury(settlementDate);
+      obj["Settle Date"] = getTradeDateYearTrades(settlementDate)
       obj["Price"] = trade["Price (Decimal)"];
-      obj["Notionol Amount"] = parseFloat(trade["Quantity"].replace(/,/g, ""));
+      obj["Notional Amount"] = parseFloat(trade["Quantity"].replace(/,/g, ""));
       obj["Settlement Amount"] = parseFloat(trade["Net"].replace(/,/g, ""));
+      obj["Principal"] = parseFloat(trade["Principal"].replace(/,/g, ""));
       obj["Counter Party"] = trade["Broker Code"];
       obj["Triada Trade Id"] = trade["Triada Trade Id"];
       obj["Seq No"] = trade["Seq No"];
+      obj["ISIN"] = trade["ISIN"];
       obj["Cuisp"] = trade["Cusip"];
       obj["Currency"] = bbbCurrency[trade["Currency Symbol"]];
       obj["Yield"] = trade["Yield"];
       obj["Accrued Interest"] = trade["Accrued Interest"];
       obj["Original Face"] = "1000";
+      obj["Comm/Fee"] = ""
       obj["Trade Type"] = "vcon";
       obj["Trade App Status"] = trade["Trade App Status"]
       blot.push(obj);
@@ -262,30 +234,33 @@ export async function formatTriadaBlot(files: any) {
     let trade = ibData[index2];
 
     let obj: any = {};
-    let originalFace: any = Math.abs(trade["Notional Value"] / trade["T Price"] / Math.abs(trade["Quantity"]));
+    let originalFace: any = Math.abs(trade["Notional Value"] / trade["T Price"]/ trade["Quantity"]);
     obj["B/S"] = parseFloat(trade["Quantity"]) > 0 ? "B" : "S";
-    obj["Bond/CDS"] = trade["Symbol"];
-    obj["Location"] = trade["Location"];
+    obj["Issue"] = trade["Symbol"];
+    obj["Location"] = trade["Location"].trim()
     obj["Trade Date"] = trade["Trade Date"];
     obj["Trade Time"] = trade["Trade Date Time"];
     obj["Settle Date"] = trade["Trade Date"];
-    obj["Price"] = trade["C Price"];
-    obj["Notionol Amount"] = parseFloat(trade["Quantity"]);
-    obj["Settlement Amount"] = trade["Notional Value"];
+    obj["Price"] = trade["T Price"];
+    obj["Notional Amount"] = Math.abs(parseFloat(trade["Quantity"])) * originalFace
+    obj["Settlement Amount"] = Math.abs(trade["Notional Value"])
+    obj["Principal"] = Math.abs(trade["T Price"] * trade["Quantity"] * originalFace)
     obj["Counter Party"] = "IB";
     obj["Triada Trade Id"] = trade["Triada Trade Id"];
     obj["Seq No"] = "";
+    obj["ISIN"] = "";
     obj["Cuisp"] = "";
     obj["Currency"] = "USD";
     obj["Yield"] = "";
     obj["Accrued Interest"] = "";
     obj["Original Face"] = originalFace;
+    obj["Comm/Fee"] = trade["Comm/Fee"];
     obj["Trade Type"] = "ib";
     obj["Trade App Status"] = trade["Trade App Status"]
     blot.push(obj);
     counter++;
   }
-  console.log(bbeData)
+
 
   for (let index3 = 0; index3 < bbeData.length; index3++) {
     let obj: any = {};
@@ -293,22 +268,25 @@ export async function formatTriadaBlot(files: any) {
    
 
     obj["B/S"] = trade["Buy/Sell"] == "Sell" ? "S" : "B";
-    obj["Bond/CDS"] = trade["Security"];
-    obj["Location"] = trade["Location"];
+    obj["Issue"] = trade["Security"];
+    obj["Location"] = trade["Location"].trim()
     obj["Trade Date"] = trade["Trade Date"];
     obj["Trade Time"] = "";
     obj["Settle Date"] = trade["Trade Date"];
     obj["Price"] = trade["Price"];
-    obj["Notionol Amount"] = parseFloat(trade["Quantity"]);
+    obj["Notional Amount"] = parseFloat(trade["Quantity"]);
     obj["Settlement Amount"] = trade["Net"];
+    obj["Principal"] = trade["Net"] * trade["Price"]
     obj["Counter Party"] = "EMSX";
     obj["Triada Trade Id"] = trade["Triada Trade Id"];
     obj["Seq No"] = "";
+    obj["ISIN"] = "";
     obj["Cuisp"] = "";
-    obj["Currency"] = "USD";
+    obj["Currency"] = "HKD";
     obj["Yield"] = "";
     obj["Accrued Interest"] = "";
     obj["Original Face"] = "1000";
+    obj["Comm/Fee"] = ""
     obj["Trade Type"] = "emsx";
     obj["Trade App Status"] = trade["Trade App Status"]
     blot.push(obj);
@@ -338,6 +316,7 @@ export function formatIbTrades(data: any, ibTrades: any, portfolio: any) {
   // console.log(ibTrades[ibTrades.length - 1], data[0], "test")
   try {
     let count = ibTrades.length + 1;
+    
     for (let index = 0; index < data.length; index++) {
       let trade = data[index];
       let id;
@@ -354,7 +333,7 @@ export function formatIbTrades(data: any, ibTrades: any, portfolio: any) {
         let existingTrade = null;
         for (let ibIndex = 0; ibIndex < ibTrades.length; ibIndex++) {
           let ibTrade = ibTrades[ibIndex];
-          if (trade["Symbol"] == ibTrade["Symbol"] && trade["Quantity"] == ibTrade["Quantity"] && trade["Trade Date"] == ibTrade["Trade Date"] && trade["Settle Date"] == ibTrade["Settle Date"] && trade["T. Price"] == ibTrade["T Price"] && trade["C. Price"] == ibTrade["C Price"]) {
+          if (trade["Symbol"] == ibTrade["Issue"] && trade["Quantity"] == ibTrade["Quantity"] && trade["Trade Date"] == ibTrade["Trade Date"] && trade["Settle Date"] == ibTrade["Settle Date"] && trade["T. Price"] == ibTrade["T Price"] && trade["C. Price"] == ibTrade["C Price"]) {
             existingTrade = ibTrade;
           }
         }

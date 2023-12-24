@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.editPosition = exports.insertPricesUpdatesInPortfolio = exports.updatePricesPortfolio = exports.insertTradesInPortfolio = exports.editPositionPortfolio = exports.updatePositionPortfolio = exports.uploadPortfolioFromLivePortfolio = exports.uploadPortfolioFromMufg = exports.uploadPortfolioFromImagine = exports.getBBTicker = exports.insertTrade = exports.getDailyEarnedInterestRlzPtf = exports.getSecurityInPortfolio = exports.getTrades = exports.getHistoricalPortfolio = exports.getPortfolio = exports.getAllCollectionDatesSinceStartMonth = exports.getEarliestCollectionName = exports.getHistoricalPortfolioWithAnalytics = void 0;
+exports.editPosition = exports.insertPricesUpdatesInPortfolio = exports.updatePricesPortfolio = exports.insertTradesInPortfolio = exports.editPositionPortfolio = exports.updatePositionPortfolio = exports.uploadPortfolioFromLivePortfolio = exports.uploadPortfolioFromMufg = exports.uploadPortfolioFromImagine = exports.getBBTicker = exports.insertTrade = exports.getDailyEarnedInterestRlzPtf = exports.getSecurityInPortfolio = exports.getTrades = exports.getHistoricalPortfolio = exports.getPortfolio = exports.getAllCollectionDatesSinceStartMonth = exports.getEarliestCollectionName = exports.getHistoricalRiskReportWithAnalytics = exports.getHistoricalPortfolioWithAnalytics = void 0;
 require("dotenv").config();
 const portfolioFunctions_1 = require("./portfolioFunctions");
 const util_1 = __importDefault(require("util"));
@@ -90,6 +90,69 @@ async function getHistoricalPortfolioWithAnalytics(date) {
     return [documents, sameDayCollectionsPublished];
 }
 exports.getHistoricalPortfolioWithAnalytics = getHistoricalPortfolioWithAnalytics;
+async function getHistoricalRiskReportWithAnalytics(date) {
+    const database = client.db("portfolios");
+    let earliestPortfolioName = await getEarliestCollectionName(date);
+    let sameDayCollectionsPublished = earliestPortfolioName[1];
+    let yesterdayPortfolioName = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date(new Date(earliestPortfolioName[0]).getTime() - 1 * 24 * 60 * 60 * 1000)).split(" ")[0] + " 23:59";
+    let lastDayBeforeToday = await getEarliestCollectionName(yesterdayPortfolioName);
+    const reportCollection = database.collection(`portfolio-${earliestPortfolioName[0]}`);
+    let documents = await reportCollection
+        .aggregate([
+        {
+            $sort: {
+                "BB Ticker": 1, // replace 'BB Ticker' with the name of the field you want to sort alphabetically
+            },
+        },
+    ])
+        .toArray();
+    let now = new Date(date);
+    let currentMonth = now.getMonth();
+    let currentYear = now.getFullYear();
+    let thisMonth = (0, common_1.monthlyRlzdDate)(date);
+    documents = documents.filter((position) => {
+        if (position["Quantity"] == 0) {
+            let monthsTrades = Object.keys(position["Monthly Capital Gains Rlzd"]);
+            if (monthsTrades.includes(thisMonth)) {
+                return position;
+            }
+        }
+        else {
+            return position;
+        }
+    });
+    documents.sort((current, next) => {
+        if (current["Quantity"] === 0 && next["Quantity"] !== 0) {
+            return 1; // a should come after b
+        }
+        if (current["Quantity"] !== 0 && next["Quantity"] === 0) {
+            return -1; // a should come before b
+        }
+        // if both a and b have Quantity 0 or both have Quantity not 0, sort alphabetically by name
+        return current["Issue"].localeCompare(next["Issue"]);
+    });
+    let currentDayDate = new Date(date);
+    let previousMonthDates = (0, portfolioFunctions_1.getAllDatesSinceLastMonthLastDay)(currentDayDate);
+    //+ 23:59 to make sure getEarliestcollectionname get the lastest date on last day of the month
+    let lastMonthLastCollectionName = await getEarliestCollectionName(previousMonthDates[0] + " 23:59");
+    try {
+        let lastMonthPortfolio = await getHistoricalPortfolio(lastMonthLastCollectionName[0]);
+        let previousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeToday[0]);
+        documents = await getMTDParams(documents, lastMonthPortfolio, earliestPortfolioName[0]);
+        documents = await getPreviousDayMarkPTFURLZD(documents, previousDayPortfolio, lastDayBeforeToday[0]);
+    }
+    catch (error) {
+        console.log(error);
+    }
+    documents = await calculateMonthlyInterest(documents, new Date(date));
+    documents = await calculateDailyInterestUnRlzdCapitalGains(documents, new Date(date));
+    documents = await calculateMonthlyURlzd(documents);
+    documents = calculateMonthlyDailyRlzdPTFPL(documents, date);
+    documents = formatFrontEndTable(documents, date);
+    documents = formatFrontEndRiskReport(documents);
+    return [documents, sameDayCollectionsPublished];
+}
+exports.getHistoricalRiskReportWithAnalytics = getHistoricalRiskReportWithAnalytics;
 async function getEarliestCollectionName(originalDate) {
     const database = client.db("portfolios");
     let collections = await database.listCollections().toArray();
@@ -148,7 +211,7 @@ async function getPortfolio() {
         const database = client.db("portfolios");
         let latestCollectionTodayDate = day.split(" ")[0] + " 23:59";
         let earliestCollectionName = await getEarliestCollectionName(latestCollectionTodayDate);
-        console.log(earliestCollectionName[0], "get portfoilio date");
+        console.log(earliestCollectionName[0], "get portfolio date");
         const reportCollection = database.collection(`portfolio-${earliestCollectionName[0]}`);
         let documents = await reportCollection.find().toArray();
         return documents;
@@ -542,8 +605,14 @@ async function updatePositionPortfolio(path) {
                     object["Type"] = securityInPortfolio["Type"];
                     object["Coupon Rate"] = securityInPortfolio["Coupon Rate"];
                     object["Group"] = securityInPortfolio["Group"];
+                    object["Sector"] = securityInPortfolio["Sector"];
+                    object["Mid"] = securityInPortfolio["Mid"];
+                    object["Bid"] = securityInPortfolio["Bid"];
+                    object["Ask"] = securityInPortfolio["Ask"];
                     object["Issue"] = securityInPortfolio["Issue"] && securityInPortfolio["Issue"] != "" ? securityInPortfolio["Issue"] : null;
                     object["_id"] = securityInPortfolio["_id"];
+                    object["Country"] = securityInPortfolio["Country"];
+                    object["Rating Class"] = securityInPortfolio["Rating Class"];
                 }
                 let couponDaysYear = securityInPortfolio !== 404 ? securityInPortfolio["Coupon Duration"] : row["Issue"].split(" ")[0] == "T" ? 365.0 : 360.0;
                 let previousQuantity = securityInPortfolio["Quantity"];
@@ -573,6 +642,9 @@ async function updatePositionPortfolio(path) {
                     if (operation == -1 * accumlatedQuantityState && previousQuantity) {
                         rlzdOperation = 1;
                     }
+                }
+                if (tradeExistsAlready) {
+                    console.log(row["Triada Trade Id"], " already exists");
                 }
                 if (!tradeExistsAlready && identifier !== "") {
                     triadaIds.push(row["Triada Trade Id"]);
@@ -815,15 +887,18 @@ async function updatePricesPortfolio(path) {
                     if (object == 404) {
                         continue;
                     }
-                    let faceValue = object["ISIN"].includes("CDX") || object["ISIN"].includes("ITRX") ? 100 / (object["Quantity"] / object["Original Face"]) : object["ISIN"].includes("1393") || object["ISIN"].includes("IB") ? 100 : 1;
+                    let faceValue = object["ISIN"].includes("CDX") || object["ISIN"].includes("ITRX") || object["ISIN"].includes("1393") || object["ISIN"].includes("IB") ? 100 : 1;
                     object["Mid"] = (parseFloat(row["Today's Mid"]) / 100.0) * faceValue;
                     object["Ask"] = parseFloat(row["Override Ask"]) > 0 ? (parseFloat(row["Override Ask"]) / 100.0) * faceValue : (parseFloat(row["Today's Ask"]) / 100.0) * faceValue;
                     object["Bid"] = parseFloat(row["Override Bid"]) > 0 ? (parseFloat(row["Override Bid"]) / 100.0) * faceValue : (parseFloat(row["Today's Bid"]) / 100.0) * faceValue;
                     object["YTM"] = row["Mid  Yield call"].toString().includes("N/A") ? 0 : row["Mid  Yield call"];
                     object["DV01"] = row["DV01"].toString().includes("N/A") ? 0 : row["DV01"];
                     object["OAS"] = row["Spread to benchmark"].toString().includes("N/A") ? 0 : row["Spread to benchmark"];
-                    object["Modified Duration"] = row["ModDurPerp"].toString().includes("N/A") ? (row["ModDur"].toString().includes("N/A") ? 0 : row["ModDur"]) : row["ModDurPerp"];
-                    if (object["Call Date"] && !object["Call Date"].includes("N/A")) {
+                    // object["Issuer"] = row["Issuer Name"].includes("#") ? "0" : row["Issuer Name"];
+                    if (row["ModDurPerp"]) {
+                        object["Modified Duration"] = row["ModDurPerp"].toString().includes("#") ? (row["ModDur"].toString().includes("N/A") ? 0 : row["ModDur"]) : row["ModDurPerp"];
+                    }
+                    if (!row["Call Date"].includes("N/A") || !row["Call Date"].includes("#")) {
                         object["Call Date"] = row["Call Date"];
                     }
                     if (currencyInUSD[object["Currency"]]) {
@@ -853,11 +928,16 @@ async function updatePricesPortfolio(path) {
             }
             try {
                 let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
-                await (0, operations_1.insertEditLogs)(["prices update"], "Update Prices", dateTime, "Bloomberg Pricing Sheet", "Link: " + path);
                 let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(updatedPricePortfolio, portfolio);
                 console.log(updatedPortfolio[1], "positions that did not update");
                 let insertion = await insertPricesUpdatesInPortfolio(updatedPortfolio[0]);
-                return { error: `positions that did not update ${updatedPortfolio[1]}` };
+                await (0, operations_1.insertEditLogs)(["prices update"], "Update Prices", dateTime, `Bloomberg Pricing Sheet - positions that did not update: ${updatedPortfolio[1]}`, "Link: " + path);
+                if (!updatedPortfolio[1].length) {
+                    return updatedPortfolio[0];
+                }
+                else {
+                    return { error: `positions that did not update ${updatedPortfolio[1]}` };
+                }
             }
             catch (error) {
                 console.log(error);
@@ -1013,6 +1093,7 @@ async function getMTDParams(portfolio, lastMonthPortfolio, dateInput) {
                 portfolio[index]["Notes"] = "";
                 if ((lastMonthPosition["ISIN"] == position["ISIN"] || lastMonthPosition["BB Ticker"] == position["BB Ticker"]) && lastMonthPosition["Location"] == position["Location"]) {
                     portfolio[index]["MTD Mark"] = lastMonthPosition["Mid"];
+                    portfolio[index]["MTD FX"] = lastMonthPosition["holdPortfXrate"] ? lastMonthPosition["holdPortfXrate"] : 1;
                 }
             }
         }
@@ -1077,8 +1158,8 @@ function calculateMonthlyDailyRlzdPTFPL(portfolio, date) {
         portfolio[index]["Monthly Capital Gains Rlzd"] = portfolio[index]["Monthly Capital Gains Rlzd"] ? portfolio[index]["Monthly Capital Gains Rlzd"][thisMonth] || 0 : 0;
         portfolio[index]["Cost MTD Ptf"] = portfolio[index]["Cost MTD Ptf"] ? portfolio[index]["Cost MTD Ptf"][thisMonth] || 0 : 0;
         portfolio[index]["Day Rlzd K G/L"] = portfolio[index]["Day Rlzd K G/L"] ? portfolio[index]["Day Rlzd K G/L"][thisDay] || 0 : 0;
-        portfolio[index]["Ptf MTD P&L"] = portfolio[index]["Monthly Capital Gains Rlzd"] + portfolio[index]["Monthly Capital Gains URlzd"] + portfolio[index]["Monthly Interest Income"] || 0;
-        portfolio[index]["Ptf Day P&L"] = parseFloat(portfolio[index]["Daily Interest Income"]) + parseFloat(portfolio[index]["Day URlzd K G/L"]) + parseFloat(portfolio[index]["Day Rlzd K G/L"]) ? parseFloat(portfolio[index]["Daily Interest Income"]) + parseFloat(portfolio[index]["Day URlzd K G/L"]) + parseFloat(portfolio[index]["Day Rlzd K G/L"]) : 0;
+        portfolio[index]["Ptf MTD P&L"] = parseFloat(portfolio[index]["Monthly Capital Gains Rlzd"]) + (parseFloat(portfolio[index]["Monthly Capital Gains URlzd"]) || 0) + parseFloat(portfolio[index]["Monthly Interest Income"]) || 0;
+        portfolio[index]["Ptf Day P&L"] = parseFloat(portfolio[index]["Daily Interest Income"]) + parseFloat(portfolio[index]["Day URlzd K G/L"]) ? parseFloat(portfolio[index]["Daily Interest Income"]) + parseFloat(portfolio[index]["Day URlzd K G/L"]) : 0;
         if (portfolio[index]["Ptf Day P&L"] == 0) {
             portfolio[index]["Ptf Day P&L"] = 0;
         }
@@ -1094,14 +1175,13 @@ function formatFrontEndTable(portfolio, date) {
         let originalFace = position["Original Face"] || 1;
         let usdRatio = parseFloat(position["holdPortfXrate"]) || 1;
         position["Cost"] = position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") ? Math.round(position["Average Cost"] * position["Quantity"] * 10000) / (10000 * position["Original Face"]) : Math.round(position["Average Cost"] * position["Quantity"] * 1000000) / 1000000;
-        position["Daily Interest Income"] = Math.round(position["Daily Interest Income"] * 10000) / 10000;
-        position["holdPortfXrate"] = Math.round(position["holdPortfXrate"] * 10000) / 10000;
+        position["Daily Interest Income"] = Math.round(position["Daily Interest Income"] * 1000000) / 1000000;
+        position["holdPortfXrate"] = Math.round(position["holdPortfXrate"] * 1000000) / 1000000;
         position["Value"] = position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") ? Math.round((position["Quantity"] * position["Mid"] * 10000 * usdRatio) / originalFace) / 10000 : Math.round(position["Quantity"] * position["Mid"] * usdRatio * 10000) / 10000;
         position["Mid"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Mid"] * 1000000) / 1000000 : Math.round(position["Mid"] * 1000000) / 10000;
         position["Bid"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Bid"] * 1000000) / 1000000 : Math.round(position["Bid"] * 1000000) / 10000;
         position["Ask"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Ask"] * 1000000) / 1000000 : Math.round(position["Ask"] * 1000000) / 10000;
         position["Average Cost"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Average Cost"] * 1000000) / 1000000 : Math.round(position["Average Cost"] * 1000000) / 10000;
-        position["DV01"] = Math.round(position["DV01"] * 1000000) / 1000000 || 0;
         position["YTM"] = Math.round(position["YTM"] * 1000000) / 1000000 || 0;
         position["CR01"] = "0";
         position["MTD Mark"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["MTD Mark"] * 1000000) / 1000000 : Math.round(position["MTD Mark"] * 1000000) / 10000;
@@ -1112,20 +1192,28 @@ function formatFrontEndTable(portfolio, date) {
         position["Cost MTD Ptf"] = Math.round(position["Cost MTD Ptf"] * 1000000 * usdRatio) / 1000000;
         position["Cost"] = Math.round(position["Cost"] * 1000000 * usdRatio) / 1000000;
         position["Average Cost"] = Math.round(position["Average Cost"] * 1000000) / 1000000;
-        position["Ptf Day P&L"] = Math.round(position["Ptf Day P&L"] * 1000000 * usdRatio) / 1000000;
-        position["Ptf MTD P&L"] = Math.round(position["Ptf MTD P&L"] * 1000000 * usdRatio) / 1000000;
         position["holdPortfXrate"] = position["holdPortfXrate"] ? position["holdPortfXrate"] : 1;
+        position["MTD FX"] = position["MTD FX"] ? position["MTD FX"] : 1;
         if (!position["Previous FX Rate"]) {
             position["Previous FX Rate"] = position["holdPortfXrate"];
         }
-        position["P&L FX"] = (parseFloat(position["holdPortfXrate"]) - parseFloat(position["Previous FX Rate"])) * position["Day Rlzd K G/L"] || 0;
-        position["Previous FX Rate"] = Math.round(position["Previous FX Rate"] * 1000000) / 1000000;
         position["Day Int.Income USD"] = position["Daily Interest Income"] * usdRatio;
         position["Daily Interest FX P&L"] = Math.round((position["holdPortfXrate"] - position["Previous FX Rate"]) * 1000000 * position["Daily Interest Income"]) / 1000000;
         position["Notional Total"] = position["Quantity"];
         position["Quantity"] = position["Quantity"] / originalFace;
         position["#"] = index + 1;
         position["ISIN"] = position["ISIN"].length != 12 ? "" : position["ISIN"];
+        if (position["Issue"].includes("CDS")) {
+            position["Day P&L FX"] = Math.round((((parseFloat(position["holdPortfXrate"]) - parseFloat(position["Previous FX Rate"])) * position["Quantity"] * position["Previous Mark"]) / 100) * 1000000) / 1000000 || 0;
+            position["MTD P&L FX"] = Math.round((((parseFloat(position["holdPortfXrate"]) - parseFloat(position["MTD FX"] || 1)) * position["Quantity"] * position["MTD Mark"]) / 100) * 1000000) / 1000000 || 0;
+        }
+        else {
+            position["Day P&L FX"] = Math.round((((parseFloat(position["holdPortfXrate"]) - parseFloat(position["Previous FX Rate"])) * position["Notional Total"] * position["Previous Mark"]) / 100) * 1000000) / 1000000 || 0;
+            position["MTD P&L FX"] = Math.round((((parseFloat(position["holdPortfXrate"]) - parseFloat(position["MTD FX"] || 1)) * position["Notional Total"] * position["MTD Mark"]) / 100) * 1000000) / 1000000 || 0;
+        }
+        position["Ptf Day P&L"] = Math.round((position["Ptf Day P&L"] * usdRatio + position["Day P&L FX"]) * 1000000) / 1000000;
+        position["Ptf MTD P&L"] = Math.round((position["Ptf MTD P&L"] + position["MTD P&L FX"] * usdRatio) * 1000000) / 1000000;
+        position["Previous FX Rate"] = Math.round(position["Previous FX Rate"] * 1000000) / 1000000;
         position["Maturity"] = position["Maturity"] ? position["Maturity"] : 0;
         position["Call Date"] = position["Call Date"] ? position["Call Date"] : 0;
         position["Color"] = position["Maturity"] ? (areDatesInSameMonthAndYear(position["Maturity"], date) ? "red" : "") : "";
@@ -1134,6 +1222,9 @@ function formatFrontEndTable(portfolio, date) {
         position["Security"] = position["Issue"];
         position["Coupon Duration"] = position["Coupon Duration"] ? position["Coupon Duration"] : position["Issue"].split(" ")[0] == "T" || position["Issue"].includes("GOVT") ? 365.0 : 360.0;
         position["Coupon Rate"] = position["Coupon Rate"] ? position["Coupon Rate"] : 0;
+        position["Issuer"] = position["Issuer"] == "0" ? "" : position["Issuer"];
+        position["DV01"] = (position["DV01"] / 1000000) * position["Notional Total"];
+        position["DV01"] = Math.round(position["DV01"] * 1000000) / 1000000 || 0;
     }
     return portfolio;
 }
@@ -1264,4 +1355,157 @@ async function editPosition(editedPosition) {
 exports.editPosition = editPosition;
 function areDatesInSameMonthAndYear(customDate, todaysDate) {
     return new Date(customDate).getMonth() === new Date(todaysDate).getMonth() && new Date(customDate).getFullYear() === new Date(todaysDate).getFullYear();
+}
+function formatFrontEndRiskReport(portfolio) {
+    let tableTitle = [
+        "#",
+        "Type",
+        "Strategy",
+        "Trade Idea Code",
+        "Credit Name",
+        "BB Ticker",
+        "H-Notional",
+        "o/r Dv01",
+        "o/r Cr01",
+        "o/r Price",
+        "Text23",
+        "Text10",
+        "Accrued $",
+        "Rating Name: SP",
+        "Curr",
+        "Isin",
+        "Maturity",
+        "CallDate",
+        "Notional Total",
+        "Duration(Mkt)",
+        "Duration(C/P,Mkt)",
+        "Implied ZCS",
+        "YTM",
+        "Dv01 $ (C/P,Mkt) (USD)",
+        "Dv01 (USD) (Mkt)",
+        "Notional Calc (Mkt)",
+        "Cr01 (USD) (Mkt)",
+        "Implied CS",
+        "Mid",
+        "Bid",
+        "Ask",
+        "Average Cost",
+        "MTD P&L",
+        "Day P&L",
+        "Total P&L",
+        "R - Capital Gain/Loss",
+        "U - Capital Gain/Loss",
+        "Accrued Interest",
+        "Cash Dispmnt Accrued Int",
+        "Long Security Name",
+        "Issue Amt",
+        "YC +25",
+        "CS +100",
+        "MTD Int.Income",
+        "MTD Mark",
+        "Ptf MTD P&L",
+        "Ptf MTD Rlzd",
+        "Ptf MTD URlzd",
+        "Adjusted OAS",
+        "Implied ZCS2",
+        "Issuer Name",
+        "Ref Bond",
+        "Ref Fair",
+        "Ref YTM",
+        "Ref Spread o/r",
+        "AccAdj MTD",
+        "$ Fair",
+        "FX",
+        "Quantity",
+        "Q_Sector",
+        "Q_Country",
+        "$ Full Econ(Mkt)",
+    ];
+    let tableTitleConversion = {
+        "#": "#",
+        Type: "Type",
+        Strategy: "Group",
+        "Trade Idea Code": "Location",
+        "Credit Name": "Issuer",
+        "BB Ticker": "Issue",
+        "H-Notional": "0",
+        "o/r Dv01": "0",
+        "o/r Cr01": "0",
+        "o/r Price": "0",
+        Text23: "Rating Class",
+        "Accrued $": "Monthly Interest Income",
+        "Rating Name: SP": "0",
+        Curr: "Currency",
+        Isin: "ISIN",
+        Maturity: "Maturity",
+        CallDate: "Call Date",
+        "Notional Total": "Notional Total",
+        "Duration(Mkt)": "Duration(Mkt)",
+        "Duration(C/P,Mkt)": "Modified Duration",
+        "Implied ZCS": "0",
+        YTM: "YTM",
+        "Dv01 $ (C/P,Mkt) (USD)": "DV01",
+        "Dv01 (USD) (Mkt)": "DV01",
+        "Notional Calc (Mkt)": "0",
+        "Cr01 (USD) (Mkt)": "DV01",
+        "Implied CS": "0",
+        Mid: "Mid",
+        Bid: "Bid",
+        Ask: "Ask",
+        "Average Cost": "Average Cost",
+        "MTD P&L": "Ptf MTD P&L",
+        "Day P&L": "Ptf Day P&L",
+        "Total P&L": "0",
+        "R - Capital Gain/Loss": "0",
+        "U - Capital Gain/Loss": "0",
+        "Accrued Interest": "Monthly Interest Income",
+        "Cash Dispmnt Accrued Int": "0",
+        "Long Security Name": "Issue",
+        "Issue Amt": "Quantity",
+        "YC +25": "0",
+        "CS +100": "0",
+        "MTD Int.Income": "Monthly Interest Income",
+        "MTD Mark": "MTD Mark",
+        "Ptf MTD P&L": "Ptf MTD P&L",
+        "Ptf MTD Rlzd": "Monthly Capital Gains Rlzd",
+        "Ptf MTD URlzd": "Monthly Capital Gains URlzd",
+        "Adjusted OAS": "0",
+        "Implied ZCS2": "0",
+        "Issuer Name": "Issuer",
+        "Ref Bond": "0",
+        "Ref Fair": "0",
+        "Ref YTM": "0",
+        "Ref Spread o/r": "0",
+        "AccAdj MTD": "0",
+        "$ Fair": "0",
+        FX: "holdPortfXrate",
+        Quantity: "Quantity",
+        Q_Sector: "Sector",
+        Q_Country: "Country",
+        "$ Full Econ(Mkt)": "Value",
+    };
+    let updatedPortfolio = [];
+    for (let index = 0; index < portfolio.length; index++) {
+        let position = portfolio[index];
+        let updatedPosition = {};
+        for (let titleIndex = 0; titleIndex < tableTitle.length; titleIndex++) {
+            let title = tableTitle[titleIndex];
+            updatedPosition[title] = tableTitleConversion[title] == "0" ? "0" : position[tableTitleConversion[title]];
+        }
+        if (position["Issue"].includes(" IB")) {
+            updatedPosition["Acct"] = "NOM_IB";
+        }
+        else if (!position["Issue"].includes(" IB")) {
+            updatedPosition["Acct"] = "NOM_PB";
+        }
+        if (position["Call Date"] && position["Call Date"] != "0") {
+            updatedPosition["Text10"] = "AT1";
+        }
+        if (position["Issue"].includes("CDS")) {
+            updatedPosition["Notional Total"] = -1 * position["Notional Total"];
+            updatedPosition["$ Full Econ(Mkt)"] = -1 * position["Notional Total"];
+        }
+        updatedPortfolio.push(updatedPosition);
+    }
+    return updatedPortfolio;
 }

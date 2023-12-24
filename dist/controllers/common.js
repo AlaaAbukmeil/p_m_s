@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDateTime = exports.convertExcelDateToJSDate = exports.getDateMufg = exports.monthlyRlzdDate = exports.getTradeDateYearTradesWithoutTheCentury = exports.getTradeDateYearTrades = exports.getSettlementDateYearTrades = exports.formatSettleDateVcon = exports.formatTradeDate = exports.getSettlementDateYearNomura = exports.formateDateNomura = exports.getCurrentDateVconFormat = exports.verifyToken = exports.getTime = exports.formatDateReadable = exports.formatDateVconFile = exports.formatDate = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = exports.uri = void 0;
+exports.getCurrentDateTime = exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDateTime = exports.convertExcelDateToJSDate = exports.getDateMufg = exports.monthlyRlzdDate = exports.getTradeDateYearTradesWithoutTheCentury = exports.getTradeDateYearTrades = exports.getSettlementDateYearTrades = exports.formatSettleDateVcon = exports.formatTradeDate = exports.getCurrentDateVconFormat = exports.verifyToken = exports.getTime = exports.formatDateReadable = exports.formatDateVconFile = exports.formatDate = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = exports.uri = void 0;
 require("dotenv").config();
 const jwt = require('jsonwebtoken');
 exports.uri = "mongodb+srv://alaa:" + process.env.MONGODBPASSWORD + "@atlascluster.zpfpywq.mongodb.net/?retryWrites=true&w=majority";
@@ -112,31 +112,9 @@ function getCurrentDateVconFormat() {
     return `${day}/${month}/${year}`;
 }
 exports.getCurrentDateVconFormat = getCurrentDateVconFormat;
-function formateDateNomura(date) {
-    var d = new Date(date), month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
-    if (month.length < 2)
-        month = '0' + month;
-    if (day.length < 2)
-        day = '0' + day;
-    return [year, month, day].join('');
-}
-exports.formateDateNomura = formateDateNomura;
-function getSettlementDateYearNomura(date1, date2) {
-    // Parse the month and year from the first date
-    // console.log(date1, date2)
-    const [month1, day1, year1] = date1.split('/').map(Number);
-    // Parse the month from the second date
-    const [month2, day2] = date2.split('/').map(Number);
-    // If the month of the second date is less than the month of the first date,
-    // it means we've crossed into a new year, so increment the year
-    const year2 = month2 < month1 ? year1 + 1 : year1;
-    // Return the second date with the year appended
-    return `${year2}${month2}${day2}`;
-}
-exports.getSettlementDateYearNomura = getSettlementDateYearNomura;
 function formatTradeDate(date) {
     date = new Date(date);
-    const year = date.getFullYear().toString().slice(-2);
+    const year = date.getFullYear().toString();
     let month = (date.getMonth() + 1).toString();
     let day = date.getDate().toString();
     month = month.length < 2 ? '0' + month : month;
@@ -268,3 +246,13 @@ function generateRandomString(length) {
     return result;
 }
 exports.generateRandomString = generateRandomString;
+function getCurrentDateTime() {
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, '0'); // Months are 0-11 in JavaScript
+    const day = String(now.getDate()).padStart(2, '0');
+    const year = now.getFullYear();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${month}/${day}/${year} ${hours}:${minutes}`;
+}
+exports.getCurrentDateTime = getCurrentDateTime;

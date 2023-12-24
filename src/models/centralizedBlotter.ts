@@ -1,4 +1,3 @@
-"use strict";
 // export class centerlizedTrades {
 //     constructor(
 //       public `Location`: string,
@@ -25,3 +24,4 @@
 //comm/fee
 //     ) { }
 //   }
+  
