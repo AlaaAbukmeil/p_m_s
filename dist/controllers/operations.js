@@ -58,7 +58,6 @@ async function readMUFGPrices(path) {
 exports.readMUFGPrices = readMUFGPrices;
 async function updatePreviousPricesPortfolioMUFG(data, collectionDate, path) {
     try {
-        path = "https://storage.cloud.google.com/capital-trade-396911.appspot.com" + path.split(".com/")[2];
         if (data.error) {
             return data;
         }
@@ -85,7 +84,12 @@ async function updatePreviousPricesPortfolioMUFG(data, collectionDate, path) {
                 console.log(updatedPortfolio[0], "positions that did not update");
                 let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
                 await insertEditLogs(["prices update"], "Update Prices", dateTime, "MUFG Previous Pricing Sheet on" + collectionDate, "Link: " + path);
-                return insertion;
+                if (!updatedPortfolio[1].length) {
+                    return updatedPortfolio[1];
+                }
+                else {
+                    return { error: `positions that did not update ${updatedPortfolio[1]}` };
+                }
             }
             catch (error) {
                 console.log(error);
@@ -189,7 +193,6 @@ function getSecurityInPortfolioWithoutLocation(portfolio, identifier) {
 exports.getSecurityInPortfolioWithoutLocation = getSecurityInPortfolioWithoutLocation;
 async function updatePreviousPricesPortfolioBloomberg(data, collectionDate, path) {
     try {
-        path = "https://storage.cloud.google.com/capital-trade-396911.appspot.com" + path.split(".appspot.com")[1];
         if (data.error) {
             return data;
         }
@@ -250,8 +253,12 @@ async function updatePreviousPricesPortfolioBloomberg(data, collectionDate, path
                 let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
                 await insertEditLogs(["prices update"], "Update Prices", dateTime, "Bloomberg Previous Pricing Sheet on " + collectionDate, "Link: " + path);
                 let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(updatedPricePortfolio, portfolio);
-                let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio[0], collectionDate);
-                return "insertion";
+                if (!updatedPortfolio[1].length) {
+                    return updatedPortfolio[1];
+                }
+                else {
+                    return { error: `positions that did not update ${updatedPortfolio[1]}` };
+                }
             }
             catch (error) {
                 console.log(error);

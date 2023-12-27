@@ -357,9 +357,8 @@ async function readCenterlizedEBlot(path) {
     // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
     // Read data
     const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-    const headersFormat = ["B/S", "Issue", "Location", "Trade Date", "Trade Time",
-        "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Trade App Status"];
-    const arraysAreEqual = headersFormat.every((value, index) => value === headers[0][index] ? true : console.log(value, headers[0][index]));
+    const headersFormat = ["B/S", "Issue", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Trade App Status"];
+    const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : console.log(value, headers[0][index])));
     if (!arraysAreEqual) {
         return {
             error: "Incompatible format, please upload centerlized e-blot xlsx/csv file",
@@ -379,7 +378,7 @@ async function readCenterlizedEBlot(path) {
             "6EZ3 IB": "ECZ3 Curncy",
             "ZN   MAR 24 IB": "TYH4 Comdty",
             "6BG4 IB": "BPG4 Curncy",
-            "6EG4 IB": "ECG4 Curncy"
+            "6EG4 IB": "ECG4 Curncy",
         };
         let filtered = data.filter((trade, index) => trade["Trade App Status"] == "new");
         let missingLocation = data.filter((trade, index) => trade["Location"] == "");
@@ -933,26 +932,29 @@ exports.sortVconTrades = sortVconTrades;
 function formatUpdatedPositions(positions, portfolio) {
     try {
         let positionsIndexThatExists = [];
+        let positionsThatGotUpdated = [];
         let positionsThatDoNotExists = [];
         let positionsThatDoNotExistsNames = [];
         for (let indexPositions = 0; indexPositions < positions.length; indexPositions++) {
             const position = positions[indexPositions];
             for (let indexPortfolio = 0; indexPortfolio < portfolio.length; indexPortfolio++) {
                 const portfolioPosition = portfolio[indexPortfolio];
-                if ((position["ISIN"] == portfolioPosition["ISIN"] || position["Issue"] == portfolioPosition["Issue"]) && position["Location"] == portfolioPosition["Location"]) {
+                if ((position["ISIN"] == portfolioPosition["ISIN"] || position["Issue"] == portfolioPosition["Issue"]) && position["Location"].trim() == portfolioPosition["Location"].trim()) {
                     portfolio[indexPortfolio] = position;
+                    positionsThatGotUpdated.push(`${position['Issue']} ${position["Location"]}\n`);
                     positionsIndexThatExists.push(indexPositions);
                 }
             }
         }
         for (let indexPositionsExists = 0; indexPositionsExists < positions.length; indexPositionsExists++) {
             if (!positionsIndexThatExists.includes(indexPositionsExists)) {
+                positionsThatGotUpdated.push(`${positions[indexPositionsExists]['Issue']} ${positions[indexPositionsExists]["Location"]}\n`);
                 positionsThatDoNotExists.push(positions[indexPositionsExists]);
             }
         }
-        for (let indexPositions = 0; indexPositions < positions.length; indexPositions++) {
-            if (!positionsIndexThatExists.includes(indexPositions)) {
-                positionsThatDoNotExistsNames.push(positions[indexPositions]["Issue"]);
+        for (let indexPositions = 0; indexPositions < portfolio.length; indexPositions++) {
+            if (!positionsThatGotUpdated.includes(`${portfolio[indexPositions]['Issue']} ${portfolio[indexPositions]["Location"]}\n`)) {
+                positionsThatDoNotExistsNames.push(`${portfolio[indexPositions]['Issue']} ${portfolio[indexPositions]["Location"]}\n`);
             }
         }
         let data = [[...portfolio, ...positionsThatDoNotExists], positionsThatDoNotExistsNames];

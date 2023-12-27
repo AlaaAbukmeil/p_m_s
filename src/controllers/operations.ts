@@ -65,7 +65,7 @@ export async function readMUFGPrices(path: string) {
 
 export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDate: string, path: string) {
   try {
-    path = "https://storage.cloud.google.com/capital-trade-396911.appspot.com" + path.split(".com/")[2]
+    
     if (data.error) {
       return data;
     } else {
@@ -96,7 +96,11 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
         console.log(updatedPortfolio[0], "positions that did not update" )
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
         await insertEditLogs(["prices update"], "Update Prices", dateTime , "MUFG Previous Pricing Sheet on" + collectionDate, "Link: " + path)
-        return insertion;
+        if (!updatedPortfolio[1].length) {
+          return updatedPortfolio[1];
+        } else {
+          return { error: `positions that did not update ${updatedPortfolio[1]}` };
+        }
       } catch (error) {
         console.log(error);
         return { error: "Template does not match" };
@@ -197,7 +201,6 @@ export function getSecurityInPortfolioWithoutLocation(portfolio: any, identifier
 
 export async function updatePreviousPricesPortfolioBloomberg(data: any, collectionDate: string, path: string) {
   try {
-    path = "https://storage.cloud.google.com/capital-trade-396911.appspot.com" + path.split(".appspot.com")[1];
    
     if (data.error) {
       return data;
@@ -262,9 +265,11 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
         await insertEditLogs(["prices update"], "Update Prices", dateTime , "Bloomberg Previous Pricing Sheet on " + collectionDate, "Link: " + path)
         let updatedPortfolio: any = formatUpdatedPositions(updatedPricePortfolio, portfolio);
-        let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio[0], collectionDate);
-
-        return "insertion";
+        if (!updatedPortfolio[1].length) {
+          return updatedPortfolio[1];
+        } else {
+          return { error: `positions that did not update ${updatedPortfolio[1]}` };
+        }
       } catch (error) {
         console.log(error);
         return { error: "Template does not match" };

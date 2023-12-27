@@ -389,6 +389,9 @@ function renderFx(emailContent) {
 }
 exports.renderFx = renderFx;
 function formatEmsxTrades(data, emsxTrades, portfolio) {
+    if (data.error) {
+        return data;
+    }
     let trades = [];
     try {
         let count = emsxTrades.length + 1;
@@ -451,7 +454,7 @@ async function readEmsxRawExcel(path) {
         // Read data
         const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
         const headersFormat = ["News", "Create Time (As of)", "Status", "Security", "Side", "Qty", "LmtPr", "TIF", "FillQty", "AvgPr", "% Filled", "Working Qty", "Idle", "Data Export Restricted", "Data Export Restricted", "VWAP", "Data Export Restricted", "Last", "Bid", "Ask", "Volume", "%20d ADV"];
-        const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index + 2] ? true : false));
+        const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index + 2] ? true : console.log(value, headers[0][index + 2])));
         if (!arraysAreEqual) {
             return {
                 error: "Incompatible format, please upload emsx e-blot xlsx/csv file",

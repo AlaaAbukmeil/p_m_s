@@ -247,12 +247,12 @@ function getSecurityInPortfolio(portfolio, identifier, location) {
     }
     for (let index = 0; index < portfolio.length; index++) {
         let issue = portfolio[index];
-        if ((identifier.includes(issue["ISIN"]) || identifier.includes(issue["Issue"])) && issue["Location"] == location) {
+        if ((identifier.includes(issue["ISIN"]) || identifier.includes(issue["Issue"])) && issue["Location"].trim() == location.trim()) {
             if (issue["ISIN"] != "") {
                 document = issue;
             }
         }
-        else if (identifier.includes(issue["BB Ticker"]) && issue["Location"] == location) {
+        else if (identifier.includes(issue["BB Ticker"]) && issue["Location"].trim() == location.trim()) {
             if (issue["BB Ticker"] != "") {
                 document = issue;
             }
@@ -577,7 +577,6 @@ function updateExisitingPosition(positions, identifier, location, updatedPositio
 }
 async function updatePositionPortfolio(path) {
     let allTrades = await (0, portfolioFunctions_1.readCenterlizedEBlot)(path);
-    path = "https://storage.cloud.google.com/capital-trade-396911.appspot.com/" + path.split(".com/")[1];
     if (allTrades.error) {
         return { error: allTrades.error };
     }
@@ -743,7 +742,7 @@ async function updatePositionPortfolio(path) {
                 let action1 = await insertTrade(allTrades[0], "vcons");
                 let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(positions, portfolio);
                 let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
-                return positions;
+                return updatedPortfolio;
             }
             catch (error) {
                 return { error: error };
@@ -865,7 +864,6 @@ exports.insertTradesInPortfolio = insertTradesInPortfolio;
 async function updatePricesPortfolio(path) {
     try {
         let data = await (0, portfolioFunctions_1.readPricingSheet)(path);
-        path = "https://storage.cloud.google.com/capital-trade-396911.appspot.com" + path.split(".appspot.com")[1];
         if (data.error) {
             return data;
         }
@@ -933,7 +931,7 @@ async function updatePricesPortfolio(path) {
                 let insertion = await insertPricesUpdatesInPortfolio(updatedPortfolio[0]);
                 await (0, operations_1.insertEditLogs)(["prices update"], "Update Prices", dateTime, `Bloomberg Pricing Sheet - positions that did not update: ${updatedPortfolio[1]}`, "Link: " + path);
                 if (!updatedPortfolio[1].length) {
-                    return updatedPortfolio[0];
+                    return updatedPortfolio[1];
                 }
                 else {
                     return { error: `positions that did not update ${updatedPortfolio[1]}` };
@@ -1177,7 +1175,7 @@ function formatFrontEndTable(portfolio, date) {
         position["Cost"] = position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") ? Math.round(position["Average Cost"] * position["Quantity"] * 10000) / (10000 * position["Original Face"]) : Math.round(position["Average Cost"] * position["Quantity"] * 1000000) / 1000000;
         position["Daily Interest Income"] = Math.round(position["Daily Interest Income"] * 1000000) / 1000000;
         position["holdPortfXrate"] = Math.round(position["holdPortfXrate"] * 1000000) / 1000000;
-        position["Value"] = position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") ? Math.round((position["Quantity"] * position["Mid"] * 10000 * usdRatio) / originalFace) / 10000 : Math.round(position["Quantity"] * position["Mid"] * usdRatio * 10000) / 10000;
+        position["Value"] = position["ISIN"].includes("CDS") || position["ISIN"].includes("ITRX") ? Math.round((position["Quantity"] * position["Mid"] * 10000 * usdRatio) / originalFace) / 10000 : Math.round(position["Quantity"] * position["Mid"] * usdRatio * 10000) / 10000;
         position["Mid"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Mid"] * 1000000) / 1000000 : Math.round(position["Mid"] * 1000000) / 10000;
         position["Bid"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Bid"] * 1000000) / 1000000 : Math.round(position["Bid"] * 1000000) / 10000;
         position["Ask"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Ask"] * 1000000) / 1000000 : Math.round(position["Ask"] * 1000000) / 10000;
@@ -1204,8 +1202,8 @@ function formatFrontEndTable(portfolio, date) {
         position["#"] = index + 1;
         position["ISIN"] = position["ISIN"].length != 12 ? "" : position["ISIN"];
         if (position["Issue"].includes("CDS")) {
-            position["Day P&L FX"] = Math.round((((parseFloat(position["holdPortfXrate"]) - parseFloat(position["Previous FX Rate"])) * position["Quantity"] * position["Previous Mark"]) / 100) * 1000000) / 1000000 || 0;
-            position["MTD P&L FX"] = Math.round((((parseFloat(position["holdPortfXrate"]) - parseFloat(position["MTD FX"] || 1)) * position["Quantity"] * position["MTD Mark"]) / 100) * 1000000) / 1000000 || 0;
+            position["Day P&L FX"] = Math.round((parseFloat(position["holdPortfXrate"]) - parseFloat(position["Previous FX Rate"])) * position["Quantity"] * position["Previous Mark"] * 1000000) / 1000000 || 0;
+            position["MTD P&L FX"] = Math.round((parseFloat(position["holdPortfXrate"]) - parseFloat(position["MTD FX"] || 1)) * position["Quantity"] * position["MTD Mark"] * 1000000) / 1000000 || 0;
         }
         else {
             position["Day P&L FX"] = Math.round((((parseFloat(position["holdPortfXrate"]) - parseFloat(position["Previous FX Rate"])) * position["Notional Total"] * position["Previous Mark"]) / 100) * 1000000) / 1000000 || 0;

@@ -292,11 +292,11 @@ export function getSecurityInPortfolio(portfolio: any, identifier: string, locat
   }
   for (let index = 0; index < portfolio.length; index++) {
     let issue = portfolio[index];
-    if ((identifier.includes(issue["ISIN"]) || identifier.includes(issue["Issue"])) && issue["Location"] == location) {
+    if ((identifier.includes(issue["ISIN"]) || identifier.includes(issue["Issue"])) && issue["Location"].trim() == location.trim()) {
       if (issue["ISIN"] != "") {
         document = issue;
       }
-    } else if (identifier.includes(issue["BB Ticker"]) && issue["Location"] == location) {
+    } else if (identifier.includes(issue["BB Ticker"]) && issue["Location"].trim() == location.trim()) {
       if (issue["BB Ticker"] != "") {
         document = issue;
       }
@@ -618,7 +618,6 @@ function updateExisitingPosition(positions: any, identifier: any, location: any,
 export async function updatePositionPortfolio(path: string) {
   let allTrades: any = await readCenterlizedEBlot(path);
 
-  path = "https://storage.cloud.google.com/capital-trade-396911.appspot.com/" + path.split(".com/")[1];
   if (allTrades.error) {
     return { error: allTrades.error };
   } else {
@@ -802,7 +801,7 @@ export async function updatePositionPortfolio(path: string) {
         let updatedPortfolio: any = formatUpdatedPositions(positions, portfolio);
         let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
 
-        return positions;
+        return updatedPortfolio;
       } catch (error) {
         return { error: error };
       }
@@ -928,8 +927,7 @@ export async function insertTradesInPortfolio(trades: any) {
 export async function updatePricesPortfolio(path: string) {
   try {
     let data: any = await readPricingSheet(path);
-    path = "https://storage.cloud.google.com/capital-trade-396911.appspot.com" + path.split(".appspot.com")[1];
-    
+
     if (data.error) {
       return data;
     } else {
@@ -992,12 +990,13 @@ export async function updatePricesPortfolio(path: string) {
       }
       try {
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+
         let updatedPortfolio: any = formatUpdatedPositions(updatedPricePortfolio, portfolio);
         console.log(updatedPortfolio[1], "positions that did not update");
         let insertion = await insertPricesUpdatesInPortfolio(updatedPortfolio[0]);
         await insertEditLogs(["prices update"], "Update Prices", dateTime, `Bloomberg Pricing Sheet - positions that did not update: ${updatedPortfolio[1]}`, "Link: " + path);
         if (!updatedPortfolio[1].length) {
-          return updatedPortfolio[0];
+          return updatedPortfolio[1];
         } else {
           return { error: `positions that did not update ${updatedPortfolio[1]}` };
         }
@@ -1232,6 +1231,7 @@ async function getPreviousDayMarkPTFURLZD(portfolio: any, previousDayPortfolio: 
   }
 
   return portfolio;
+
 }
 
 function calculateMonthlyDailyRlzdPTFPL(portfolio: any, date: any) {
@@ -1262,7 +1262,7 @@ function formatFrontEndTable(portfolio: any, date: any) {
     position["Cost"] = position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") ? Math.round(position["Average Cost"] * position["Quantity"] * 10000) / (10000 * position["Original Face"]) : Math.round(position["Average Cost"] * position["Quantity"] * 1000000) / 1000000;
     position["Daily Interest Income"] = Math.round(position["Daily Interest Income"] * 1000000) / 1000000;
     position["holdPortfXrate"] = Math.round(position["holdPortfXrate"] * 1000000) / 1000000;
-    position["Value"] = position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") ? Math.round((position["Quantity"] * position["Mid"] * 10000 * usdRatio) / originalFace) / 10000 : Math.round(position["Quantity"] * position["Mid"] * usdRatio * 10000) / 10000;
+    position["Value"] = position["ISIN"].includes("CDS") || position["ISIN"].includes("ITRX") ? Math.round((position["Quantity"] * position["Mid"] * 10000 * usdRatio) / originalFace) / 10000 : Math.round(position["Quantity"] * position["Mid"] * usdRatio * 10000) / 10000;
 
     position["Mid"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Mid"] * 1000000) / 1000000 : Math.round(position["Mid"] * 1000000) / 10000;
     position["Bid"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Bid"] * 1000000) / 1000000 : Math.round(position["Bid"] * 1000000) / 10000;
@@ -1294,8 +1294,8 @@ function formatFrontEndTable(portfolio: any, date: any) {
     position["ISIN"] = position["ISIN"].length != 12 ? "" : position["ISIN"];
 
     if (position["Issue"].includes("CDS")) {
-      position["Day P&L FX"] = Math.round((((parseFloat(position["holdPortfXrate"]) - parseFloat(position["Previous FX Rate"])) * position["Quantity"] * position["Previous Mark"]) / 100) * 1000000) / 1000000 || 0;
-      position["MTD P&L FX"] = Math.round((((parseFloat(position["holdPortfXrate"]) - parseFloat(position["MTD FX"] || 1)) * position["Quantity"] * position["MTD Mark"]) / 100) * 1000000) / 1000000 || 0;
+      position["Day P&L FX"] = Math.round((parseFloat(position["holdPortfXrate"]) - parseFloat(position["Previous FX Rate"])) * position["Quantity"] * position["Previous Mark"] * 1000000) / 1000000 || 0;
+      position["MTD P&L FX"] = Math.round((parseFloat(position["holdPortfXrate"]) - parseFloat(position["MTD FX"] || 1)) * position["Quantity"] * position["MTD Mark"] * 1000000) / 1000000 || 0;
     } else {
       position["Day P&L FX"] = Math.round((((parseFloat(position["holdPortfXrate"]) - parseFloat(position["Previous FX Rate"])) * position["Notional Total"] * position["Previous Mark"]) / 100) * 1000000) / 1000000 || 0;
       position["MTD P&L FX"] = Math.round((((parseFloat(position["holdPortfXrate"]) - parseFloat(position["MTD FX"] || 1)) * position["Notional Total"] * position["MTD Mark"]) / 100) * 1000000) / 1000000 || 0;

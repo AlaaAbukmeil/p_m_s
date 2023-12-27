@@ -84,7 +84,6 @@ router.get("/edit-logs", verifyToken, async (req, res) => {
     const editLogsType: any = req.query.logsType;
 
     let editLogs = await getEditLogs(`${editLogsType}`);
-    console.log(editLogs, editLogsType)
     res.send(editLogs);
   } catch (error) {
     res.status(500).send("An error occurred while reading the file.");
@@ -237,8 +236,10 @@ router.post("/mufg-excel", verifyToken, uploadBeforeExcel.any(), async (req: Req
   let data = req.body;
   let pathName = "mufg_" + formatDateVconFile(data.timestamp_start) + "_" + formatDateVconFile(data.timestamp_end) + "_";
   let trades = await tradesTriada();
+
   let array: any = await formatMufg(trades, data.timestamp_start, data.timestamp_end);
-  console.log(array)
+
+ 
   if (array.length == 0) {
     res.send({ error: "No Trades" });
   } else {
@@ -299,6 +300,7 @@ router.post("/emsx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Req
     const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
     let trades = await getTriadaTrades("emsx");
     let data = await readEmsxRawExcel(path);
+    console.log(data)
     let portfolio = await getPortfolio();
 
     let action = formatEmsxTrades(data, trades, portfolio);

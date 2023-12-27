@@ -397,9 +397,8 @@ export async function readCenterlizedEBlot(path: string) {
   // Read data
 
   const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-  const headersFormat = ["B/S", "Issue", "Location", "Trade Date", "Trade Time", 
-  "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee","Trade Type", "Trade App Status"];
- const arraysAreEqual = headersFormat.every((value, index) => value === headers[0][index] ? true : console.log(value, headers[0][index]));
+  const headersFormat = ["B/S", "Issue", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Trade App Status"];
+  const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : console.log(value, headers[0][index])));
   if (!arraysAreEqual) {
     return {
       error: "Incompatible format, please upload centerlized e-blot xlsx/csv file",
@@ -418,8 +417,7 @@ export async function readCenterlizedEBlot(path: string) {
       "6EZ3 IB": "ECZ3 Curncy",
       "ZN   MAR 24 IB": "TYH4 Comdty",
       "6BG4 IB": "BPG4 Curncy",
-      "6EG4 IB":"ECG4 Curncy"
-     
+      "6EG4 IB": "ECG4 Curncy",
     };
 
     let filtered = data.filter((trade: any, index: any) => trade["Trade App Status"] == "new");
@@ -430,7 +428,7 @@ export async function readCenterlizedEBlot(path: string) {
     let vconTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "vcon");
     let ibTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "ib");
     let emsxTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "emsx");
-   
+
     let isinRequest = [];
     for (let index = 0; index < vconTrades.length; index++) {
       let trade = vconTrades[index];
@@ -440,21 +438,21 @@ export async function readCenterlizedEBlot(path: string) {
     let bbTickers = await getBBTicker(isinRequest);
     for (let rowIndex = 0; rowIndex < vconTrades.length; rowIndex++) {
       vconTrades[rowIndex]["BB Ticker"] = bbTickers[vconTrades[rowIndex]["ISIN"]];
-      vconTrades[rowIndex]["Quantity"] = vconTrades[rowIndex]["Notional Amount"]
-      vconTrades[rowIndex]["Triada Trade Id"] = vconTrades[rowIndex]["Triada Trade Id"]
+      vconTrades[rowIndex]["Quantity"] = vconTrades[rowIndex]["Notional Amount"];
+      vconTrades[rowIndex]["Triada Trade Id"] = vconTrades[rowIndex]["Triada Trade Id"];
     }
 
     for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
       let trade = ibTrades[ibTradesIndex];
       ibTrades[ibTradesIndex]["BB Ticker"] = bbTicker[ibTrades[ibTradesIndex]["Issue"]];
-      ibTrades[ibTradesIndex]["Quantity"] = Math.abs(ibTrades[ibTradesIndex]["Notional Amount"])
-      ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["Issue"]
+      ibTrades[ibTradesIndex]["Quantity"] = Math.abs(ibTrades[ibTradesIndex]["Notional Amount"]);
+      ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["Issue"];
     }
 
     for (let emsxTradesIndex = 0; emsxTradesIndex < emsxTrades.length; emsxTradesIndex++) {
       let trade = emsxTrades[emsxTradesIndex];
-      emsxTrades[emsxTradesIndex]["Quantity"] = emsxTrades[emsxTradesIndex]["Settlement Amount"]
-      emsxTrades[emsxTradesIndex]["ISIN"] = emsxTrades[emsxTradesIndex]["Issue"]
+      emsxTrades[emsxTradesIndex]["Quantity"] = emsxTrades[emsxTradesIndex]["Settlement Amount"];
+      emsxTrades[emsxTradesIndex]["ISIN"] = emsxTrades[emsxTradesIndex]["Issue"];
     }
 
     return [vconTrades, ibTrades, emsxTrades, [...vconTrades, ...ibTrades, ...emsxTrades]];
@@ -942,7 +940,7 @@ export async function readPricingSheet(path: string) {
       defval: "",
       range: "A3:AQ300",
     });
-   
+
     return data;
   }
 }
@@ -1027,6 +1025,7 @@ export function sortVconTrades(object: any) {
 export function formatUpdatedPositions(positions: any, portfolio: any) {
   try {
     let positionsIndexThatExists = [];
+    let positionsThatGotUpdated = []
     let positionsThatDoNotExists = [];
     let positionsThatDoNotExistsNames = [];
     for (let indexPositions = 0; indexPositions < positions.length; indexPositions++) {
@@ -1034,8 +1033,9 @@ export function formatUpdatedPositions(positions: any, portfolio: any) {
       for (let indexPortfolio = 0; indexPortfolio < portfolio.length; indexPortfolio++) {
         const portfolioPosition = portfolio[indexPortfolio];
 
-        if ((position["ISIN"] == portfolioPosition["ISIN"] || position["Issue"] == portfolioPosition["Issue"]) && position["Location"] == portfolioPosition["Location"]) {
+        if ((position["ISIN"] == portfolioPosition["ISIN"] || position["Issue"] == portfolioPosition["Issue"]) && position["Location"].trim() == portfolioPosition["Location"].trim()) {
           portfolio[indexPortfolio] = position;
+          positionsThatGotUpdated.push(`${position['Issue']} ${position["Location"]}\n`)
           positionsIndexThatExists.push(indexPositions);
         }
       }
@@ -1043,14 +1043,14 @@ export function formatUpdatedPositions(positions: any, portfolio: any) {
 
     for (let indexPositionsExists = 0; indexPositionsExists < positions.length; indexPositionsExists++) {
       if (!positionsIndexThatExists.includes(indexPositionsExists)) {
+        positionsThatGotUpdated.push(`${positions[indexPositionsExists]['Issue']} ${positions[indexPositionsExists]["Location"]}\n`)
         positionsThatDoNotExists.push(positions[indexPositionsExists]);
-       
       }
     }
 
-    for (let indexPositions = 0; indexPositions < positions.length; indexPositions++) {
-      if (!positionsIndexThatExists.includes(indexPositions)) {
-        positionsThatDoNotExistsNames.push(positions[indexPositions]["Issue"])
+    for (let indexPositions = 0; indexPositions < portfolio.length; indexPositions++) {
+      if (!positionsThatGotUpdated.includes(`${portfolio[indexPositions]['Issue']} ${portfolio[indexPositions]["Location"]}\n`)) {
+        positionsThatDoNotExistsNames.push(`${portfolio[indexPositions]['Issue']} ${portfolio[indexPositions]["Location"]}\n`);
       }
     }
 
