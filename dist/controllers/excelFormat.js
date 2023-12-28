@@ -290,6 +290,7 @@ function formatIbTrades(data, ibTrades, portfolio) {
     // console.log(ibTrades[ibTrades.length - 1], data[0], "test")
     try {
         let count = ibTrades.length + 1;
+        console.log(ibTrades[0]);
         for (let index = 0; index < data.length; index++) {
             let trade = data[index];
             let id;
@@ -301,10 +302,13 @@ function formatIbTrades(data, ibTrades, portfolio) {
                 trade["Trade Date"] = (0, common_2.formatTradeDate)(tradeDate);
                 trade["Settle Date"] = (0, common_2.formatTradeDate)(tradeDate);
                 trade["Symbol"] += " IB";
+                if (index == 0) {
+                    console.log(trade);
+                }
                 let existingTrade = null;
                 for (let ibIndex = 0; ibIndex < ibTrades.length; ibIndex++) {
                     let ibTrade = ibTrades[ibIndex];
-                    if (trade["Symbol"] == ibTrade["Issue"] && trade["Quantity"] == ibTrade["Quantity"] && trade["Trade Date"] == ibTrade["Trade Date"] && trade["Settle Date"] == ibTrade["Settle Date"] && trade["T. Price"] == ibTrade["T Price"] && trade["C. Price"] == ibTrade["C Price"]) {
+                    if (trade["Symbol"] == ibTrade["Issue"] && trade["Quantity"] == ibTrade["Quantity"] && trade["Trade Date"] == ibTrade["Trade Date"] && ibTrade["Settlement Amount"] == (trade["Notional Value"])) {
                         existingTrade = ibTrade;
                     }
                 }

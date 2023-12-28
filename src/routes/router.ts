@@ -215,7 +215,6 @@ router.post("/ib-excel", verifyToken, uploadBeforeExcel.any(), async (req: Reque
     const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
     let trades = await getTriadaTrades("ib");
     let data = await readIBRawExcel(path);
-    console.log(data, "xxxxxx");
     let portfolio = await getPortfolio();
     let action = formatIbTrades(data, trades, portfolio);
 
