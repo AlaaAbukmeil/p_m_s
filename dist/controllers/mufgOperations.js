@@ -391,11 +391,11 @@ async function formatMufg(trades, start, end) {
         obj["Security_ID_UGC"] = "";
         obj["Security_Description"] = trade["Trade Type"] == "ib" ? (trade["BB Ticker"] ? trade["BB Ticker"] : trade["Issue"]) : trade["Issue"];
         obj["Trade_ID_Client"] = trade["Triada Trade Id"];
-        obj["Quantity"] = trade["Trade Type"] == "emsx" ? trade["Settlement Amount"] : trade["Notional Amount"];
+        obj["Quantity"] = trade["Trade Type"] == "emsx" ? trade["Settlement Amount"] : Math.abs(trade["Notional Amount"]);
         obj["Original_Face"] = trade["Trade Type"] == "ib" ? originalFace : "100";
         obj["Price"] = trade["Price"];
-        obj["Accrued_Interest"] = parseFloat(trade["Accrued Interest"]) || 0;
-        obj["Net_Money_Settlement"] = parseFloat(trade["Settlement Amount"]);
+        obj["Accrued_Interest"] = trade["Accrued Interest"] || 0;
+        obj["Net_Money_Settlement"] = Math.abs(parseFloat(trade["Settlement Amount"]));
         obj["Currency_Settlement"] = trade["Currency"];
         obj["Currency_Investment"] = "";
         obj["Trade_Date"] = trade["Trade Date"];
