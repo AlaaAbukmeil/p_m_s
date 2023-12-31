@@ -9,7 +9,7 @@ import { checkIfSecurityExist } from "../controllers/tsImagineOperations";
 import { uploadArrayAndReturnFilePath, getTriadaTrades, formatCentralizedRawFiles, formatIbTrades, formatEmsxTrades, readEmsxRawExcel } from "../controllers/excelFormat";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/graphApiConnect";
 import { readBBGBlot, createExcelAndReturnPath, formatMufg, formatFxMufg, tradesTriada } from "../controllers/mufgOperations";
-import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs } from "../controllers/operations";
+import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, checkMUFGEndOfMonthWithPortfolio, getPortfolioOnSpecificDate } from "../controllers/operations";
 
 require("dotenv").config();
 
@@ -217,6 +217,7 @@ router.post("/ib-excel", verifyToken, uploadBeforeExcel.any(), async (req: Reque
     let data = await readIBRawExcel(path);
     let portfolio = await getPortfolio();
     let action = formatIbTrades(data, trades, portfolio);
+    // console.log(action)
 
     if (!action) {
       res.send({ error: action });
@@ -238,7 +239,6 @@ router.post("/mufg-excel", verifyToken, uploadBeforeExcel.any(), async (req: Req
 
   let array: any = await formatMufg(trades, data.timestamp_start, data.timestamp_end);
 
- 
   if (array.length == 0) {
     res.send({ error: "No Trades" });
   } else {
@@ -299,7 +299,7 @@ router.post("/emsx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Req
     const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
     let trades = await getTriadaTrades("emsx");
     let data = await readEmsxRawExcel(path);
-    console.log(data)
+
     let portfolio = await getPortfolio();
 
     let action = formatEmsxTrades(data, trades, portfolio);
@@ -358,36 +358,45 @@ router.post("/fx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Reque
 });
 
 router.post("/update-previous-prices", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  try{
-  let collectionDate: string = req.body.collectionDate;
-  let collectionType: string = req.body.collectionType;
-  const fileName = req.files[0].filename;
-  const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
-  let data: any = collectionType == "MUFG" ? await readMUFGPrices(path) : await readPricingSheet(path);
-  let action = collectionType == "MUFG" ? await updatePreviousPricesPortfolioMUFG(data, collectionDate, path) : await updatePreviousPricesPortfolioBloomberg(data, collectionDate, path);
-  // console.log(action);
-  res.send(200);
-  }catch(error){
-    res.send({error: "fatal error"})
-  }
-});
-
-
-router.post("/update-prices-cron", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
-    let data
-    let action: any = await updatePricesPortfolio(path);
-    console.log(action);
+    let collectionDate: string = req.body.collectionDate;
+    let collectionType: string = req.body.collectionType;
+    const fileName = req.files[0].filename;
+    const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+    let data: any = collectionType == "MUFG" ? await readMUFGPrices(path) : await readPricingSheet(path);
+    let action = collectionType == "MUFG" ? await updatePreviousPricesPortfolioMUFG(data, collectionDate, path) : await updatePreviousPricesPortfolioBloomberg(data, collectionDate, path);
     if (action?.error) {
       res.send({ error: action.error });
     } else {
       res.sendStatus(200);
     }
+    // console.log(action);
+  } catch (error) {
+    res.send({ error: "fatal error" });
+  }
+});
+
+router.post("/check-mufg", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let collectionDate: string = req.body.collectionDate;
+    const fileName = req.files[0].filename;
+    const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+    let portfolio: any = await getPortfolioOnSpecificDate(collectionDate);
+    let data: any = await readMUFGEndOfMonthFile(path);
+    
+    let action = await checkMUFGEndOfMonthWithPortfolio(data, portfolio[0]);
+    if (action?.error) {
+      res.send({ error: action.error });
+    } else {
+      let link = await uploadArrayAndReturnFilePath(action, `mufg_check_${collectionDate}`);
+      let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + link;
+      res.send(downloadEBlotName);
+    }
+  
+ 
   } catch (error) {
     res.send({ error: "File Template is not correct" });
   }
 });
-
-
 
 export default router;

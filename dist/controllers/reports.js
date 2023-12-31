@@ -586,13 +586,6 @@ async function updatePositionPortfolio(path) {
             let positions = [];
             let portfolio = await getPortfolio();
             let triadaIds = await tradesTriadaIds();
-            let bbbCurrency = {
-                $: "USD",
-                A$: "AUD",
-                "€": "EUR",
-                "£": "GBP",
-                SGD: "SGD",
-            };
             for (let index = 0; index < data.length; index++) {
                 let row = data[index];
                 let originalFace = parseFloat(row["Original Face"]);
@@ -1293,6 +1286,7 @@ async function editPosition(editedPosition) {
             "Event Type",
             "Edit Note",
         ];
+        // these keys are made up by the function frontend table, it reverts keys to original keys
         let titlesMeaningException = {
             "Notional Total": "Quantity",
             "Day Rlzd K G/L": "Day Rlzd K G/L",
@@ -1320,6 +1314,7 @@ async function editPosition(editedPosition) {
                         positionInPortfolio["Interest"][todayDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Quantity"]);
                         changes.push(`Quantity changed from ${positionInPortfolio["Quantity"]} to ${editedPosition[title]}`);
                         positionInPortfolio["Quantity"] = parseFloat(editedPosition[title]);
+                        positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
                     }
                     if (titlesMeaningException[title] == "Day Rlzd K G/L") {
                         changes.push(`Day Rlzd K G/L changed from ${positionInPortfolio["Day Rlzd K G/L"][todayDate]} to ${editedPosition[title]}`);

@@ -421,6 +421,8 @@ export async function readCenterlizedEBlot(path: string) {
     };
 
     let filtered = data.filter((trade: any, index: any) => trade["Trade App Status"] == "new");
+    filtered.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime())
+    
     let missingLocation = data.filter((trade: any, index: any) => trade["Location"] == "");
     if (missingLocation.length) {
       return { error: `Issue ${missingLocation[0]["Issue"]} has missing location` };
@@ -1037,6 +1039,7 @@ export function formatUpdatedPositions(positions: any, portfolio: any) {
           portfolio[indexPortfolio] = position;
           positionsThatGotUpdated.push(`${position['Issue']} ${position["Location"]}\n`)
           positionsIndexThatExists.push(indexPositions);
+         
         }
       }
     }
@@ -1054,7 +1057,7 @@ export function formatUpdatedPositions(positions: any, portfolio: any) {
       }
     }
 
-    let data = [[...portfolio, ...positionsThatDoNotExists], positionsThatDoNotExistsNames];
+    let data = [[...portfolio, ...positionsThatDoNotExists], positionsThatDoNotExistsNames, positionsThatGotUpdated];
 
     return data;
   } catch (error) {

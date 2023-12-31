@@ -381,6 +381,7 @@ async function readCenterlizedEBlot(path) {
             "6EG4 IB": "ECG4 Curncy",
         };
         let filtered = data.filter((trade, index) => trade["Trade App Status"] == "new");
+        filtered.sort((a, b) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
         let missingLocation = data.filter((trade, index) => trade["Location"] == "");
         if (missingLocation.length) {
             return { error: `Issue ${missingLocation[0]["Issue"]} has missing location` };
@@ -957,7 +958,7 @@ function formatUpdatedPositions(positions, portfolio) {
                 positionsThatDoNotExistsNames.push(`${portfolio[indexPositions]['Issue']} ${portfolio[indexPositions]["Location"]}\n`);
             }
         }
-        let data = [[...portfolio, ...positionsThatDoNotExists], positionsThatDoNotExistsNames];
+        let data = [[...portfolio, ...positionsThatDoNotExists], positionsThatDoNotExistsNames, positionsThatGotUpdated];
         return data;
     }
     catch (error) {

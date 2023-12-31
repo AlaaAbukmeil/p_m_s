@@ -207,6 +207,7 @@ router.post("/ib-excel", common_1.verifyToken, uploadBeforeExcel.any(), async (r
         let data = await (0, portfolioFunctions_1.readIBRawExcel)(path);
         let portfolio = await (0, reports_1.getPortfolio)();
         let action = (0, excelFormat_1.formatIbTrades)(data, trades, portfolio);
+        // console.log(action)
         if (!action) {
             res.send({ error: action });
         }
@@ -284,7 +285,6 @@ router.post("/emsx-excel", common_1.verifyToken, uploadBeforeExcel.any(), async 
         const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
         let trades = await (0, excelFormat_1.getTriadaTrades)("emsx");
         let data = await (0, excelFormat_1.readEmsxRawExcel)(path);
-        console.log(data);
         let portfolio = await (0, reports_1.getPortfolio)();
         let action = (0, excelFormat_1.formatEmsxTrades)(data, trades, portfolio);
         if (!action) {
@@ -346,23 +346,33 @@ router.post("/update-previous-prices", common_1.verifyToken, uploadBeforeExcel.a
         const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
         let data = collectionType == "MUFG" ? await (0, operations_1.readMUFGPrices)(path) : await (0, portfolioFunctions_1.readPricingSheet)(path);
         let action = collectionType == "MUFG" ? await (0, operations_1.updatePreviousPricesPortfolioMUFG)(data, collectionDate, path) : await (0, operations_1.updatePreviousPricesPortfolioBloomberg)(data, collectionDate, path);
-        // console.log(action);
-        res.send(200);
-    }
-    catch (error) {
-        res.send({ error: "fatal error" });
-    }
-});
-router.post("/update-prices-cron", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
-    try {
-        let data;
-        let action = await (0, reports_1.updatePricesPortfolio)(path);
-        console.log(action);
         if (action === null || action === void 0 ? void 0 : action.error) {
             res.send({ error: action.error });
         }
         else {
             res.sendStatus(200);
+        }
+        // console.log(action);
+    }
+    catch (error) {
+        res.send({ error: "fatal error" });
+    }
+});
+router.post("/check-mufg", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+    try {
+        let collectionDate = req.body.collectionDate;
+        const fileName = req.files[0].filename;
+        const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+        let portfolio = await (0, operations_1.getPortfolioOnSpecificDate)(collectionDate);
+        let data = await (0, operations_1.readMUFGEndOfMonthFile)(path);
+        let action = await (0, operations_1.checkMUFGEndOfMonthWithPortfolio)(data, portfolio[0]);
+        if (action === null || action === void 0 ? void 0 : action.error) {
+            res.send({ error: action.error });
+        }
+        else {
+            let link = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(action, `mufg_check_${collectionDate}`);
+            let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + link;
+            res.send(downloadEBlotName);
         }
     }
     catch (error) {

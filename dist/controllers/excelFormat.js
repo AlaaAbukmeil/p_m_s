@@ -286,11 +286,13 @@ function extractValuesFx(text) {
     return output;
 }
 function formatIbTrades(data, ibTrades, portfolio) {
+    if (data.error) {
+        return data;
+    }
     let trades = [];
     // console.log(ibTrades[ibTrades.length - 1], data[0], "test")
     try {
         let count = ibTrades.length + 1;
-        console.log(ibTrades[0]);
         for (let index = 0; index < data.length; index++) {
             let trade = data[index];
             let id;
@@ -302,13 +304,10 @@ function formatIbTrades(data, ibTrades, portfolio) {
                 trade["Trade Date"] = (0, common_2.formatTradeDate)(tradeDate);
                 trade["Settle Date"] = (0, common_2.formatTradeDate)(tradeDate);
                 trade["Symbol"] += " IB";
-                if (index == 0) {
-                    console.log(trade);
-                }
                 let existingTrade = null;
                 for (let ibIndex = 0; ibIndex < ibTrades.length; ibIndex++) {
                     let ibTrade = ibTrades[ibIndex];
-                    if (trade["Symbol"] == ibTrade["Issue"] && trade["Quantity"] == ibTrade["Quantity"] && trade["Trade Date"] == ibTrade["Trade Date"] && ibTrade["Settlement Amount"] == (trade["Notional Value"])) {
+                    if (trade["Symbol"] == ibTrade["Issue"] && trade["Trade Date"] == ibTrade["Trade Date"] && Math.abs(ibTrade["Settlement Amount"]) == Math.abs(trade["Notional Value"])) {
                         existingTrade = ibTrade;
                     }
                 }
@@ -337,7 +336,7 @@ function formatIbTrades(data, ibTrades, portfolio) {
                 object["Trade Date Time"] = tradeDateTime;
                 object["Settle Date"] = trade["Settle Date"];
                 object["Triada Trade Id"] = id;
-                object["Location"] = securityInPortfolioLocation && securityInPortfolioLocation != "" ? securityInPortfolioLocation : trade["Location"].toUpperCase();
+                object["Location"] = securityInPortfolioLocation && securityInPortfolioLocation != "" ? securityInPortfolioLocation : trade["Location"];
                 object["Trade App Status"] = trade_status;
                 trades.push(object);
             }
@@ -407,8 +406,12 @@ function formatEmsxTrades(data, emsxTrades, portfolio) {
             for (let emsxIndex = 0; emsxIndex < emsxTrades.length; emsxIndex++) {
                 let emsxTrade = emsxTrades[emsxIndex];
                 // net because previous trade counted quantity as fill quantity
-                if (trade["Create Time (As of)"] == emsxTrade["Trade Date"] && trade["Security"] == emsxTrade["Security"] && trade["Side"] == emsxTrade["Buy/Sell"] && (trade["FillQty"] == emsxTrade["Quantity"] || trade["FillQty"] == emsxTrade["Quantity"])) {
+                let tradeType = trade["Side"] == "Sell" ? "S" : "B";
+                if ((0, common_2.formatTradeDate)((0, common_1.convertExcelDateToJSDate)(trade["Create Time (As of)"])) == emsxTrade["Trade Date"] && trade["Security"] == emsxTrade["Issue"] && tradeType == emsxTrade["B/S"] && (trade["FillQty"] == emsxTrade["Notional Amount"])) {
                     existingTrade = emsxTrade;
+                }
+                else if ((0, common_2.formatTradeDate)((0, common_1.convertExcelDateToJSDate)(trade["Create Time (As of)"])) == emsxTrade["Trade Date"]) {
+                    console.log(trade["Security"], emsxTrade["Security"], tradeType, emsxTrade["B/S"], (trade["FillQty"], emsxTrade["Notional Amount"]));
                 }
             }
             let tradeDate = (0, common_1.convertExcelDateToJSDate)(data[index]["Create Time (As of)"]);
