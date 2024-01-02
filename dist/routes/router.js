@@ -301,14 +301,15 @@ router.post("/emsx-excel", common_1.verifyToken, uploadBeforeExcel.any(), async 
         res.send({ error: "File Template is not correct" });
     }
 });
-router.post("/send-reset-code", common_1.verifyToken, async (req, res, next) => {
+router.post("/send-reset-code", async (req, res, next) => {
     let data = req.body;
     console.log(data, "x");
+    console.log(data.email);
     let result = await (0, auth_1.sendResetPasswordRequest)(data.email);
     console.log(result);
     res.send(result);
 });
-router.post("/reset-password", common_1.verifyToken, async (req, res, next) => {
+router.post("/reset-password", async (req, res, next) => {
     let data = req.body;
     let result = await (0, auth_1.resetPassword)(data.email, data.code, data.password);
     res.send(result);
@@ -361,10 +362,14 @@ router.post("/update-previous-prices", common_1.verifyToken, uploadBeforeExcel.a
 router.post("/check-mufg", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
     try {
         let collectionDate = req.body.collectionDate;
-        const fileName = req.files[0].filename;
-        const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+        let files = req.files[0];
         let portfolio = await (0, operations_1.getPortfolioOnSpecificDate)(collectionDate);
-        let data = await (0, operations_1.readMUFGEndOfMonthFile)(path);
+        let data = [];
+        if (files) {
+            const fileName = req.files[0].filename;
+            const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+            data = await (0, operations_1.readMUFGEndOfMonthFile)(path);
+        }
         let action = await (0, operations_1.checkMUFGEndOfMonthWithPortfolio)(data, portfolio[0]);
         if (action === null || action === void 0 ? void 0 : action.error) {
             res.send({ error: action.error });
@@ -376,6 +381,7 @@ router.post("/check-mufg", common_1.verifyToken, uploadBeforeExcel.any(), async 
         }
     }
     catch (error) {
+        console.log(error);
         res.send({ error: "File Template is not correct" });
     }
 });

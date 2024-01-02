@@ -316,15 +316,16 @@ router.post("/emsx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Req
   }
 });
 
-router.post("/send-reset-code", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/send-reset-code", async (req: Request, res: Response, next: NextFunction) => {
   let data = req.body;
   console.log(data, "x");
+  console.log(data.email)
   let result = await sendResetPasswordRequest(data.email);
   console.log(result);
   res.send(result);
 });
 
-router.post("/reset-password", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+router.post("/reset-password", async (req: Request, res: Response, next: NextFunction) => {
   let data = req.body;
   let result = await resetPassword(data.email, data.code, data.password);
 
@@ -379,15 +380,21 @@ router.post("/update-previous-prices", verifyToken, uploadBeforeExcel.any(), asy
 router.post("/check-mufg", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let collectionDate: string = req.body.collectionDate;
-    const fileName = req.files[0].filename;
-    const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+    let files = req.files[0]
+    
     let portfolio: any = await getPortfolioOnSpecificDate(collectionDate);
-    let data: any = await readMUFGEndOfMonthFile(path);
+    let data: any = []
+    if(files){
+      const fileName = req.files[0].filename;
+      const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+      data  = await readMUFGEndOfMonthFile(path);
+    }
     
     let action = await checkMUFGEndOfMonthWithPortfolio(data, portfolio[0]);
     if (action?.error) {
       res.send({ error: action.error });
     } else {
+     
       let link = await uploadArrayAndReturnFilePath(action, `mufg_check_${collectionDate}`);
       let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + link;
       res.send(downloadEBlotName);
@@ -395,6 +402,7 @@ router.post("/check-mufg", verifyToken, uploadBeforeExcel.any(), async (req: Req
   
  
   } catch (error) {
+    console.log(error)
     res.send({ error: "File Template is not correct" });
   }
 });

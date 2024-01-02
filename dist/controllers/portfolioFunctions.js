@@ -400,17 +400,18 @@ async function readCenterlizedEBlot(path) {
             vconTrades[rowIndex]["BB Ticker"] = bbTickers[vconTrades[rowIndex]["ISIN"]];
             vconTrades[rowIndex]["Quantity"] = vconTrades[rowIndex]["Notional Amount"];
             vconTrades[rowIndex]["Triada Trade Id"] = vconTrades[rowIndex]["Triada Trade Id"];
+            vconTrades[rowIndex]["timestamp"] = new Date(vconTrades[rowIndex]["Trade Date"]).getTime();
         }
         for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
-            let trade = ibTrades[ibTradesIndex];
             ibTrades[ibTradesIndex]["BB Ticker"] = bbTicker[ibTrades[ibTradesIndex]["Issue"]];
             ibTrades[ibTradesIndex]["Quantity"] = Math.abs(ibTrades[ibTradesIndex]["Notional Amount"]);
             ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["Issue"];
+            ibTrades[ibTradesIndex]["timestamp"] = new Date(ibTrades[ibTradesIndex]["Trade Date"]).getTime();
         }
         for (let emsxTradesIndex = 0; emsxTradesIndex < emsxTrades.length; emsxTradesIndex++) {
-            let trade = emsxTrades[emsxTradesIndex];
             emsxTrades[emsxTradesIndex]["Quantity"] = emsxTrades[emsxTradesIndex]["Settlement Amount"];
             emsxTrades[emsxTradesIndex]["ISIN"] = emsxTrades[emsxTradesIndex]["Issue"];
+            emsxTrades[emsxTradesIndex]["timestamp"] = new Date(emsxTrades[emsxTradesIndex]["Trade Date"]).getTime();
         }
         return [vconTrades, ibTrades, emsxTrades, [...vconTrades, ...ibTrades, ...emsxTrades]];
     }
@@ -942,20 +943,20 @@ function formatUpdatedPositions(positions, portfolio) {
                 const portfolioPosition = portfolio[indexPortfolio];
                 if ((position["ISIN"] == portfolioPosition["ISIN"] || position["Issue"] == portfolioPosition["Issue"]) && position["Location"].trim() == portfolioPosition["Location"].trim()) {
                     portfolio[indexPortfolio] = position;
-                    positionsThatGotUpdated.push(`${position['Issue']} ${position["Location"]}\n`);
+                    positionsThatGotUpdated.push(`${position["Issue"]} ${position["Location"]}\n`);
                     positionsIndexThatExists.push(indexPositions);
                 }
             }
         }
         for (let indexPositionsExists = 0; indexPositionsExists < positions.length; indexPositionsExists++) {
             if (!positionsIndexThatExists.includes(indexPositionsExists)) {
-                positionsThatGotUpdated.push(`${positions[indexPositionsExists]['Issue']} ${positions[indexPositionsExists]["Location"]}\n`);
+                positionsThatGotUpdated.push(`${positions[indexPositionsExists]["Issue"]} ${positions[indexPositionsExists]["Location"]}\n`);
                 positionsThatDoNotExists.push(positions[indexPositionsExists]);
             }
         }
         for (let indexPositions = 0; indexPositions < portfolio.length; indexPositions++) {
-            if (!positionsThatGotUpdated.includes(`${portfolio[indexPositions]['Issue']} ${portfolio[indexPositions]["Location"]}\n`)) {
-                positionsThatDoNotExistsNames.push(`${portfolio[indexPositions]['Issue']} ${portfolio[indexPositions]["Location"]}\n`);
+            if (!positionsThatGotUpdated.includes(`${portfolio[indexPositions]["Issue"]} ${portfolio[indexPositions]["Location"]}\n`)) {
+                positionsThatDoNotExistsNames.push(`${portfolio[indexPositions]["Issue"]} ${portfolio[indexPositions]["Location"]}\n`);
             }
         }
         let data = [[...portfolio, ...positionsThatDoNotExists], positionsThatDoNotExistsNames, positionsThatGotUpdated];

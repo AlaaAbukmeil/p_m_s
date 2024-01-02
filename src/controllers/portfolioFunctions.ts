@@ -421,8 +421,8 @@ export async function readCenterlizedEBlot(path: string) {
     };
 
     let filtered = data.filter((trade: any, index: any) => trade["Trade App Status"] == "new");
-    filtered.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime())
-    
+    filtered.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
+
     let missingLocation = data.filter((trade: any, index: any) => trade["Location"] == "");
     if (missingLocation.length) {
       return { error: `Issue ${missingLocation[0]["Issue"]} has missing location` };
@@ -442,19 +442,20 @@ export async function readCenterlizedEBlot(path: string) {
       vconTrades[rowIndex]["BB Ticker"] = bbTickers[vconTrades[rowIndex]["ISIN"]];
       vconTrades[rowIndex]["Quantity"] = vconTrades[rowIndex]["Notional Amount"];
       vconTrades[rowIndex]["Triada Trade Id"] = vconTrades[rowIndex]["Triada Trade Id"];
+      vconTrades[rowIndex]["timestamp"] = new Date(vconTrades[rowIndex]["Trade Date"]).getTime();
     }
 
     for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
-      let trade = ibTrades[ibTradesIndex];
       ibTrades[ibTradesIndex]["BB Ticker"] = bbTicker[ibTrades[ibTradesIndex]["Issue"]];
       ibTrades[ibTradesIndex]["Quantity"] = Math.abs(ibTrades[ibTradesIndex]["Notional Amount"]);
       ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["Issue"];
+      ibTrades[ibTradesIndex]["timestamp"] = new Date(ibTrades[ibTradesIndex]["Trade Date"]).getTime();
     }
 
     for (let emsxTradesIndex = 0; emsxTradesIndex < emsxTrades.length; emsxTradesIndex++) {
-      let trade = emsxTrades[emsxTradesIndex];
       emsxTrades[emsxTradesIndex]["Quantity"] = emsxTrades[emsxTradesIndex]["Settlement Amount"];
       emsxTrades[emsxTradesIndex]["ISIN"] = emsxTrades[emsxTradesIndex]["Issue"];
+      emsxTrades[emsxTradesIndex]["timestamp"] = new Date(emsxTrades[emsxTradesIndex]["Trade Date"]).getTime();
     }
 
     return [vconTrades, ibTrades, emsxTrades, [...vconTrades, ...ibTrades, ...emsxTrades]];
@@ -1027,7 +1028,7 @@ export function sortVconTrades(object: any) {
 export function formatUpdatedPositions(positions: any, portfolio: any) {
   try {
     let positionsIndexThatExists = [];
-    let positionsThatGotUpdated = []
+    let positionsThatGotUpdated = [];
     let positionsThatDoNotExists = [];
     let positionsThatDoNotExistsNames = [];
     for (let indexPositions = 0; indexPositions < positions.length; indexPositions++) {
@@ -1037,23 +1038,22 @@ export function formatUpdatedPositions(positions: any, portfolio: any) {
 
         if ((position["ISIN"] == portfolioPosition["ISIN"] || position["Issue"] == portfolioPosition["Issue"]) && position["Location"].trim() == portfolioPosition["Location"].trim()) {
           portfolio[indexPortfolio] = position;
-          positionsThatGotUpdated.push(`${position['Issue']} ${position["Location"]}\n`)
+          positionsThatGotUpdated.push(`${position["Issue"]} ${position["Location"]}\n`);
           positionsIndexThatExists.push(indexPositions);
-         
         }
       }
     }
 
     for (let indexPositionsExists = 0; indexPositionsExists < positions.length; indexPositionsExists++) {
       if (!positionsIndexThatExists.includes(indexPositionsExists)) {
-        positionsThatGotUpdated.push(`${positions[indexPositionsExists]['Issue']} ${positions[indexPositionsExists]["Location"]}\n`)
+        positionsThatGotUpdated.push(`${positions[indexPositionsExists]["Issue"]} ${positions[indexPositionsExists]["Location"]}\n`);
         positionsThatDoNotExists.push(positions[indexPositionsExists]);
       }
     }
 
     for (let indexPositions = 0; indexPositions < portfolio.length; indexPositions++) {
-      if (!positionsThatGotUpdated.includes(`${portfolio[indexPositions]['Issue']} ${portfolio[indexPositions]["Location"]}\n`)) {
-        positionsThatDoNotExistsNames.push(`${portfolio[indexPositions]['Issue']} ${portfolio[indexPositions]["Location"]}\n`);
+      if (!positionsThatGotUpdated.includes(`${portfolio[indexPositions]["Issue"]} ${portfolio[indexPositions]["Location"]}\n`)) {
+        positionsThatDoNotExistsNames.push(`${portfolio[indexPositions]["Issue"]} ${portfolio[indexPositions]["Location"]}\n`);
       }
     }
 

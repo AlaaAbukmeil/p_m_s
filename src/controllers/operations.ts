@@ -234,10 +234,11 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
           object["Bid"] = parseFloat(row["Override Bid"]) > 0 ? (parseFloat(row["Override Bid"]) / 100.0) * faceValue : (parseFloat(row["Today's Bid"]) / 100.0) * faceValue;
           object["YTM"] = row["Mid Yield Maturity"];
           object["DV01"] = row["DV01"];
-
+         
           if (currencyInUSD[object["Currency"]]) {
             object["holdPortfXrate"] = currencyInUSD[object["Currency"]];
           }
+          
           object["Last Price Update"] = new Date();
 
           if (!object["Country"] && row["Country"] && !row["Country"].includes("#N/A")) {
@@ -266,6 +267,7 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
         await insertEditLogs(["prices update"], "Update Previous Prices based on bloomberg", dateTime, "Bloomberg Previous Pricing Sheet on " + collectionDate, "Link: " + path);
         let updatedPortfolio: any = formatUpdatedPositions(updatedPricePortfolio, portfolio);
+        let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio[0], collectionDate);
         if (!updatedPortfolio[1].length) {
           return updatedPortfolio[1];
         } else {
@@ -277,6 +279,7 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
       }
     }
   } catch (error) {
+    console.log(error)
     return { error: "error" };
   }
 }

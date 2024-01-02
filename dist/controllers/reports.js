@@ -605,6 +605,9 @@ async function updatePositionPortfolio(path) {
                     object["_id"] = securityInPortfolio["_id"];
                     object["Country"] = securityInPortfolio["Country"];
                     object["Rating Class"] = securityInPortfolio["Rating Class"];
+                    object["holdPortfXrate"] = securityInPortfolio["holdPortfXrate"];
+                    object["DV01"] = securityInPortfolio["DV01"];
+                    object["YTM"] = securityInPortfolio["YTM"];
                 }
                 let couponDaysYear = securityInPortfolio !== 404 ? securityInPortfolio["Coupon Duration"] : row["Issue"].split(" ")[0] == "T" ? 365.0 : 360.0;
                 let previousQuantity = securityInPortfolio["Quantity"];
@@ -735,7 +738,7 @@ async function updatePositionPortfolio(path) {
                 let action1 = await insertTrade(allTrades[0], "vcons");
                 let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(positions, portfolio);
                 let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
-                return insertion;
+                return { error: positions };
             }
             catch (error) {
                 return { error: error };
@@ -899,8 +902,8 @@ async function updatePricesPortfolio(path) {
                     if (!object["Country"] && row["Country"] && !row["Country"].includes("#N/A")) {
                         object["Country"] = row["Country"];
                     }
-                    if (!object["Sector"] && row["Country2"]) {
-                        object["Sector"] = row["Country2"];
+                    if (!object["Sector"] && row["Industry Sector"]) {
+                        object["Sector"] = row["Industry Sector"];
                     }
                     updatedPricePortfolio.push(object);
                 }
@@ -1084,7 +1087,7 @@ async function getMTDParams(portfolio, lastMonthPortfolio, dateInput) {
                 portfolio[index]["Notes"] = "";
                 if ((lastMonthPosition["ISIN"] == position["ISIN"] || lastMonthPosition["BB Ticker"] == position["BB Ticker"]) && lastMonthPosition["Location"] == position["Location"]) {
                     portfolio[index]["MTD Mark"] = lastMonthPosition["Mid"];
-                    portfolio[index]["MTD FX"] = lastMonthPosition["holdPortfXrate"] ? lastMonthPosition["holdPortfXrate"] : 1;
+                    portfolio[index]["MTD FX"] = lastMonthPosition["holdPortfXrate"] ? lastMonthPosition["holdPortfXrate"] : null;
                 }
             }
         }
@@ -1184,10 +1187,10 @@ function formatFrontEndTable(portfolio, date) {
         position["Cost"] = Math.round(position["Cost"] * 1000000 * usdRatio) / 1000000;
         position["Average Cost"] = Math.round(position["Average Cost"] * 1000000) / 1000000;
         position["holdPortfXrate"] = position["holdPortfXrate"] ? position["holdPortfXrate"] : 1;
-        position["MTD FX"] = position["MTD FX"] ? position["MTD FX"] : 1;
         if (!position["Previous FX Rate"]) {
             position["Previous FX Rate"] = position["holdPortfXrate"];
         }
+        position["MTD FX"] = position["MTD FX"] ? position["MTD FX"] : position["Previous FX Rate"];
         position["Day Int.Income USD"] = position["Daily Interest Income"] * usdRatio;
         position["Daily Interest FX P&L"] = Math.round((position["holdPortfXrate"] - position["Previous FX Rate"]) * 1000000 * position["Daily Interest Income"]) / 1000000;
         position["Notional Total"] = position["Quantity"];
@@ -1210,12 +1213,12 @@ function formatFrontEndTable(portfolio, date) {
         position["DV01"] = (position["DV01"] / 1000000) * position["Notional Total"];
         position["DV01"] = Math.round(position["DV01"] * 1000000) / 1000000 || 0;
         if (position["Issue"].includes("CDS")) {
-            position["Day P&L FX"] = Math.round((parseFloat(position["holdPortfXrate"]) - parseFloat(position["Previous FX Rate"])) * position["Quantity"] * position["Mid"] * 1000000) / 1000000 || 0;
-            position["MTD P&L FX"] = Math.round((parseFloat(position["holdPortfXrate"]) - parseFloat(position["MTD FX"] || 1)) * position["Quantity"] * position["MTD Mark"] * 1000000) / 1000000 || 0;
+            position["Day P&L FX"] = Math.round(((parseFloat(position["holdPortfXrate"]) - parseFloat(position["Previous FX Rate"])) / parseFloat(position["Previous FX Rate"])) * position["Quantity"] * 1000000) / 1000000 || 0;
+            position["MTD P&L FX"] = Math.round(((parseFloat(position["holdPortfXrate"]) - parseFloat(position["MTD FX"] || position["holdPortfXrate"])) / parseFloat(position["MTD FX"] || position["holdPortfXrate"])) * position["Quantity"] * 1000000) / 1000000 || 0;
         }
         else {
-            position["Day P&L FX"] = Math.round((((parseFloat(position["holdPortfXrate"]) - parseFloat(position["Previous FX Rate"])) * position["Notional Total"] * position["Mid"]) / 100) * 1000000) / 1000000 || 0;
-            position["MTD P&L FX"] = Math.round((((parseFloat(position["holdPortfXrate"]) - parseFloat(position["MTD FX"] || 1)) * position["Notional Total"] * position["MTD Mark"]) / 100) * 1000000) / 1000000 || 0;
+            position["Day P&L FX"] = Math.round(((parseFloat(position["holdPortfXrate"]) - parseFloat(position["Previous FX Rate"])) / parseFloat(position["Previous FX Rate"])) * position["Notional Total"] * 1000000) / 1000000;
+            position["MTD P&L FX"] = (Math.round((((parseFloat(position["holdPortfXrate"]) - parseFloat(position["MTD FX"] || position["holdPortfXrate"])) / parseFloat(position["MTD FX"] || position["holdPortfXrate"])) * position["Notional Total"])) * 1000000) / 1000000 || 0;
         }
     }
     return portfolio;

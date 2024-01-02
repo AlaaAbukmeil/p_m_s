@@ -255,6 +255,7 @@ async function updatePreviousPricesPortfolioBloomberg(data, collectionDate, path
                 let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
                 await insertEditLogs(["prices update"], "Update Previous Prices based on bloomberg", dateTime, "Bloomberg Previous Pricing Sheet on " + collectionDate, "Link: " + path);
                 let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(updatedPricePortfolio, portfolio);
+                let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio[0], collectionDate);
                 if (!updatedPortfolio[1].length) {
                     return updatedPortfolio[1];
                 }
@@ -269,6 +270,7 @@ async function updatePreviousPricesPortfolioBloomberg(data, collectionDate, path
         }
     }
     catch (error) {
+        console.log(error);
         return { error: "error" };
     }
 }

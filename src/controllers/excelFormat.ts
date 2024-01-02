@@ -149,7 +149,7 @@ export async function uploadArrayAndReturnFilePath(data: any, pathName: string) 
   const stream = new PassThrough();
   const buffer = xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
   let randomString = generateRandomString(6);
-  let fileName = `after-excel/${pathName}_${randomString}.xlsx`;
+  let fileName = `after-excel/${pathName.replace(/\//g,"_")}_${randomString}.xlsx`;
 
   uploadToGCloudBucket(buffer, process.env.BUCKET, fileName).then().catch(console.error);
 
