@@ -13,8 +13,6 @@ const operations_1 = require("../controllers/operations");
 require("dotenv").config();
 const readLastLines = require("read-last-lines");
 const path = require("path");
-const xlsx = require("xlsx");
-const axios = require("axios");
 const multerGoogleStorage = require("multer-google-storage");
 const multer = require("multer");
 const uploadBeforeExcel = multer({
@@ -24,7 +22,7 @@ const uploadBeforeExcel = multer({
         projectId: process.env.PROJECTID,
         keyFilename: process.env.KEYPATHFILE,
         filename: (req, file, cb) => {
-            cb(false, `/before-excel/${Date.now()}_${file.originalname}`);
+            cb(false, `/v2/${(0, common_1.generateRandomString)(6)}_${file.originalname.replace(/[!@#$%^&*(),.?":{}|<>\/\[\]\\;'\-=+`~]/g, "_")}`);
         },
     }),
 });
@@ -116,7 +114,7 @@ router.post("/elec-blot", common_1.verifyToken, uploadBeforeExcel.any(), async (
         res.send(arr.error);
     }
     else {
-        let eBlotName = await (0, portfolioFunctions_1.uploadTriadaAndReturnFilePath)(arr); //
+        let eBlotName = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(arr, "test"); //
         let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + eBlotName;
         res.send(downloadEBlotName);
     }
@@ -172,6 +170,7 @@ router.post("/nomura-excel", common_1.verifyToken, uploadBeforeExcel.any(), asyn
     let data = req.body;
     let pathName = (0, common_1.formatDateVconFile)(data.timestamp_start) + "_" + (0, common_1.formatDateVconFile)(data.timestamp_end) + "_";
     let token = await (0, graphApiConnect_1.getGraphToken)();
+    //to be modified
     let trades = await (0, excelFormat_1.getTriadaTrades)("vcons");
     let array = await (0, graphApiConnect_1.getVcons)(token, data.timestamp_start, data.timestamp_end, trades);
     if (array.length == 0) {
@@ -203,6 +202,7 @@ router.post("/ib-excel", common_1.verifyToken, uploadBeforeExcel.any(), async (r
         let files = req.files;
         const fileName = req.files[0].filename;
         const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+        // to be modified
         let trades = await (0, excelFormat_1.getTriadaTrades)("ib");
         let data = await (0, portfolioFunctions_1.readIBRawExcel)(path);
         let portfolio = await (0, reports_1.getPortfolio)();
@@ -245,7 +245,14 @@ router.post("/mufg-fx", common_1.verifyToken, uploadBeforeExcel.any(), async (re
 });
 router.post("/centralized-blotter", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
     try {
-        let action = await (0, excelFormat_1.formatCentralizedRawFiles)(req.files);
+        let data = req.body;
+        let token = await (0, graphApiConnect_1.getGraphToken)();
+        // to be modified
+        let vconTrades = await (0, excelFormat_1.getTriadaTrades)("vcons", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
+        let vcons = await (0, graphApiConnect_1.getVcons)(token, data.timestamp_start, data.timestamp_end, vconTrades);
+        let ibTrades = await (0, excelFormat_1.getTriadaTrades)("ib", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
+        let emsxTrades = await (0, excelFormat_1.getTriadaTrades)("emsx", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
+        let action = await (0, excelFormat_1.formatCentralizedRawFiles)(req.files, vcons, vconTrades, ibTrades, emsxTrades);
         if (action.error) {
             res.send({ error: action.error });
         }
@@ -283,6 +290,7 @@ router.post("/emsx-excel", common_1.verifyToken, uploadBeforeExcel.any(), async 
         let files = req.files;
         const fileName = req.files[0].filename;
         const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+        //to be modified
         let trades = await (0, excelFormat_1.getTriadaTrades)("emsx");
         let data = await (0, excelFormat_1.readEmsxRawExcel)(path);
         let portfolio = await (0, reports_1.getPortfolio)();

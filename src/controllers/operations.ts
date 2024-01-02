@@ -291,6 +291,7 @@ export async function insertEditLogs(changes: string[], type: string, dateTime: 
     dateTime: dateTime,
     editNote: editNote,
     identifier: identifier,
+    timestamp: new Date().getTime()
   };
 
   const database = client.db("edit_logs");

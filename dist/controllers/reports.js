@@ -9,10 +9,8 @@ const portfolioFunctions_1 = require("./portfolioFunctions");
 const util_1 = __importDefault(require("util"));
 const common_1 = require("./common");
 const operations_1 = require("./operations");
-const xlsx = require("xlsx");
 const fs = require("fs");
 const writeFile = util_1.default.promisify(fs.writeFile);
-const { PassThrough } = require("stream");
 const axios = require("axios");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const mongoose = require("mongoose");
@@ -576,7 +574,7 @@ function updateExisitingPosition(positions, identifier, location, updatedPositio
     return positions;
 }
 async function updatePositionPortfolio(path) {
-    let allTrades = await (0, portfolioFunctions_1.readCenterlizedEBlot)(path);
+    let allTrades = await (0, portfolioFunctions_1.readCentralizedEBlot)(path);
     if (allTrades.error) {
         return { error: allTrades.error };
     }
@@ -1218,7 +1216,7 @@ function formatFrontEndTable(portfolio, date) {
         }
         else {
             position["Day P&L FX"] = Math.round(((parseFloat(position["holdPortfXrate"]) - parseFloat(position["Previous FX Rate"])) / parseFloat(position["Previous FX Rate"])) * position["Notional Total"] * 1000000) / 1000000;
-            position["MTD P&L FX"] = (Math.round((((parseFloat(position["holdPortfXrate"]) - parseFloat(position["MTD FX"] || position["holdPortfXrate"])) / parseFloat(position["MTD FX"] || position["holdPortfXrate"])) * position["Notional Total"])) * 1000000) / 1000000 || 0;
+            position["MTD P&L FX"] = (Math.round(((parseFloat(position["holdPortfXrate"]) - parseFloat(position["MTD FX"] || position["holdPortfXrate"])) / parseFloat(position["MTD FX"] || position["holdPortfXrate"])) * position["Notional Total"]) * 1000000) / 1000000 || 0;
         }
     }
     return portfolio;

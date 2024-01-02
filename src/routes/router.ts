@@ -2,21 +2,20 @@ import { NextFunction, Router } from "express";
 import { image } from "../models/image";
 import { registerUser, checkIfUserExists, sendResetPasswordRequest, resetPassword } from "../controllers/auth";
 import { Request, Response } from "express";
-import { getDate, verifyToken, formatDateVconFile } from "../controllers/common";
-import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, uploadPortfolioFromImagine, getTrades, getAllCollectionDatesSinceStartMonth, uploadPortfolioFromLivePortfolio, uploadPortfolioFromMufg, getPortfolio, editPositionPortfolio, editPosition, getHistoricalRiskReportWithAnalytics } from "../controllers/reports";
-import { bloombergToTriada, uploadTriadaAndReturnFilePath, readMUFGEBlot, readIBEblot, readIBRawExcel, readPricingSheet } from "../controllers/portfolioFunctions";
+import {  verifyToken, formatDateVconFile, generateRandomString } from "../controllers/common";
+import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio,getTrades, getPortfolio, editPositionPortfolio, editPosition, getHistoricalRiskReportWithAnalytics } from "../controllers/reports";
+import { bloombergToTriada, readIBRawExcel, readPricingSheet } from "../controllers/portfolioFunctions";
 import { checkIfSecurityExist } from "../controllers/tsImagineOperations";
 import { uploadArrayAndReturnFilePath, getTriadaTrades, formatCentralizedRawFiles, formatIbTrades, formatEmsxTrades, readEmsxRawExcel } from "../controllers/excelFormat";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/graphApiConnect";
-import { readBBGBlot, createExcelAndReturnPath, formatMufg, formatFxMufg, tradesTriada } from "../controllers/mufgOperations";
+import { formatMufg, formatFxMufg, tradesTriada } from "../controllers/mufgOperations";
 import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, checkMUFGEndOfMonthWithPortfolio, getPortfolioOnSpecificDate } from "../controllers/operations";
 
 require("dotenv").config();
 
 const readLastLines = require("read-last-lines");
 const path = require("path");
-const xlsx = require("xlsx");
-const axios = require("axios");
+
 
 const multerGoogleStorage = require("multer-google-storage");
 const multer = require("multer");
@@ -27,7 +26,7 @@ const uploadBeforeExcel = multer({
     projectId: process.env.PROJECTID,
     keyFilename: process.env.KEYPATHFILE,
     filename: (req: Request, file: image, cb: (err: boolean, fileName: string) => void) => {
-      cb(false, `/before-excel/${Date.now()}_${file.originalname}`);
+      cb(false, `/v2/${generateRandomString(6)}_${file.originalname.replace(/[!@#$%^&*(),.?":{}|<>\/\[\]\\;'\-=+`~]/g, "_")}`);
     },
   }),
 });
@@ -125,7 +124,7 @@ router.post("/elec-blot", verifyToken, uploadBeforeExcel.any(), async (req: Requ
   if (arr.error) {
     res.send(arr.error);
   } else {
-    let eBlotName = await uploadTriadaAndReturnFilePath(arr); //
+    let eBlotName = await uploadArrayAndReturnFilePath(arr, "test"); //
     let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + eBlotName;
     res.send(downloadEBlotName);
   }
@@ -139,6 +138,7 @@ router.post("/upload-trades", verifyToken, uploadBeforeExcel.any(), async (req: 
 
     let action: any = await updatePositionPortfolio(path); //updatePositionPortfolio
     console.log(action);
+    
     if (action?.error) {
       res.send({ error: action.error });
     } else {
@@ -182,6 +182,7 @@ router.post("/nomura-excel", verifyToken, uploadBeforeExcel.any(), async (req: R
   let data = req.body;
   let pathName = formatDateVconFile(data.timestamp_start) + "_" + formatDateVconFile(data.timestamp_end) + "_";
   let token = await getGraphToken();
+  //to be modified
   let trades = await getTriadaTrades("vcons");
   let array: any = await getVcons(token, data.timestamp_start, data.timestamp_end, trades);
   if (array.length == 0) {
@@ -213,6 +214,7 @@ router.post("/ib-excel", verifyToken, uploadBeforeExcel.any(), async (req: Reque
     let files = req.files;
     const fileName = req.files[0].filename;
     const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+    // to be modified
     let trades = await getTriadaTrades("ib");
     let data = await readIBRawExcel(path);
     let portfolio = await getPortfolio();
@@ -259,7 +261,14 @@ router.post("/mufg-fx", verifyToken, uploadBeforeExcel.any(), async (req: Reques
 
 router.post("/centralized-blotter", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
-    let action: any = await formatCentralizedRawFiles(req.files);
+    let data = req.body;
+    let token = await getGraphToken();
+    // to be modified
+    let vconTrades = await getTriadaTrades("vcons", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
+    let vcons: any = await getVcons(token, data.timestamp_start, data.timestamp_end, vconTrades);
+    let ibTrades = await getTriadaTrades("ib", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
+    let emsxTrades =await getTriadaTrades("emsx", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
+    let action: any = await formatCentralizedRawFiles(req.files, vcons, vconTrades, ibTrades, emsxTrades);
 
     if (action.error) {
       res.send({ error: action.error });
@@ -297,6 +306,7 @@ router.post("/emsx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Req
     let files = req.files;
     const fileName = req.files[0].filename;
     const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+    //to be modified
     let trades = await getTriadaTrades("emsx");
     let data = await readEmsxRawExcel(path);
 
@@ -319,7 +329,7 @@ router.post("/emsx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Req
 router.post("/send-reset-code", async (req: Request, res: Response, next: NextFunction) => {
   let data = req.body;
   console.log(data, "x");
-  console.log(data.email)
+  console.log(data.email);
   let result = await sendResetPasswordRequest(data.email);
   console.log(result);
   res.send(result);
@@ -380,29 +390,26 @@ router.post("/update-previous-prices", verifyToken, uploadBeforeExcel.any(), asy
 router.post("/check-mufg", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let collectionDate: string = req.body.collectionDate;
-    let files = req.files[0]
-    
+    let files = req.files[0];
+
     let portfolio: any = await getPortfolioOnSpecificDate(collectionDate);
-    let data: any = []
-    if(files){
+    let data: any = [];
+    if (files) {
       const fileName = req.files[0].filename;
       const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
-      data  = await readMUFGEndOfMonthFile(path);
+      data = await readMUFGEndOfMonthFile(path);
     }
-    
+
     let action = await checkMUFGEndOfMonthWithPortfolio(data, portfolio[0]);
     if (action?.error) {
       res.send({ error: action.error });
     } else {
-     
       let link = await uploadArrayAndReturnFilePath(action, `mufg_check_${collectionDate}`);
       let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + link;
       res.send(downloadEBlotName);
     }
-  
- 
   } catch (error) {
-    console.log(error)
+    console.log(error);
     res.send({ error: "File Template is not correct" });
   }
 });

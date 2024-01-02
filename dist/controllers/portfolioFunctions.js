@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mapDatetimeToSameDay = exports.getDateTimeInMongoDBCollectionFormat = exports.formatDateRlzdDaily = exports.formatUpdatedPositions = exports.sortVconTrades = exports.getAllDatesSinceLastMonthLastDay = exports.uploadTriadaAndReturnFilePath = exports.calculateMonthlyProfitLoss = exports.calculateDailyProfitLoss = exports.readPricingSheet = exports.readBloombergTriadaEBlot = exports.readPortfolioFromLivePorfolio = exports.readPortfolioFromImagine = exports.readEditInput = exports.readMUFGEBlot = exports.readEmsxEBlot = exports.readIBRawExcel = exports.readIBEblot = exports.formatEmsxTradesToVcon = exports.formatIbTradesToVcon = exports.readCenterlizedEBlot = exports.readVconEBlot = exports.mergeSort = exports.uploadToGCloudBucket = exports.getSettlementDateYear = exports.bloombergToTriada = exports.parseBondIdentifier = exports.formatTradesObj = exports.settlementDatePassed = exports.getAverageCost = exports.formatExcelDate = void 0;
+exports.mapDatetimeToSameDay = exports.getDateTimeInMongoDBCollectionFormat = exports.formatDateRlzdDaily = exports.formatUpdatedPositions = exports.sortVconTrades = exports.getAllDatesSinceLastMonthLastDay = exports.uploadTriadaAndReturnFilePath = exports.calculateMonthlyProfitLoss = exports.calculateDailyProfitLoss = exports.readPricingSheet = exports.readBloombergTriadaEBlot = exports.readPortfolioFromLivePorfolio = exports.readPortfolioFromImagine = exports.readEditInput = exports.readMUFGEBlot = exports.readEmsxEBlot = exports.readIBRawExcel = exports.readIBEblot = exports.formatEmsxTradesToVcon = exports.formatIbTradesToVcon = exports.readCentralizedEBlot = exports.readVconEBlot = exports.mergeSort = exports.uploadToGCloudBucket = exports.getSettlementDateYear = exports.bloombergToTriada = exports.parseBondIdentifier = exports.formatTradesObj = exports.settlementDatePassed = exports.getAverageCost = exports.formatExcelDate = void 0;
 const common_1 = require("./common");
 const reports_1 = require("./reports");
 const xlsx = require("xlsx");
@@ -346,7 +346,7 @@ async function readVconEBlot(path) {
     }
 }
 exports.readVconEBlot = readVconEBlot;
-async function readCenterlizedEBlot(path) {
+async function readCentralizedEBlot(path) {
     const response = await axios.get(path, { responseType: "arraybuffer" });
     /* Parse the data */
     const workbook = xlsx.read(response.data, { type: "buffer" });
@@ -361,7 +361,7 @@ async function readCenterlizedEBlot(path) {
     const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : console.log(value, headers[0][index])));
     if (!arraysAreEqual) {
         return {
-            error: "Incompatible format, please upload centerlized e-blot xlsx/csv file",
+            error: "Incompatible format, please upload centralized e-blot xlsx/csv file",
         };
     }
     else {
@@ -382,9 +382,14 @@ async function readCenterlizedEBlot(path) {
         };
         let filtered = data.filter((trade, index) => trade["Trade App Status"] == "new");
         filtered.sort((a, b) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
-        let missingLocation = data.filter((trade, index) => trade["Location"] == "");
+        let missingLocation = data.filter((trade, index) => trade["Location"] == "" || !trade["Location"]);
         if (missingLocation.length) {
-            return { error: `Issue ${missingLocation[0]["Issue"]} has missing location` };
+            let issueMissing = "";
+            for (let indexMissingIssue = 0; indexMissingIssue < missingLocation.length; indexMissingIssue++) {
+                let issueName = missingLocation[indexMissingIssue]["Issue"];
+                issueMissing += issueName + " //";
+            }
+            return { error: `Issue ${issueMissing} has missing location` };
         }
         let vconTrades = filtered.filter((trade, index) => trade["Trade Type"] == "vcon");
         let ibTrades = filtered.filter((trade, index) => trade["Trade Type"] == "ib");
@@ -401,22 +406,25 @@ async function readCenterlizedEBlot(path) {
             vconTrades[rowIndex]["Quantity"] = vconTrades[rowIndex]["Notional Amount"];
             vconTrades[rowIndex]["Triada Trade Id"] = vconTrades[rowIndex]["Triada Trade Id"];
             vconTrades[rowIndex]["timestamp"] = new Date(vconTrades[rowIndex]["Trade Date"]).getTime();
+            vconTrades[rowIndex]["Trade App Status"] = "uploaded_to_app";
         }
         for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
             ibTrades[ibTradesIndex]["BB Ticker"] = bbTicker[ibTrades[ibTradesIndex]["Issue"]];
             ibTrades[ibTradesIndex]["Quantity"] = Math.abs(ibTrades[ibTradesIndex]["Notional Amount"]);
             ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["Issue"];
             ibTrades[ibTradesIndex]["timestamp"] = new Date(ibTrades[ibTradesIndex]["Trade Date"]).getTime();
+            ibTrades[ibTradesIndex]["Trade App Status"] = "uploaded_to_app";
         }
         for (let emsxTradesIndex = 0; emsxTradesIndex < emsxTrades.length; emsxTradesIndex++) {
             emsxTrades[emsxTradesIndex]["Quantity"] = emsxTrades[emsxTradesIndex]["Settlement Amount"];
             emsxTrades[emsxTradesIndex]["ISIN"] = emsxTrades[emsxTradesIndex]["Issue"];
             emsxTrades[emsxTradesIndex]["timestamp"] = new Date(emsxTrades[emsxTradesIndex]["Trade Date"]).getTime();
+            emsxTrades[emsxTradesIndex]["Trade App Status"] = "uploaded_to_app";
         }
         return [vconTrades, ibTrades, emsxTrades, [...vconTrades, ...ibTrades, ...emsxTrades]];
     }
 }
-exports.readCenterlizedEBlot = readCenterlizedEBlot;
+exports.readCentralizedEBlot = readCentralizedEBlot;
 function formatIbTradesToVcon(data) {
     let object = [];
     try {

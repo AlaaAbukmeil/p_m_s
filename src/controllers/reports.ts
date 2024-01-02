@@ -1,39 +1,11 @@
 require("dotenv").config();
 
-import {
-  getAverageCost,
-  readBloombergTriadaEBlot,
-  uploadToGCloudBucket,
-  readPricingSheet,
-  getAllDatesSinceLastMonthLastDay,
-  parseBondIdentifier,
-  calculateDailyProfitLoss,
-  calculateMonthlyProfitLoss,
-  readVconEBlot,
-  getSettlementDateYear,
-  readPortfolioFromImagine,
-  formatUpdatedPositions,
-  readMUFGEBlot,
-  readPortfolioFromLivePorfolio,
-  formatDateRlzdDaily,
-  readIBEblot,
-  formatIbTradesToVcon,
-  readIBRawExcel,
-  readEditInput,
-  formatEmsxTradesToVcon,
-  readEmsxEBlot,
-  getDateTimeInMongoDBCollectionFormat,
-  mapDatetimeToSameDay,
-  readCenterlizedEBlot,
-} from "./portfolioFunctions";
+import { getAverageCost, readPricingSheet, getAllDatesSinceLastMonthLastDay, parseBondIdentifier, getSettlementDateYear, readPortfolioFromImagine, formatUpdatedPositions, readMUFGEBlot, readPortfolioFromLivePorfolio, formatDateRlzdDaily, readEditInput, getDateTimeInMongoDBCollectionFormat, readCentralizedEBlot } from "./portfolioFunctions";
 import util from "util";
-import { getDate, getTime, getCurrentDateVconFormat, formatDate, monthlyRlzdDate, formatDateReadable, getCurrentDateTime } from "./common";
-import { consumers } from "stream";
+import { getDate, getTime, monthlyRlzdDate, formatDateReadable } from "./common";
 import { insertEditLogs } from "./operations";
-const xlsx = require("xlsx");
 const fs = require("fs");
 const writeFile = util.promisify(fs.writeFile);
-const { PassThrough } = require("stream");
 const axios = require("axios");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const mongoose = require("mongoose");
@@ -616,8 +588,8 @@ function updateExisitingPosition(positions: any, identifier: any, location: any,
 }
 
 export async function updatePositionPortfolio(path: string) {
-  let allTrades: any = await readCenterlizedEBlot(path);
-
+  let allTrades: any = await readCentralizedEBlot(path);
+ 
   if (allTrades.error) {
     return { error: allTrades.error };
   } else {
@@ -648,9 +620,9 @@ export async function updatePositionPortfolio(path: string) {
           object["_id"] = securityInPortfolio["_id"];
           object["Country"] = securityInPortfolio["Country"];
           object["Rating Class"] = securityInPortfolio["Rating Class"];
-          object["holdPortfXrate"] = securityInPortfolio["holdPortfXrate"]
-          object["DV01"] = securityInPortfolio["DV01"]
-          object["YTM"] = securityInPortfolio["YTM"]
+          object["holdPortfXrate"] = securityInPortfolio["holdPortfXrate"];
+          object["DV01"] = securityInPortfolio["DV01"];
+          object["YTM"] = securityInPortfolio["YTM"];
         }
 
         let couponDaysYear = securityInPortfolio !== 404 ? securityInPortfolio["Coupon Duration"] : row["Issue"].split(" ")[0] == "T" ? 365.0 : 360.0;
@@ -797,7 +769,7 @@ export async function updatePositionPortfolio(path: string) {
         let updatedPortfolio: any = formatUpdatedPositions(positions, portfolio);
         let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
 
-        return {error: positions};
+        return { error: positions };
       } catch (error) {
         return { error: error };
       }
@@ -1281,7 +1253,7 @@ function formatFrontEndTable(portfolio: any, date: any) {
       position["Previous FX Rate"] = position["holdPortfXrate"];
     }
     position["MTD FX"] = position["MTD FX"] ? position["MTD FX"] : position["Previous FX Rate"];
-   
+
     position["Day Int.Income USD"] = position["Daily Interest Income"] * usdRatio;
     position["Daily Interest FX P&L"] = Math.round((position["holdPortfXrate"] - position["Previous FX Rate"]) * 1000000 * position["Daily Interest Income"]) / 1000000;
 
@@ -1292,7 +1264,7 @@ function formatFrontEndTable(portfolio: any, date: any) {
 
     position["Ptf Day P&L"] = Math.round(position["Ptf Day P&L"] * usdRatio * 1000000) / 1000000;
     // multiply mtd pl with usd since all components are not  multiplied by usd when they are summed
-    
+
     position["Ptf MTD P&L"] = Math.round(position["Ptf MTD P&L"] * usdRatio * 1000000) / 1000000;
 
     position["Previous FX Rate"] = Math.round(position["Previous FX Rate"] * 1000000) / 1000000;
@@ -1316,7 +1288,7 @@ function formatFrontEndTable(portfolio: any, date: any) {
       position["MTD P&L FX"] = Math.round(((parseFloat(position["holdPortfXrate"]) - parseFloat(position["MTD FX"] || position["holdPortfXrate"])) / parseFloat(position["MTD FX"] || position["holdPortfXrate"])) * position["Quantity"] * 1000000) / 1000000 || 0;
     } else {
       position["Day P&L FX"] = Math.round(((parseFloat(position["holdPortfXrate"]) - parseFloat(position["Previous FX Rate"])) / parseFloat(position["Previous FX Rate"])) * position["Notional Total"] * 1000000) / 1000000;
-      position["MTD P&L FX"] = (Math.round((((parseFloat(position["holdPortfXrate"]) - parseFloat(position["MTD FX"] || position["holdPortfXrate"])) / parseFloat(position["MTD FX"] || position["holdPortfXrate"])) * position["Notional Total"])) * 1000000) / 1000000 || 0;
+      position["MTD P&L FX"] = (Math.round(((parseFloat(position["holdPortfXrate"]) - parseFloat(position["MTD FX"] || position["holdPortfXrate"])) / parseFloat(position["MTD FX"] || position["holdPortfXrate"])) * position["Notional Total"]) * 1000000) / 1000000 || 0;
     }
   }
   return portfolio;

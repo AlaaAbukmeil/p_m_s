@@ -49,7 +49,6 @@ function format_date_ISO(date) {
 async function getVcons(token, start_time, end_time, trades) {
     let portfolio = await (0, reports_1.getPortfolio)();
     try {
-        // console.log(object)
         let url = `https://graph.microsoft.com/v1.0/users/vcons@triadacapital.com/messages?$filter=contains(subject,'New BB') and receivedDateTime ge ${format_date_ISO(start_time)} and receivedDateTime le ${format_date_ISO(end_time)}&$top=1000000`;
         let action = await axios.get(url, {
             headers: {
@@ -57,7 +56,6 @@ async function getVcons(token, start_time, end_time, trades) {
             },
         });
         let vcons = action.data.value;
-        // console.log(url)
         let object = [];
         let count = trades.length + 1;
         let id;
@@ -71,12 +69,12 @@ async function getVcons(token, start_time, end_time, trades) {
             let triadaId = trades.find(function (trade) {
                 return trade["Seq No"] === vcon["Seq No"];
             });
-            console.log(triadaId, vcon["Issue"]);
             if (triadaId) {
-                id = triadaId["Triada Trade Id"];
-                location = triadaId["Location"];
-                trade_status = "uploaded_to_app";
-                vcon["Triada Trade Id"] = id;
+                continue;
+                // id = triadaId["Triada Trade Id"];
+                // location = triadaId["Location"];
+                // trade_status = "uploaded_to_app";
+                // vcon["Triada Trade Id"] = id;
             }
             vcon["Location"] = location;
             vcon["Trade App Status"] = trade_status;
@@ -102,7 +100,6 @@ exports.getVcons = getVcons;
 async function getFxTrades(token, start_time, end_time, trades) {
     // let portfolio = await getPortfolio()
     try {
-        // console.log(object)
         let url = `https://graph.microsoft.com/v1.0/users/vcons@triadacapital.com/messages?$filter=contains(subject,'Fill Alert') and receivedDateTime ge ${format_date_ISO(start_time)} and receivedDateTime le ${format_date_ISO(end_time)}&$top=1000000`;
         let action = await axios.get(url, {
             headers: {
@@ -110,7 +107,6 @@ async function getFxTrades(token, start_time, end_time, trades) {
             },
         });
         let fxTrades = action.data.value;
-        // console.log(url)
         let object = [];
         let count = trades.length + 1;
         let id;

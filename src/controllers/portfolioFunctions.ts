@@ -1,7 +1,5 @@
 import { formatDate, getDate, getTime, convertExcelDateToJSDate, formatTradeDate, formatSettleDateVcon } from "./common";
 import { getBBTicker } from "./reports";
-import { readIB } from "./mufgOperations";
-import { getSecurityInPortfolioWithoutLocation } from "./graphApiConnect";
 
 const xlsx = require("xlsx");
 const axios = require("axios");
@@ -381,7 +379,7 @@ export async function readVconEBlot(path: string) {
   }
 }
 
-export async function readCenterlizedEBlot(path: string) {
+export async function readCentralizedEBlot(path: string) {
   const response = await axios.get(path, { responseType: "arraybuffer" });
 
   /* Parse the data */
@@ -401,7 +399,7 @@ export async function readCenterlizedEBlot(path: string) {
   const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : console.log(value, headers[0][index])));
   if (!arraysAreEqual) {
     return {
-      error: "Incompatible format, please upload centerlized e-blot xlsx/csv file",
+      error: "Incompatible format, please upload centralized e-blot xlsx/csv file",
     };
   } else {
     let data = xlsx.utils.sheet_to_json(worksheet, {
@@ -423,9 +421,14 @@ export async function readCenterlizedEBlot(path: string) {
     let filtered = data.filter((trade: any, index: any) => trade["Trade App Status"] == "new");
     filtered.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
 
-    let missingLocation = data.filter((trade: any, index: any) => trade["Location"] == "");
+    let missingLocation = data.filter((trade: any, index: any) => trade["Location"] == "" || !trade["Location"]);
     if (missingLocation.length) {
-      return { error: `Issue ${missingLocation[0]["Issue"]} has missing location` };
+      let issueMissing = "";
+      for (let indexMissingIssue = 0; indexMissingIssue < missingLocation.length; indexMissingIssue++) {
+        let issueName = missingLocation[indexMissingIssue]["Issue"];
+        issueMissing += issueName + " //";
+      }
+      return { error: `Issue ${issueMissing} has missing location` };
     }
     let vconTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "vcon");
     let ibTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "ib");
@@ -443,6 +446,7 @@ export async function readCenterlizedEBlot(path: string) {
       vconTrades[rowIndex]["Quantity"] = vconTrades[rowIndex]["Notional Amount"];
       vconTrades[rowIndex]["Triada Trade Id"] = vconTrades[rowIndex]["Triada Trade Id"];
       vconTrades[rowIndex]["timestamp"] = new Date(vconTrades[rowIndex]["Trade Date"]).getTime();
+      vconTrades[rowIndex]["Trade App Status"] = "uploaded_to_app";
     }
 
     for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
@@ -450,12 +454,14 @@ export async function readCenterlizedEBlot(path: string) {
       ibTrades[ibTradesIndex]["Quantity"] = Math.abs(ibTrades[ibTradesIndex]["Notional Amount"]);
       ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["Issue"];
       ibTrades[ibTradesIndex]["timestamp"] = new Date(ibTrades[ibTradesIndex]["Trade Date"]).getTime();
+      ibTrades[ibTradesIndex]["Trade App Status"] = "uploaded_to_app";
     }
 
     for (let emsxTradesIndex = 0; emsxTradesIndex < emsxTrades.length; emsxTradesIndex++) {
       emsxTrades[emsxTradesIndex]["Quantity"] = emsxTrades[emsxTradesIndex]["Settlement Amount"];
       emsxTrades[emsxTradesIndex]["ISIN"] = emsxTrades[emsxTradesIndex]["Issue"];
       emsxTrades[emsxTradesIndex]["timestamp"] = new Date(emsxTrades[emsxTradesIndex]["Trade Date"]).getTime();
+      emsxTrades[emsxTradesIndex]["Trade App Status"] = "uploaded_to_app";
     }
 
     return [vconTrades, ibTrades, emsxTrades, [...vconTrades, ...ibTrades, ...emsxTrades]];

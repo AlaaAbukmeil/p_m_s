@@ -1,5 +1,5 @@
 "use strict";
-// export class centerlizedTrades {
+// export class centralizedTrades {
 //     constructor(
 //       public `Location`: string,
 //       public 'B/S': string,

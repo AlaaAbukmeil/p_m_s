@@ -282,6 +282,7 @@ async function insertEditLogs(changes, type, dateTime, editNote, identifier) {
         dateTime: dateTime,
         editNote: editNote,
         identifier: identifier,
+        timestamp: new Date().getTime()
     };
     const database = client.db("edit_logs");
     const reportCollection = database.collection(`${type}`);
