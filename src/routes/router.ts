@@ -2,20 +2,19 @@ import { NextFunction, Router } from "express";
 import { image } from "../models/image";
 import { registerUser, checkIfUserExists, sendResetPasswordRequest, resetPassword } from "../controllers/auth";
 import { Request, Response } from "express";
-import {  verifyToken, formatDateVconFile, generateRandomString } from "../controllers/common";
-import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio,getTrades, getPortfolio, editPositionPortfolio, editPosition, getHistoricalRiskReportWithAnalytics } from "../controllers/reports";
+import { verifyToken, formatDateVconFile, generateRandomString } from "../controllers/common";
+import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, getTrades, getPortfolio, editPositionPortfolio, editPosition, getHistoricalRiskReportWithAnalytics } from "../controllers/reports";
 import { bloombergToTriada, readIBRawExcel, readPricingSheet } from "../controllers/portfolioFunctions";
 import { checkIfSecurityExist } from "../controllers/tsImagineOperations";
 import { uploadArrayAndReturnFilePath, getTriadaTrades, formatCentralizedRawFiles, formatIbTrades, formatEmsxTrades, readEmsxRawExcel } from "../controllers/excelFormat";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/graphApiConnect";
 import { formatMufg, formatFxMufg, tradesTriada } from "../controllers/mufgOperations";
 import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, checkMUFGEndOfMonthWithPortfolio, getPortfolioOnSpecificDate } from "../controllers/operations";
-
+import { editMTDRlzd } from "../controllers/oneTimeFunctions";
 require("dotenv").config();
 
 const readLastLines = require("read-last-lines");
 const path = require("path");
-
 
 const multerGoogleStorage = require("multer-google-storage");
 const multer = require("multer");
@@ -138,7 +137,7 @@ router.post("/upload-trades", verifyToken, uploadBeforeExcel.any(), async (req: 
 
     let action: any = await updatePositionPortfolio(path); //updatePositionPortfolio
     console.log(action);
-    
+
     if (action?.error) {
       res.send({ error: action.error });
     } else {
@@ -184,7 +183,7 @@ router.post("/nomura-excel", verifyToken, uploadBeforeExcel.any(), async (req: R
   let token = await getGraphToken();
   //to be modified
   let trades = await getTriadaTrades("vcons");
-  let array: any = await getVcons(token, data.timestamp_start, data.timestamp_end, trades);
+  let array: any = await getVcons(token, data.timestamp_start, data.timestamp_end, trades[0], trades[1]);
   if (array.length == 0) {
     res.send({ error: "No Trades" });
   } else {
@@ -199,7 +198,7 @@ router.post("/vcon-excel", verifyToken, uploadBeforeExcel.any(), async (req: Req
   let pathName = "vcon_" + formatDateVconFile(data.timestamp_start) + "_" + formatDateVconFile(data.timestamp_end) + "_";
   let token = await getGraphToken();
   let trades = await getTriadaTrades("vcons");
-  let array: any = await getVcons(token, data.timestamp_start, data.timestamp_end, trades);
+  let array: any = await getVcons(token, data.timestamp_start, data.timestamp_end, trades[0], trades[1]);
   if (array.length == 0) {
     res.send({ error: "No Trades" });
   } else {
@@ -218,7 +217,7 @@ router.post("/ib-excel", verifyToken, uploadBeforeExcel.any(), async (req: Reque
     let trades = await getTriadaTrades("ib");
     let data = await readIBRawExcel(path);
     let portfolio = await getPortfolio();
-    let action = formatIbTrades(data, trades, portfolio);
+    let action = formatIbTrades(data, trades[0], portfolio, trades[1]);
     // console.log(action)
 
     if (!action) {
@@ -265,10 +264,11 @@ router.post("/centralized-blotter", verifyToken, uploadBeforeExcel.any(), async 
     let token = await getGraphToken();
     // to be modified
     let vconTrades = await getTriadaTrades("vcons", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
-    let vcons: any = await getVcons(token, data.timestamp_start, data.timestamp_end, vconTrades);
+    
+    let vcons: any = await getVcons(token, data.timestamp_start, data.timestamp_end, vconTrades[0], vconTrades[1]);
     let ibTrades = await getTriadaTrades("ib", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
-    let emsxTrades =await getTriadaTrades("emsx", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
-    let action: any = await formatCentralizedRawFiles(req.files, vcons, vconTrades, ibTrades, emsxTrades);
+    let emsxTrades = await getTriadaTrades("emsx", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
+    let action: any = await formatCentralizedRawFiles(req.files, vcons, vconTrades[0], ibTrades[0], emsxTrades[0]);
 
     if (action.error) {
       res.send({ error: action.error });
@@ -312,10 +312,11 @@ router.post("/emsx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Req
 
     let portfolio = await getPortfolio();
 
-    let action = formatEmsxTrades(data, trades, portfolio);
+    let action = formatEmsxTrades(data, trades[0], portfolio, trades[1]);
     if (!action) {
       res.send({ error: action });
     } else {
+      console.log(action)
       let emsx = await uploadArrayAndReturnFilePath(action, "emsx_formated");
       let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + emsx;
       res.send(downloadEBlotName);
@@ -412,6 +413,13 @@ router.post("/check-mufg", verifyToken, uploadBeforeExcel.any(), async (req: Req
     console.log(error);
     res.send({ error: "File Template is not correct" });
   }
+});
+
+router.post("/one-time", uploadBeforeExcel.any(),async (req: Request | any, res: Response, next: NextFunction) => {
+  // let test= await editMTDRlzd()
+
+  res.send(200)
+    
 });
 
 export default router;

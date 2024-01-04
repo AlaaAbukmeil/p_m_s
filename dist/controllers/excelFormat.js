@@ -148,6 +148,7 @@ async function getTriadaTrades(tradeType, fromTimestamp = 0, toTimestamp = 0) {
     const query = {
         $or: options,
     };
+    let reportCollectionSize = await database.collection(`${tradeType}`).countDocuments();
     let reportCollection = await database.collection(`${tradeType}`).find(query).toArray();
     if (fromTimestamp && toTimestamp) {
         reportCollection = reportCollection.filter((trade) => {
@@ -161,8 +162,12 @@ async function getTriadaTrades(tradeType, fromTimestamp = 0, toTimestamp = 0) {
     for (let index = 0; index < reportCollection.length; index++) {
         let trade = reportCollection[index];
         trade["Trade App Status"] = "uploaded_to_app";
+        delete trade["_id"];
+        delete trade["Quantity"];
+        delete trade["BB Ticker"];
+        delete trade["timestamp"];
     }
-    return reportCollection;
+    return [reportCollection, reportCollectionSize];
 }
 exports.getTriadaTrades = getTriadaTrades;
 async function formatCentralizedRawFiles(files, bbbData, vconTrades, ibTrades, emsxTrades) {
@@ -202,31 +207,7 @@ async function formatCentralizedRawFiles(files, bbbData, vconTrades, ibTrades, e
         "£": "GBP",
         SGD: "SGD",
     };
-    let centralizedBlotterHeader = [
-        "B/S",
-        "Issue",
-        "BB Ticker",
-        "Location",
-        "Trade Date",
-        "Trade Time",
-        "Settle Date",
-        "Price",
-        "Notional Amount",
-        "Settlement Amount",
-        "Principal",
-        "Counter Party",
-        "Triada Trade Id",
-        "Seq No",
-        "ISIN",
-        "Cuisp",
-        "Currency",
-        "Yield",
-        "Accrued Interest",
-        "Original Face",
-        "Comm/Fee",
-        "Trade Type",
-        "Trade App Status",
-    ];
+    let centralizedBlotterHeader = ["B/S", "Issue", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Trade App Status"];
     // vcons already checking if duplicate trade and removes it. ib and emsx no. ib trades to be implement with their API
     for (let index = 0; index < bbbData.length; index++) {
         let obj = {};
@@ -325,7 +306,7 @@ async function formatCentralizedRawFiles(files, bbbData, vconTrades, ibTrades, e
     blot_emsx.sort((a, b) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
     blot = [...blot_vcons, ...blot_ib, ...blot_emsx];
     let formattedObject = {};
-    centralizedBlotterHeader.forEach(title => {
+    centralizedBlotterHeader.forEach((title) => {
         // If the original object has the key, add it to the formatted object
         if (blot[0].hasOwnProperty(title)) {
             formattedObject[title] = blot[0][title];
@@ -350,13 +331,13 @@ function extractValuesFx(text) {
     output = formatFxTrades(output);
     return output;
 }
-function formatIbTrades(data, ibTrades, portfolio) {
+function formatIbTrades(data, ibTrades, portfolio, tradesCount) {
     if (data.error) {
         return data;
     }
     let trades = [];
     try {
-        let count = ibTrades.length + 1;
+        let count = tradesCount + 1;
         for (let index = 0; index < data.length; index++) {
             let trade = data[index];
             let id;
@@ -455,13 +436,13 @@ function renderFx(emailContent) {
     return fxTrade;
 }
 exports.renderFx = renderFx;
-function formatEmsxTrades(data, emsxTrades, portfolio) {
+function formatEmsxTrades(data, emsxTrades, portfolio, tradesCount) {
     if (data.error) {
         return data;
     }
     let trades = [];
     try {
-        let count = emsxTrades.length + 1;
+        let count = tradesCount + 1;
         for (let index = 0; index < data.length; index++) {
             let trade = data[index];
             let id;
@@ -475,9 +456,9 @@ function formatEmsxTrades(data, emsxTrades, portfolio) {
                     existingTrade = emsxTrade;
                 }
             }
-            let tradeDate = (0, common_1.convertExcelDateToJSDate)(data[index]["Create Time (As of)"]);
+            let tradeDate = !data[index]["Create Time (As of)"].includes("/") ? new Date() : (0, common_1.convertExcelDateToJSDate)(data[index]["Create Time (As of)"]);
             trade["Trade Date"] = (0, common_2.formatTradeDate)(tradeDate);
-            trade["Trade Date Time"] = trade["Settle Date"] = (0, common_2.formatTradeDate)(tradeDate);
+            trade["Trade Date Time"] = (0, common_2.formatTradeDate)(tradeDate);
             let identifier = trade["Security"];
             let securityInPortfolioLocation = (0, graphApiConnect_1.getSecurityInPortfolioWithoutLocation)(portfolio, identifier);
             let trade_status = "new";
@@ -522,7 +503,7 @@ async function readEmsxRawExcel(path) {
         // Read data
         const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
         const headersFormat = ["News", "Create Time (As of)", "Status", "Security", "Side", "Qty", "LmtPr", "TIF", "FillQty", "AvgPr", "% Filled", "Working Qty", "Idle", "Data Export Restricted", "Data Export Restricted", "VWAP", "Data Export Restricted", "Last", "Bid", "Ask", "Volume", "%20d ADV"];
-        const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index + 2] ? true : console.log(value, headers[0][index + 2])), "excel values do not match");
+        const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index + 2] ? true : console.log(value, headers[0][index + 2]), "excel values do not match"));
         if (!arraysAreEqual) {
             return {
                 error: "Incompatible format, please upload emsx e-blot xlsx/csv file",

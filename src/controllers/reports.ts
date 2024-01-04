@@ -4,13 +4,16 @@ import { getAverageCost, readPricingSheet, getAllDatesSinceLastMonthLastDay, par
 import util from "util";
 import { getDate, getTime, monthlyRlzdDate, formatDateReadable } from "./common";
 import { insertEditLogs } from "./operations";
+import { formatFrontEndTable, formatFrontEndRiskReport } from "./tableFormatter";
+import { calculateMTDRlzd } from "./tableFormatter";
+import { uri } from "./common";
 const fs = require("fs");
 const writeFile = util.promisify(fs.writeFile);
 const axios = require("axios");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const mongoose = require("mongoose");
 const ObjectId = require("mongodb").ObjectId;
-import { uri } from "./common";
+
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -162,8 +165,10 @@ export async function getHistoricalRiskReportWithAnalytics(date: string) {
   documents = await calculateDailyInterestUnRlzdCapitalGains(documents, new Date(date));
   documents = await calculateMonthlyURlzd(documents);
   documents = calculateMonthlyDailyRlzdPTFPL(documents, date);
+  let pairTrades = getPairTrades(documents);
+  console.log(pairTrades);
   documents = formatFrontEndTable(documents, date);
-  documents = formatFrontEndRiskReport(documents);
+  documents = formatFrontEndRiskReport(documents, pairTrades);
   return [documents, sameDayCollectionsPublished];
 }
 export async function getEarliestCollectionName(originalDate: string) {
@@ -201,6 +206,20 @@ export async function getEarliestCollectionName(originalDate: string) {
     predecessorDate = getDateTimeInMongoDBCollectionFormat(new Date(predecessorDate));
   }
   return [predecessorDate, collectionNames];
+}
+
+function getPairTrades(document: any) {
+  let countLocations: any = {};
+  let pairPositionsIds = [];
+  for (let index = 0; index < document.length; index++) {
+    let position = document[index];
+    if (countLocations[position["Location"]]) {
+      pairPositionsIds.push(position["_id"].toString());
+    } else {
+      countLocations[position["Location"]] = true;
+    }
+  }
+  return pairPositionsIds;
 }
 
 export async function getAllCollectionDatesSinceStartMonth(originalDate: string) {
@@ -589,7 +608,7 @@ function updateExisitingPosition(positions: any, identifier: any, location: any,
 
 export async function updatePositionPortfolio(path: string) {
   let allTrades: any = await readCentralizedEBlot(path);
- 
+
   if (allTrades.error) {
     return { error: allTrades.error };
   } else {
@@ -624,7 +643,6 @@ export async function updatePositionPortfolio(path: string) {
           object["DV01"] = securityInPortfolio["DV01"];
           object["YTM"] = securityInPortfolio["YTM"];
         }
-
         let couponDaysYear = securityInPortfolio !== 404 ? securityInPortfolio["Coupon Duration"] : row["Issue"].split(" ")[0] == "T" ? 365.0 : 360.0;
         let previousQuantity = securityInPortfolio["Quantity"];
         let previousAverageCost = securityInPortfolio["Average Cost"] ? securityInPortfolio["Average Cost"] : 0;
@@ -633,7 +651,9 @@ export async function updatePositionPortfolio(path: string) {
         let currentPrice: any = row["ISIN"].includes("IB") || row["ISIN"].includes("1393 HK") ? row["Price"] : row["Price"] / 100.0;
         let currentQuantity: any = parseFloat(row["Quantity"].toString().replace(/,/g, "")) * operation;
         let currentNet = parseFloat(row["Settlement Amount"].toString().replace(/,/g, "")) * operation;
+
         let currentPrincipal: any = parseFloat(row["Principal"].toString().replace(/,/g, ""));
+        
         let currency = row["Currency"];
         let bondCouponMaturity: any = parseBondIdentifier(row["BB Ticker"]);
         let tradeExistsAlready = triadaIds.includes(row["Triada Trade Id"]);
@@ -644,7 +664,7 @@ export async function updatePositionPortfolio(path: string) {
         let rlzdOperation = -1;
         if (updatingPosition) {
           let accumlatedQuantityState = updatingPosition["Quantity"] > 0 ? 1 : -1;
-
+          
           if (operation == -1 * accumlatedQuantityState && updatingPosition["Quantity"] != 0) {
             rlzdOperation = 1;
           }
@@ -654,15 +674,17 @@ export async function updatePositionPortfolio(path: string) {
             rlzdOperation = 1;
           }
         }
-
+        
         if (tradeExistsAlready) {
           console.log(row["Triada Trade Id"], " already exists");
         }
         if (!tradeExistsAlready && identifier !== "") {
           triadaIds.push(row["Triada Trade Id"]);
           if (!updatingPosition) {
+            let shortLongType = securityInPortfolio !== 404 ? (securityInPortfolio["Quantity"] >= 0 ? 1 : -1) : currentQuantity >= 0 ? 1 : -1;
+            
             let settlementDate = row["Settle Date"];
-
+            
             object["Location"] = row["Location"];
             object["Last Modified Date"] = new Date();
             object["BB Ticker"] = row["BB Ticker"];
@@ -698,9 +720,16 @@ export async function updatePositionPortfolio(path: string) {
             }
 
             object["Monthly Capital Gains Rlzd"] = securityInPortfolio !== 404 ? securityInPortfolio["Monthly Capital Gains Rlzd"] : {};
+
             let curentMonthRlzdPL = securityInPortfolio !== 404 ? (parseFloat(securityInPortfolio["Monthly Capital Gains Rlzd"][thisMonth]) ? parseFloat(securityInPortfolio["Monthly Capital Gains Rlzd"][thisMonth]) : 0) : 0;
             object["Monthly Capital Gains Rlzd"][thisMonth] = securityInPortfolio !== 404 ? curentMonthRlzdPL + object["Day Rlzd K G/L"][thisDay] : object["Day Rlzd K G/L"][thisDay];
 
+            object["MTD Rlzd"] = securityInPortfolio !== 404 ? (securityInPortfolio["MTD Rlzd"] ? securityInPortfolio["MTD Rlzd"] : []) : [];
+            let MTDRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
+            if (rlzdOperation == 1) {
+              object["MTD Rlzd"].push(MTDRlzdForThisTrade);
+            }
+           
             if (securityInPortfolio !== 404) {
               securityInPortfolio["Cost MTD Ptf"] = {};
             }
@@ -718,6 +747,8 @@ export async function updatePositionPortfolio(path: string) {
 
             positions.push(object);
           } else if (returnPositionProgress(positions, identifier, location)) {
+            let shortLongType = securityInPortfolio !== 404 ? (securityInPortfolio["Quantity"] + updatingPosition["Quantity"] >= 0 ? 1 : -1) : updatingPosition["Quantity"] >= 0 ? 1 : -1;
+            
             let settlementDate = row["Settle Date"];
             object["Location"] = row["Location"];
             object["Last Modified Date"] = new Date();
@@ -753,12 +784,20 @@ export async function updatePositionPortfolio(path: string) {
             object["Coupon Duration"] = object["Coupon Rate"] ? couponDaysYear : "";
             object["Entry Price"] = updatingPosition["Entry Price"];
 
+            object["MTD Rlzd"] = updatingPosition["MTD Rlzd"];
+
+            let MTDRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
+            if (rlzdOperation == 1) {
+              object["MTD Rlzd"].push(MTDRlzdForThisTrade);
+            }
+
             positions = updateExisitingPosition(positions, identifier, location, object);
           }
         }
       }
 
       try {
+        
         let logs = JSON.stringify(positions, null, 2);
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
         await insertEditLogs(["trades upload"], "Upload Trades", dateTime, "Centarlized Blotter", "Link: " + path);
@@ -769,7 +808,7 @@ export async function updatePositionPortfolio(path: string) {
         let updatedPortfolio: any = formatUpdatedPositions(positions, portfolio);
         let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
 
-        return { error: positions };
+        return positions;
       } catch (error) {
         return { error: error };
       }
@@ -799,31 +838,16 @@ export async function editPositionPortfolio(path: string) {
           identifier = row["BB Ticker"];
           securityInPortfolio = getSecurityInPortfolio(portfolio, identifier, location);
         }
-        // if (securityInPortfolio == 404) {
-        //   identifier = row["Holding Id"];
-        //   securityInPortfolio = getSecurityInPortfolio(portfolio, identifier, location);
-
-        // }
 
         if (securityInPortfolio != 404) {
           object = securityInPortfolio;
-          // object["Type"] = row["Type"];
-          // object["Group"] = row["Group"];
-          // // object["holdPortfXrate"] = row["holdPortfXrate"];
-          // object["Sector"] = row["Sector"];
-          // object["Rating Class"] = row["Rating Class"];
-          // object["holdPortfXrate"] = row["holdPortfXrate"];
-          // object["Call Date"] = row["Call Date"] == "" ? "" : formatDateReadable(row["Call Date"]);
-          // object["Maturity"] = row["Maturity"] == "" ? "" : formatDateReadable(row["Maturity"]);
-          // object["Issuer"] = row["Issuer"];
-          // object["Country"] = row["Country"];
+
           object["Issue"] = row["Issue"];
 
           positions.push(object);
         }
       }
       try {
-        // console.log(positions)
         let updatedPortfolio: any = formatUpdatedPositions(positions, portfolio);
         let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
 
@@ -1105,22 +1129,6 @@ function calculateMonthlyInterest(portfolio: any, date: any) {
   return portfolio;
 }
 
-async function getTradeEntryPrice(location: string, identifier: string, type: string) {
-  try {
-    const database = client.db("trades_v_2");
-    let type = identifier.includes("IB") ? "ib" : identifier.includes("1393 HK") ? "emsx" : "vcons";
-    const reportCollection = database.collection(`${type}`);
-
-    // find document with matching id
-    let doc = await reportCollection.findOne({ Location: location });
-
-    // return the found document
-    return doc;
-  } catch (error) {
-    return error;
-  }
-}
-
 async function getMTDParams(portfolio: any, lastMonthPortfolio: any, dateInput: string) {
   try {
     let thisMonth = monthlyRlzdDate(dateInput);
@@ -1143,15 +1151,7 @@ async function getMTDParams(portfolio: any, lastMonthPortfolio: any, dateInput: 
       if (!parseFloat(portfolio[index]["MTD Mark"]) && parseFloat(portfolio[index]["MTD Mark"]) != 0 && portfolio[index]["Entry Price"][thisMonth]) {
         portfolio[index]["MTD Mark"] = portfolio[index]["Entry Price"][thisMonth];
         portfolio[index]["Notes"] = "MTD Mark not found, used entry price for this month instead";
-        // console.log(portfolio[index])
       }
-
-      // if (!portfolio[index]["Mid"] && parseFloat(portfolio[index]["Mid"]) != 0 && portfolio[index]["Entry Price"][thisMonth]) {
-
-      //   portfolio[index]["Mid"] = portfolio[index]["Entry Price"][thisMonth];
-      //   portfolio[index]["Notes"] += "MTD Mark not found, used entry price for this month instead"
-      //   // console.log(portfolio[index])
-      // }
     }
 
     return portfolio;
@@ -1205,11 +1205,14 @@ function calculateMonthlyDailyRlzdPTFPL(portfolio: any, date: any) {
   let thisMonth = monthlyRlzdDate(date);
   let thisDay = formatDateRlzdDaily(date);
   for (let index = 0; index < portfolio.length; index++) {
-    portfolio[index]["Monthly Capital Gains Rlzd"] = portfolio[index]["Monthly Capital Gains Rlzd"] ? portfolio[index]["Monthly Capital Gains Rlzd"][thisMonth] || 0 : 0;
+    portfolio[index]["MTD Rlzd"] = portfolio[index]["MTD Rlzd"] ? calculateMTDRlzd(portfolio[index]["MTD Rlzd"], portfolio[index]["MTD Mark"], portfolio[index]["Issue"]) : 0;
+    
+    portfolio[index]["Monthly Capital Gains Rlzd"] = portfolio[index]["MTD Rlzd"]
+    
     portfolio[index]["Cost MTD Ptf"] = portfolio[index]["Cost MTD Ptf"] ? portfolio[index]["Cost MTD Ptf"][thisMonth] || 0 : 0;
     portfolio[index]["Day Rlzd K G/L"] = portfolio[index]["Day Rlzd K G/L"] ? portfolio[index]["Day Rlzd K G/L"][thisDay] || 0 : 0;
     portfolio[index]["Ptf MTD P&L"] = parseFloat(portfolio[index]["Monthly Capital Gains Rlzd"]) + (parseFloat(portfolio[index]["Monthly Capital Gains URlzd"]) || 0) + parseFloat(portfolio[index]["Monthly Interest Income"]) || 0;
-
+   
     portfolio[index]["Ptf Day P&L"] = parseFloat(portfolio[index]["Daily Interest Income"]) + parseFloat(portfolio[index]["Day URlzd K G/L"]) ? parseFloat(portfolio[index]["Daily Interest Income"]) + parseFloat(portfolio[index]["Day URlzd K G/L"]) : 0;
     if (portfolio[index]["Ptf Day P&L"] == 0) {
       portfolio[index]["Ptf Day P&L"] = 0;
@@ -1218,125 +1221,6 @@ function calculateMonthlyDailyRlzdPTFPL(portfolio: any, date: any) {
     }
   }
   return portfolio;
-}
-
-function formatFrontEndTable(portfolio: any, date: any) {
-  for (let index = 0; index < portfolio.length; index++) {
-    let position: any = portfolio[index];
-    let originalFace = position["Original Face"] || 1;
-    let usdRatio = parseFloat(position["holdPortfXrate"]) || 1;
-
-    position["Cost"] = position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") ? Math.round(position["Average Cost"] * position["Quantity"] * 10000) / (10000 * position["Original Face"]) : Math.round(position["Average Cost"] * position["Quantity"] * 1000000) / 1000000;
-    position["Daily Interest Income"] = Math.round(position["Daily Interest Income"] * 1000000) / 1000000;
-    position["holdPortfXrate"] = Math.round(position["holdPortfXrate"] * 1000000) / 1000000;
-    position["Value"] = position["ISIN"].includes("CDS") || position["ISIN"].includes("ITRX") ? Math.round((position["Quantity"] * position["Mid"] * 10000 * usdRatio) / originalFace) / 10000 : Math.round(position["Quantity"] * position["Mid"] * usdRatio * 10000) / 10000;
-
-    position["Mid"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Mid"] * 1000000) / 1000000 : Math.round(position["Mid"] * 1000000) / 10000;
-    position["Bid"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Bid"] * 1000000) / 1000000 : Math.round(position["Bid"] * 1000000) / 10000;
-    position["Ask"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Ask"] * 1000000) / 1000000 : Math.round(position["Ask"] * 1000000) / 10000;
-
-    position["Average Cost"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Average Cost"] * 1000000) / 1000000 : Math.round(position["Average Cost"] * 1000000) / 10000;
-    position["YTM"] = Math.round(position["YTM"] * 1000000) / 1000000 || 0;
-    position["CR01"] = "0";
-    position["MTD Mark"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["MTD Mark"] * 1000000) / 1000000 : Math.round(position["MTD Mark"] * 1000000) / 10000;
-    position["Previous Mark"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Previous Mark"] * 1000000) / 1000000 : Math.round(position["Previous Mark"] * 1000000) / 10000;
-
-    position["Monthly Interest Income"] = Math.round(position["Monthly Interest Income"] * 1000000 * usdRatio) / 1000000;
-    position["Monthly Capital Gains Rlzd"] = Math.round(position["Monthly Capital Gains Rlzd"] * 1000000 * usdRatio) / 1000000;
-    position["Monthly Capital Gains URlzd"] = Math.round(position["Monthly Capital Gains URlzd"] * 1000000 * usdRatio) / 1000000;
-    position["Cost MTD Ptf"] = Math.round(position["Cost MTD Ptf"] * 1000000 * usdRatio) / 1000000;
-    position["Cost"] = Math.round(position["Cost"] * 1000000 * usdRatio) / 1000000;
-
-    position["Average Cost"] = Math.round(position["Average Cost"] * 1000000) / 1000000;
-    position["holdPortfXrate"] = position["holdPortfXrate"] ? position["holdPortfXrate"] : 1;
-    if (!position["Previous FX Rate"]) {
-      position["Previous FX Rate"] = position["holdPortfXrate"];
-    }
-    position["MTD FX"] = position["MTD FX"] ? position["MTD FX"] : position["Previous FX Rate"];
-
-    position["Day Int.Income USD"] = position["Daily Interest Income"] * usdRatio;
-    position["Daily Interest FX P&L"] = Math.round((position["holdPortfXrate"] - position["Previous FX Rate"]) * 1000000 * position["Daily Interest Income"]) / 1000000;
-
-    position["Notional Total"] = position["Quantity"];
-    position["Quantity"] = position["Quantity"] / originalFace;
-    position["#"] = index + 1;
-    position["ISIN"] = position["ISIN"].length != 12 ? "" : position["ISIN"];
-
-    position["Ptf Day P&L"] = Math.round(position["Ptf Day P&L"] * usdRatio * 1000000) / 1000000;
-    // multiply mtd pl with usd since all components are not  multiplied by usd when they are summed
-
-    position["Ptf MTD P&L"] = Math.round(position["Ptf MTD P&L"] * usdRatio * 1000000) / 1000000;
-
-    position["Previous FX Rate"] = Math.round(position["Previous FX Rate"] * 1000000) / 1000000;
-    position["Maturity"] = position["Maturity"] ? position["Maturity"] : 0;
-    position["Call Date"] = position["Call Date"] ? position["Call Date"] : 0;
-
-    position["Color"] = position["Maturity"] ? (areDatesInSameMonthAndYear(position["Maturity"], date) ? "red" : "") : "";
-
-    position["Holding ID"] = position["_id"];
-    position["Duration(Mkt)"] = yearsUntil(position["Maturity"], date);
-    position["Security"] = position["Issue"];
-    position["Coupon Duration"] = position["Coupon Duration"] ? position["Coupon Duration"] : position["Issue"].split(" ")[0] == "T" || position["Issue"].includes("GOVT") ? 365.0 : 360.0;
-    position["Coupon Rate"] = position["Coupon Rate"] ? position["Coupon Rate"] : 0;
-    position["Issuer"] = position["Issuer"] == "0" ? "" : position["Issuer"];
-
-    position["DV01"] = (position["DV01"] / 1000000) * position["Notional Total"];
-    position["DV01"] = Math.round(position["DV01"] * 1000000) / 1000000 || 0;
-
-    if (position["Issue"].includes("CDS")) {
-      position["Day P&L FX"] = Math.round(((parseFloat(position["holdPortfXrate"]) - parseFloat(position["Previous FX Rate"])) / parseFloat(position["Previous FX Rate"])) * position["Quantity"] * 1000000) / 1000000 || 0;
-      position["MTD P&L FX"] = Math.round(((parseFloat(position["holdPortfXrate"]) - parseFloat(position["MTD FX"] || position["holdPortfXrate"])) / parseFloat(position["MTD FX"] || position["holdPortfXrate"])) * position["Quantity"] * 1000000) / 1000000 || 0;
-    } else {
-      position["Day P&L FX"] = Math.round(((parseFloat(position["holdPortfXrate"]) - parseFloat(position["Previous FX Rate"])) / parseFloat(position["Previous FX Rate"])) * position["Notional Total"] * 1000000) / 1000000;
-      position["MTD P&L FX"] = (Math.round(((parseFloat(position["holdPortfXrate"]) - parseFloat(position["MTD FX"] || position["holdPortfXrate"])) / parseFloat(position["MTD FX"] || position["holdPortfXrate"])) * position["Notional Total"]) * 1000000) / 1000000 || 0;
-    }
-  }
-  return portfolio;
-}
-
-function yearsUntil(dateString: any, dateInput: any) {
-  // Parse the date string and create a new Date object
-  // if(dateString == 0 || "0"){
-  //   return dateString
-  // }
-  const date: any = new Date(dateString).getTime();
-
-  // Get the current date
-  const now: any = new Date(dateInput).getTime();
-
-  // Calculate the difference in milliseconds
-  const diff: any = date - now;
-
-  // Convert the difference from milliseconds to years
-  let years = diff / (1000 * 60 * 60 * 24 * 365.25);
-
-  // If the difference is negative (i.e., the date is in the future), take the absolute value
-  if (years < 0) {
-    years = 0;
-  }
-
-  // Round to two decimal places and return
-  return Math.round(years * 100) / 100;
-}
-
-async function getPositionBasedOnId(id: string) {
-  try {
-    let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 0 * 24 * 60 * 60 * 1000));
-
-    const database = client.db("portfolios");
-    let earliestCollectionName = await getEarliestCollectionName(day);
-    const reportCollection = database.collection(`portfolio-${earliestCollectionName[0]}`);
-
-    let objectId = new ObjectId(id);
-
-    // find document with matching id
-    let doc = await reportCollection.findOne({ _id: objectId });
-
-    // return the found document
-    return doc;
-  } catch (error) {
-    return error;
-  }
 }
 
 export async function editPosition(editedPosition: any) {
@@ -1431,164 +1315,4 @@ export async function editPosition(editedPosition: any) {
   } catch (error: any) {
     return { error: error.toString() };
   }
-}
-
-function areDatesInSameMonthAndYear(customDate: string, todaysDate: string) {
-  return new Date(customDate).getMonth() === new Date(todaysDate).getMonth() && new Date(customDate).getFullYear() === new Date(todaysDate).getFullYear();
-}
-
-function formatFrontEndRiskReport(portfolio: any) {
-  let tableTitle = [
-    "#",
-
-    "Type",
-    "Strategy",
-    "Trade Idea Code",
-    "Credit Name",
-    "BB Ticker",
-    "H-Notional",
-    "o/r Dv01",
-    "o/r Cr01",
-    "o/r Price",
-    "Text23",
-    "Text10",
-    "Accrued $",
-    "Rating Name: SP",
-    "Curr",
-    "Isin",
-    "Maturity",
-    "CallDate",
-    "Notional Total",
-    "Duration(Mkt)",
-    "Duration(C/P,Mkt)",
-    "Implied ZCS",
-    "YTM",
-    "Dv01 $ (C/P,Mkt) (USD)",
-    "Dv01 (USD) (Mkt)",
-    "Notional Calc (Mkt)",
-    "Cr01 (USD) (Mkt)",
-    "Implied CS",
-    "Mid",
-    "Bid",
-    "Ask",
-    "Average Cost",
-    "MTD P&L",
-    "Day P&L",
-    "Total P&L",
-    "R - Capital Gain/Loss",
-    "U - Capital Gain/Loss",
-    "Accrued Interest",
-    "Cash Dispmnt Accrued Int",
-    "Long Security Name",
-    "Issue Amt",
-    "YC +25",
-    "CS +100",
-    "MTD Int.Income",
-    "MTD Mark",
-    "Ptf MTD P&L",
-    "Ptf MTD Rlzd",
-    "Ptf MTD URlzd",
-    "Adjusted OAS",
-    "Implied ZCS2",
-    "Issuer Name",
-    "Ref Bond",
-    "Ref Fair",
-    "Ref YTM",
-    "Ref Spread o/r",
-    "AccAdj MTD",
-    "$ Fair",
-    "FX",
-    "Quantity",
-    "Q_Sector",
-    "Q_Country",
-    "$ Full Econ(Mkt)",
-  ];
-  let tableTitleConversion: any = {
-    "#": "#",
-    Type: "Type",
-    Strategy: "Group",
-    "Trade Idea Code": "Location",
-    "Credit Name": "Issuer",
-    "BB Ticker": "Issue",
-    "H-Notional": "0",
-    "o/r Dv01": "0",
-    "o/r Cr01": "0",
-    "o/r Price": "0",
-    Text23: "Rating Class",
-
-    "Accrued $": "Monthly Interest Income",
-    "Rating Name: SP": "0",
-    Curr: "Currency",
-    Isin: "ISIN",
-    Maturity: "Maturity",
-    CallDate: "Call Date",
-    "Notional Total": "Notional Total",
-    "Duration(Mkt)": "Duration(Mkt)",
-    "Duration(C/P,Mkt)": "Modified Duration",
-    "Implied ZCS": "0",
-    YTM: "YTM",
-    "Dv01 $ (C/P,Mkt) (USD)": "DV01",
-    "Dv01 (USD) (Mkt)": "DV01",
-    "Notional Calc (Mkt)": "0",
-    "Cr01 (USD) (Mkt)": "DV01",
-    "Implied CS": "0",
-    Mid: "Mid",
-    Bid: "Bid",
-    Ask: "Ask",
-    "Average Cost": "Average Cost",
-    "MTD P&L": "Ptf MTD P&L",
-    "Day P&L": "Ptf Day P&L",
-    "Total P&L": "0",
-    "R - Capital Gain/Loss": "0",
-    "U - Capital Gain/Loss": "0",
-    "Accrued Interest": "Monthly Interest Income",
-    "Cash Dispmnt Accrued Int": "0",
-    "Long Security Name": "Issue",
-    "Issue Amt": "Quantity",
-    "YC +25": "0",
-    "CS +100": "0",
-    "MTD Int.Income": "Monthly Interest Income",
-    "MTD Mark": "MTD Mark",
-    "Ptf MTD P&L": "Ptf MTD P&L",
-    "Ptf MTD Rlzd": "Monthly Capital Gains Rlzd",
-    "Ptf MTD URlzd": "Monthly Capital Gains URlzd",
-    "Adjusted OAS": "0",
-    "Implied ZCS2": "0",
-    "Issuer Name": "Issuer",
-    "Ref Bond": "0",
-    "Ref Fair": "0",
-    "Ref YTM": "0",
-    "Ref Spread o/r": "0",
-    "AccAdj MTD": "0",
-    "$ Fair": "0",
-    FX: "holdPortfXrate",
-    Quantity: "Quantity",
-    Q_Sector: "Sector",
-    Q_Country: "Country",
-    "$ Full Econ(Mkt)": "Value",
-  };
-
-  let updatedPortfolio = [];
-  for (let index = 0; index < portfolio.length; index++) {
-    let position = portfolio[index];
-    let updatedPosition: any = {};
-    for (let titleIndex = 0; titleIndex < tableTitle.length; titleIndex++) {
-      let title = tableTitle[titleIndex];
-      updatedPosition[title] = tableTitleConversion[title] == "0" ? "0" : position[tableTitleConversion[title]];
-    }
-    if (position["Issue"].includes(" IB")) {
-      updatedPosition["Acct"] = "NOM_IB";
-    } else if (!position["Issue"].includes(" IB")) {
-      updatedPosition["Acct"] = "NOM_PB";
-    }
-    if (position["Call Date"] && position["Call Date"] != "0") {
-      updatedPosition["Text10"] = "AT1";
-    }
-    if (position["Issue"].includes("CDS")) {
-      updatedPosition["Notional Total"] = -1 * position["Notional Total"];
-      updatedPosition["$ Full Econ(Mkt)"] = -1 * position["Notional Total"];
-    }
-    updatedPortfolio.push(updatedPosition);
-  }
-  return updatedPortfolio;
 }

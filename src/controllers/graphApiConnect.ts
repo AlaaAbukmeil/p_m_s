@@ -44,10 +44,9 @@ function format_date_ISO(date: string) {
   return new Date(date).toISOString();
 }
 
-export async function getVcons(token: string, start_time: string, end_time: string, trades: any) {
+export async function getVcons(token: string, start_time: string, end_time: string, trades: any, tradesCount: number) {
   let portfolio = await getPortfolio();
   try {
-  
     let url = `https://graph.microsoft.com/v1.0/users/vcons@triadacapital.com/messages?$filter=contains(subject,'New BB') and receivedDateTime ge ${format_date_ISO(start_time)} and receivedDateTime le ${format_date_ISO(end_time)}&$top=1000000`;
     let action = await axios.get(url, {
       headers: {
@@ -55,23 +54,23 @@ export async function getVcons(token: string, start_time: string, end_time: stri
       },
     });
     let vcons = action.data.value;
-  
+
     let object = [];
-    let count = trades.length + 1;
+    let count = tradesCount + 1;
     let id;
     for (let index = 0; index < vcons.length; index++) {
       let vcon = vcons[index].body.content;
       vcon = renderVcon(vcon);
-      let identifier = vcon["ISIN"] 
+      let identifier = vcon["ISIN"];
       let securityInPortfolioLocation = getSecurityInPortfolioWithoutLocation(portfolio, identifier);
       let location = securityInPortfolioLocation.trim();
       let trade_status = "new";
       let triadaId = trades.find(function (trade: any) {
         return trade["Seq No"] === vcon["Seq No"];
       });
-   
+
       if (triadaId) {
-        continue
+        continue;
         // id = triadaId["Triada Trade Id"];
         // location = triadaId["Location"];
         // trade_status = "uploaded_to_app";
@@ -101,7 +100,6 @@ export async function getVcons(token: string, start_time: string, end_time: stri
 export async function getFxTrades(token: string, start_time: string, end_time: string, trades: any) {
   // let portfolio = await getPortfolio()
   try {
-
     let url = `https://graph.microsoft.com/v1.0/users/vcons@triadacapital.com/messages?$filter=contains(subject,'Fill Alert') and receivedDateTime ge ${format_date_ISO(start_time)} and receivedDateTime le ${format_date_ISO(end_time)}&$top=1000000`;
     let action = await axios.get(url, {
       headers: {
@@ -110,7 +108,6 @@ export async function getFxTrades(token: string, start_time: string, end_time: s
     });
     let fxTrades = action.data.value;
 
- 
     let object = [];
     let count = trades.length + 1;
     let id;

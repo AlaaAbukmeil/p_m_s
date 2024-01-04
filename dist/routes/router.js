@@ -172,7 +172,7 @@ router.post("/nomura-excel", common_1.verifyToken, uploadBeforeExcel.any(), asyn
     let token = await (0, graphApiConnect_1.getGraphToken)();
     //to be modified
     let trades = await (0, excelFormat_1.getTriadaTrades)("vcons");
-    let array = await (0, graphApiConnect_1.getVcons)(token, data.timestamp_start, data.timestamp_end, trades);
+    let array = await (0, graphApiConnect_1.getVcons)(token, data.timestamp_start, data.timestamp_end, trades[0], trades[1]);
     if (array.length == 0) {
         res.send({ error: "No Trades" });
     }
@@ -187,7 +187,7 @@ router.post("/vcon-excel", common_1.verifyToken, uploadBeforeExcel.any(), async 
     let pathName = "vcon_" + (0, common_1.formatDateVconFile)(data.timestamp_start) + "_" + (0, common_1.formatDateVconFile)(data.timestamp_end) + "_";
     let token = await (0, graphApiConnect_1.getGraphToken)();
     let trades = await (0, excelFormat_1.getTriadaTrades)("vcons");
-    let array = await (0, graphApiConnect_1.getVcons)(token, data.timestamp_start, data.timestamp_end, trades);
+    let array = await (0, graphApiConnect_1.getVcons)(token, data.timestamp_start, data.timestamp_end, trades[0], trades[1]);
     if (array.length == 0) {
         res.send({ error: "No Trades" });
     }
@@ -206,7 +206,7 @@ router.post("/ib-excel", common_1.verifyToken, uploadBeforeExcel.any(), async (r
         let trades = await (0, excelFormat_1.getTriadaTrades)("ib");
         let data = await (0, portfolioFunctions_1.readIBRawExcel)(path);
         let portfolio = await (0, reports_1.getPortfolio)();
-        let action = (0, excelFormat_1.formatIbTrades)(data, trades, portfolio);
+        let action = (0, excelFormat_1.formatIbTrades)(data, trades[0], portfolio, trades[1]);
         // console.log(action)
         if (!action) {
             res.send({ error: action });
@@ -249,10 +249,10 @@ router.post("/centralized-blotter", common_1.verifyToken, uploadBeforeExcel.any(
         let token = await (0, graphApiConnect_1.getGraphToken)();
         // to be modified
         let vconTrades = await (0, excelFormat_1.getTriadaTrades)("vcons", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
-        let vcons = await (0, graphApiConnect_1.getVcons)(token, data.timestamp_start, data.timestamp_end, vconTrades);
+        let vcons = await (0, graphApiConnect_1.getVcons)(token, data.timestamp_start, data.timestamp_end, vconTrades[0], vconTrades[1]);
         let ibTrades = await (0, excelFormat_1.getTriadaTrades)("ib", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
         let emsxTrades = await (0, excelFormat_1.getTriadaTrades)("emsx", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
-        let action = await (0, excelFormat_1.formatCentralizedRawFiles)(req.files, vcons, vconTrades, ibTrades, emsxTrades);
+        let action = await (0, excelFormat_1.formatCentralizedRawFiles)(req.files, vcons, vconTrades[0], ibTrades[0], emsxTrades[0]);
         if (action.error) {
             res.send({ error: action.error });
         }
@@ -294,11 +294,12 @@ router.post("/emsx-excel", common_1.verifyToken, uploadBeforeExcel.any(), async 
         let trades = await (0, excelFormat_1.getTriadaTrades)("emsx");
         let data = await (0, excelFormat_1.readEmsxRawExcel)(path);
         let portfolio = await (0, reports_1.getPortfolio)();
-        let action = (0, excelFormat_1.formatEmsxTrades)(data, trades, portfolio);
+        let action = (0, excelFormat_1.formatEmsxTrades)(data, trades[0], portfolio, trades[1]);
         if (!action) {
             res.send({ error: action });
         }
         else {
+            console.log(action);
             let emsx = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(action, "emsx_formated");
             let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + emsx;
             res.send(downloadEBlotName);
@@ -392,5 +393,9 @@ router.post("/check-mufg", common_1.verifyToken, uploadBeforeExcel.any(), async 
         console.log(error);
         res.send({ error: "File Template is not correct" });
     }
+});
+router.post("/one-time", uploadBeforeExcel.any(), async (req, res, next) => {
+    // let test= await editMTDRlzd()
+    res.send(200);
 });
 exports.default = router;

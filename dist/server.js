@@ -31,5 +31,5 @@ app.use(bodyParser.urlencoded({
 app.use(bodyParser.json());
 app.use("/api/web/", router_1.default);
 app.use(apiLimiter);
-const PORT = process.env.PORT || 8081;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, function () { });

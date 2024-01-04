@@ -358,7 +358,7 @@ async function readCentralizedEBlot(path) {
     // Read data
     const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
     const headersFormat = ["B/S", "Issue", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Trade App Status"];
-    const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : console.log(value, headers[0][index])));
+    const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : console.log(value, headers[0][index], "excel value are wrong")));
     if (!arraysAreEqual) {
         return {
             error: "Incompatible format, please upload centralized e-blot xlsx/csv file",
