@@ -10,6 +10,7 @@ const excelFormat_1 = require("../controllers/excelFormat");
 const graphApiConnect_1 = require("../controllers/graphApiConnect");
 const mufgOperations_1 = require("../controllers/mufgOperations");
 const operations_1 = require("../controllers/operations");
+const oneTimeFunctions_1 = require("../controllers/oneTimeFunctions");
 require("dotenv").config();
 const readLastLines = require("read-last-lines");
 const path = require("path");
@@ -22,7 +23,7 @@ const uploadBeforeExcel = multer({
         projectId: process.env.PROJECTID,
         keyFilename: process.env.KEYPATHFILE,
         filename: (req, file, cb) => {
-            cb(false, `/v2/${(0, common_1.generateRandomString)(6)}_${file.originalname.replace(/[!@#$%^&*(),.?":{}|<>\/\[\]\\;'\-=+`~]/g, "_")}`);
+            cb(false, `/v2/${(0, common_1.generateRandomString)(6)}_${file.originalname.replace(/[!@#$%^&*(),?":{}|<>/\[\]\\;'\-=+`~ ]/g, "_")}`);
         },
     }),
 });
@@ -395,7 +396,7 @@ router.post("/check-mufg", common_1.verifyToken, uploadBeforeExcel.any(), async 
     }
 });
 router.post("/one-time", uploadBeforeExcel.any(), async (req, res, next) => {
-    // let test= await editMTDRlzd()
+    let test = await (0, oneTimeFunctions_1.editMTDRlzd)();
     res.send(200);
 });
 exports.default = router;

@@ -481,7 +481,9 @@ export function formatEmsxTrades(data: any, emsxTrades: any, portfolio: any, tra
         let emsxTrade = emsxTrades[emsxIndex];
         // net because previous trade counted quantity as fill quantity
         let tradeType = trade["Side"] == "Sell" ? "S" : "B";
-        if (formatTradeDate(convertExcelDateToJSDate(trade["Create Time (As of)"])) == emsxTrade["Trade Date"] && trade["Security"] == emsxTrade["Issue"] && tradeType == emsxTrade["B/S"] && trade["FillQty"] == emsxTrade["Notional Amount"]) {
+        let tradeDate = !trade["Create Time (As of)"].includes("/") ? formatTradeDate(new Date()) : formatTradeDate(convertExcelDateToJSDate(trade["Create Time (As of)"]))
+
+        if (tradeDate == emsxTrade["Trade Date"] && trade["Security"] == emsxTrade["Issue"] && tradeType == emsxTrade["B/S"] && trade["FillQty"] == emsxTrade["Notional Amount"]) {
           existingTrade = emsxTrade;
         }
       }

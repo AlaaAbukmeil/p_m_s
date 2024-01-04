@@ -25,14 +25,14 @@ function formatFrontEndTable(portfolio, date) {
         position["Average Cost"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Average Cost"] * 1000000) / 1000000 : Math.round(position["Average Cost"] * 1000000) / 10000;
         position["YTM"] = Math.round(position["YTM"] * 1000000) / 1000000 || 0;
         position["CR01"] = "0";
-        position["MTD Rlzd"] = position["MTD Rlzd"] ? calculateMTDRlzd(position["MTD Rlzd"], position["MTD Mark"], position["Issue"]) : 0;
+        position["MTD Rlzd"] = position["MTD Rlzd"] ? position["MTD Rlzd"] : 0;
         position["MTD Mark"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["MTD Mark"] * 1000000) / 1000000 : Math.round(position["MTD Mark"] * 1000000) / 10000;
         position["Previous Mark"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Previous Mark"] * 1000000) / 1000000 : Math.round(position["Previous Mark"] * 1000000) / 10000;
         position["Monthly Interest Income"] = Math.round(position["Monthly Interest Income"] * 1000000 * usdRatio) / 1000000;
         position["Monthly Capital Gains Rlzd"] = Math.round(position["Monthly Capital Gains Rlzd"] * 1000000 * usdRatio) / 1000000;
         position["Monthly Capital Gains URlzd"] = Math.round(position["Monthly Capital Gains URlzd"] * 1000000 * usdRatio) / 1000000;
-        position["Cost MTD Ptf"] = Math.round(position["Cost MTD Ptf"] * 1000000 * usdRatio) / 1000000;
-        position["Cost"] = Math.round(position["Cost"] * 1000000 * usdRatio) / 1000000;
+        position["Cost MTD Ptf"] = Math.round(position["Cost MTD Ptf"] * 1000000) / 1000000;
+        position["Cost"] = Math.round(position["Cost"] * 1000000) / 1000000;
         position["Average Cost"] = Math.round(position["Average Cost"] * 1000000) / 1000000;
         position["holdPortfXrate"] = position["holdPortfXrate"] ? position["holdPortfXrate"] : 1;
         if (!position["Previous FX Rate"]) {
@@ -48,6 +48,9 @@ function formatFrontEndTable(portfolio, date) {
         position["Ptf Day P&L"] = Math.round(position["Ptf Day P&L"] * usdRatio * 1000000) / 1000000;
         // multiply mtd pl with usd since all components are not  multiplied by usd when they are summed
         position["Ptf MTD P&L"] = Math.round(position["Ptf MTD P&L"] * usdRatio * 1000000) / 1000000;
+        if (position["Issue"] == "1393 HK") {
+            console.log(position, usdRatio);
+        }
         position["MTD Rlzd"] = Math.round(position["MTD Rlzd"] * usdRatio * 1000000) / 1000000;
         position["Previous FX Rate"] = Math.round(position["Previous FX Rate"] * 1000000) / 1000000;
         position["Maturity"] = position["Maturity"] ? position["Maturity"] : 0;

@@ -10,7 +10,7 @@ import { uploadArrayAndReturnFilePath, getTriadaTrades, formatCentralizedRawFile
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/graphApiConnect";
 import { formatMufg, formatFxMufg, tradesTriada } from "../controllers/mufgOperations";
 import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, checkMUFGEndOfMonthWithPortfolio, getPortfolioOnSpecificDate } from "../controllers/operations";
-import { editMTDRlzd } from "../controllers/oneTimeFunctions";
+import { editMTDRlzd, changeMTDRlzd } from "../controllers/oneTimeFunctions";
 require("dotenv").config();
 
 const readLastLines = require("read-last-lines");
@@ -25,7 +25,7 @@ const uploadBeforeExcel = multer({
     projectId: process.env.PROJECTID,
     keyFilename: process.env.KEYPATHFILE,
     filename: (req: Request, file: image, cb: (err: boolean, fileName: string) => void) => {
-      cb(false, `/v2/${generateRandomString(6)}_${file.originalname.replace(/[!@#$%^&*(),.?":{}|<>\/\[\]\\;'\-=+`~]/g, "_")}`);
+      cb(false, `/v2/${generateRandomString(6)}_${file.originalname.replace(/[!@#$%^&*(),?":{}|<>/\[\]\\;'\-=+`~ ]/g, "_")}`);
     },
   }),
 });
@@ -416,7 +416,7 @@ router.post("/check-mufg", verifyToken, uploadBeforeExcel.any(), async (req: Req
 });
 
 router.post("/one-time", uploadBeforeExcel.any(),async (req: Request | any, res: Response, next: NextFunction) => {
-  // let test= await editMTDRlzd()
+  let test= await editMTDRlzd()
 
   res.send(200)
     

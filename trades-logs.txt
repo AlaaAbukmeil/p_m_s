@@ -1,0 +1,143 @@
+VEDLN 13 ⅞ 01/21/24 REGS: 
+
+ 
+
+,MEDCIJ 8.96 04/27/29 REGS: 
+
+ 
+
+,SOCGEN 8 PERP REGS: 
+
+ 
+
+,T 4 ⅛ 08/15/53: 
+
+ {"price":0.9636328125,"quantity":-500000}
+
+,NAGACL 7.95 07/06/24: 
+
+ 
+
+,HSBC HOLDINGS PLC 5YCMS+370.5 PERPETUAL: 
+
+ {"price":0.9913,"quantity":500000}
+
+,ING GROEP 6.5% Perpetual: 
+
+ 
+
+,NCIAU 12 ½ 08/26/31: 
+
+ 
+
+,ZN   MAR 24 IB: 
+
+ {"price":110.671875,"quantity":-1000}
+,{"price":110.671875,"quantity":-1000}
+,{"price":110.1875,"quantity":-1000}
+,{"price":110.1875,"quantity":-1000}
+
+,ESZ3 IB: 
+
+ {"price":4556,"quantity":-100}
+
+,ESH4 IB: 
+
+ {"price":4750.5,"quantity":-100}
+
+,6BG4 IB: 
+
+ 
+
+,6BZ3 IB: 
+
+ {"price":1.2665,"quantity":-312500}
+,{"price":1.2671,"quantity":-312500}
+,{"price":1.2672,"quantity":-312500}
+
+,6EG4 IB: 
+
+ 
+
+,6EZ3 IB: 
+
+ {"price":1.0924,"quantity":-500000}
+
+,1393 HK: 
+
+ {"price":0.125,"quantity":200000}
+,{"price":0.127,"quantity":1000}
+,{"price":0.124,"quantity":200000}
+
+,VEDLN 13 ⅞ 01/21/24 REGS: 
+
+ 
+
+,MEDCIJ 8.96 04/27/29 REGS: 
+
+ 
+
+,SOCGEN 8 PERP REGS: 
+
+ 
+
+,T 4 ⅛ 08/15/53: 
+
+ {"price":0.9636328125,"quantity":-500000}
+
+,NAGACL 7.95 07/06/24: 
+
+ 
+
+,HSBC HOLDINGS PLC 5YCMS+370.5 PERPETUAL: 
+
+ {"price":0.9913,"quantity":500000}
+
+,ING GROEP 6.5% Perpetual: 
+
+ 
+
+,NCIAU 12 ½ 08/26/31: 
+
+ 
+
+,ZN   MAR 24 IB: 
+
+ {"price":110.671875,"quantity":-1000}
+,{"price":110.671875,"quantity":-1000}
+,{"price":110.1875,"quantity":-1000}
+,{"price":110.1875,"quantity":-1000}
+
+,ESZ3 IB: 
+
+ {"price":4556,"quantity":-100}
+
+,ESH4 IB: 
+
+ {"price":4750.5,"quantity":-100}
+
+,6BG4 IB: 
+
+ 
+
+,6BZ3 IB: 
+
+ {"price":1.2665,"quantity":-312500}
+,{"price":1.2671,"quantity":-312500}
+,{"price":1.2672,"quantity":-312500}
+
+,6EG4 IB: 
+
+ 
+
+,6EZ3 IB: 
+
+ {"price":1.0924,"quantity":-500000}
+
+,1393 HK: 
+
+ {"price":0.125,"quantity":200000}
+,{"price":0.127,"quantity":1000}
+,{"price":0.124,"quantity":200000}
+
+,
