@@ -308,6 +308,7 @@ router.post("/emsx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Req
     const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
     //to be modified
     let trades = await getTriadaTrades("emsx");
+    console.log(trades[0])
     let data = await readEmsxRawExcel(path);
 
     let portfolio = await getPortfolio();
@@ -316,7 +317,7 @@ router.post("/emsx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Req
     if (!action) {
       res.send({ error: action });
     } else {
-      console.log(action)
+      
       let emsx = await uploadArrayAndReturnFilePath(action, "emsx_formated");
       let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + emsx;
       res.send(downloadEBlotName);

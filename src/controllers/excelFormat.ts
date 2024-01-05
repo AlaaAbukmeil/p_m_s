@@ -160,12 +160,15 @@ export async function getTriadaTrades(tradeType: any, fromTimestamp: number | nu
     { timestamp: { $exists: false } }, // includes trades without the timestamp property
     // includes trades within the timestamp range
   ];
-  if (fromTimestamp && toTimestamp) {
+  if (fromTimestamp != 0 && toTimestamp != 0) {
     options.push({ timestamp: { $gte: fromTimestamp, $lte: toTimestamp } });
+  } else {
+    options.push({ timestamp: { $exists: true } });
   }
   const query = {
     $or: options,
   };
+  console.log(options, tradeType)
   let reportCollectionSize = await database.collection(`${tradeType}`).countDocuments();
   let reportCollection = await database.collection(`${tradeType}`).find(query).toArray();
   if (fromTimestamp && toTimestamp) {
@@ -477,20 +480,20 @@ export function formatEmsxTrades(data: any, emsxTrades: any, portfolio: any, tra
 
       let existingTrade: any = null;
 
+      let tradeDate = !trade["Create Time (As of)"].includes("/") ? formatTradeDate(new Date()) : formatTradeDate(convertExcelDateToJSDate(trade["Create Time (As of)"]));
+      let tradeType = trade["Side"] == "Sell" ? "S" : "B";
       for (let emsxIndex = 0; emsxIndex < emsxTrades.length; emsxIndex++) {
         let emsxTrade = emsxTrades[emsxIndex];
         // net because previous trade counted quantity as fill quantity
-        let tradeType = trade["Side"] == "Sell" ? "S" : "B";
-        let tradeDate = !trade["Create Time (As of)"].includes("/") ? formatTradeDate(new Date()) : formatTradeDate(convertExcelDateToJSDate(trade["Create Time (As of)"]))
 
-        if (tradeDate == emsxTrade["Trade Date"] && trade["Security"] == emsxTrade["Issue"] && tradeType == emsxTrade["B/S"] && trade["FillQty"] == emsxTrade["Notional Amount"]) {
+        
+        if (tradeDate == emsxTrade["Trade Date"] && trade["Security"] == emsxTrade["Issue"] && tradeType == emsxTrade["B/S"] && trade["FillQty"] == emsxTrade["Settlement Amount"]) {
           existingTrade = emsxTrade;
         }
       }
-      let tradeDate = !data[index]["Create Time (As of)"].includes("/") ? new Date() : convertExcelDateToJSDate(data[index]["Create Time (As of)"]);
 
-      trade["Trade Date"] = formatTradeDate(tradeDate);
-      trade["Trade Date Time"] = formatTradeDate(tradeDate);
+      trade["Trade Date"] = tradeDate;
+      trade["Trade Date Time"] = tradeDate;
       let identifier = trade["Security"];
       let securityInPortfolioLocation = getSecurityInPortfolioWithoutLocation(portfolio, identifier);
       let trade_status = "new";
@@ -508,7 +511,7 @@ export function formatEmsxTrades(data: any, emsxTrades: any, portfolio: any, tra
       object["Net"] = trade["FillQty"];
       object["Price"] = trade["LmtPr"];
       object["Trade Date"] = trade["Trade Date"];
-      object["Settle Date"] = trade["Settle Date"];
+      object["Settle Date"] = trade["Trade Date"];
       object["Triada Trade Id"] = id;
       object["Location"] = securityInPortfolioLocation;
       object["Trade App Status"] = trade_status;
