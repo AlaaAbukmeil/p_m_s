@@ -3,7 +3,7 @@ import { image } from "../models/image";
 import { registerUser, checkIfUserExists, sendResetPasswordRequest, resetPassword } from "../controllers/auth";
 import { Request, Response } from "express";
 import { verifyToken, formatDateVconFile, generateRandomString } from "../controllers/common";
-import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, getTrades, getPortfolio, editPositionPortfolio, editPosition, getHistoricalRiskReportWithAnalytics } from "../controllers/reports";
+import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, getTrades, getPortfolio, editPositionPortfolio, editPosition, getHistoricalRiskReportWithAnalytics, getHistoricalSummaryPortfolioWithAnalytics } from "../controllers/reports";
 import { bloombergToTriada, readIBRawExcel, readPricingSheet } from "../controllers/portfolioFunctions";
 import { checkIfSecurityExist } from "../controllers/tsImagineOperations";
 import { uploadArrayAndReturnFilePath, getTriadaTrades, formatCentralizedRawFiles, formatIbTrades, formatEmsxTrades, readEmsxRawExcel } from "../controllers/excelFormat";
@@ -37,9 +37,24 @@ router.get("/auth", verifyToken, async (req: Request, res: Response, next: NextF
 });
 
 router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
-  const date: any = req.query.date;
-  let report = await getHistoricalPortfolioWithAnalytics(date);
-  res.send(report);
+  try {
+    const date: any = req.query.date;
+    let report = await getHistoricalPortfolioWithAnalytics(date);
+    res.send(report);
+  } catch (error: any) {
+    res.send({ error: error.toString() });
+  }
+});
+router.get("/summary-portfolio", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const date: any = req.query.date;
+    let report = await getHistoricalSummaryPortfolioWithAnalytics(date);
+    console.log(report[0])
+    res.send(report);
+  } catch (error: any) {
+    console.log(error)
+    res.send({ error: error.toString() });
+  }
 });
 router.get("/risk-report", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
   const date: any = req.query.date;
@@ -263,8 +278,8 @@ router.post("/centralized-blotter", verifyToken, uploadBeforeExcel.any(), async 
     let data = req.body;
     let token = await getGraphToken();
     // to be modified
-    let vconTrades = await getTriadaTrades("vcons", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
-    
+    let vconTrades = await getTriadaTrades("vcons", new Date(data.timestamp_start).getTime() - 24 * 60 * 60 * 1000, new Date(data.timestamp_end).getTime() + 24 * 60 * 60 * 1000);
+
     let vcons: any = await getVcons(token, data.timestamp_start, data.timestamp_end, vconTrades[0], vconTrades[1]);
     let ibTrades = await getTriadaTrades("ib", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
     let emsxTrades = await getTriadaTrades("emsx", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
@@ -308,7 +323,7 @@ router.post("/emsx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Req
     const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
     //to be modified
     let trades = await getTriadaTrades("emsx");
-    console.log(trades[0])
+    console.log(trades[0]);
     let data = await readEmsxRawExcel(path);
 
     let portfolio = await getPortfolio();
@@ -317,7 +332,6 @@ router.post("/emsx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Req
     if (!action) {
       res.send({ error: action });
     } else {
-      
       let emsx = await uploadArrayAndReturnFilePath(action, "emsx_formated");
       let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + emsx;
       res.send(downloadEBlotName);
@@ -416,11 +430,10 @@ router.post("/check-mufg", verifyToken, uploadBeforeExcel.any(), async (req: Req
   }
 });
 
-router.post("/one-time", uploadBeforeExcel.any(),async (req: Request | any, res: Response, next: NextFunction) => {
-  let test= await editMTDRlzd()
+router.post("/one-time", uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  // let test = await editMTDRlzd();
 
-  res.send(200)
-    
+  res.send(200);
 });
 
 export default router;

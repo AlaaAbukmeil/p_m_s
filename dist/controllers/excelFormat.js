@@ -151,7 +151,6 @@ async function getTriadaTrades(tradeType, fromTimestamp = 0, toTimestamp = 0) {
     const query = {
         $or: options,
     };
-    console.log(options, tradeType);
     let reportCollectionSize = await database.collection(`${tradeType}`).countDocuments();
     let reportCollection = await database.collection(`${tradeType}`).find(query).toArray();
     if (fromTimestamp && toTimestamp) {

@@ -2,9 +2,9 @@ require("dotenv").config();
 
 import { getAverageCost, readPricingSheet, getAllDatesSinceLastMonthLastDay, parseBondIdentifier, getSettlementDateYear, readPortfolioFromImagine, formatUpdatedPositions, readMUFGEBlot, readPortfolioFromLivePorfolio, formatDateRlzdDaily, readEditInput, getDateTimeInMongoDBCollectionFormat, readCentralizedEBlot } from "./portfolioFunctions";
 import util from "util";
-import { getDate, getTime, monthlyRlzdDate, formatDateReadable } from "./common";
+import { getDate, monthlyRlzdDate, formatDateReadable } from "./common";
 import { insertEditLogs } from "./operations";
-import { formatFrontEndTable, formatFrontEndRiskReport } from "./tableFormatter";
+import { formatFrontEndTable, formatFrontEndRiskReport, formatFrontEndSummaryTable } from "./tableFormatter";
 import { calculateMTDRlzd } from "./tableFormatter";
 import { uri } from "./common";
 import { appendLogs } from "./oneTimeFunctions";
@@ -164,6 +164,78 @@ export async function getHistoricalRiskReportWithAnalytics(date: string) {
   console.log(pairTrades);
   documents = formatFrontEndTable(documents, date);
   documents = formatFrontEndRiskReport(documents, pairTrades);
+  return [documents, sameDayCollectionsPublished];
+}
+
+export async function getHistoricalSummaryPortfolioWithAnalytics(date: string) {
+  const database = client.db("portfolios");
+  let earliestPortfolioName = await getEarliestCollectionName(date);
+  let sameDayCollectionsPublished = earliestPortfolioName[1];
+  let yesterdayPortfolioName = getDateTimeInMongoDBCollectionFormat(new Date(new Date(earliestPortfolioName[0]).getTime() - 1 * 24 * 60 * 60 * 1000)).split(" ")[0] + " 23:59";
+  let lastDayBeforeToday = await getEarliestCollectionName(yesterdayPortfolioName);
+
+  const reportCollection = database.collection(`portfolio-${earliestPortfolioName[0]}`);
+
+  let documents = await reportCollection
+    .aggregate([
+      {
+        $sort: {
+          "BB Ticker": 1, // replace 'BB Ticker' with the name of the field you want to sort alphabetically
+        },
+      },
+    ])
+    .toArray();
+
+  let now = new Date(date);
+  let currentMonth = now.getMonth();
+  let currentYear = now.getFullYear();
+
+  let thisMonth = monthlyRlzdDate(date);
+
+  documents = documents.filter((position: any) => {
+    if (position["Quantity"] == 0) {
+      let monthsTrades = Object.keys(position["Monthly Capital Gains Rlzd"]);
+      if (monthsTrades.includes(thisMonth)) {
+        return position;
+      }
+    } else {
+      return position;
+    }
+  });
+
+  documents.sort((current: any, next: any) => {
+    if (current["Quantity"] === 0 && next["Quantity"] !== 0) {
+      return 1; // a should come after b
+    }
+    if (current["Quantity"] !== 0 && next["Quantity"] === 0) {
+      return -1; // a should come before b
+    }
+    // if both a and b have Quantity 0 or both have Quantity not 0, sort alphabetically by name
+    return current["Issue"].localeCompare(next["Issue"]);
+  });
+
+  let currentDayDate: any = new Date(date);
+  let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate);
+
+  //+ 23:59 to make sure getEarliestcollectionname get the lastest date on last day of the month
+  let lastMonthLastCollectionName = await getEarliestCollectionName(previousMonthDates[0] + " 23:59");
+  try {
+    let lastMonthPortfolio = await getHistoricalPortfolio(lastMonthLastCollectionName[0]);
+
+    let previousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeToday[0]);
+
+    documents = await getMTDParams(documents, lastMonthPortfolio, earliestPortfolioName[0]);
+    documents = await getPreviousDayMarkPTFURLZD(documents, previousDayPortfolio, lastDayBeforeToday[0]);
+  } catch (error) {
+    console.log(error);
+  }
+
+  documents = await calculateMonthlyInterest(documents, new Date(date));
+  documents = await calculateDailyInterestUnRlzdCapitalGains(documents, new Date(date));
+  documents = await calculateMonthlyURlzd(documents);
+  documents = calculateMonthlyDailyRlzdPTFPL(documents, date);
+  documents = formatFrontEndSummaryTable(documents, date, 440000, 0.5);
+
   return [documents, sameDayCollectionsPublished];
 }
 export async function getEarliestCollectionName(originalDate: string) {
@@ -409,174 +481,6 @@ export async function getBBTicker(obj: any) {
     return bbTicker;
   } catch (error) {
     return error;
-  }
-}
-
-export async function uploadPortfolioFromImagine(path: string) {
-  let data: any = await readPortfolioFromImagine(path);
-  if (data.error) {
-    return data;
-  } else {
-    try {
-      let positions: any = {};
-      for (let index = 0; index < data.length; index++) {
-        let row = data[index];
-        let identifier = row["BB Ticker"];
-        let object: any = {};
-        let previousAverageCost = 0;
-        let tradeType = row["Buy/Sell"];
-        let operation = tradeType == "B" ? 1 : -1;
-        let currentPrice: number = row["Price"];
-        let currentQuantity: any = parseFloat(row["Quantity"]); //
-        let currentNet = parseFloat(row["Net"]); //
-        let bondCouponMaturity: any = parseBondIdentifier(row["BB Ticker"]); //Issue
-        let settlementDate = getSettlementDateYear(row["Trade Date"], row["Settle Date"]);
-        object["Mid"] = row["Mid"]; //only for upload portfolio from imagine
-        object["BB Ticker"] = row["BB Ticker"];
-        object["Location"] = row["Location"];
-        object["ISIN"] = row["ISIN"];
-        object["Quantity"] = currentQuantity;
-        object["Net"] = currentNet;
-        object["Currency"] = row["Currency"] == "" ? "USD" : row["Currency"];
-        object["Average Cost"] = currentPrice ? currentPrice / 100.0 : 0;
-        object["Coupon Rate"] = bondCouponMaturity[0] == "" ? "0" : bondCouponMaturity[0];
-        object["Maturity"] = bondCouponMaturity[1] == "Invalid Date" ? "0" : bondCouponMaturity[1];
-        let interestQuantity;
-        object["Interest"] = {};
-        interestQuantity = currentQuantity;
-        object["Interest"][settlementDate] = interestQuantity;
-        object["Daily P&L Rlzd"] = operation == -1 ? parseFloat(currentQuantity) * (previousAverageCost - currentPrice) : 0;
-        object["Day Rlzd K G/L"] = 0;
-        object["Monthly Capital Gains Rlzd"] = {};
-        object["Monthly Capital Gains Rlzd"]["2023/09"] = 0;
-        positions[identifier] = object;
-      }
-      try {
-        let insertion = await insertTradesInPortfolio(Object.values(positions));
-        return insertion;
-      } catch (error) {
-        return { error: error };
-      }
-    } catch (error) {
-      return { error: error };
-    }
-  }
-}
-
-export async function uploadPortfolioFromMufg(path: string) {
-  let data: any = await readMUFGEBlot(path);
-  if (data.error) {
-    return data;
-  } else {
-    try {
-      let positions: any = [];
-      let originalFaceMultiplier: any = {
-        "6BZ3 IB": 62500,
-        "ESZ3 IB": 50,
-        "ECZ3 IB": 125000,
-        "ZN IB": 1000,
-        "6EX3 IB": 250000,
-        "ZN   DEC 23 IB": 1000,
-        "6EZ3 IB": 125000,
-        "6EV3 IB": 125000,
-      };
-      for (let index = 0; index < data.length; index++) {
-        let row = data[index];
-        let identifier = row["Issue"];
-        let object: any = {};
-        let previousAverageCost = 0;
-        let tradeType = row["Buy/Sell"];
-        let operation = tradeType == "B" ? 1 : -1;
-        let currentPrice: number = row["Price"];
-        let currentQuantity: any = parseFloat(row["Quantity"]); //
-        let currentNet = parseFloat(row["Net"]); //
-        let bondCouponMaturity: any = parseBondIdentifier(row["BB Ticker"]); //Issue
-        let couponDaysYear = row["Issue"] ? (row["Issue"].split(" ")[0] == "T" ? 365.0 : 360.0) : row["BB Ticker"].split(" ")[0] == "T" ? 365.0 : 360.0;
-        let settlementDate = getSettlementDateYear(row["Trade Date"], row["Settle Date"]);
-        object["Mid"] = row["Mid"]; //only for upload portfolio from imagine
-        object["BB Ticker"] = row["BB Ticker"];
-        object["Location"] = row["Location"];
-        object["Issue"] = row["Issue"];
-        object["ISIN"] = row["ISIN"];
-        object["Quantity"] = currentQuantity;
-        object["Net"] = currentNet;
-        object["Average Cost"] = row["Average Cost"] ? row["Average Cost"] : 0;
-        object["Coupon Rate"] = bondCouponMaturity[0] == "" ? 0 : bondCouponMaturity[0];
-        object["Maturity"] = bondCouponMaturity[1] == "Invalid Date" ? "0" : bondCouponMaturity[1];
-        let interestQuantity;
-        object["Interest"] = {};
-        interestQuantity = currentQuantity;
-        object["Interest"][settlementDate] = interestQuantity;
-        object["Daily P&L Rlzd"] = operation == -1 ? parseFloat(currentQuantity) * (previousAverageCost - currentPrice) : 0;
-        object["Day Rlzd K G/L"] = {};
-        object["Monthly Capital Gains Rlzd"] = {};
-        object["Monthly Capital Gains Rlzd"]["2023/09"] = 0;
-        object["Currency"] = row["Currency"];
-        object["Coupon Duration"] = couponDaysYear;
-        object["Entry Price"] = { "2023/09": row["Mid"] };
-        object["Original Face"] = row["ISIN"].includes("IB") ? originalFaceMultiplier[row["ISIN"]] : 1000;
-        positions.push(object);
-      }
-      try {
-        let insertion = await insertTradesInPortfolio(positions);
-        return insertion;
-      } catch (error) {
-        return { error: error };
-      }
-    } catch (error) {
-      return { error: error };
-    }
-  }
-}
-
-export async function uploadPortfolioFromLivePortfolio(path: string) {
-  let data: any = await readPortfolioFromLivePorfolio(path);
-  if (data.error) {
-    return data;
-  } else {
-    try {
-      let positions: any = {};
-      for (let index = 0; index < data.length; index++) {
-        let row = data[index];
-        let identifier = row["BB Ticker"];
-        let object: any = {};
-
-        let tradeType = row["Buy/Sell"];
-        let operation = tradeType == "B" ? 1 : -1;
-        let currentPrice: any = row["Price"] / 100.0;
-        let currentQuantity: any = parseFloat(row["Quantity"]);
-        let currentNet = row["Quantity"];
-        let bondCouponMaturity: any = parseBondIdentifier(row["BB Ticker"]);
-        let settlementDate = getSettlementDateYear(row["Trade Date"], row["Settle Date"]);
-        object["BB Ticker"] = row["BB Ticker"];
-        object["Issue"] = row["BB Ticker"];
-        object["Quantity"] = currentQuantity;
-        object["Net"] = currentNet;
-        object["Currency"] = row["Currency"] == "" ? "USD" : row["Currency"];
-        object["Average Cost"] = row["Average Cost"];
-        object["Coupon Rate"] = bondCouponMaturity[0];
-        object["Maturity"] = bondCouponMaturity[1];
-        let interestQuantity;
-        object["Interest"] = {};
-        interestQuantity = currentQuantity;
-        object["Interest"][settlementDate] = interestQuantity;
-        object["Day Rlzd K G/L"] = 0;
-        object["Monthly Capital Gains Rlzd"] = {};
-        object["Monthly Capital Gains Rlzd"]["2023/09"] = 0;
-        positions[identifier] = object;
-      }
-      try {
-        let logs = `date: ${getDate(null) + " " + getTime()} e-blot-link: ${path}} \n\n`;
-        await writeFile("trades-logs.txt", logs, { flag: "a" });
-        let updatedPortfolio: any = formatUpdatedPositions(positions, []);
-        let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
-        return updatedPortfolio[0];
-      } catch (error) {
-        return { error: error };
-      }
-    } catch (error) {
-      return { error: error };
-    }
   }
 }
 

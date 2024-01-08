@@ -10,7 +10,6 @@ const excelFormat_1 = require("../controllers/excelFormat");
 const graphApiConnect_1 = require("../controllers/graphApiConnect");
 const mufgOperations_1 = require("../controllers/mufgOperations");
 const operations_1 = require("../controllers/operations");
-const oneTimeFunctions_1 = require("../controllers/oneTimeFunctions");
 require("dotenv").config();
 const readLastLines = require("read-last-lines");
 const path = require("path");
@@ -32,9 +31,26 @@ router.get("/auth", common_1.verifyToken, async (req, res, next) => {
     res.sendStatus(200);
 });
 router.get("/portfolio", common_1.verifyToken, async (req, res, next) => {
-    const date = req.query.date;
-    let report = await (0, reports_1.getHistoricalPortfolioWithAnalytics)(date);
-    res.send(report);
+    try {
+        const date = req.query.date;
+        let report = await (0, reports_1.getHistoricalPortfolioWithAnalytics)(date);
+        res.send(report);
+    }
+    catch (error) {
+        res.send({ error: error.toString() });
+    }
+});
+router.get("/summary-portfolio", async (req, res, next) => {
+    try {
+        const date = req.query.date;
+        let report = await (0, reports_1.getHistoricalSummaryPortfolioWithAnalytics)(date);
+        console.log(report[0]);
+        res.send(report);
+    }
+    catch (error) {
+        console.log(error);
+        res.send({ error: error.toString() });
+    }
 });
 router.get("/risk-report", common_1.verifyToken, async (req, res, next) => {
     const date = req.query.date;
@@ -249,7 +265,7 @@ router.post("/centralized-blotter", common_1.verifyToken, uploadBeforeExcel.any(
         let data = req.body;
         let token = await (0, graphApiConnect_1.getGraphToken)();
         // to be modified
-        let vconTrades = await (0, excelFormat_1.getTriadaTrades)("vcons", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
+        let vconTrades = await (0, excelFormat_1.getTriadaTrades)("vcons", new Date(data.timestamp_start).getTime() - 24 * 60 * 60 * 1000, new Date(data.timestamp_end).getTime() + 24 * 60 * 60 * 1000);
         let vcons = await (0, graphApiConnect_1.getVcons)(token, data.timestamp_start, data.timestamp_end, vconTrades[0], vconTrades[1]);
         let ibTrades = await (0, excelFormat_1.getTriadaTrades)("ib", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
         let emsxTrades = await (0, excelFormat_1.getTriadaTrades)("emsx", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
@@ -396,7 +412,7 @@ router.post("/check-mufg", common_1.verifyToken, uploadBeforeExcel.any(), async 
     }
 });
 router.post("/one-time", uploadBeforeExcel.any(), async (req, res, next) => {
-    let test = await (0, oneTimeFunctions_1.editMTDRlzd)();
+    // let test = await editMTDRlzd();
     res.send(200);
 });
 exports.default = router;
