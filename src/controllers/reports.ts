@@ -28,7 +28,7 @@ export async function getHistoricalPortfolioWithAnalytics(date: string) {
   let sameDayCollectionsPublished = earliestPortfolioName[1];
   let yesterdayPortfolioName = getDateTimeInMongoDBCollectionFormat(new Date(new Date(earliestPortfolioName[0]).getTime() - 1 * 24 * 60 * 60 * 1000)).split(" ")[0] + " 23:59";
   let lastDayBeforeToday = await getEarliestCollectionName(yesterdayPortfolioName);
-
+  console.log(earliestPortfolioName[0], "get portfolio")
   const reportCollection = database.collection(`portfolio-${earliestPortfolioName[0]}`);
 
   let documents = await reportCollection
@@ -311,6 +311,7 @@ export async function getAllCollectionDatesSinceStartMonth(originalDate: string)
 
 export async function getPortfolio() {
   try {
+ 
     let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 0 * 24 * 60 * 60 * 1000));
     const database = client.db("portfolios");
     let latestCollectionTodayDate = day.split(" ")[0] + " 23:59";
@@ -623,7 +624,7 @@ export async function updatePositionPortfolio(path: string) {
             object["Monthly Capital Gains Rlzd"][thisMonth] = securityInPortfolio !== 404 ? curentMonthRlzdPL + object["Day Rlzd K G/L"][thisDay] : object["Day Rlzd K G/L"][thisDay];
 
             object["MTD Rlzd"] = securityInPortfolio !== 404 ? (securityInPortfolio["MTD Rlzd"] ? securityInPortfolio["MTD Rlzd"] : {}) : {};
-            console.log(object["MTD Rlzd"], index);
+            
             object["MTD Rlzd"][thisMonth] = securityInPortfolio !== 404 ? (securityInPortfolio["MTD Rlzd"] ? (securityInPortfolio["MTD Rlzd"][thisMonth] ? securityInPortfolio["MTD Rlzd"][thisMonth] : []) : []) : [];
 
             let MTDRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };

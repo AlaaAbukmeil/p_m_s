@@ -4,7 +4,7 @@ import { registerUser, checkIfUserExists, sendResetPasswordRequest, resetPasswor
 import { Request, Response } from "express";
 import { verifyToken, formatDateVconFile, generateRandomString } from "../controllers/common";
 import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, getTrades, getPortfolio, editPositionPortfolio, editPosition, getHistoricalRiskReportWithAnalytics, getHistoricalSummaryPortfolioWithAnalytics } from "../controllers/reports";
-import { bloombergToTriada, readIBRawExcel, readPricingSheet } from "../controllers/portfolioFunctions";
+import { bloombergToTriada, getDateTimeInMongoDBCollectionFormat, readIBRawExcel, readPricingSheet } from "../controllers/portfolioFunctions";
 import { checkIfSecurityExist } from "../controllers/tsImagineOperations";
 import { uploadArrayAndReturnFilePath, getTriadaTrades, formatCentralizedRawFiles, formatIbTrades, formatEmsxTrades, readEmsxRawExcel } from "../controllers/excelFormat";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/graphApiConnect";
@@ -49,10 +49,10 @@ router.get("/summary-portfolio", async (req: Request, res: Response, next: NextF
   try {
     const date: any = req.query.date;
     let report = await getHistoricalSummaryPortfolioWithAnalytics(date);
-    console.log(report[0])
+    console.log(report[0]);
     res.send(report);
   } catch (error: any) {
-    console.log(error)
+    console.log(error);
     res.send({ error: error.toString() });
   }
 });
@@ -432,8 +432,9 @@ router.post("/check-mufg", verifyToken, uploadBeforeExcel.any(), async (req: Req
 
 router.post("/one-time", uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   // let test = await editMTDRlzd();
+  // let test = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 10.9 * 24 * 60 * 60 * 1000));
 
-  res.send(200);
+  res.sendStatus(200);
 });
 
 export default router;

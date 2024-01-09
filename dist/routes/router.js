@@ -413,6 +413,7 @@ router.post("/check-mufg", common_1.verifyToken, uploadBeforeExcel.any(), async 
 });
 router.post("/one-time", uploadBeforeExcel.any(), async (req, res, next) => {
     // let test = await editMTDRlzd();
-    res.send(200);
+    // let test = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 10.9 * 24 * 60 * 60 * 1000));
+    res.sendStatus(200);
 });
 exports.default = router;
