@@ -10,6 +10,7 @@ const excelFormat_1 = require("../controllers/excelFormat");
 const graphApiConnect_1 = require("../controllers/graphApiConnect");
 const mufgOperations_1 = require("../controllers/mufgOperations");
 const operations_1 = require("../controllers/operations");
+const oneTimeFunctions_1 = require("../controllers/oneTimeFunctions");
 require("dotenv").config();
 const readLastLines = require("read-last-lines");
 const path = require("path");
@@ -342,7 +343,8 @@ router.post("/reset-password", async (req, res, next) => {
 });
 router.post("/edit-position", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
     try {
-        let action = await (0, reports_1.editPosition)(req.body);
+        // let action = await editPosition(req.body);
+        console.log(req.body);
         res.sendStatus(200);
     }
     catch (error) {
@@ -412,7 +414,7 @@ router.post("/check-mufg", common_1.verifyToken, uploadBeforeExcel.any(), async 
     }
 });
 router.post("/one-time", uploadBeforeExcel.any(), async (req, res, next) => {
-    // let test = await editMTDRlzd();
+    let test = await (0, oneTimeFunctions_1.editMTDRlzd)();
     // let test = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 10.9 * 24 * 60 * 60 * 1000));
     res.sendStatus(200);
 });

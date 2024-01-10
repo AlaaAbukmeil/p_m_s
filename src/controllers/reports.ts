@@ -28,7 +28,7 @@ export async function getHistoricalPortfolioWithAnalytics(date: string) {
   let sameDayCollectionsPublished = earliestPortfolioName[1];
   let yesterdayPortfolioName = getDateTimeInMongoDBCollectionFormat(new Date(new Date(earliestPortfolioName[0]).getTime() - 1 * 24 * 60 * 60 * 1000)).split(" ")[0] + " 23:59";
   let lastDayBeforeToday = await getEarliestCollectionName(yesterdayPortfolioName);
-  console.log(earliestPortfolioName[0], "get portfolio")
+  console.log(earliestPortfolioName[0], "get portfolio");
   const reportCollection = database.collection(`portfolio-${earliestPortfolioName[0]}`);
 
   let documents = await reportCollection
@@ -311,7 +311,6 @@ export async function getAllCollectionDatesSinceStartMonth(originalDate: string)
 
 export async function getPortfolio() {
   try {
- 
     let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 0 * 24 * 60 * 60 * 1000));
     const database = client.db("portfolios");
     let latestCollectionTodayDate = day.split(" ")[0] + " 23:59";
@@ -556,7 +555,7 @@ export async function updatePositionPortfolio(path: string) {
 
         let currency = row["Currency"];
         let bondCouponMaturity: any = parseBondIdentifier(row["BB Ticker"]);
-        let tradeExistsAlready = triadaIds.includes(row["Triada Trade Id"]);
+        let tradeExistsAlready = false//triadaIds.includes(row["Triada Trade Id"]);
         let updatingPosition = returnPositionProgress(positions, identifier, location);
         let tradeDate: any = new Date(row["Trade Date"]);
         let thisMonth = monthlyRlzdDate(tradeDate);
@@ -624,7 +623,7 @@ export async function updatePositionPortfolio(path: string) {
             object["Monthly Capital Gains Rlzd"][thisMonth] = securityInPortfolio !== 404 ? curentMonthRlzdPL + object["Day Rlzd K G/L"][thisDay] : object["Day Rlzd K G/L"][thisDay];
 
             object["MTD Rlzd"] = securityInPortfolio !== 404 ? (securityInPortfolio["MTD Rlzd"] ? securityInPortfolio["MTD Rlzd"] : {}) : {};
-            
+
             object["MTD Rlzd"][thisMonth] = securityInPortfolio !== 404 ? (securityInPortfolio["MTD Rlzd"] ? (securityInPortfolio["MTD Rlzd"][thisMonth] ? securityInPortfolio["MTD Rlzd"][thisMonth] : []) : []) : [];
 
             let MTDRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
@@ -699,7 +698,6 @@ export async function updatePositionPortfolio(path: string) {
       }
 
       try {
-     
         let logs = JSON.stringify(positions, null, 2);
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
         await insertEditLogs(["trades upload"], "Upload Trades", dateTime, "Centarlized Blotter", "Link: " + path);
@@ -709,6 +707,7 @@ export async function updatePositionPortfolio(path: string) {
         let action1 = await insertTrade(allTrades[0], "vcons");
         let updatedPortfolio: any = formatUpdatedPositions(positions, portfolio);
         let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
+        // await appendLogs(positions)
 
         return positions;
       } catch (error) {
@@ -1115,7 +1114,7 @@ function calculateMonthlyDailyRlzdPTFPL(portfolio: any, date: any) {
     portfolio[index]["Day Rlzd K G/L"] = portfolio[index]["Day Rlzd K G/L"] ? portfolio[index]["Day Rlzd K G/L"][thisDay] || 0 : 0;
     portfolio[index]["Ptf MTD P&L"] = parseFloat(portfolio[index]["MTD Rlzd"]) + (parseFloat(portfolio[index]["Monthly Capital Gains URlzd"]) || 0) + parseFloat(portfolio[index]["Monthly Interest Income"]) || 0;
 
-    portfolio[index]["Ptf Day P&L"] = parseFloat(portfolio[index]["Daily Interest Income"]) + parseFloat(portfolio[index]["Day URlzd K G/L"]) ? parseFloat(portfolio[index]["Daily Interest Income"]) + parseFloat(portfolio[index]["Day URlzd K G/L"]) : 0;
+    portfolio[index]["Ptf Day P&L"] = parseFloat(portfolio[index]["Daily Interest Income"]) + parseFloat(portfolio[index]["Day Rlzd K G/L"]) + parseFloat(portfolio[index]["Day URlzd K G/L"]) ? parseFloat(portfolio[index]["Daily Interest Income"]) + parseFloat(portfolio[index]["Day Rlzd K G/L"]) +parseFloat(portfolio[index]["Day URlzd K G/L"]) : 0;
     if (portfolio[index]["Ptf Day P&L"] == 0) {
       portfolio[index]["Ptf Day P&L"] = 0;
     } else if (!portfolio[index]["Ptf Day P&L"]) {
@@ -1158,6 +1157,7 @@ export async function editPosition(editedPosition: any) {
       "Daily Interest Income",
       "Event Type",
       "Edit Note",
+      "MTD Rlzd"
     ];
     // these keys are made up by the function frontend table, it reverts keys to original keys
     let titlesMeaningException: any = {

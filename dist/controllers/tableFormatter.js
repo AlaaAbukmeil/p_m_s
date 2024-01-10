@@ -5,9 +5,6 @@ function formatFrontEndTable(portfolio, date) {
     let currencies = {};
     for (let index = 0; index < portfolio.length; index++) {
         let position = portfolio[index];
-        if (position["ISIN"] == "1393 HK") {
-            console.log(position);
-        }
         let originalFace = position["Original Face"] || 1;
         let usdRatio = parseFloat(position["holdPortfXrate"]) || 1;
         let currency = position["Currency"];

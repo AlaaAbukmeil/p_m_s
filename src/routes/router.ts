@@ -360,7 +360,8 @@ router.post("/reset-password", async (req: Request, res: Response, next: NextFun
 
 router.post("/edit-position", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
-    let action = await editPosition(req.body);
+    // let action = await editPosition(req.body);
+    console.log(req.body)
     res.sendStatus(200);
   } catch (error) {
     console.log(error);
@@ -431,7 +432,7 @@ router.post("/check-mufg", verifyToken, uploadBeforeExcel.any(), async (req: Req
 });
 
 router.post("/one-time", uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  // let test = await editMTDRlzd();
+  let test = await editMTDRlzd();
   // let test = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 10.9 * 24 * 60 * 60 * 1000));
 
   res.sendStatus(200);

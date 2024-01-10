@@ -519,7 +519,7 @@ async function updatePositionPortfolio(path) {
                 let currentPrincipal = parseFloat(row["Principal"].toString().replace(/,/g, ""));
                 let currency = row["Currency"];
                 let bondCouponMaturity = (0, portfolioFunctions_1.parseBondIdentifier)(row["BB Ticker"]);
-                let tradeExistsAlready = triadaIds.includes(row["Triada Trade Id"]);
+                let tradeExistsAlready = false; //triadaIds.includes(row["Triada Trade Id"]);
                 let updatingPosition = returnPositionProgress(positions, identifier, location);
                 let tradeDate = new Date(row["Trade Date"]);
                 let thisMonth = (0, common_1.monthlyRlzdDate)(tradeDate);
@@ -650,6 +650,7 @@ async function updatePositionPortfolio(path) {
                 let action1 = await insertTrade(allTrades[0], "vcons");
                 let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(positions, portfolio);
                 let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
+                // await appendLogs(positions)
                 return positions;
             }
             catch (error) {
@@ -1031,7 +1032,7 @@ function calculateMonthlyDailyRlzdPTFPL(portfolio, date) {
         portfolio[index]["Cost MTD Ptf"] = portfolio[index]["Cost MTD Ptf"] ? portfolio[index]["Cost MTD Ptf"][thisMonth] || 0 : 0;
         portfolio[index]["Day Rlzd K G/L"] = portfolio[index]["Day Rlzd K G/L"] ? portfolio[index]["Day Rlzd K G/L"][thisDay] || 0 : 0;
         portfolio[index]["Ptf MTD P&L"] = parseFloat(portfolio[index]["MTD Rlzd"]) + (parseFloat(portfolio[index]["Monthly Capital Gains URlzd"]) || 0) + parseFloat(portfolio[index]["Monthly Interest Income"]) || 0;
-        portfolio[index]["Ptf Day P&L"] = parseFloat(portfolio[index]["Daily Interest Income"]) + parseFloat(portfolio[index]["Day URlzd K G/L"]) ? parseFloat(portfolio[index]["Daily Interest Income"]) + parseFloat(portfolio[index]["Day URlzd K G/L"]) : 0;
+        portfolio[index]["Ptf Day P&L"] = parseFloat(portfolio[index]["Daily Interest Income"]) + parseFloat(portfolio[index]["Day Rlzd K G/L"]) + parseFloat(portfolio[index]["Day URlzd K G/L"]) ? parseFloat(portfolio[index]["Daily Interest Income"]) + parseFloat(portfolio[index]["Day Rlzd K G/L"]) + parseFloat(portfolio[index]["Day URlzd K G/L"]) : 0;
         if (portfolio[index]["Ptf Day P&L"] == 0) {
             portfolio[index]["Ptf Day P&L"] = 0;
         }
@@ -1071,6 +1072,7 @@ async function editPosition(editedPosition) {
             "Daily Interest Income",
             "Event Type",
             "Edit Note",
+            "MTD Rlzd"
         ];
         // these keys are made up by the function frontend table, it reverts keys to original keys
         let titlesMeaningException = {
