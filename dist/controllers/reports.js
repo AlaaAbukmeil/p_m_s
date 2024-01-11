@@ -944,7 +944,7 @@ function calculateMonthlyInterest(portfolio, date) {
             monthlyInterest[position["Issue"]][dayInCurrentMonth] = quantityGeneratingInterest; // 2000 000
             for (let indexSettlementDate = 0; indexSettlementDate < settlementDates.length; indexSettlementDate++) {
                 let settlementDate = settlementDates[indexSettlementDate]; // oct 11th
-                let settlementDateTimestamp = new Date(settlementDate).getTime();
+                let settlementDateTimestamp = new Date(settlementDate).getTime() + 24 * 60 * 60 * 1000;
                 if (settlementDateTimestamp >= new Date(dayInCurrentMonth).getTime()) {
                     monthlyInterest[position["Issue"]][dayInCurrentMonth] -= interestInfo[settlementDate]; // 25 00 000
                 }
@@ -1072,7 +1072,7 @@ async function editPosition(editedPosition) {
             "Daily Interest Income",
             "Event Type",
             "Edit Note",
-            "MTD Rlzd"
+            "MTD Rlzd",
         ];
         // these keys are made up by the function frontend table, it reverts keys to original keys
         let titlesMeaningException = {

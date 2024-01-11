@@ -555,7 +555,7 @@ export async function updatePositionPortfolio(path: string) {
 
         let currency = row["Currency"];
         let bondCouponMaturity: any = parseBondIdentifier(row["BB Ticker"]);
-        let tradeExistsAlready = false//triadaIds.includes(row["Triada Trade Id"]);
+        let tradeExistsAlready = false; //triadaIds.includes(row["Triada Trade Id"]);
         let updatingPosition = returnPositionProgress(positions, identifier, location);
         let tradeDate: any = new Date(row["Trade Date"]);
         let thisMonth = monthlyRlzdDate(tradeDate);
@@ -1006,13 +1006,14 @@ function calculateMonthlyInterest(portfolio: any, date: any) {
 
     monthlyInterest[position["Issue"]] = {};
     // reason why 1, to ignore last day of last month
+
     for (let indexPreviousMonthDates = 1; indexPreviousMonthDates < previousMonthDates.length; indexPreviousMonthDates++) {
       let dayInCurrentMonth = previousMonthDates[indexPreviousMonthDates]; //OCT 1st -
       monthlyInterest[position["Issue"]][dayInCurrentMonth] = quantityGeneratingInterest; // 2000 000
 
       for (let indexSettlementDate = 0; indexSettlementDate < settlementDates.length; indexSettlementDate++) {
         let settlementDate = settlementDates[indexSettlementDate]; // oct 11th
-        let settlementDateTimestamp = new Date(settlementDate).getTime();
+        let settlementDateTimestamp = new Date(settlementDate).getTime() + 24 * 60 * 60 * 1000;
         if (settlementDateTimestamp >= new Date(dayInCurrentMonth).getTime()) {
           monthlyInterest[position["Issue"]][dayInCurrentMonth] -= interestInfo[settlementDate]; // 25 00 000
         }
@@ -1114,7 +1115,7 @@ function calculateMonthlyDailyRlzdPTFPL(portfolio: any, date: any) {
     portfolio[index]["Day Rlzd K G/L"] = portfolio[index]["Day Rlzd K G/L"] ? portfolio[index]["Day Rlzd K G/L"][thisDay] || 0 : 0;
     portfolio[index]["Ptf MTD P&L"] = parseFloat(portfolio[index]["MTD Rlzd"]) + (parseFloat(portfolio[index]["Monthly Capital Gains URlzd"]) || 0) + parseFloat(portfolio[index]["Monthly Interest Income"]) || 0;
 
-    portfolio[index]["Ptf Day P&L"] = parseFloat(portfolio[index]["Daily Interest Income"]) + parseFloat(portfolio[index]["Day Rlzd K G/L"]) + parseFloat(portfolio[index]["Day URlzd K G/L"]) ? parseFloat(portfolio[index]["Daily Interest Income"]) + parseFloat(portfolio[index]["Day Rlzd K G/L"]) +parseFloat(portfolio[index]["Day URlzd K G/L"]) : 0;
+    portfolio[index]["Ptf Day P&L"] = parseFloat(portfolio[index]["Daily Interest Income"]) + parseFloat(portfolio[index]["Day Rlzd K G/L"]) + parseFloat(portfolio[index]["Day URlzd K G/L"]) ? parseFloat(portfolio[index]["Daily Interest Income"]) + parseFloat(portfolio[index]["Day Rlzd K G/L"]) + parseFloat(portfolio[index]["Day URlzd K G/L"]) : 0;
     if (portfolio[index]["Ptf Day P&L"] == 0) {
       portfolio[index]["Ptf Day P&L"] = 0;
     } else if (!portfolio[index]["Ptf Day P&L"]) {
@@ -1157,7 +1158,7 @@ export async function editPosition(editedPosition: any) {
       "Daily Interest Income",
       "Event Type",
       "Edit Note",
-      "MTD Rlzd"
+      "MTD Rlzd",
     ];
     // these keys are made up by the function frontend table, it reverts keys to original keys
     let titlesMeaningException: any = {
