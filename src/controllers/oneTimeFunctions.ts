@@ -18,8 +18,8 @@ let month = monthlyRlzdDate(new Date(new Date().getTime() - 0 * 24 * 60 * 60 * 1
 
 export async function appendLogs(positions: any) {
   for (let obj of positions) {
-    let trades = obj["MTD Rlzd"][month].map((trade: any) => JSON.stringify(trade)).join("\n,");
-    let logs = `"${obj["Issue"]}": \n\n {data: [${trades}], location: "${obj["Location"]}"}\n\n,`;
+    
+    let logs = `"${JSON.stringify(obj)}"}\n\n,`;
 
     await writeFile("trades-logs.txt", logs, { flag: "a" });
   }

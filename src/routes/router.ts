@@ -3,14 +3,14 @@ import { image } from "../models/image";
 import { registerUser, checkIfUserExists, sendResetPasswordRequest, resetPassword } from "../controllers/auth";
 import { Request, Response } from "express";
 import { verifyToken, formatDateVconFile, generateRandomString } from "../controllers/common";
-import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, getTrades, getPortfolio, editPositionPortfolio, editPosition, getHistoricalRiskReportWithAnalytics, getHistoricalSummaryPortfolioWithAnalytics } from "../controllers/reports";
-import { bloombergToTriada, getDateTimeInMongoDBCollectionFormat, readIBRawExcel, readPricingSheet } from "../controllers/portfolioFunctions";
+import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, getTrades, getPortfolio, editPosition, getHistoricalRiskReportWithAnalytics, getHistoricalSummaryPortfolioWithAnalytics } from "../controllers/reports";
+import { bloombergToTriada, readIBRawExcel, readPricingSheet } from "../controllers/portfolioFunctions";
 import { checkIfSecurityExist } from "../controllers/tsImagineOperations";
 import { uploadArrayAndReturnFilePath, getTriadaTrades, formatCentralizedRawFiles, formatIbTrades, formatEmsxTrades, readEmsxRawExcel } from "../controllers/excelFormat";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/graphApiConnect";
 import { formatMufg, formatFxMufg, tradesTriada } from "../controllers/mufgOperations";
-import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, checkMUFGEndOfMonthWithPortfolio, getPortfolioOnSpecificDate } from "../controllers/operations";
-import { editMTDRlzd, changeMTDRlzd } from "../controllers/oneTimeFunctions";
+import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, checkMUFGEndOfMonthWithPortfolio, getPortfolioOnSpecificDate, editPositionPortfolio } from "../controllers/operations";
+import { editMTDRlzd } from "../controllers/oneTimeFunctions";
 require("dotenv").config();
 
 const readLastLines = require("read-last-lines");
@@ -49,7 +49,7 @@ router.get("/summary-portfolio", async (req: Request, res: Response, next: NextF
   try {
     const date: any = req.query.date;
     let report = await getHistoricalSummaryPortfolioWithAnalytics(date);
-    console.log(report[0]);
+   
     res.send(report);
   } catch (error: any) {
     console.log(error);
@@ -360,8 +360,8 @@ router.post("/reset-password", async (req: Request, res: Response, next: NextFun
 
 router.post("/edit-position", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
-    // let action = await editPosition(req.body);
-    console.log(req.body)
+    let action = await editPosition(req.body);
+ 
     res.sendStatus(200);
   } catch (error) {
     console.log(error);

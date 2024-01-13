@@ -60,3 +60,19 @@
 // "Holding ID": "656445e4940f329586a6771a",
 // "Duration(Mkt)": 3.63,
 // "Security": "ADANI PORTS AND SPECIAL 4.2% 04-Aug-2027 RegS"
+// let fundDetails = {
+//     nav: fund.nav,
+// holdbackRatio: fund.holdbackRatio,
+// monthGross: mtdpl / fund.nav,
+// dayGross: daypl / fund.nav,
+// mtdpl: mtdpl,
+// mtdrlzd: mtdrlzd,
+// mtdurlzd: mtdurlzd,
+// mtdint: mtdint,
+// dayint: dayint,
+// daypl: daypl,
+// dayfx: dayfx,
+// mtdfx: mtdfx,
+// dayurlzd: dayurlzd,
+// dayrlzd: dayrlzd,
+//   };

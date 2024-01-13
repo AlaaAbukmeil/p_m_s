@@ -45,7 +45,6 @@ router.get("/summary-portfolio", async (req, res, next) => {
     try {
         const date = req.query.date;
         let report = await (0, reports_1.getHistoricalSummaryPortfolioWithAnalytics)(date);
-        console.log(report[0]);
         res.send(report);
     }
     catch (error) {
@@ -289,7 +288,7 @@ router.post("/bulk-edit", common_1.verifyToken, uploadBeforeExcel.any(), async (
     try {
         const fileName = req.files[0].filename;
         const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
-        let action = await (0, reports_1.editPositionPortfolio)(path);
+        let action = await (0, operations_1.editPositionPortfolio)(path);
         console.log(action);
         if (action === null || action === void 0 ? void 0 : action.error) {
             res.send({ error: action.error });
@@ -343,8 +342,7 @@ router.post("/reset-password", async (req, res, next) => {
 });
 router.post("/edit-position", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
     try {
-        // let action = await editPosition(req.body);
-        console.log(req.body);
+        let action = await (0, reports_1.editPosition)(req.body);
         res.sendStatus(200);
     }
     catch (error) {

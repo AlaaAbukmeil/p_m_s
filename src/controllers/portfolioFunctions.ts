@@ -756,32 +756,11 @@ export async function readEditInput(path: string) {
   } else {
     let data = xlsx.utils.sheet_to_json(worksheet, {
       defval: "",
-      range: "A1:AN300",
+      range: "A1:AY300",
     });
 
-    let portfolio = [];
-
-    for (let index = 0; index < data.length; index++) {
-      let object: any = {};
-      let position = data[index];
-      object["ISIN"] = position["Isin"];
-      object["Type"] = position["Type"];
-      object["Group"] = position["Group"];
-      object["holdPortfXrate"] = position["holdPortfXrate"];
-      object["Sector"] = position["Text22"];
-      object["Rating Class"] = position["Text23"];
-      object["holdPortfXrate"] = position["holdPortfXrate"];
-      object["Location"] = position["Location"].toUpperCase();
-      object["BB Ticker"] = position["BB Ticker"];
-      object["Country"] = position["Text1"];
-      object["Issuer"] = position["Issuer"];
-      object["Issue"] = position["Long Security Name"];
-      object["Call Date"] = formartImagineDate(position["CallDate"]) || "";
-      object["Maturity"] = formartImagineDate(position["Maturity"]) || "";
-
-      portfolio.push(object);
-    }
-    return portfolio;
+    
+    return data;
   }
 }
 

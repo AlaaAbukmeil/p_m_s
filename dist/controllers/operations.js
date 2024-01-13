@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkMUFGEndOfMonthWithPortfolio = exports.readMUFGEndOfMonthFile = exports.getEditLogs = exports.insertEditLogs = exports.updatePreviousPricesPortfolioBloomberg = exports.getSecurityInPortfolioWithoutLocation = exports.getPortfolioOnSpecificDate = exports.insertPreviousPricesUpdatesInPortfolio = exports.updatePreviousPricesPortfolioMUFG = exports.readMUFGPrices = exports.getCollectionDays = void 0;
+exports.getSecurityInPortfolioById = exports.editPositionPortfolio = exports.checkMUFGEndOfMonthWithPortfolio = exports.readMUFGEndOfMonthFile = exports.getEditLogs = exports.insertEditLogs = exports.updatePreviousPricesPortfolioBloomberg = exports.getSecurityInPortfolioWithoutLocation = exports.getPortfolioOnSpecificDate = exports.insertPreviousPricesUpdatesInPortfolio = exports.updatePreviousPricesPortfolioMUFG = exports.readMUFGPrices = exports.getCollectionDays = void 0;
 const axios = require("axios");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const mongoose = require("mongoose");
@@ -225,7 +225,7 @@ async function updatePreviousPricesPortfolioBloomberg(data, collectionDate, path
                     object["YTM"] = row["Mid Yield Maturity"];
                     object["DV01"] = row["DV01"];
                     if (currencyInUSD[object["Currency"]]) {
-                        object["holdPortfXrate"] = currencyInUSD[object["Currency"]];
+                        object["FX Rate"] = currencyInUSD[object["Currency"]];
                     }
                     object["Last Price Update"] = new Date();
                     if (!object["Country"] && row["Country"] && !row["Country"].includes("#N/A")) {
@@ -282,7 +282,7 @@ async function insertEditLogs(changes, type, dateTime, editNote, identifier) {
         dateTime: dateTime,
         editNote: editNote,
         identifier: identifier,
-        timestamp: new Date().getTime()
+        timestamp: new Date().getTime(),
     };
     const database = client.db("edit_logs");
     const reportCollection = database.collection(`${type}`);
@@ -320,7 +320,7 @@ async function readMUFGEndOfMonthFile(path) {
     // Read data
     const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
     const headersFormat = [`Sort1`, `Sort2`, `Sort3`, `Quantity`, `Investment`, `Description`, `CCY`, `LocalCost`, `BaseCost`, `Price`, `FXRate`, `LocalValue`, `BaseValue`, `UnrealizedMktGainLoss`, `UnrealizedFXGainLoss`, `TotalUnrealizedGainLoss`];
-    const arraysAreEqual = headersFormat.every((value, index) => value === headers[0][index] ? true : console.log(value, headers[0][index]));
+    const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : console.log(value, headers[0][index])));
     if (!arraysAreEqual) {
         return {
             error: "Incompatible format, please upload MUFG end of month xlsx/csv file",
@@ -377,3 +377,53 @@ async function checkMUFGEndOfMonthWithPortfolio(MUFGData, portfolio) {
     }
 }
 exports.checkMUFGEndOfMonthWithPortfolio = checkMUFGEndOfMonthWithPortfolio;
+async function editPositionPortfolio(path) {
+    let data = await (0, portfolioFunctions_1.readEditInput)(path);
+    if (data.error) {
+        return { error: data.error };
+    }
+    else {
+        try {
+            let positions = [];
+            let portfolio = await (0, reports_1.getPortfolio)();
+            let titles = ["Type", "Group", "Country", "Asset Class", "Sector", "FX Rate"];
+            for (let index = 0; index < data.length; index++) {
+                let row = data[index];
+                let identifier = row["_id"];
+                let securityInPortfolio = getSecurityInPortfolioById(portfolio, identifier);
+                for (let titleIndex = 0; titleIndex < titles.length; titleIndex++) {
+                    let title = titles[titleIndex];
+                    securityInPortfolio[title] = row[title];
+                }
+                positions.push(securityInPortfolio);
+            }
+            try {
+                let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(positions, portfolio);
+                let insertion = await (0, reports_1.insertTradesInPortfolio)(updatedPortfolio[0]);
+                return insertion;
+            }
+            catch (error) {
+                return { error: error };
+            }
+        }
+        catch (error) {
+            return { error: error };
+        }
+    }
+}
+exports.editPositionPortfolio = editPositionPortfolio;
+function getSecurityInPortfolioById(portfolio, id) {
+    let document = 404;
+    if (id == "" || !id) {
+        return document;
+    }
+    for (let index = 0; index < portfolio.length; index++) {
+        let issue = portfolio[index];
+        if (id == issue["_id"].toString()) {
+            document = issue;
+        }
+    }
+    // If a matching document was found, return it. Otherwise, return a message indicating that no match was found.
+    return document;
+}
+exports.getSecurityInPortfolioById = getSecurityInPortfolioById;

@@ -87,8 +87,9 @@ export async function getHistoricalPortfolioWithAnalytics(date: string) {
 
   documents = await calculateMonthlyInterest(documents, new Date(date));
   documents = await calculateDailyInterestUnRlzdCapitalGains(documents, new Date(date));
-  documents = await calculateMonthlyURlzd(documents);
+  documents = await calculateMonthlyURlzd(documents, new Date(date));
   documents = calculateMonthlyDailyRlzdPTFPL(documents, date);
+ 
   documents = formatFrontEndTable(documents, date);
 
   return [documents, sameDayCollectionsPublished];
@@ -158,7 +159,7 @@ export async function getHistoricalRiskReportWithAnalytics(date: string) {
 
   documents = await calculateMonthlyInterest(documents, new Date(date));
   documents = await calculateDailyInterestUnRlzdCapitalGains(documents, new Date(date));
-  documents = await calculateMonthlyURlzd(documents);
+  documents = await calculateMonthlyURlzd(documents, new Date(date));
   documents = calculateMonthlyDailyRlzdPTFPL(documents, date);
   let pairTrades = getPairTrades(documents);
   console.log(pairTrades);
@@ -203,17 +204,6 @@ export async function getHistoricalSummaryPortfolioWithAnalytics(date: string) {
     }
   });
 
-  documents.sort((current: any, next: any) => {
-    if (current["Quantity"] === 0 && next["Quantity"] !== 0) {
-      return 1; // a should come after b
-    }
-    if (current["Quantity"] !== 0 && next["Quantity"] === 0) {
-      return -1; // a should come before b
-    }
-    // if both a and b have Quantity 0 or both have Quantity not 0, sort alphabetically by name
-    return current["Issue"].localeCompare(next["Issue"]);
-  });
-
   let currentDayDate: any = new Date(date);
   let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate);
 
@@ -230,13 +220,35 @@ export async function getHistoricalSummaryPortfolioWithAnalytics(date: string) {
     console.log(error);
   }
 
+  let dates = {
+    today: earliestPortfolioName[0],
+    yesterday: lastDayBeforeToday[0],
+    lastMonth: lastMonthLastCollectionName[0],
+  };
+  let fund = {
+    nav: 43856736,
+    holdbackRatio: 0.5,
+  };
   documents = await calculateMonthlyInterest(documents, new Date(date));
   documents = await calculateDailyInterestUnRlzdCapitalGains(documents, new Date(date));
-  documents = await calculateMonthlyURlzd(documents);
+  documents = await calculateMonthlyURlzd(documents, new Date(date));
   documents = calculateMonthlyDailyRlzdPTFPL(documents, date);
-  documents = formatFrontEndSummaryTable(documents, date, 440000, 0.5);
 
-  return [documents, sameDayCollectionsPublished];
+  let portfolioFormattedSorted = formatFrontEndSummaryTable(documents, date, fund, dates);
+  let fundDetails = portfolioFormattedSorted.fundDetails;
+  documents = portfolioFormattedSorted.portfolio;
+
+  documents.sort((current: any, next: any) => {
+    if (current["Notional Total"] === 0 && next["Notional Total"] !== 0) {
+      return 1; // a should come after b
+    }
+    if (current["Notional Total"] !== 0 && next["Notional Total"] === 0) {
+      return -1; // a should come before b
+    }
+    return 0;
+  });
+
+  return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails };
 }
 export async function getEarliestCollectionName(originalDate: string) {
   const database = client.db("portfolios");
@@ -537,8 +549,8 @@ export async function updatePositionPortfolio(path: string) {
           object["Issue"] = securityInPortfolio["Issue"] && securityInPortfolio["Issue"] != "" ? securityInPortfolio["Issue"] : null;
           object["_id"] = securityInPortfolio["_id"];
           object["Country"] = securityInPortfolio["Country"];
-          object["Rating Class"] = securityInPortfolio["Rating Class"];
-          object["holdPortfXrate"] = securityInPortfolio["holdPortfXrate"];
+          object["Asset Class"] = securityInPortfolio["Asset Class"] || securityInPortfolio["Rating Class"];
+          object["FX Rate"] = securityInPortfolio["FX Rate"] || securityInPortfolio["holdPortfXrate"];
           object["DV01"] = securityInPortfolio["DV01"];
           object["YTM"] = securityInPortfolio["YTM"];
         }
@@ -719,49 +731,6 @@ export async function updatePositionPortfolio(path: string) {
   }
 }
 
-export async function editPositionPortfolio(path: string) {
-  let data: any = await readEditInput(path);
-  if (data.error) {
-    return { error: data.error };
-  } else {
-    try {
-      let positions: any = [];
-      let portfolio = await getPortfolio();
-
-      for (let index = 0; index < data.length; index++) {
-        let row = data[index];
-        let identifier = row["ISIN"] ? row["ISIN"] : row["Issue"];
-        let object: any = {};
-        let location = row["Location"].trim();
-        let securityInPortfolio: any = getSecurityInPortfolio(portfolio, identifier, location);
-
-        if (securityInPortfolio == 404) {
-          identifier = row["BB Ticker"];
-          securityInPortfolio = getSecurityInPortfolio(portfolio, identifier, location);
-        }
-
-        if (securityInPortfolio != 404) {
-          object = securityInPortfolio;
-
-          object["Issue"] = row["Issue"];
-
-          positions.push(object);
-        }
-      }
-      try {
-        let updatedPortfolio: any = formatUpdatedPositions(positions, portfolio);
-        let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
-
-        return insertion;
-      } catch (error) {
-        return { error: error };
-      }
-    } catch (error) {
-      return { error: error };
-    }
-  }
-}
-
 export async function insertTradesInPortfolio(trades: any) {
   const database = client.db("portfolios");
 
@@ -858,7 +827,9 @@ export async function updatePricesPortfolio(path: string) {
             object["Call Date"] = row["Call Date"];
           }
           if (currencyInUSD[object["Currency"]]) {
-            object["holdPortfXrate"] = currencyInUSD[object["Currency"]];
+            object["FX Rate"] = currencyInUSD[object["Currency"]];
+          }else{
+            object["FX Rate"] = 1
           }
           object["Last Price Update"] = new Date();
 
@@ -1044,7 +1015,7 @@ async function getMTDParams(portfolio: any, lastMonthPortfolio: any, dateInput: 
         portfolio[index]["Notes"] = "";
         if ((lastMonthPosition["ISIN"] == position["ISIN"] || lastMonthPosition["BB Ticker"] == position["BB Ticker"]) && lastMonthPosition["Location"] == position["Location"]) {
           portfolio[index]["MTD Mark"] = lastMonthPosition["Mid"];
-          portfolio[index]["MTD FX"] = lastMonthPosition["holdPortfXrate"] ? lastMonthPosition["holdPortfXrate"] : null;
+          portfolio[index]["MTD FX"] = lastMonthPosition["FX Rate"] ? lastMonthPosition["FX Rate"] : lastMonthPosition["holdPortfXrate"] ? lastMonthPosition["holdPortfXrate"] : null;
         }
       }
     }
@@ -1062,10 +1033,11 @@ async function getMTDParams(portfolio: any, lastMonthPortfolio: any, dateInput: 
   }
 }
 
-async function calculateMonthlyURlzd(portfolio: any) {
+async function calculateMonthlyURlzd(portfolio: any, dateInput: any) {
   for (let index = 0; index < portfolio.length; index++) {
+    let thisMonth = monthlyRlzdDate(dateInput);
     if (!portfolio[index]["Mid"]) {
-      continue;
+      portfolio[index]["Mid"] = portfolio[index]["Entry Price"][thisMonth];
     }
     portfolio[index]["Monthly Capital Gains URlzd"] = portfolio[index]["ISIN"].includes("CDX") || portfolio[index]["ISIN"].includes("ITRX") ? ((parseFloat(portfolio[index]["Mid"]) - parseFloat(portfolio[index]["MTD Mark"])) * portfolio[index]["Quantity"]) / portfolio[index]["Original Face"] : (parseFloat(portfolio[index]["Mid"]) - parseFloat(portfolio[index]["MTD Mark"])) * portfolio[index]["Quantity"];
     if (portfolio[index]["Monthly Capital Gains URlzd"] == 0) {
@@ -1088,7 +1060,7 @@ async function getPreviousDayMarkPTFURLZD(portfolio: any, previousDayPortfolio: 
     }
 
     let previousMark = previousDayPosition ? previousDayPosition["Mid"] : "0";
-    let previousFxRate = previousDayPosition ? previousDayPosition["holdPortfXrate"] : 0;
+    let previousFxRate = previousDayPosition ? (previousDayPosition["FX Rate"] ? previousDayPosition["FX Rate"] : previousDayPosition["holdPortfXrate"] ? previousDayPosition["holdPortfXrate"] : 0) : 0;
 
     portfolio[index]["Previous FX Rate"] = previousFxRate;
     portfolio[index]["Previous Mark"] = previousMark;
@@ -1131,35 +1103,8 @@ export async function editPosition(editedPosition: any) {
 
     let positionInPortfolio: any = {};
     let editedPositionTitles = Object.keys(editedPosition);
-    let id = editedPosition["Holding ID"];
-    let unEditableParams: any = [
-      "#",
-
-      "$ Value",
-      "Duration(Mkt)",
-      "Notional Amount",
-      "MTD Mark",
-      "PreviousMark",
-
-      "Ptf Day P&L",
-      // "Ptf MTD Rlzd",
-      "Ptf MTD URlzd",
-      "Ptf MTD Int.Income",
-      "Ptf MTD P&L",
-      "Holding ID",
-      "holdPortfXrate",
-      "Daily Accrual",
-      "Quantity",
-      "Day Int.Income USD",
-      "Value",
-      "Previous Mark",
-      "Monthly Capital Gains URlzd",
-      "Monthly Interest Income",
-      "Daily Interest Income",
-      "Event Type",
-      "Edit Note",
-      "MTD Rlzd",
-    ];
+    let id = editedPosition["_id"];
+    let unEditableParams: any = ["#", "$ Value", "Notional Amount", "MTD Mark", "PreviousMark", "Cost", "Duration(Mkt)", "Daily Interest Income", "Ptf Day P&L", "Ptf MTD URlzd", "Ptf MTD Int.Income", "Ptf MTD P&L", "_id", "Daily Accrual", "Quantity", "Day Int.Income USD", "Value", "Previous Mark", "Monthly Capital Gains URlzd", "Monthly Interest Income", "Event Type", "Edit Note", "MTD Rlzd"];
     // these keys are made up by the function frontend table, it reverts keys to original keys
     let titlesMeaningException: any = {
       "Notional Total": "Quantity",
@@ -1183,7 +1128,7 @@ export async function editPosition(editedPosition: any) {
       let title = editedPositionTitles[indexTitle];
       let todayDate = formatDateReadable(new Date().toString());
       let monthDate = monthlyRlzdDate(new Date().toString());
-      if (!unEditableParams.includes(title) && editedPosition[title] != "" && editedPosition[title] != 0) {
+      if (!unEditableParams.includes(title) && editedPosition[title] != "") {
         if (titlesMeaningException[title]) {
           if (titlesMeaningException[title] == "Quantity") {
             positionInPortfolio["Interest"][todayDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Quantity"]);
