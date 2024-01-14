@@ -308,15 +308,20 @@ async function formatCentralizedRawFiles(files, bbbData, vconTrades, ibTrades, e
     }
     blot_emsx.sort((a, b) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
     blot = [...blot_vcons, ...blot_ib, ...blot_emsx];
-    let formattedObject = {};
-    centralizedBlotterHeader.forEach((title) => {
-        // If the original object has the key, add it to the formatted object
-        if (blot[0].hasOwnProperty(title)) {
-            formattedObject[title] = blot[0][title];
-        }
-    });
-    blot[0] = formattedObject;
-    return blot;
+    if (blot.length > 0) {
+        let formattedObject = {};
+        centralizedBlotterHeader.forEach((title) => {
+            // If the original object has the key, add it to the formatted object
+            if (blot[0].hasOwnProperty(title)) {
+                formattedObject[title] = blot[0][title];
+            }
+        });
+        blot[0] = formattedObject;
+        return blot;
+    }
+    else {
+        return [];
+    }
 }
 exports.formatCentralizedRawFiles = formatCentralizedRawFiles;
 function extractValuesFx(text) {

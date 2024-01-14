@@ -10,7 +10,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const app = express();
 const path = require("path");
-const rateLimit = require('express-rate-limit');
+const rateLimit = require("express-rate-limit");
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 10000,
@@ -19,14 +19,14 @@ const apiLimiter = rateLimit({
 });
 const cors = require("cors");
 const corsOptions = {
-    origin: ['http://localhost:3000', "http://localhost:3001", "https://capital-trade-web.de.r.appspot.com"],
+    origin: ["http://localhost:3000", "http://localhost:3001", "https://capital-trade-web.de.r.appspot.com"],
     credentials: true,
-    optionSuccessStatus: 200
+    optionSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
-app.use(express.static(path.join(__dirname, '/public')));
+app.use(express.static(path.join(__dirname, "/public")));
 app.use(bodyParser.urlencoded({
-    extended: false
+    extended: false,
 }));
 app.use(bodyParser.json());
 app.use("/api/web/", router_1.default);

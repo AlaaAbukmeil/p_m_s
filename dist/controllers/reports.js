@@ -169,8 +169,6 @@ async function getHistoricalSummaryPortfolioWithAnalytics(date) {
     ])
         .toArray();
     let now = new Date(date);
-    let currentMonth = now.getMonth();
-    let currentYear = now.getFullYear();
     let thisMonth = (0, common_1.monthlyRlzdDate)(date);
     documents = documents.filter((position) => {
         if (position["Quantity"] == 0) {
@@ -201,10 +199,8 @@ async function getHistoricalSummaryPortfolioWithAnalytics(date) {
         yesterday: lastDayBeforeToday[0],
         lastMonth: lastMonthLastCollectionName[0],
     };
-    let fund = {
-        nav: 43856736,
-        holdbackRatio: 0.5,
-    };
+    let fundDetailsInfo = await (0, operations_1.getFundDetails)(thisMonth);
+    let fund = fundDetailsInfo[0];
     documents = await calculateMonthlyInterest(documents, new Date(date));
     documents = await calculateDailyInterestUnRlzdCapitalGains(documents, new Date(date));
     documents = await calculateMonthlyURlzd(documents, new Date(date));
@@ -221,7 +217,7 @@ async function getHistoricalSummaryPortfolioWithAnalytics(date) {
         }
         return 0;
     });
-    return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails };
+    return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis };
 }
 exports.getHistoricalSummaryPortfolioWithAnalytics = getHistoricalSummaryPortfolioWithAnalytics;
 async function getEarliestCollectionName(originalDate) {

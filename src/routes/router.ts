@@ -2,14 +2,14 @@ import { NextFunction, Router } from "express";
 import { image } from "../models/image";
 import { registerUser, checkIfUserExists, sendResetPasswordRequest, resetPassword } from "../controllers/auth";
 import { Request, Response } from "express";
-import { verifyToken, formatDateVconFile, generateRandomString } from "../controllers/common";
+import { verifyToken, formatDateVconFile, generateRandomString, monthlyRlzdDate } from "../controllers/common";
 import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, getTrades, getPortfolio, editPosition, getHistoricalRiskReportWithAnalytics, getHistoricalSummaryPortfolioWithAnalytics } from "../controllers/reports";
 import { bloombergToTriada, readIBRawExcel, readPricingSheet } from "../controllers/portfolioFunctions";
 import { checkIfSecurityExist } from "../controllers/tsImagineOperations";
 import { uploadArrayAndReturnFilePath, getTriadaTrades, formatCentralizedRawFiles, formatIbTrades, formatEmsxTrades, readEmsxRawExcel } from "../controllers/excelFormat";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/graphApiConnect";
 import { formatMufg, formatFxMufg, tradesTriada } from "../controllers/mufgOperations";
-import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, checkMUFGEndOfMonthWithPortfolio, getPortfolioOnSpecificDate, editPositionPortfolio } from "../controllers/operations";
+import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, checkMUFGEndOfMonthWithPortfolio, getPortfolioOnSpecificDate, editPositionPortfolio, getFundDetails, getAllFundDetails, editFund } from "../controllers/operations";
 import { editMTDRlzd } from "../controllers/oneTimeFunctions";
 require("dotenv").config();
 
@@ -49,7 +49,7 @@ router.get("/summary-portfolio", async (req: Request, res: Response, next: NextF
   try {
     const date: any = req.query.date;
     let report = await getHistoricalSummaryPortfolioWithAnalytics(date);
-   
+
     res.send(report);
   } catch (error: any) {
     console.log(error);
@@ -111,12 +111,24 @@ router.get("/previous-collections", verifyToken, async (req, res) => {
     res.status(500).send("An error occurred while reading the file.");
   }
 });
+router.get("/fund-details", verifyToken, async (req, res) => {
+  try {
+    const date: any = req.query.date;
+    let thisMonth = monthlyRlzdDate(date);
+    let fundDetails = await getAllFundDetails(thisMonth);
+    console.log(fundDetails)
+    res.send(fundDetails);
+  } catch (error) {
+    res.status(500).send("An error occurred while reading the file.");
+  }
+});
 
 router.post("/login", async (req: Request, res: Response, next: NextFunction) => {
   let data = req.body;
   let email = data.email;
   let password = data.password;
   let user = await checkIfUserExists(email, password);
+ 
   res.send(user);
 });
 
@@ -278,7 +290,7 @@ router.post("/centralized-blotter", verifyToken, uploadBeforeExcel.any(), async 
     let data = req.body;
     let token = await getGraphToken();
     // to be modified
-    let vconTrades = await getTriadaTrades("vcons", new Date(data.timestamp_start).getTime() - 24 * 60 * 60 * 1000, new Date(data.timestamp_end).getTime() + 24 * 60 * 60 * 1000);
+    let vconTrades = await getTriadaTrades("vcons", new Date(data.timestamp_start).getTime() - 2 * 24 * 60 * 60 * 1000, new Date(data.timestamp_end).getTime() + 2 * 24 * 60 * 60 * 1000);
 
     let vcons: any = await getVcons(token, data.timestamp_start, data.timestamp_end, vconTrades[0], vconTrades[1]);
     let ibTrades = await getTriadaTrades("ib", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
@@ -288,10 +300,14 @@ router.post("/centralized-blotter", verifyToken, uploadBeforeExcel.any(), async 
     if (action.error) {
       res.send({ error: action.error });
     } else {
-      let url = await uploadArrayAndReturnFilePath(action, "centralized_blot");
-      url = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + url;
+      if (action.length > 0) {
+        let url = await uploadArrayAndReturnFilePath(action, "centralized_blot");
+        url = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + url;
 
-      res.send(url);
+        res.send(url);
+      } else {
+        res.send({ error: "no trades" });
+      }
     }
   } catch (error) {
     console.log(error);
@@ -361,7 +377,7 @@ router.post("/reset-password", async (req: Request, res: Response, next: NextFun
 router.post("/edit-position", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let action = await editPosition(req.body);
- 
+
     res.sendStatus(200);
   } catch (error) {
     console.log(error);
@@ -428,6 +444,18 @@ router.post("/check-mufg", verifyToken, uploadBeforeExcel.any(), async (req: Req
   } catch (error) {
     console.log(error);
     res.send({ error: "File Template is not correct" });
+  }
+});
+
+router.post("/edit-fund", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    console.log(req.body, "before")
+    let action = await editFund(req.body);
+    
+    res.sendStatus(200);
+  } catch (error) {
+    console.log(error);
+    res.send({ error: "Template is not correct" });
   }
 });
 

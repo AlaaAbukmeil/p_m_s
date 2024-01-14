@@ -330,16 +330,21 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
   }
   blot_emsx.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
   blot = [...blot_vcons, ...blot_ib, ...blot_emsx];
-  let formattedObject: any = {};
-  centralizedBlotterHeader.forEach((title) => {
-    // If the original object has the key, add it to the formatted object
-    if (blot[0].hasOwnProperty(title)) {
-      formattedObject[title] = blot[0][title];
-    }
-  });
+  if (blot.length > 0) {
+    
+    let formattedObject: any = {};
+    centralizedBlotterHeader.forEach((title) => {
+      // If the original object has the key, add it to the formatted object
+      if (blot[0].hasOwnProperty(title)) {
+        formattedObject[title] = blot[0][title];
+      }
+    });
 
-  blot[0] = formattedObject;
-  return blot;
+    blot[0] = formattedObject;
+    return blot;
+  } else {
+    return [];
+  }
 }
 function extractValuesFx(text: any) {
   let lines = text.split("\n");
@@ -486,7 +491,6 @@ export function formatEmsxTrades(data: any, emsxTrades: any, portfolio: any, tra
         let emsxTrade = emsxTrades[emsxIndex];
         // net because previous trade counted quantity as fill quantity
 
-        
         if (tradeDate == emsxTrade["Trade Date"] && trade["Security"] == emsxTrade["Issue"] && tradeType == emsxTrade["B/S"] && trade["FillQty"] == emsxTrade["Settlement Amount"]) {
           existingTrade = emsxTrade;
         }

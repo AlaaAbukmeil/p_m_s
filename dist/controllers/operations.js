@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSecurityInPortfolioById = exports.editPositionPortfolio = exports.checkMUFGEndOfMonthWithPortfolio = exports.readMUFGEndOfMonthFile = exports.getEditLogs = exports.insertEditLogs = exports.updatePreviousPricesPortfolioBloomberg = exports.getSecurityInPortfolioWithoutLocation = exports.getPortfolioOnSpecificDate = exports.insertPreviousPricesUpdatesInPortfolio = exports.updatePreviousPricesPortfolioMUFG = exports.readMUFGPrices = exports.getCollectionDays = void 0;
+exports.editFund = exports.getAllFundDetails = exports.getFundDetails = exports.getSecurityInPortfolioById = exports.editPositionPortfolio = exports.checkMUFGEndOfMonthWithPortfolio = exports.readMUFGEndOfMonthFile = exports.getEditLogs = exports.insertEditLogs = exports.updatePreviousPricesPortfolioBloomberg = exports.getSecurityInPortfolioWithoutLocation = exports.getPortfolioOnSpecificDate = exports.insertPreviousPricesUpdatesInPortfolio = exports.updatePreviousPricesPortfolioMUFG = exports.readMUFGPrices = exports.getCollectionDays = void 0;
 const axios = require("axios");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const mongoose = require("mongoose");
@@ -427,3 +427,59 @@ function getSecurityInPortfolioById(portfolio, id) {
     return document;
 }
 exports.getSecurityInPortfolioById = getSecurityInPortfolioById;
+async function getFundDetails(date) {
+    try {
+        const database = client.db("fund");
+        const reportCollection = database.collection("details");
+        let documents = await reportCollection.find({ month: date }).toArray();
+        return documents;
+    }
+    catch (error) {
+        return error;
+    }
+}
+exports.getFundDetails = getFundDetails;
+async function getAllFundDetails(date) {
+    try {
+        const database = client.db("fund");
+        const reportCollection = database.collection("details");
+        let documents = await reportCollection.find().toArray();
+        return documents;
+    }
+    catch (error) {
+        return { error: error };
+    }
+}
+exports.getAllFundDetails = getAllFundDetails;
+async function editFund(data) {
+    try {
+        const database = client.db("fund");
+        const reportCollection = database.collection("details");
+        const id = new ObjectId(data["_id"]);
+        const updates = {};
+        const tableTitles = ["month", "nav", "holdBackRatio"];
+        // Build the updates object based on `data` and `tableTitles`
+        for (const title of tableTitles) {
+            if (data[title] !== "" && data[title] != null) {
+                updates[title] = data[title];
+            }
+        }
+        if (Object.keys(updates).length === 0) {
+            throw new Error("No valid fields to update");
+        }
+        console.log(id);
+        // Update the document with the built updates object
+        const updateResult = await reportCollection.updateOne({ _id: id }, { $set: updates });
+        if (updateResult.matchedCount === 0) {
+            return { error: "Document does not exist" };
+        }
+        else if (updateResult.modifiedCount === 0) {
+            return { error: "Document not updated. It may already have the same values" };
+        }
+        return updateResult;
+    }
+    catch (error) {
+        return { error: error.message }; // Return the error message
+    }
+}
+exports.editFund = editFund;

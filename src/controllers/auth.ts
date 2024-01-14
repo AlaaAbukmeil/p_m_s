@@ -9,7 +9,6 @@ const bcrypt = require("bcrypt");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const saltRounds: any = process.env.SALT_ROUNDS;
 
-
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -23,14 +22,9 @@ mongoose.connect(uri, {
 });
 
 const SibApiV3Sdk = require("sib-api-v3-sdk");
-SibApiV3Sdk.ApiClient.instance.authentications["api-key"].apiKey =
-  process.env.SEND_IN_BLUE_API_KEY;
+SibApiV3Sdk.ApiClient.instance.authentications["api-key"].apiKey = process.env.SEND_IN_BLUE_API_KEY;
 
-export async function registerUser(
-  email: string,
-  password: string,
-  verificationCode: string
-) {
+export async function registerUser(email: string, password: string, verificationCode: string) {
   try {
     const database = client.db("auth");
     const usersCollection = database.collection("users");
@@ -108,16 +102,10 @@ export async function sendResetPasswordRequest(userEmail: string) {
           resetCode: resetPasswordCode,
         },
       };
-      let actionInsetResetCode = await usersCollection.updateOne(
-        filter,
-        updateDoc
-      );
-      let actionEmail = await sendEmailToResetPassword(
-        user.email,
-        resetPasswordCode
-      );
-      
-      return { status: 200, message: "Reset code have been sent!" , email: user.email};
+      let actionInsetResetCode = await usersCollection.updateOne(filter, updateDoc);
+      let actionEmail = await sendEmailToResetPassword(user.email, resetPasswordCode);
+
+      return { status: 200, message: "Reset code have been sent!", email: user.email };
     } catch (error) {
       return error;
       // handle error appropriately
@@ -138,8 +126,7 @@ function sendEmailToResetPassword(userEmail: string, verificationCode: string) {
     let email = new SibApiV3Sdk.TransactionalEmailsApi().sendTransacEmail({
       sender: { email: "abukmeilalaa@gmail.com", name: "Triada Capital" },
       subject: "Reset Your Password",
-      htmlContent:
-        "<!DOCTYPE html><html><body><p>Reset your Triada Account Password.</p></body></html>",
+      htmlContent: "<!DOCTYPE html><html><body><p>Reset your Triada Account Password.</p></body></html>",
       params: {
         greeting: "Hello there!",
         headline: "Reset Your Password",
@@ -152,10 +139,7 @@ function sendEmailToResetPassword(userEmail: string, verificationCode: string) {
               email: userEmail,
             },
           ],
-          htmlContent:
-            "<!DOCTYPE html><html><body><p>Hello there, <br /> Your verification code is " +
-            verificationCode +
-            ". <br /> <br /> If you have not asked to reset your LesGo Epic account's password, please ignore this email. <br /><br /> Cheers!<br /> LesGo Epic</p></body></html>",
+          htmlContent: "<!DOCTYPE html><html><body><p>Hello there, <br /> Your verification code is " + verificationCode + ". <br /> <br /> If you have not asked to reset your LesGo Epic account's password, please ignore this email. <br /><br /> Cheers!<br /> LesGo Epic</p></body></html>",
           subject: "Reset Your Password",
         },
       ],
@@ -166,11 +150,7 @@ function sendEmailToResetPassword(userEmail: string, verificationCode: string) {
   }
 }
 
-export async function resetPassword(
-  userEmail: string,
-  resetCode: string,
-  enteredPassword: string
-) {
+export async function resetPassword(userEmail: string, resetCode: string, enteredPassword: string) {
   const database = client.db("auth");
   const usersCollection = database.collection("users");
 
@@ -190,13 +170,15 @@ export async function resetPassword(
             resetCode: "",
           },
         };
-        
+
         const action = await usersCollection.updateOne(filter, updateDoc);
         return {
           message: "Password Reset!",
           status: 200,
           email: user.email,
         };
+      } else {
+        return { message: "code does not match" };
       }
     } catch (error) {
       return error;

@@ -3,7 +3,7 @@ require("dotenv").config();
 import { getAverageCost, readPricingSheet, getAllDatesSinceLastMonthLastDay, parseBondIdentifier, getSettlementDateYear, readPortfolioFromImagine, formatUpdatedPositions, readMUFGEBlot, readPortfolioFromLivePorfolio, formatDateRlzdDaily, readEditInput, getDateTimeInMongoDBCollectionFormat, readCentralizedEBlot } from "./portfolioFunctions";
 import util from "util";
 import { getDate, monthlyRlzdDate, formatDateReadable } from "./common";
-import { insertEditLogs } from "./operations";
+import { getFundDetails, insertEditLogs } from "./operations";
 import { formatFrontEndTable, formatFrontEndRiskReport, formatFrontEndSummaryTable } from "./tableFormatter";
 import { calculateMTDRlzd } from "./tableFormatter";
 import { uri } from "./common";
@@ -89,7 +89,7 @@ export async function getHistoricalPortfolioWithAnalytics(date: string) {
   documents = await calculateDailyInterestUnRlzdCapitalGains(documents, new Date(date));
   documents = await calculateMonthlyURlzd(documents, new Date(date));
   documents = calculateMonthlyDailyRlzdPTFPL(documents, date);
- 
+
   documents = formatFrontEndTable(documents, date);
 
   return [documents, sameDayCollectionsPublished];
@@ -188,8 +188,6 @@ export async function getHistoricalSummaryPortfolioWithAnalytics(date: string) {
     .toArray();
 
   let now = new Date(date);
-  let currentMonth = now.getMonth();
-  let currentYear = now.getFullYear();
 
   let thisMonth = monthlyRlzdDate(date);
 
@@ -225,10 +223,9 @@ export async function getHistoricalSummaryPortfolioWithAnalytics(date: string) {
     yesterday: lastDayBeforeToday[0],
     lastMonth: lastMonthLastCollectionName[0],
   };
-  let fund = {
-    nav: 43856736,
-    holdbackRatio: 0.5,
-  };
+  let fundDetailsInfo: any = await getFundDetails(thisMonth);
+  let fund = fundDetailsInfo[0];
+
   documents = await calculateMonthlyInterest(documents, new Date(date));
   documents = await calculateDailyInterestUnRlzdCapitalGains(documents, new Date(date));
   documents = await calculateMonthlyURlzd(documents, new Date(date));
@@ -248,7 +245,7 @@ export async function getHistoricalSummaryPortfolioWithAnalytics(date: string) {
     return 0;
   });
 
-  return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails };
+  return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis };
 }
 export async function getEarliestCollectionName(originalDate: string) {
   const database = client.db("portfolios");
@@ -828,8 +825,8 @@ export async function updatePricesPortfolio(path: string) {
           }
           if (currencyInUSD[object["Currency"]]) {
             object["FX Rate"] = currencyInUSD[object["Currency"]];
-          }else{
-            object["FX Rate"] = 1
+          } else {
+            object["FX Rate"] = 1;
           }
           object["Last Price Update"] = new Date();
 

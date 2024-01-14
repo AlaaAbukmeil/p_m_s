@@ -106,6 +106,18 @@ router.get("/previous-collections", common_1.verifyToken, async (req, res) => {
         res.status(500).send("An error occurred while reading the file.");
     }
 });
+router.get("/fund-details", common_1.verifyToken, async (req, res) => {
+    try {
+        const date = req.query.date;
+        let thisMonth = (0, common_1.monthlyRlzdDate)(date);
+        let fundDetails = await (0, operations_1.getAllFundDetails)(thisMonth);
+        console.log(fundDetails);
+        res.send(fundDetails);
+    }
+    catch (error) {
+        res.status(500).send("An error occurred while reading the file.");
+    }
+});
 router.post("/login", async (req, res, next) => {
     let data = req.body;
     let email = data.email;
@@ -265,7 +277,7 @@ router.post("/centralized-blotter", common_1.verifyToken, uploadBeforeExcel.any(
         let data = req.body;
         let token = await (0, graphApiConnect_1.getGraphToken)();
         // to be modified
-        let vconTrades = await (0, excelFormat_1.getTriadaTrades)("vcons", new Date(data.timestamp_start).getTime() - 24 * 60 * 60 * 1000, new Date(data.timestamp_end).getTime() + 24 * 60 * 60 * 1000);
+        let vconTrades = await (0, excelFormat_1.getTriadaTrades)("vcons", new Date(data.timestamp_start).getTime() - 2 * 24 * 60 * 60 * 1000, new Date(data.timestamp_end).getTime() + 2 * 24 * 60 * 60 * 1000);
         let vcons = await (0, graphApiConnect_1.getVcons)(token, data.timestamp_start, data.timestamp_end, vconTrades[0], vconTrades[1]);
         let ibTrades = await (0, excelFormat_1.getTriadaTrades)("ib", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
         let emsxTrades = await (0, excelFormat_1.getTriadaTrades)("emsx", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
@@ -274,9 +286,14 @@ router.post("/centralized-blotter", common_1.verifyToken, uploadBeforeExcel.any(
             res.send({ error: action.error });
         }
         else {
-            let url = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(action, "centralized_blot");
-            url = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + url;
-            res.send(url);
+            if (action.length > 0) {
+                let url = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(action, "centralized_blot");
+                url = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + url;
+                res.send(url);
+            }
+            else {
+                res.send({ error: "no trades" });
+            }
         }
     }
     catch (error) {
@@ -409,6 +426,17 @@ router.post("/check-mufg", common_1.verifyToken, uploadBeforeExcel.any(), async 
     catch (error) {
         console.log(error);
         res.send({ error: "File Template is not correct" });
+    }
+});
+router.post("/edit-fund", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+    try {
+        console.log(req.body, "before");
+        let action = await (0, operations_1.editFund)(req.body);
+        res.sendStatus(200);
+    }
+    catch (error) {
+        console.log(error);
+        res.send({ error: "Template is not correct" });
     }
 });
 router.post("/one-time", uploadBeforeExcel.any(), async (req, res, next) => {

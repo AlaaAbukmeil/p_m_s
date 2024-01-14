@@ -413,7 +413,7 @@ export async function editPositionPortfolio(path: string) {
           let title = titles[titleIndex];
           securityInPortfolio[title] = row[title];
         }
-        
+
         positions.push(securityInPortfolio);
       }
       try {
@@ -443,4 +443,60 @@ export function getSecurityInPortfolioById(portfolio: any, id: string) {
   }
   // If a matching document was found, return it. Otherwise, return a message indicating that no match was found.
   return document;
+}
+
+export async function getFundDetails(date: string) {
+  try {
+    const database = client.db("fund");
+    const reportCollection = database.collection("details");
+    let documents = await reportCollection.find({ month: date }).toArray();
+    return documents;
+  } catch (error) {
+    return error;
+  }
+}
+
+export async function getAllFundDetails(date: string) {
+  try {
+    const database = client.db("fund");
+    const reportCollection = database.collection("details");
+    let documents = await reportCollection.find().toArray();
+    return documents;
+  } catch (error) {
+    return { error: error };
+  }
+}
+
+export async function editFund(data: any): Promise<any> {
+  try {
+    const database = client.db("fund");
+    const reportCollection = database.collection("details");
+    const id = new ObjectId(data["_id"])
+    const updates = {} as any;
+    const tableTitles = ["month", "nav", "holdBackRatio"];
+
+    // Build the updates object based on `data` and `tableTitles`
+    for (const title of tableTitles) {
+      if (data[title] !== "" && data[title] != null) {
+        updates[title] = data[title];
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      throw new Error("No valid fields to update");
+    }
+    console.log(id)
+    // Update the document with the built updates object
+    const updateResult = await reportCollection.updateOne({ _id: id }, { $set: updates });
+
+    if (updateResult.matchedCount === 0) {
+      return { error: "Document does not exist" };
+    } else if (updateResult.modifiedCount === 0) {
+      return { error: "Document not updated. It may already have the same values" };
+    }
+
+    return updateResult;
+  } catch (error: any) {
+    return { error: error.message }; // Return the error message
+  }
 }

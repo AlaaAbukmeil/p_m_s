@@ -20,8 +20,7 @@ mongoose.connect(common_1.uri, {
     useNewUrlParser: true,
 });
 const SibApiV3Sdk = require("sib-api-v3-sdk");
-SibApiV3Sdk.ApiClient.instance.authentications["api-key"].apiKey =
-    process.env.SEND_IN_BLUE_API_KEY;
+SibApiV3Sdk.ApiClient.instance.authentications["api-key"].apiKey = process.env.SEND_IN_BLUE_API_KEY;
 async function registerUser(email, password, verificationCode) {
     try {
         const database = client.db("auth");
@@ -145,9 +144,7 @@ function sendEmailToResetPassword(userEmail, verificationCode) {
                             email: userEmail,
                         },
                     ],
-                    htmlContent: "<!DOCTYPE html><html><body><p>Hello there, <br /> Your verification code is " +
-                        verificationCode +
-                        ". <br /> <br /> If you have not asked to reset your LesGo Epic account's password, please ignore this email. <br /><br /> Cheers!<br /> LesGo Epic</p></body></html>",
+                    htmlContent: "<!DOCTYPE html><html><body><p>Hello there, <br /> Your verification code is " + verificationCode + ". <br /> <br /> If you have not asked to reset your LesGo Epic account's password, please ignore this email. <br /><br /> Cheers!<br /> LesGo Epic</p></body></html>",
                     subject: "Reset Your Password",
                 },
             ],
@@ -183,6 +180,9 @@ async function resetPassword(userEmail, resetCode, enteredPassword) {
                     status: 200,
                     email: user.email,
                 };
+            }
+            else {
+                return { message: "code does not match" };
             }
         }
         catch (error) {
