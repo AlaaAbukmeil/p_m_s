@@ -841,9 +841,20 @@ async function readPricingSheet(path) {
     else {
         const data = xlsx.utils.sheet_to_json(worksheet, {
             defval: "",
-            range: "A3:AQ300",
+            range: "A3:AX300",
         });
-        return data;
+        let keys = Object.keys(data[0]);
+        let reformedData = [];
+        for (let index = 0; index < data.length; index++) {
+            let prices = data[index];
+            let object = {};
+            for (let keyIndex = 0; keyIndex < keys.length; keyIndex++) {
+                let key = keys[keyIndex].trim();
+                object[key] = data[index][keys[keyIndex]];
+            }
+            reformedData.push(object);
+        }
+        return reformedData;
     }
 }
 exports.readPricingSheet = readPricingSheet;

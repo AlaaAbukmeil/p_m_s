@@ -35,7 +35,7 @@ export async function getHistoricalPortfolioWithAnalytics(date: string) {
     .aggregate([
       {
         $sort: {
-          "BB Ticker": 1, // replace 'BB Ticker' with the name of the field you want to sort alphabetically
+          "Issue": 1, // replace 'BB Ticker' with the name of the field you want to sort alphabetically
         },
       },
     ])
@@ -91,7 +91,7 @@ export async function getHistoricalPortfolioWithAnalytics(date: string) {
   documents = calculateMonthlyDailyRlzdPTFPL(documents, date);
 
   documents = formatFrontEndTable(documents, date);
-
+  console.log(documents)
   return [documents, sameDayCollectionsPublished];
 }
 export async function getHistoricalRiskReportWithAnalytics(date: string) {
@@ -786,6 +786,7 @@ export async function insertTradesInPortfolio(trades: any) {
 export async function updatePricesPortfolio(path: string) {
   try {
     let data: any = await readPricingSheet(path);
+    console.log(data[0]);
 
     if (data.error) {
       return data;
@@ -816,6 +817,16 @@ export async function updatePricesPortfolio(path: string) {
           object["YTM"] = row["Mid  Yield call"].toString().includes("N/A") ? 0 : row["Mid  Yield call"];
           object["DV01"] = row["DV01"].toString().includes("N/A") ? 0 : row["DV01"];
           object["OAS"] = row["Spread to benchmark"].toString().includes("N/A") ? 0 : row["Spread to benchmark"];
+          object["S&P Bond Rating"] = row["S&P Bond Rating"].toString().includes("N/A") ? "" : row["S&P Bond Rating"];
+          object["S&P Outlook"] = row["S&P Outlook"].toString().includes("N/A") ? "" : row["S&P Outlook"];
+          object["Moody's Bond Rating"] = row["Moody's Bond Rating"].toString().includes("N/A") ? "" : row["Moody's Bond Rating"];
+          object["Moddy's Outlook"] = row["Moddy's Outlook"].toString().includes("N/A") ? "" : row["Moody's Outlook"];
+          object["Fitch Bond Rating"] = row["Fitch Bond Rating"].toString().includes("N/A") ? "" : row["Fitch Bond Rating"];
+          object["Fitch Outlook"] = row["Fitch Outlook"].toString().includes("N/A") ? "" : row["Fitch Outlook"];
+          object["BBG Composite Rating"] = row["BBG Composite Rating"].toString().includes("N/A") ? "" : row["BBG Composite Rating"];
+          
+          object["BB Ticker"] = row["BB Ticker"].toString().includes("N/A") ? "" : row["BB Ticker"];
+
           // object["Issuer"] = row["Issuer Name"].includes("#") ? "0" : row["Issuer Name"];
           if (row["ModDurPerp"]) {
             object["Modified Duration"] = row["ModDurPerp"].toString().includes("#") ? (row["ModDur"].toString().includes("N/A") ? 0 : row["ModDur"]) : row["ModDurPerp"];

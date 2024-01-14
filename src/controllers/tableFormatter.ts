@@ -18,7 +18,7 @@ export function formatFrontEndTable(portfolio: any, date: any) {
     position["FX Rate"] = usdRatio;
     position["Asset Class"] = position["Asset Class"] ? position["Asset Class"] : position["Rating Class"] ? position["Rating Class"] : "";
     position["Cost"] = position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") ? Math.round(position["Average Cost"] * position["Quantity"] * 10000) / (10000 * position["Original Face"]) : Math.round(position["Average Cost"] * position["Quantity"] * 1000000) / 1000000;
-    position["Daily Interest Income"] = Math.round(position["Daily Interest Income"] * 1000000) / 1000000;
+    position["Daily Accrual (Local Currency)"] = Math.round(position["Daily Interest Income"] * 1000000) / 1000000;
     position["FX Rate"] = Math.round((position["FX Rate"] || position["FX Rate"]) * 1000000) / 1000000;
     position["Value"] = position["ISIN"].includes("CDS") || position["ISIN"].includes("ITRX") ? Math.round((position["Quantity"] * position["Mid"] * 10000 * usdRatio) / originalFace) / 10000 || 0 : Math.round(position["Quantity"] * position["Mid"] * usdRatio * 10000) / 10000 || 0;
 
@@ -33,19 +33,24 @@ export function formatFrontEndTable(portfolio: any, date: any) {
     position["MTD Mark"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["MTD Mark"] * 1000000) / 1000000 : Math.round(position["MTD Mark"] * 1000000) / 10000;
     position["Previous Mark"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Previous Mark"] * 1000000) / 1000000 : Math.round(position["Previous Mark"] * 1000000) / 10000;
 
-    position["Monthly Interest Income"] = Math.round(position["Monthly Interest Income"] * 1000000 * usdRatio) / 1000000;
-    position["Monthly Capital Gains Rlzd"] = Math.round(position["Monthly Capital Gains Rlzd"] * 1000000 * usdRatio) / 1000000;
-    position["Monthly Capital Gains URlzd"] = Math.round(position["Monthly Capital Gains URlzd"] * 1000000 * usdRatio) / 1000000;
-    position["Cost MTD Ptf"] = Math.round(position["Cost MTD Ptf"] * 1000000) / 1000000;
-    position["Cost"] = Math.round(position["Cost"] * 1000000) / 1000000;
+    position["Ptf MTD Int.Income (Local Currency)"] = Math.round(position["Monthly Interest Income"] * 1000000) / 1000000;
+    position["Ptf MTD Rlzd (Local Currency)"] = Math.round(position["Monthly Capital Gains Rlzd"] * 1000000) / 1000000;
+    position["Ptf MTD URlzd (Local Currency)"] = Math.round(position["Monthly Capital Gains URlzd"] * 1000000) / 1000000;
+
+    position["Ptf MTD Int.Income (Base Currency)"] = Math.round(position["Monthly Interest Income"] * 1000000 * usdRatio) / 1000000;
+    position["Ptf MTD Rlzd (Base Currency)"] = Math.round(position["Monthly Capital Gains Rlzd"] * 1000000 * usdRatio) / 1000000;
+    position["Ptf MTD URlzd (Base Currency)"] = Math.round(position["Monthly Capital Gains URlzd"] * 1000000 * usdRatio) / 1000000;
+
+    position["Cost MTD Ptf (Local Currency)"] = Math.round(position["Cost MTD Ptf"] * 1000000) / 1000000;
+    position["Cost (Local Currency)"] = Math.round(position["Cost"] * 1000000) / 1000000;
 
     position["Average Cost"] = Math.round(position["Average Cost"] * 1000000) / 1000000;
     if (!position["Previous FX Rate"]) {
       position["Previous FX Rate"] = position["FX Rate"];
     }
-    position["MTD FX"] = position["MTD FX"] ? position["MTD FX"] : position["Previous FX Rate"];
+    position["MTD FX"] = position["MTD FX"] ? Math.round(position["MTD FX"] * 1000000) / 1000000 : Math.round(position["Previous FX Rate"] * 1000000) / 1000000;
 
-    position["Day Int.Income USD"] = position["Daily Interest Income"] * usdRatio;
+  
     position["Daily Interest FX P&L"] = Math.round((position["FX Rate"] - position["Previous FX Rate"]) * 1000000 * position["Daily Interest Income"]) / 1000000;
 
     position["Notional Total"] = position["Quantity"];
@@ -53,9 +58,14 @@ export function formatFrontEndTable(portfolio: any, date: any) {
     position["#"] = index + 1;
     position["ISIN"] = position["ISIN"].length != 12 ? "" : position["ISIN"];
 
-    position["Ptf Day P&L"] = Math.round(position["Ptf Day P&L"] * usdRatio * 1000000) / 1000000;
+    position["Ptf Day P&L (Local Currency)"] = Math.round(position["Ptf Day P&L"] * usdRatio * 1000000) / 1000000;
     // multiply mtd pl with usd since all components are not  multiplied by usd when they are summed
-    position["Ptf MTD P&L"] = Math.round(position["Ptf MTD P&L"] * usdRatio * 1000000) / 1000000;
+    position["Ptf MTD P&L (Local Currency)"] = Math.round(position["Ptf MTD P&L"] * usdRatio * 1000000) / 1000000
+    
+
+    position["Ptf Day P&L (Base Currency)"] = Math.round(position["Ptf Day P&L"] * usdRatio * 1000000) / 1000000;
+    // multiply mtd pl with usd since all components are not  multiplied by usd when they are summed
+    position["Ptf MTD P&L (Base Currency)"] = Math.round(position["Ptf MTD P&L"] * usdRatio * 1000000) / 1000000;
 
     position["MTD Rlzd"] = Math.round(position["MTD Rlzd"] * usdRatio * 1000000) / 1000000;
 
@@ -65,7 +75,7 @@ export function formatFrontEndTable(portfolio: any, date: any) {
 
     position["Color"] = position["Maturity"] ? (areDatesInSameMonthAndYear(position["Maturity"], date) ? "red" : "") : "";
 
-    position["Holding ID"] = position["_id"];
+    position["_id"] = position["_id"];
     position["Duration(Mkt)"] = yearsUntil(position["Maturity"], date);
     position["Security"] = position["Issue"];
     position["Coupon Duration"] = position["Coupon Duration"] ? position["Coupon Duration"] : position["Issue"].split(" ")[0] == "T" || position["Issue"].includes("GOVT") ? 365.0 : 360.0;
@@ -74,6 +84,8 @@ export function formatFrontEndTable(portfolio: any, date: any) {
 
     position["DV01"] = (position["DV01"] / 1000000) * position["Notional Total"];
     position["DV01"] = Math.round(position["DV01"] * 1000000) / 1000000 || 0;
+
+    position["Long Security Name"] = position["Issue"];
 
     if (position["Issue"].includes("CDS")) {
       position["Day P&L FX"] = Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["Previous FX Rate"])) / parseFloat(position["Previous FX Rate"])) * position["Quantity"] * 1000000) / 1000000 || 0;
@@ -374,15 +386,20 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
   let object: any = {};
   for (let titleIndex = 0; titleIndex < titles.length; titleIndex++) {
     let title = titles[titleIndex];
-    object[title] = position[titlesValues[title]];
+    if (isFinite(position[titlesValues[title]])) {
+      
+      object[title] = Math.round(position[titlesValues[title]] * 100) / 100;
+    } else {
+      object[title] = position[titlesValues[title]];
+    }
   }
 
-  object["Daily P&L Attribution %"] = Math.round((object["Day P&L (USD)"] / fundDetails.daypl) * 100000) / 1000 + " %";
-  object["MTD P&L Attribution %"] = Math.round((object["MTD P&L (USD)"] / fundDetails.mtdpl) * 100000) / 1000 + " %";
-  object["Realised MTD P&L (USD) %"] = Math.round((object["Realizd MTD P&L (USD)"] / fundDetails.mtdpl) * 100000) / 1000 + " %";
-  object["Unrealised MTD P&L (USD) %"] = Math.round((object["Unrealizd MTD P&L (USD)"] / fundDetails.mtdpl) * 100000) / 1000 + " %";
-  object["MTD Interest Income (USD) %"] = Math.round((object["MTD Interest Income (USD)"] / fundDetails.mtdpl) * 100000) / 1000 + " %";
-  object["USD MTM % of NAV"] = Math.round((object["USD Market Value"] / fundDetails.nav) * 100000) / 1000 + " %";
+  object["Daily P&L Attribution %"] = Math.round((object["Day P&L (USD)"] / fundDetails.daypl) * 100) + " %";
+  object["MTD P&L Attribution %"] = Math.round((object["MTD P&L (USD)"] / fundDetails.mtdpl) * 100) + " %";
+  object["Realised MTD P&L (USD) %"] = Math.round((object["Realizd MTD P&L (USD)"] / fundDetails.mtdpl) * 100) + " %";
+  object["Unrealised MTD P&L (USD) %"] = Math.round((object["Unrealizd MTD P&L (USD)"] / fundDetails.mtdpl) * 100) + " %";
+  object["MTD Interest Income (USD) %"] = Math.round((object["MTD Interest Income (USD)"] / fundDetails.mtdpl) * 100) + " %";
+  object["USD MTM % of NAV"] = Math.round((object["USD Market Value"] / fundDetails.nav) * 100) + " %";
   object["Color"] = object["Notional Total"] == 0 ? "#E6F2FD" : "";
   object["ISIN"] = position["ISIN"];
   return object;
@@ -521,7 +538,7 @@ export function formatFrontEndSummaryTable(portfolio: any, date: any, fund: any,
 
   //sort
   let analyzedPortfolio = groupAndSortByLocationAndType(formatted, fundDetails.nav);
-  console.log(analyzedPortfolio);
+
   return { portfolio: analyzedPortfolio.portfolio, fundDetails: fundDetails, analysis: analyzedPortfolio };
 }
 function groupAndSortByLocationAndType(formattedPortfolio: any, nav: number) {
