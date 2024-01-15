@@ -50,7 +50,6 @@ export function formatFrontEndTable(portfolio: any, date: any) {
     }
     position["MTD FX"] = position["MTD FX"] ? Math.round(position["MTD FX"] * 1000000) / 1000000 : Math.round(position["Previous FX Rate"] * 1000000) / 1000000;
 
-  
     position["Daily Interest FX P&L"] = Math.round((position["FX Rate"] - position["Previous FX Rate"]) * 1000000 * position["Daily Interest Income"]) / 1000000;
 
     position["Notional Total"] = position["Quantity"];
@@ -60,8 +59,7 @@ export function formatFrontEndTable(portfolio: any, date: any) {
 
     position["Ptf Day P&L (Local Currency)"] = Math.round(position["Ptf Day P&L"] * usdRatio * 1000000) / 1000000;
     // multiply mtd pl with usd since all components are not  multiplied by usd when they are summed
-    position["Ptf MTD P&L (Local Currency)"] = Math.round(position["Ptf MTD P&L"] * usdRatio * 1000000) / 1000000
-    
+    position["Ptf MTD P&L (Local Currency)"] = Math.round(position["Ptf MTD P&L"] * usdRatio * 1000000) / 1000000;
 
     position["Ptf Day P&L (Base Currency)"] = Math.round(position["Ptf Day P&L"] * usdRatio * 1000000) / 1000000;
     // multiply mtd pl with usd since all components are not  multiplied by usd when they are summed
@@ -343,6 +341,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "MTD Interest Income (USD) %",
     "Sector",
     "Country",
+    "Issuer",
   ];
 
   let titlesValues: any = {
@@ -386,8 +385,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
   let object: any = {};
   for (let titleIndex = 0; titleIndex < titles.length; titleIndex++) {
     let title = titles[titleIndex];
-    if (isFinite(position[titlesValues[title]])) {
-      
+    if (isFinite(position[titlesValues[title]]) && position[titlesValues[title]] != null && position[titlesValues[title]] != "") {
       object[title] = Math.round(position[titlesValues[title]] * 100) / 100;
     } else {
       object[title] = position[titlesValues[title]];
@@ -402,6 +400,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
   object["USD MTM % of NAV"] = Math.round((object["USD Market Value"] / fundDetails.nav) * 100) + " %";
   object["Color"] = object["Notional Total"] == 0 ? "#E6F2FD" : "";
   object["ISIN"] = position["ISIN"];
+  object["Issuer"] = position["Issuer"];
   return object;
 }
 
@@ -535,6 +534,7 @@ export function formatFrontEndSummaryTable(portfolio: any, date: any, fund: any,
     let unformattedPosition = portfolio[formattedPortfolioIndex];
     formatted.push(formatSummaryPosition(unformattedPosition, fundDetails, dates));
   }
+ 
 
   //sort
   let analyzedPortfolio = groupAndSortByLocationAndType(formatted, fundDetails.nav);
@@ -671,6 +671,7 @@ function groupAndSortByLocationAndType(formattedPortfolio: any, nav: number) {
         durationSummary["> 10"].dv01Sum = Math.round(durationSummary["> 10"].dv01Sum * 100) / 100;
       }
     }
+
     groupedByLocation[locationCode].groupDayPl = groupDayPl;
     groupedByLocation[locationCode].groupMonthlyPl = groupMonthlyPl;
   }
@@ -683,6 +684,16 @@ function groupAndSortByLocationAndType(formattedPortfolio: any, nav: number) {
 
   for (let index = 0; index < locationCodes.length; index++) {
     let locationCode = locationCodes[index];
+
+    groupedByLocation[locationCode].data.sort((a: any, b: any) => {
+      // Assuming "L/S" is a number that can be directly compared
+      if (a["L/S"] < b["L/S"]) {
+        return -1; // a comes first
+      } else if (a["L/S"] > b["L/S"]) {
+        return 1; // b comes first
+      }
+      return 0; // a and b are equal
+    });
 
     for (let groupPositionIndex = 0; groupPositionIndex < groupedByLocation[locationCode].data.length; groupPositionIndex++) {
       if (groupedByLocation[locationCode].data[groupPositionIndex]["Notional Total"] == 0) {
@@ -703,6 +714,7 @@ function groupAndSortByLocationAndType(formattedPortfolio: any, nav: number) {
         groupedByLocation[locationCode].data[groupPositionIndex]["bottom"] = false;
       }
     }
+
     portfolio.push(...groupedByLocation[locationCode].data);
   }
 

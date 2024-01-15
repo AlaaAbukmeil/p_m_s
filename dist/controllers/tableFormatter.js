@@ -313,6 +313,7 @@ function formatSummaryPosition(position, fundDetails, dates) {
         "MTD Interest Income (USD) %",
         "Sector",
         "Country",
+        "Issuer",
     ];
     let titlesValues = {
         Type: "Type",
@@ -354,7 +355,7 @@ function formatSummaryPosition(position, fundDetails, dates) {
     let object = {};
     for (let titleIndex = 0; titleIndex < titles.length; titleIndex++) {
         let title = titles[titleIndex];
-        if (isFinite(position[titlesValues[title]])) {
+        if (isFinite(position[titlesValues[title]]) && position[titlesValues[title]] != null && position[titlesValues[title]] != "") {
             object[title] = Math.round(position[titlesValues[title]] * 100) / 100;
         }
         else {
@@ -369,6 +370,7 @@ function formatSummaryPosition(position, fundDetails, dates) {
     object["USD MTM % of NAV"] = Math.round((object["USD Market Value"] / fundDetails.nav) * 100) + " %";
     object["Color"] = object["Notional Total"] == 0 ? "#E6F2FD" : "";
     object["ISIN"] = position["ISIN"];
+    object["Issuer"] = position["Issuer"];
     return object;
 }
 exports.formatSummaryPosition = formatSummaryPosition;
@@ -610,6 +612,16 @@ function groupAndSortByLocationAndType(formattedPortfolio, nav) {
         .map((entry) => entry[0]);
     for (let index = 0; index < locationCodes.length; index++) {
         let locationCode = locationCodes[index];
+        groupedByLocation[locationCode].data.sort((a, b) => {
+            // Assuming "L/S" is a number that can be directly compared
+            if (a["L/S"] < b["L/S"]) {
+                return -1; // a comes first
+            }
+            else if (a["L/S"] > b["L/S"]) {
+                return 1; // b comes first
+            }
+            return 0; // a and b are equal
+        });
         for (let groupPositionIndex = 0; groupPositionIndex < groupedByLocation[locationCode].data.length; groupPositionIndex++) {
             if (groupedByLocation[locationCode].data[groupPositionIndex]["Notional Total"] == 0) {
                 groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = "#C5E1A5";
