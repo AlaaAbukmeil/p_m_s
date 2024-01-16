@@ -161,14 +161,12 @@ function getSettlementDateYearTrades(date1, date2) {
 exports.getSettlementDateYearTrades = getSettlementDateYearTrades;
 function getTradeDateYearTrades(date) {
     // Parse the month and year from the first date
-    // console.log(date1, date2)
     let dateComponenets = date.split("/");
     return `${dateComponenets[0]}/${dateComponenets[1]}/${"20" + dateComponenets[2]}`;
 }
 exports.getTradeDateYearTrades = getTradeDateYearTrades;
 function getTradeDateYearTradesWithoutTheCentury(date) {
     // Parse the month and year from the first date
-    // console.log(date1, date2)
     let dateComponenets = date.split("/");
     return `${dateComponenets[0]}/${dateComponenets[1]}/${dateComponenets[2]}`;
 }

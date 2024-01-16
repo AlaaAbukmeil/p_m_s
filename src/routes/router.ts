@@ -3,8 +3,8 @@ import { image } from "../models/image";
 import { registerUser, checkIfUserExists, sendResetPasswordRequest, resetPassword } from "../controllers/auth";
 import { Request, Response } from "express";
 import { verifyToken, formatDateVconFile, generateRandomString, monthlyRlzdDate } from "../controllers/common";
-import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, getTrades, getPortfolio, editPosition, getHistoricalRiskReportWithAnalytics, getHistoricalSummaryPortfolioWithAnalytics } from "../controllers/reports";
-import { bloombergToTriada, readIBRawExcel, readPricingSheet } from "../controllers/portfolioFunctions";
+import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, getTrades, getPortfolio, editPosition, getHistoricalSummaryPortfolioWithAnalytics } from "../controllers/reports";
+import { bloombergToTriada, getDateTimeInMongoDBCollectionFormat, readIBRawExcel, readPricingSheet } from "../controllers/portfolioFunctions";
 import { checkIfSecurityExist } from "../controllers/tsImagineOperations";
 import { uploadArrayAndReturnFilePath, getTriadaTrades, formatCentralizedRawFiles, formatIbTrades, formatEmsxTrades, readEmsxRawExcel } from "../controllers/excelFormat";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/graphApiConnect";
@@ -38,7 +38,10 @@ router.get("/auth", verifyToken, async (req: Request, res: Response, next: NextF
 
 router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const date: any = req.query.date;
+    let date: any = req.query.date;
+    if (date.includes("NaN")) {
+      date = getDateTimeInMongoDBCollectionFormat(new Date());
+    }
     let report = await getHistoricalPortfolioWithAnalytics(date);
     res.send(report);
   } catch (error: any) {
@@ -47,7 +50,11 @@ router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: 
 });
 router.get("/summary-portfolio", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const date: any = req.query.date;
+    let date: any = req.query.date;
+    if (date.includes("NaN")) {
+      date = getDateTimeInMongoDBCollectionFormat(new Date());
+    }
+    console.log(date);
     let report = await getHistoricalSummaryPortfolioWithAnalytics(date);
 
     res.send(report);
@@ -56,11 +63,7 @@ router.get("/summary-portfolio", async (req: Request, res: Response, next: NextF
     res.send({ error: error.toString() });
   }
 });
-router.get("/risk-report", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
-  const date: any = req.query.date;
-  let report = await getHistoricalRiskReportWithAnalytics(date);
-  res.send(report);
-});
+
 
 router.get("/trades-logs", verifyToken, async (req, res) => {
   try {
@@ -116,7 +119,7 @@ router.get("/fund-details", verifyToken, async (req, res) => {
     const date: any = req.query.date;
     let thisMonth = monthlyRlzdDate(date);
     let fundDetails = await getAllFundDetails(thisMonth);
-    console.log(fundDetails)
+    console.log(fundDetails);
     res.send(fundDetails);
   } catch (error) {
     res.status(500).send("An error occurred while reading the file.");
@@ -128,7 +131,7 @@ router.post("/login", async (req: Request, res: Response, next: NextFunction) =>
   let email = data.email;
   let password = data.password;
   let user = await checkIfUserExists(email, password);
- 
+
   res.send(user);
 });
 
@@ -449,9 +452,9 @@ router.post("/check-mufg", verifyToken, uploadBeforeExcel.any(), async (req: Req
 
 router.post("/edit-fund", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
-    console.log(req.body, "before")
+    console.log(req.body, "before");
     let action = await editFund(req.body);
-    
+
     res.sendStatus(200);
   } catch (error) {
     console.log(error);

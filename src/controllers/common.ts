@@ -193,13 +193,13 @@ export function getSettlementDateYearTrades(date1: string, date2: string): strin
 
 export function getTradeDateYearTrades(date: any) {
   // Parse the month and year from the first date
-  // console.log(date1, date2)
+
   let dateComponenets = date.split("/")
   return `${dateComponenets[0]}/${dateComponenets[1]}/${"20" + dateComponenets[2]}`;
 }
 export function getTradeDateYearTradesWithoutTheCentury(date: any) {
   // Parse the month and year from the first date
-  // console.log(date1, date2)
+  
   let dateComponenets = date.split("/")
   return `${dateComponenets[0]}/${dateComponenets[1]}/${dateComponenets[2]}`;
 }

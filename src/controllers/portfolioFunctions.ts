@@ -925,7 +925,7 @@ export async function readPricingSheet(path: string) {
   } else {
     const data = xlsx.utils.sheet_to_json(worksheet, {
       defval: "",
-      range: "A3:AX300",
+      range: "A3:AY300",
     });
     let keys = Object.keys(data[0]);
     let reformedData: any = [];

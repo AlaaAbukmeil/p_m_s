@@ -33,7 +33,10 @@ router.get("/auth", common_1.verifyToken, async (req, res, next) => {
 });
 router.get("/portfolio", common_1.verifyToken, async (req, res, next) => {
     try {
-        const date = req.query.date;
+        let date = req.query.date;
+        if (date.includes("NaN")) {
+            date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
+        }
         let report = await (0, reports_1.getHistoricalPortfolioWithAnalytics)(date);
         res.send(report);
     }
@@ -43,7 +46,11 @@ router.get("/portfolio", common_1.verifyToken, async (req, res, next) => {
 });
 router.get("/summary-portfolio", async (req, res, next) => {
     try {
-        const date = req.query.date;
+        let date = req.query.date;
+        if (date.includes("NaN")) {
+            date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
+        }
+        console.log(date);
         let report = await (0, reports_1.getHistoricalSummaryPortfolioWithAnalytics)(date);
         res.send(report);
     }
@@ -51,11 +58,6 @@ router.get("/summary-portfolio", async (req, res, next) => {
         console.log(error);
         res.send({ error: error.toString() });
     }
-});
-router.get("/risk-report", common_1.verifyToken, async (req, res, next) => {
-    const date = req.query.date;
-    let report = await (0, reports_1.getHistoricalRiskReportWithAnalytics)(date);
-    res.send(report);
 });
 router.get("/trades-logs", common_1.verifyToken, async (req, res) => {
     try {
