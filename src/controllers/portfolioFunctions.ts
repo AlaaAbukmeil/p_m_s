@@ -1024,7 +1024,7 @@ export function formatUpdatedPositions(positions: any, portfolio: any) {
     let positionsIndexThatExists = [];
     let positionsThatGotUpdated = [];
     let positionsThatDoNotExists = [];
-    let positionsThatDoNotExistsNames = [];
+    let positionsThatDoNotExistsNames: any = {};
     for (let indexPositions = 0; indexPositions < positions.length; indexPositions++) {
       const position = positions[indexPositions];
       for (let indexPortfolio = 0; indexPortfolio < portfolio.length; indexPortfolio++) {
@@ -1047,7 +1047,7 @@ export function formatUpdatedPositions(positions: any, portfolio: any) {
 
     for (let indexPositions = 0; indexPositions < portfolio.length; indexPositions++) {
       if (!positionsThatGotUpdated.includes(`${portfolio[indexPositions]["Issue"]} ${portfolio[indexPositions]["Location"]}\n`)) {
-        positionsThatDoNotExistsNames.push(`${portfolio[indexPositions]["Issue"]} ${portfolio[indexPositions]["Location"]}\n`);
+        positionsThatDoNotExistsNames[portfolio[indexPositions]["Issue"]] = { location: portfolio[indexPositions]["Location"], notional: portfolio[indexPositions]["Quantity"] };
       }
     }
 

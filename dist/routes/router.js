@@ -349,7 +349,7 @@ router.post("/reset-password", async (req, res, next) => {
 });
 router.post("/edit-position", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
     try {
-        let action = await (0, reports_1.editPosition)(req.body);
+        let action = await (0, reports_1.editPosition)(req.body, req.body.date);
         res.sendStatus(200);
     }
     catch (error) {
@@ -423,6 +423,33 @@ router.post("/edit-fund", common_1.verifyToken, uploadBeforeExcel.any(), async (
         console.log(req.body, "before");
         let action = await (0, operations_1.editFund)(req.body);
         res.sendStatus(200);
+    }
+    catch (error) {
+        console.log(error);
+        res.send({ error: "Template is not correct" });
+    }
+});
+router.post("/delete-fund", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+    try {
+        console.log(req.body, "before");
+        let action = await (0, operations_1.deleteFund)(req.body);
+        res.sendStatus(200);
+    }
+    catch (error) {
+        console.log(error);
+        res.send({ error: "Template is not correct" });
+    }
+});
+router.post("/add-fund", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+    try {
+        console.log(req.body, "before");
+        let action = await (0, operations_1.addFund)(req.body);
+        if (action.error) {
+            res.send({ error: action.error });
+        }
+        else {
+            res.sendStatus(200);
+        }
     }
     catch (error) {
         console.log(error);

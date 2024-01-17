@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.editFund = exports.getAllFundDetails = exports.getFundDetails = exports.getSecurityInPortfolioById = exports.editPositionPortfolio = exports.checkMUFGEndOfMonthWithPortfolio = exports.readMUFGEndOfMonthFile = exports.getEditLogs = exports.insertEditLogs = exports.updatePreviousPricesPortfolioBloomberg = exports.getSecurityInPortfolioWithoutLocation = exports.getPortfolioOnSpecificDate = exports.insertPreviousPricesUpdatesInPortfolio = exports.updatePreviousPricesPortfolioMUFG = exports.readMUFGPrices = exports.getCollectionDays = void 0;
+exports.addFund = exports.deleteFund = exports.editFund = exports.getAllFundDetails = exports.getFundDetails = exports.getSecurityInPortfolioById = exports.editPositionPortfolio = exports.checkMUFGEndOfMonthWithPortfolio = exports.readMUFGEndOfMonthFile = exports.getEditLogs = exports.insertEditLogs = exports.updatePreviousPricesPortfolioBloomberg = exports.getSecurityInPortfolioWithoutLocation = exports.getPortfolioOnSpecificDate = exports.insertPreviousPricesUpdatesInPortfolio = exports.updatePreviousPricesPortfolioMUFG = exports.readMUFGPrices = exports.getCollectionDays = void 0;
 const axios = require("axios");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const mongoose = require("mongoose");
@@ -208,33 +208,56 @@ async function updatePreviousPricesPortfolioBloomberg(data, collectionDate, path
             for (let index = 0; index < data.length; index++) {
                 let row = data[index];
                 if (!row["Long Security Name"].includes("Spot") && !row["Long Security Name"].includes("ignore")) {
-                    let object = (0, reports_1.getSecurityInPortfolio)(portfolio, row["ISIN"], row["Trade Idea Code"]);
-                    if (object == 404) {
-                        object = (0, reports_1.getSecurityInPortfolio)(portfolio, row["BB Ticker"], row["Trade Idea Code"]);
+                    let positions = getSecurityInPortfolioWithoutLocation(portfolio, row["ISIN"]);
+                    if (positions == 404) {
+                        positions = getSecurityInPortfolioWithoutLocation(portfolio, row["BB Ticker"]);
                     }
-                    if (object == 404) {
-                        object = (0, reports_1.getSecurityInPortfolio)(portfolio, row["Long Security Name"], row["Trade Idea Code"]);
+                    if (positions == 404) {
+                        positions = getSecurityInPortfolioWithoutLocation(portfolio, row["Long Security Name"]);
                     }
-                    if (object == 404) {
+                    if (positions == 404) {
                         continue;
                     }
-                    let faceValue = object["ISIN"].includes("CDX") || object["ISIN"].includes("ITRX") || object["ISIN"].includes("1393") || object["ISIN"].includes("IB") ? 100 : 1;
-                    object["Mid"] = (parseFloat(row["Today's Mid"]) / 100.0) * faceValue;
-                    object["Ask"] = parseFloat(row["Override Ask"]) > 0 ? (parseFloat(row["Override Ask"]) / 100.0) * faceValue : (parseFloat(row["Today's Ask"]) / 100.0) * faceValue;
-                    object["Bid"] = parseFloat(row["Override Bid"]) > 0 ? (parseFloat(row["Override Bid"]) / 100.0) * faceValue : (parseFloat(row["Today's Bid"]) / 100.0) * faceValue;
-                    object["YTM"] = row["Mid Yield Maturity"];
-                    object["DV01"] = row["DV01"];
-                    if (currencyInUSD[object["Currency"]]) {
-                        object["FX Rate"] = currencyInUSD[object["Currency"]];
+                    for (let index = 0; index < positions.length; index++) {
+                        let object = positions[index];
+                        let faceValue = object["ISIN"].includes("CDX") || object["ISIN"].includes("ITRX") || object["ISIN"].includes("1393") || object["ISIN"].includes("IB") ? 100 : 1;
+                        object["Mid"] = (parseFloat(row["Today's Mid"]) / 100.0) * faceValue;
+                        object["Ask"] = parseFloat(row["Override Ask"]) > 0 ? (parseFloat(row["Override Ask"]) / 100.0) * faceValue : (parseFloat(row["Today's Ask"]) / 100.0) * faceValue;
+                        object["Bid"] = parseFloat(row["Override Bid"]) > 0 ? (parseFloat(row["Override Bid"]) / 100.0) * faceValue : (parseFloat(row["Today's Bid"]) / 100.0) * faceValue;
+                        object["YTM"] = row["Mid  Yield call"].toString().includes("N/A") ? 0 : row["Mid  Yield call"];
+                        object["DV01"] = row["DV01"].toString().includes("N/A") ? 0 : row["DV01"];
+                        object["OAS"] = row["Spread to benchmark"].toString().includes("N/A") ? 0 : row["Spread to benchmark"];
+                        object["S&P Bond Rating"] = row["S&P Bond Rating"].toString().includes("N/A") ? "" : row["S&P Bond Rating"];
+                        object["S&P Outlook"] = row["S&P Outlook"].toString().includes("N/A") ? "" : row["S&P Outlook"];
+                        object["Moody's Bond Rating"] = row["Moody's Bond Rating"].toString().includes("N/A") ? "" : row["Moody's Bond Rating"];
+                        object["Moddy's Outlook"] = row["Moddy's Outlook"].toString().includes("N/A") ? "" : row["Moody's Outlook"];
+                        object["Fitch Bond Rating"] = row["Fitch Bond Rating"].toString().includes("N/A") ? "" : row["Fitch Bond Rating"];
+                        object["Fitch Outlook"] = row["Fitch Outlook"].toString().includes("N/A") ? "" : row["Fitch Outlook"];
+                        object["BBG Composite Rating"] = row["BBG Composite Rating"].toString().includes("N/A") ? "" : row["BBG Composite Rating"];
+                        object["BB Ticker"] = row["BB Ticker"].toString().includes("N/A") ? "" : row["BB Ticker"];
+                        object["Issuer"] = row["Issuer Name"].toString().includes("N/A") ? "" : row["Issuer Name"];
+                        // object["Issuer"] = row["Issuer Name"].includes("#") ? "0" : row["Issuer Name"];
+                        if (row["ModDurPerp"]) {
+                            object["Modified Duration"] = row["ModDurPerp"].toString().includes("#") ? (row["ModDur"].toString().includes("N/A") ? 0 : row["ModDur"]) : row["ModDurPerp"];
+                        }
+                        if (!row["Call Date"].includes("N/A") || !row["Call Date"].includes("#")) {
+                            object["Call Date"] = row["Call Date"];
+                        }
+                        if (currencyInUSD[object["Currency"]]) {
+                            object["FX Rate"] = currencyInUSD[object["Currency"]];
+                        }
+                        else {
+                            object["FX Rate"] = 1;
+                        }
+                        object["Last Price Update"] = new Date();
+                        if (!object["Country"] && row["Country"] && !row["Country"].includes("#N/A")) {
+                            object["Country"] = row["Country"];
+                        }
+                        if (!object["Sector"] && row["Industry Sector"]) {
+                            object["Sector"] = row["Industry Sector"];
+                        }
+                        updatedPricePortfolio.push(object);
                     }
-                    object["Last Price Update"] = new Date();
-                    if (!object["Country"] && row["Country"] && !row["Country"].includes("#N/A")) {
-                        object["Country"] = row["Country"];
-                    }
-                    if (!object["Sector"] && row["Country2"]) {
-                        object["Sector"] = row["Country2"];
-                    }
-                    updatedPricePortfolio.push(object);
                 }
                 else if (row["Long Security Name"].includes("Spot") && !row["Long Security Name"].includes("ignore")) {
                     let firstCurrency = row["Long Security Name"].split(" ")[0];
@@ -251,16 +274,16 @@ async function updatePreviousPricesPortfolioBloomberg(data, collectionDate, path
             }
             console.log(currencyInUSD, "currency prices");
             try {
-                console.log(updatedPricePortfolio.length, "number of positions prices updated");
+                let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(updatedPricePortfolio, portfolio);
                 let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
                 await insertEditLogs(["prices update"], "Update Previous Prices based on bloomberg", dateTime, "Bloomberg Previous Pricing Sheet on " + collectionDate, "Link: " + path);
-                let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(updatedPricePortfolio, portfolio);
                 let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio[0], collectionDate);
+                console.log(updatedPricePortfolio.length, "number of positions prices updated");
                 if (!updatedPortfolio[1].length) {
                     return updatedPortfolio[1];
                 }
                 else {
-                    return { error: `positions that did not update ${updatedPortfolio[1]}` };
+                    return { error: updatedPortfolio[1] };
                 }
             }
             catch (error) {
@@ -483,3 +506,57 @@ async function editFund(data) {
     }
 }
 exports.editFund = editFund;
+async function deleteFund(data) {
+    try {
+        const database = client.db("fund");
+        const reportCollection = database.collection("details");
+        const id = new ObjectId(data["_id"]);
+        // Update the document with the built updates object
+        const updateResult = await reportCollection.deleteOne({ _id: id });
+        if (updateResult.matchedCount === 0) {
+            return { error: "Document does not exist" };
+        }
+        else if (updateResult.modifiedCount === 0) {
+            return { error: "Document not updated. It may already have the same values" };
+        }
+        return updateResult;
+    }
+    catch (error) {
+        return { error: error.message }; // Return the error message
+    }
+}
+exports.deleteFund = deleteFund;
+async function addFund(data) {
+    try {
+        const database = client.db("fund");
+        const reportCollection = database.collection("details");
+        const newFundData = {};
+        const tableTitles = ["month", "nav", "holdBackRatio"];
+        // Build the newFundData object based on `data` and `tableTitles`
+        for (const title of tableTitles) {
+            if (data[title] !== undefined && data[title] !== null) {
+                newFundData[title] = data[title];
+            }
+        }
+        // You might want to check if all required fields are present
+        // if some fields are mandatory e.g.,
+        if (!newFundData.month || !newFundData.nav) {
+            return { error: "missing params" };
+        }
+        // Insert the new document into the collection
+        const insertResult = await reportCollection.insertOne(newFundData);
+        // The insertOne operation returns an InsertOneResult object
+        // You can check the result by inspecting `insertedCount` and `insertedId`
+        if (insertResult.insertedCount === 0) {
+            return { error: "Failed to insert document" };
+        }
+        return { success: true, insertedId: insertResult.insertedId };
+    }
+    catch (error) {
+        return { error: error.message }; // Return the error message
+    }
+    finally {
+        await client.close(); // Ensure to close the MongoDB client
+    }
+}
+exports.addFund = addFund;

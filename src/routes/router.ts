@@ -8,7 +8,7 @@ import { bloombergToTriada, getDateTimeInMongoDBCollectionFormat, readIBRawExcel
 import { uploadArrayAndReturnFilePath, getTriadaTrades, formatCentralizedRawFiles, formatIbTrades, formatEmsxTrades, readEmsxRawExcel } from "../controllers/excelFormat";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/graphApiConnect";
 import { formatMufg, formatFxMufg, tradesTriada } from "../controllers/mufgOperations";
-import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, checkMUFGEndOfMonthWithPortfolio, getPortfolioOnSpecificDate, editPositionPortfolio, getFundDetails, getAllFundDetails, editFund } from "../controllers/operations";
+import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, checkMUFGEndOfMonthWithPortfolio, getPortfolioOnSpecificDate, editPositionPortfolio, getFundDetails, getAllFundDetails, editFund, deleteFund, addFund } from "../controllers/operations";
 import { editMTDRlzd } from "../controllers/oneTimeFunctions";
 require("dotenv").config();
 
@@ -62,7 +62,6 @@ router.get("/summary-portfolio", async (req: Request, res: Response, next: NextF
     res.send({ error: error.toString() });
   }
 });
-
 
 router.get("/trades-logs", verifyToken, async (req, res) => {
   try {
@@ -193,8 +192,6 @@ router.post("/update-prices", verifyToken, uploadBeforeExcel.any(), async (req: 
     res.send({ error: "File Template is not correct" });
   }
 });
-
-
 
 router.post("/nomura-excel", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   let data = req.body;
@@ -368,7 +365,7 @@ router.post("/reset-password", async (req: Request, res: Response, next: NextFun
 
 router.post("/edit-position", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
-    let action = await editPosition(req.body);
+    let action = await editPosition(req.body, req.body.date);
 
     res.sendStatus(200);
   } catch (error) {
@@ -445,6 +442,31 @@ router.post("/edit-fund", verifyToken, uploadBeforeExcel.any(), async (req: Requ
     let action = await editFund(req.body);
 
     res.sendStatus(200);
+  } catch (error) {
+    console.log(error);
+    res.send({ error: "Template is not correct" });
+  }
+});
+
+router.post("/delete-fund", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    console.log(req.body, "before");
+    let action = await deleteFund(req.body);
+    res.sendStatus(200);
+  } catch (error) {
+    console.log(error);
+    res.send({ error: "Template is not correct" });
+  }
+});
+router.post("/add-fund", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    console.log(req.body, "before");
+    let action = await addFund(req.body);
+    if (action.error) {
+      res.send({ error: action.error });
+    } else {
+      res.sendStatus(200);
+    }
   } catch (error) {
     console.log(error);
     res.send({ error: "Template is not correct" });

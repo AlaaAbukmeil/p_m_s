@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.insertTradesInPortfolioAtASpecificDate = exports.changeMTDRlzd = exports.editMTDRlzd = exports.appendLogs = void 0;
+exports.changeMTDRlzd = exports.editMTDRlzd = exports.appendLogs = void 0;
 const util_1 = __importDefault(require("util"));
 const reports_1 = require("./reports");
 const common_1 = require("./common");
@@ -108,7 +108,7 @@ async function editMTDRlzd() {
             positionChanged++;
         }
     }
-    await insertTradesInPortfolioAtASpecificDate(portfolio);
+    // await insertTradesInPortfolioAtASpecificDate(portfolio);
     return;
 }
 exports.editMTDRlzd = editMTDRlzd;
@@ -125,52 +125,3 @@ async function changeMTDRlzd() {
     return;
 }
 exports.changeMTDRlzd = changeMTDRlzd;
-async function insertTradesInPortfolioAtASpecificDate(trades) {
-    const database = client.db("portfolios");
-    let operations = trades
-        .filter((trade) => trade["Location"])
-        .map((trade) => {
-        // Start with the known filters
-        let filters = [];
-        // If "ISIN", "BB Ticker", or "Issue" exists, check for both the field and "Location"
-        if (trade["ISIN"]) {
-            filters.push({
-                ISIN: trade["ISIN"],
-                Location: trade["Location"],
-                _id: new ObjectId(trade["_id"]),
-            });
-        }
-        else if (trade["BB Ticker"]) {
-            filters.push({
-                "BB Ticker": trade["BB Ticker"],
-                Location: trade["Location"],
-                _id: new ObjectId(trade["_id"]),
-            });
-        }
-        else if (trade["Issue"]) {
-            filters.push({
-                Issue: trade["Issue"],
-                Location: trade["Location"],
-                _id: new ObjectId(trade["_id"]),
-            });
-        }
-        return {
-            updateOne: {
-                filter: { $or: filters },
-                update: { $set: trade },
-                upsert: true,
-            },
-        };
-    });
-    // Execute the operations in bulk
-    try {
-        const historicalReportCollection = database.collection(`portfolio-2024-01-10 19:39`);
-        let action = await historicalReportCollection.bulkWrite(operations);
-        console.log(action);
-        return action;
-    }
-    catch (error) {
-        return error;
-    }
-}
-exports.insertTradesInPortfolioAtASpecificDate = insertTradesInPortfolioAtASpecificDate;
