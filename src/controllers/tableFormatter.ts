@@ -63,19 +63,19 @@ export function formatFrontEndTable(portfolio: any, date: any, fund: any, dates:
     position["MTD FX"] = position["MTD FX"] ? Math.round(position["MTD FX"] * 1000000) / 1000000 : Math.round(position["Previous FX Rate"] * 1000000) / 1000000;
 
     position["Daily Interest FX P&L"] = Math.round((position["FX Rate"] - position["Previous FX Rate"]) * 1000000 * position["Daily Interest Income"]) / 1000000;
-    position["Day Int.Income USD"] = position["Daily Interest Income"] * usdRatio * holdBackRatio;
+    position["Daily Interest Income (Base Currency)"] = position["Daily Interest Income"] * usdRatio * holdBackRatio;
     position["Notional Total"] = position["Quantity"];
     position["Quantity"] = position["Quantity"] / originalFace;
     position["#"] = index + 1;
     position["ISIN"] = position["ISIN"].length != 12 ? "" : position["ISIN"];
 
-    position["Ptf Day P&L (Local Currency)"] = Math.round(position["Ptf Day P&L"] * usdRatio* holdBackRatio  * 1000000) / 1000000;
+    position["Ptf Day P&L (Local Currency)"] = Math.round(position["Ptf Day P&L"] * usdRatio * holdBackRatio * 1000000) / 1000000;
     // multiply mtd pl with usd since all components are not  multiplied by usd when they are summed
-    position["Ptf MTD P&L (Local Currency)"] = Math.round(position["Ptf MTD P&L"] * usdRatio* holdBackRatio  * 1000000) / 1000000;
+    position["Ptf MTD P&L (Local Currency)"] = Math.round(position["Ptf MTD P&L"] * usdRatio * holdBackRatio * 1000000) / 1000000;
 
-    position["Ptf Day P&L (Base Currency)"] = Math.round(position["Ptf Day P&L"] * usdRatio* holdBackRatio  * 1000000) / 1000000;
+    position["Ptf Day P&L (Base Currency)"] = Math.round(position["Ptf Day P&L"] * usdRatio * holdBackRatio * 1000000) / 1000000;
     // multiply mtd pl with usd since all components are not  multiplied by usd when they are summed
-    position["Ptf MTD P&L (Base Currency)"] = Math.round(position["Ptf MTD P&L"] * usdRatio* holdBackRatio  * 1000000) / 1000000;
+    position["Ptf MTD P&L (Base Currency)"] = Math.round(position["Ptf MTD P&L"] * usdRatio * holdBackRatio * 1000000) / 1000000;
 
     position["Day Rlzd K G/L"] = Math.round(position["Day Rlzd K G/L"] * usdRatio * holdBackRatio * 1000000) / 1000000;
     position["Day URlzd K G/L"] = Math.round(position["Day URlzd K G/L"] * usdRatio * holdBackRatio * 1000000) / 1000000;
@@ -87,7 +87,7 @@ export function formatFrontEndTable(portfolio: any, date: any, fund: any, dates:
     position["Call Date"] = position["Call Date"] ? position["Call Date"] : 0;
 
     position["Color"] = position["Maturity"] ? (areDatesInSameMonthAndYear(position["Maturity"], date) ? "red" : "") : "";
-    position["L/S"] = position["Quantity"] >= 0 ? "Long" : "Short";
+    position["L/S"] = position["Quantity"] >= 0 && !position["Issue"].includes("CDS") ? "Long" : "Short";
     position["_id"] = position["_id"];
     position["Duration(Mkt)"] = yearsUntil(position["Maturity"], date);
     position["Coupon Duration"] = position["Coupon Duration"] ? position["Coupon Duration"] : position["Issue"].split(" ")[0] == "T" || position["Issue"].includes("GOVT") ? 365.0 : 360.0;
@@ -112,7 +112,7 @@ export function formatFrontEndTable(portfolio: any, date: any, fund: any, dates:
     mtdurlzd += position["Ptf MTD URlzd (Base Currency)"];
     mtdint += position["Ptf MTD Int.Income (Base Currency)"];
 
-    dayint += position["Day Int.Income USD"];
+    dayint += position["Daily Interest Income (Base Currency)"];
 
     daypl += position["Ptf Day P&L (Base Currency)"];
     dayfx += position["Day P&L FX"];
@@ -138,7 +138,7 @@ export function formatFrontEndTable(portfolio: any, date: any, fund: any, dates:
     dayrlzd: Math.round(dayrlzd * 1000) / 1000,
   };
   let analyzedPortfolio = groupAndSortByLocationAndType(portfolio, fundDetails.nav);
-  console.log(fundDetails);
+
   return { portfolio: analyzedPortfolio.portfolio, fundDetails: fundDetails, analysis: analyzedPortfolio };
 }
 
@@ -167,170 +167,6 @@ function yearsUntil(dateString: any, dateInput: any) {
   return Math.round(years * 100) / 100;
 }
 
-function areDatesInSameMonthAndYear(customDate: string, todaysDate: string) {
-  return new Date(customDate).getMonth() === new Date(todaysDate).getMonth() && new Date(customDate).getFullYear() === new Date(todaysDate).getFullYear();
-}
-
-export function formatFrontEndRiskReport(portfolio: any, pairPositionIds: any) {
-  let tableTitles = [
-    "#",
-
-    "Type",
-    "Strategy",
-    "Trade Idea Code",
-    "Credit Name",
-    "BB Ticker",
-    "H-Notional",
-    "o/r Dv01",
-    "o/r Cr01",
-    "o/r Price",
-    "Pair Strategy",
-    "Text10",
-    "Accrued $",
-    "Rating Name: SP",
-    "Curr",
-    "Isin",
-    "Maturity",
-    "CallDate",
-    "Notional Total",
-    "Duration(Mkt)",
-    "Duration(C/P,Mkt)",
-    "Implied ZCS",
-    "YTM",
-    "Dv01 $ (C/P,Mkt) (USD)",
-    "Dv01 (USD) (Mkt)",
-    "Notional Calc (Mkt)",
-    "Cr01 (USD) (Mkt)",
-    "Implied CS",
-    "Mid",
-    "Bid",
-    "Ask",
-    "Average Cost",
-    "MTD P&L",
-    "Day P&L",
-    "Total P&L",
-    "R - Capital Gain/Loss",
-    "U - Capital Gain/Loss",
-    "Accrued Interest",
-    "Cash Dispmnt Accrued Int",
-    "Long Security Name",
-    "Issue Amt",
-    "YC +25",
-    "CS +100",
-    "MTD Int.Income",
-    "MTD Mark",
-    "Ptf MTD P&L",
-    "Ptf MTD Rlzd",
-    "Ptf MTD URlzd",
-    "Adjusted OAS",
-    "Implied ZCS2",
-    "Issuer Name",
-    "Ref Bond",
-    "Ref Fair",
-    "Ref YTM",
-    "Ref Spread o/r",
-    "AccAdj MTD",
-    "$ Fair",
-    "FX",
-    "Quantity",
-    "Q_Sector",
-    "Q_Country",
-    "$ Full Econ(Mkt)",
-  ];
-  let tableTitleConversion: any = {
-    "#": "#",
-    Type: "Type",
-    Strategy: "Group",
-    "Trade Idea Code": "Location",
-    "Credit Name": "Issuer",
-    "BB Ticker": "Issue",
-    "H-Notional": "0",
-    "o/r Dv01": "0",
-    "o/r Cr01": "0",
-    "o/r Price": "0",
-    "Pair Strategy": "Rating Class",
-
-    "Accrued $": "Monthly Interest Income",
-    "Rating Name: SP": "0",
-    Curr: "Currency",
-    Isin: "ISIN",
-    Maturity: "Maturity",
-    CallDate: "Call Date",
-    "Notional Total": "Notional Total",
-    "Duration(Mkt)": "Duration(Mkt)",
-    "Duration(C/P,Mkt)": "Modified Duration",
-    "Implied ZCS": "0",
-    YTM: "YTM",
-    "Dv01 $ (C/P,Mkt) (USD)": "DV01",
-    "Dv01 (USD) (Mkt)": "DV01",
-    "Notional Calc (Mkt)": "0",
-    "Cr01 (USD) (Mkt)": "DV01",
-    "Implied CS": "0",
-    Mid: "Mid",
-    Bid: "Bid",
-    Ask: "Ask",
-    "Average Cost": "Average Cost",
-    "MTD P&L": "Ptf MTD P&L",
-    "Day P&L": "Ptf Day P&L",
-    "Total P&L": "0",
-    "R - Capital Gain/Loss": "0",
-    "U - Capital Gain/Loss": "0",
-    "Accrued Interest": "Monthly Interest Income",
-    "Cash Dispmnt Accrued Int": "0",
-    "Long Security Name": "Issue",
-    "Issue Amt": "Quantity",
-    "YC +25": "0",
-    "CS +100": "0",
-    "MTD Int.Income": "Monthly Interest Income",
-    "MTD Mark": "MTD Mark",
-    "Ptf MTD P&L": "Ptf MTD P&L",
-    "Ptf MTD Rlzd": "Monthly Capital Gains Rlzd",
-    "Ptf MTD URlzd": "MTD URlzd",
-    "Adjusted OAS": "0",
-    "Implied ZCS2": "0",
-    "Issuer Name": "Issuer",
-    "Ref Bond": "0",
-    "Ref Fair": "0",
-    "Ref YTM": "0",
-    "Ref Spread o/r": "0",
-    "AccAdj MTD": "0",
-    "$ Fair": "0",
-    FX: "FX Rate",
-    Quantity: "Quantity",
-    Q_Sector: "Sector",
-    Q_Country: "Country",
-    "$ Full Econ(Mkt)": "Value",
-  };
-
-  let updatedPortfolio = [];
-  for (let index = 0; index < portfolio.length; index++) {
-    let position = portfolio[index];
-    let updatedPosition: any = {};
-    for (let titleIndex = 0; titleIndex < tableTitles.length; titleIndex++) {
-      let title = tableTitles[titleIndex];
-      updatedPosition[title] = tableTitleConversion[title] == "0" ? "0" : position[tableTitleConversion[title]];
-    }
-    if (position["Issue"].includes(" IB")) {
-      updatedPosition["Acct"] = "NOM_IB";
-    } else if (!position["Issue"].includes(" IB")) {
-      updatedPosition["Acct"] = "NOM_PB";
-    }
-    if (position["Call Date"] && position["Call Date"] != "0") {
-      updatedPosition["Text10"] = "AT1";
-    }
-    if (position["Issue"].includes("CDS")) {
-      updatedPosition["Notional Total"] = -1 * position["Notional Total"];
-      updatedPosition["$ Full Econ(Mkt)"] = -1 * position["Notional Total"];
-    }
-
-    if (pairPositionIds.includes(position["_id"].toString())) {
-      updatedPosition["Pair Strategy"] = "Hedge Pair";
-    }
-    updatedPortfolio.push(updatedPosition);
-  }
-  return updatedPortfolio;
-}
-
 export function calculateMTDRlzd(trades: tradesMTDRlzd[], mtdMark: number, issue: string) {
   let total = 0;
 
@@ -340,7 +176,6 @@ export function calculateMTDRlzd(trades: tradesMTDRlzd[], mtdMark: number, issue
     let quantity = trade.quantity;
 
     let rlzdTrade = (price - mtdMark) * quantity;
-    // console.log(price, mtdMark, quantity)
 
     total += rlzdTrade;
   }
@@ -423,7 +258,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Realised MTD P&L (USD) %": "Realised MTD P&L (USD) %",
     "Unrealised MTD P&L (USD) %": "Unrealised MTD P&L (USD) %",
     "MTD Interest Income (USD) %": "MTD Interest Income (USD) %",
-    "Daily Interest Income (USD)": "Day Int.Income USD",
+    "Daily Interest Income (USD)": "Daily Interest Income (Base Currency)",
     Sector: "Sector",
     Country: "Country",
   };
@@ -513,7 +348,7 @@ export function formatFrontEndSummaryTable(portfolio: any, date: any, fund: any,
 
     position["Average Cost"] = Math.round(position["Average Cost"] * 1000000) / 1000000;
 
-    position["Day Int.Income USD"] = position["Daily Interest Income"] * usdRatio * holdBackRatio;
+    position["Daily Interest Income (Base Currency)"] = position["Daily Interest Income"] * usdRatio * holdBackRatio;
     position["Daily Interest FX P&L"] = Math.round((position["FX Rate"] - position["Previous FX Rate"]) * 1000000 * position["Daily Interest Income"]) / 1000000;
 
     position["Notional Total"] = position["Quantity"];
@@ -546,15 +381,14 @@ export function formatFrontEndSummaryTable(portfolio: any, date: any, fund: any,
       position["MTD P&L FX"] = (Math.round((changeFXMonthly / parseFloat(position["MTD FX"])) * position["Notional Total"]) * holdBackRatio * 1000000) / 1000000 || 0;
     }
 
-    position["L/S"] = position["Quantity"] >= 0 ? "Long" : "Short";
+    position["L/S"] = position["Quantity"] >= 0 && !position["Issue"].includes("CDS") ? "Long" : "Short";
     position["Strategy"] = position["Group"];
     position["Asset Class"] = position["Asset Class"] || position["Rating Class"];
-    position["1D price Change %"] = (Math.round(position["Previous Mark"] / position["Mid"] - 1) || 0) * (position["L/S"] == "Short" ? -1 : 1) + " %";
     mtdpl += position["Ptf MTD P&L"];
     mtdrlzd += position["MTD Rlzd"];
     mtdurlzd += position["MTD URlzd"];
     mtdint += position["Monthly Interest Income"];
-    dayint += position["Day Int.Income USD"];
+    dayint += position["Daily Interest Income (Base Currency)"];
 
     daypl += position["Ptf Day P&L"];
     dayfx += position["Day P&L FX"];
@@ -619,9 +453,16 @@ function groupAndSortByLocationAndType(formattedPortfolio: any, nav: number) {
 
   const groupedByLocation = formattedPortfolio.reduce((group: any, item: any) => {
     const { Location } = item;
-    group[Location] = group[Location] ? group[Location] : { data: [] };
-    group[Location].data.push(item);
-    return group;
+    let notional = item["Notional Total"];
+    if (notional != 0) {
+      group[Location] = group[Location] ? group[Location] : { data: [] };
+      group[Location].data.push(item);
+      return group;
+    } else {
+      group["Rlzd"] = group["Rlzd"] ? group["Rlzd"] : { data: [] };
+      group["Rlzd"].data.push(item);
+      return group;
+    }
   }, {});
   // let assetClassOrder: any = {
   //   //hedge UST and hedge
@@ -694,9 +535,11 @@ function groupAndSortByLocationAndType(formattedPortfolio: any, nav: number) {
       let duration = groupedByLocation[locationCode].data[index]["YTM"] || 0;
       let dv01 = groupedByLocation[locationCode].data[index]["DV01"] || 0;
       let strategy = groupedByLocation[locationCode].data[index]["Strategy"] ? groupedByLocation[locationCode].data[index]["Strategy"] : "Unspecified";
-      countryNAVPercentage[country.toLowerCase()] = countryNAVPercentage[country.toLowerCase()] ? countryNAVPercentage[country.toLowerCase()] + groupedByLocation[locationCode].data[index]["Notional Total"] : groupedByLocation[locationCode].data[index]["Notional Total"];
-      sectorNAVPercentage[sector.toLowerCase()] = sectorNAVPercentage[sector.toLowerCase()] ? sectorNAVPercentage[sector.toLowerCase()] + groupedByLocation[locationCode].data[index]["Notional Total"] : groupedByLocation[locationCode].data[index]["Notional Total"];
-      strategyNAVPercentage[strategy.toLowerCase()] = strategyNAVPercentage[strategy.toLowerCase()] ? strategyNAVPercentage[strategy.toLowerCase()] + groupedByLocation[locationCode].data[index]["Notional Total"] : groupedByLocation[locationCode].data[index]["Notional Total"];
+      if (groupedByLocation[locationCode].data[index]["L/S"] == "Long") {
+        countryNAVPercentage[country.toLowerCase()] = countryNAVPercentage[country.toLowerCase()] ? countryNAVPercentage[country.toLowerCase()] + groupedByLocation[locationCode].data[index]["Notional Total"] : groupedByLocation[locationCode].data[index]["Notional Total"];
+        sectorNAVPercentage[sector.toLowerCase()] = sectorNAVPercentage[sector.toLowerCase()] ? sectorNAVPercentage[sector.toLowerCase()] + groupedByLocation[locationCode].data[index]["Notional Total"] : groupedByLocation[locationCode].data[index]["Notional Total"];
+        strategyNAVPercentage[strategy.toLowerCase()] = strategyNAVPercentage[strategy.toLowerCase()] ? strategyNAVPercentage[strategy.toLowerCase()] + groupedByLocation[locationCode].data[index]["Notional Total"] : groupedByLocation[locationCode].data[index]["Notional Total"];
+      }
 
       let dayPl = groupedByLocation[locationCode].data[index]["Day P&L (USD)"];
       let monthPl = groupedByLocation[locationCode].data[index]["MTD P&L (USD)"];
@@ -778,20 +621,20 @@ function groupAndSortByLocationAndType(formattedPortfolio: any, nav: number) {
   // Step 2: Sort the array based on the `groupPL` property
   entries.sort((a, b) => b.groupDayPl - a.groupDayPl);
 
-  // Step 3: Select the top 3 and worst 3 entries
-  const top3Daily = entries.slice(0, 3);
-  const worst3Daily = entries.slice(-3);
+  // Step 3: Select the top 5 and worst 5 entries
+  const top5Daily = entries.slice(0, 5);
+  const worst5Daily = entries.slice(-5);
   entries.sort((a, b) => b.groupMonthlyPl - a.groupMonthlyPl);
   // Step 4: Map the selected entries to retrieve their `data` values
 
-  const top3Monthly = entries.slice(0, 3);
-  const worst3Monthly = entries.slice(-3);
+  const top5Monthly = entries.slice(0, 5);
+  const worst5Monthly = entries.slice(-5);
 
   let topWorstPerformaners = {
-    top3Daily: top3Daily,
-    worst3Daily: worst3Daily,
-    top3Monthly: top3Monthly,
-    worst3Monthly: worst3Monthly,
+    top5Daily: top5Daily,
+    worst5Daily: worst5Daily,
+    top5Monthly: top5Monthly,
+    worst5Monthly: worst5Monthly,
   };
 
   let riskAssessment = {
@@ -812,35 +655,47 @@ function groupAndSortByLocationAndType(formattedPortfolio: any, nav: number) {
     HYDV01Sum: HYDV01Sum,
     cdsNotional: -1 * cdsNotional,
   };
+  let sumCountryLong = 0,
+    sumStrategyLong = 0,
+    sumSectorLong = 0;
 
   let countries = Object.keys(countryNAVPercentage);
   let sectors = Object.keys(sectorNAVPercentage);
   let strategies = Object.keys(strategyNAVPercentage);
   for (let index = 0; index < countries.length; index++) {
     if (countryNAVPercentage[countries[index]]) {
-      countryNAVPercentage[countries[index]] = Math.round((countryNAVPercentage[countries[index]] / nav) * 1000) / 100;
+      countryNAVPercentage[toTitleCase(countries[index])] = Math.round((countryNAVPercentage[countries[index]] / nav) * 10000) / 100;
+      sumCountryLong += countryNAVPercentage[toTitleCase(countries[index])];
+      delete countryNAVPercentage[countries[index]];
     } else {
       delete countryNAVPercentage[countries[index]];
     }
   }
   for (let index = 0; index < sectors.length; index++) {
     if (sectorNAVPercentage[sectors[index]]) {
-      sectorNAVPercentage[sectors[index]] = Math.round((sectorNAVPercentage[sectors[index]] / nav) * 1000) / 100;
+      sectorNAVPercentage[toTitleCase(sectors[index])] = Math.round((sectorNAVPercentage[sectors[index]] / nav) * 10000) / 100;
+      sumSectorLong += sectorNAVPercentage[toTitleCase(sectors[index])];
+      delete sectorNAVPercentage[sectors[index]];
     } else {
       delete sectorNAVPercentage[sectors[index]];
     }
   }
   for (let index = 0; index < strategies.length; index++) {
     if (strategyNAVPercentage[strategies[index]]) {
-      strategyNAVPercentage[strategies[index]] = Math.round((strategyNAVPercentage[strategies[index]] / nav) * 1000) / 100;
+      strategyNAVPercentage[toTitleCase(strategies[index])] = Math.round((strategyNAVPercentage[strategies[index]] / nav) * 10000) / 100;
+      sumStrategyLong += strategyNAVPercentage[toTitleCase(strategies[index])];
+      delete strategyNAVPercentage[strategies[index]];
     } else {
       delete strategyNAVPercentage[strategies[index]];
     }
   }
 
+  countryNAVPercentage["Sum"] = Math.round(sumCountryLong * 10) / 10;
+  sectorNAVPercentage["Sum"] = Math.round(sumSectorLong * 10) / 10;
+  strategyNAVPercentage["Sum"] = Math.round(sumStrategyLong * 10) / 10;
+
   return { portfolio: portfolio, duration: durationSummary, countryNAVPercentage: sortObjectBasedOnKey(countryNAVPercentage), sectorNAVPercentage: sortObjectBasedOnKey(sectorNAVPercentage), strategyNAVPercentage: sortObjectBasedOnKey(strategyNAVPercentage), riskAssessment: riskAssessment, topWorstPerformaners: topWorstPerformaners };
 }
-export function getThreeTopWorst(portfolio: any) {}
 
 function sortSummary(locationCode: string, group: any) {
   let assetClassOrder: any = {
@@ -918,4 +773,24 @@ function sortObjectBasedOnKey(object: any) {
   return Object.keys(object)
     .sort((a, b) => object[b] - object[a])
     .reduce((acc, key) => ({ ...acc, [key]: object[key] }), {});
+}
+
+function toTitleCase(str: string) {
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+function sortObjectKeys(obj: any) {
+  const sortedKeys = Object.keys(obj).sort();
+  const sortedObj: any = {};
+  sortedKeys.forEach((key) => {
+    sortedObj[key] = obj[key];
+  });
+  return sortedObj;
+}
+
+function areDatesInSameMonthAndYear(customDate: string, todaysDate: string) {
+  return new Date(customDate).getMonth() === new Date(todaysDate).getMonth() && new Date(customDate).getFullYear() === new Date(todaysDate).getFullYear();
 }

@@ -5,7 +5,6 @@ const auth_1 = require("../controllers/auth");
 const common_1 = require("../controllers/common");
 const reports_1 = require("../controllers/reports");
 const portfolioFunctions_1 = require("../controllers/portfolioFunctions");
-const tsImagineOperations_1 = require("../controllers/tsImagineOperations");
 const excelFormat_1 = require("../controllers/excelFormat");
 const graphApiConnect_1 = require("../controllers/graphApiConnect");
 const mufgOperations_1 = require("../controllers/mufgOperations");
@@ -184,17 +183,6 @@ router.post("/update-prices", common_1.verifyToken, uploadBeforeExcel.any(), asy
     }
     catch (error) {
         res.send({ error: "File Template is not correct" });
-    }
-});
-router.post("/check-isin", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
-    const fileName = req.files[0].filename;
-    const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
-    let action = await (0, tsImagineOperations_1.checkIfSecurityExist)(path);
-    if (action === null || action === void 0 ? void 0 : action.error) {
-        res.send({ error: action.error });
-    }
-    else {
-        res.send(action);
     }
 });
 router.post("/nomura-excel", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {

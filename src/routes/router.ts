@@ -5,7 +5,6 @@ import { Request, Response } from "express";
 import { verifyToken, formatDateVconFile, generateRandomString, monthlyRlzdDate } from "../controllers/common";
 import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, getTrades, getPortfolio, editPosition, getHistoricalSummaryPortfolioWithAnalytics } from "../controllers/reports";
 import { bloombergToTriada, getDateTimeInMongoDBCollectionFormat, readIBRawExcel, readPricingSheet } from "../controllers/portfolioFunctions";
-import { checkIfSecurityExist } from "../controllers/tsImagineOperations";
 import { uploadArrayAndReturnFilePath, getTriadaTrades, formatCentralizedRawFiles, formatIbTrades, formatEmsxTrades, readEmsxRawExcel } from "../controllers/excelFormat";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/graphApiConnect";
 import { formatMufg, formatFxMufg, tradesTriada } from "../controllers/mufgOperations";
@@ -195,17 +194,7 @@ router.post("/update-prices", verifyToken, uploadBeforeExcel.any(), async (req: 
   }
 });
 
-router.post("/check-isin", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  const fileName = req.files[0].filename;
-  const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
-  let action = await checkIfSecurityExist(path);
 
-  if (action?.error) {
-    res.send({ error: action.error });
-  } else {
-    res.send(action);
-  }
-});
 
 router.post("/nomura-excel", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   let data = req.body;

@@ -74,15 +74,15 @@ async function getHistoricalPortfolioWithAnalytics(date) {
         let lastMonthPortfolio = await getHistoricalPortfolio(lastMonthLastCollectionName[0]);
         let previousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeToday[0]);
         documents = await getMTDParams(documents, lastMonthPortfolio, earliestPortfolioName[0]);
-        documents = await getPreviousDayMarkPTFURLZD(documents, previousDayPortfolio, lastDayBeforeToday[0]);
+        documents = await getPreviousMarkPreviousFX(documents, previousDayPortfolio, lastDayBeforeToday[0]);
     }
     catch (error) {
         console.log(error);
     }
-    documents = await calculateMonthlyInterest(documents, new Date(date));
-    documents = await calculateDailyInterestUnRlzdCapitalGains(documents, new Date(date));
-    documents = await calculateMonthlyURlzd(documents, new Date(date));
-    documents = calculateMonthlyDailyRlzdPTFPL(documents, date);
+    documents = await calculateMTDInterest(documents, new Date(date));
+    documents = await calculateDailyIntURlzdDaily(documents, new Date(date));
+    documents = await calculateMTDURlzd(documents, new Date(date));
+    documents = calculateMTDPLDayPL(documents, date);
     let dates = {
         today: earliestPortfolioName[0],
         yesterday: lastDayBeforeToday[0],
@@ -93,15 +93,6 @@ async function getHistoricalPortfolioWithAnalytics(date) {
     let portfolioFormattedSorted = (0, tableFormatter_1.formatFrontEndTable)(documents, date, fund, dates);
     let fundDetails = portfolioFormattedSorted.fundDetails;
     documents = portfolioFormattedSorted.portfolio;
-    documents.sort((current, next) => {
-        if (current["Notional Total"] === 0 && next["Notional Total"] !== 0) {
-            return 1; // a should come after b
-        }
-        if (current["Notional Total"] !== 0 && next["Notional Total"] === 0) {
-            return -1; // a should come before b
-        }
-        return 0;
-    });
     return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis };
 }
 exports.getHistoricalPortfolioWithAnalytics = getHistoricalPortfolioWithAnalytics;
@@ -134,6 +125,16 @@ async function getHistoricalSummaryPortfolioWithAnalytics(date) {
             return position;
         }
     });
+    documents.sort((current, next) => {
+        if (current["Quantity"] === 0 && next["Quantity"] !== 0) {
+            return 1; // a should come after b
+        }
+        if (current["Quantity"] !== 0 && next["Quantity"] === 0) {
+            return -1; // a should come before b
+        }
+        // if both a and b have Quantity 0 or both have Quantity not 0, sort alphabetically by name
+        return current["Issue"].localeCompare(next["Issue"]);
+    });
     let currentDayDate = new Date(date);
     let previousMonthDates = (0, portfolioFunctions_1.getAllDatesSinceLastMonthLastDay)(currentDayDate);
     //+ 23:59 to make sure getEarliestcollectionname get the lastest date on last day of the month
@@ -142,7 +143,7 @@ async function getHistoricalSummaryPortfolioWithAnalytics(date) {
         let lastMonthPortfolio = await getHistoricalPortfolio(lastMonthLastCollectionName[0]);
         let previousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeToday[0]);
         documents = await getMTDParams(documents, lastMonthPortfolio, earliestPortfolioName[0]);
-        documents = await getPreviousDayMarkPTFURLZD(documents, previousDayPortfolio, lastDayBeforeToday[0]);
+        documents = await getPreviousMarkPreviousFX(documents, previousDayPortfolio, lastDayBeforeToday[0]);
     }
     catch (error) {
         console.log(error);
@@ -154,22 +155,13 @@ async function getHistoricalSummaryPortfolioWithAnalytics(date) {
     };
     let fundDetailsInfo = await (0, operations_1.getFundDetails)(thisMonth);
     let fund = fundDetailsInfo[0];
-    documents = await calculateMonthlyInterest(documents, new Date(date));
-    documents = await calculateDailyInterestUnRlzdCapitalGains(documents, new Date(date));
-    documents = await calculateMonthlyURlzd(documents, new Date(date));
-    documents = calculateMonthlyDailyRlzdPTFPL(documents, date);
+    documents = await calculateMTDInterest(documents, new Date(date));
+    documents = await calculateDailyIntURlzdDaily(documents, new Date(date));
+    documents = await calculateMTDURlzd(documents, new Date(date));
+    documents = calculateMTDPLDayPL(documents, date);
     let portfolioFormattedSorted = (0, tableFormatter_1.formatFrontEndSummaryTable)(documents, date, fund, dates);
     let fundDetails = portfolioFormattedSorted.fundDetails;
     documents = portfolioFormattedSorted.portfolio;
-    documents.sort((current, next) => {
-        if (current["Notional Total"] === 0 && next["Notional Total"] !== 0) {
-            return 1; // a should come after b
-        }
-        if (current["Notional Total"] !== 0 && next["Notional Total"] === 0) {
-            return -1; // a should come before b
-        }
-        return 0;
-    });
     return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis };
 }
 exports.getHistoricalSummaryPortfolioWithAnalytics = getHistoricalSummaryPortfolioWithAnalytics;
@@ -825,7 +817,7 @@ async function insertPricesUpdatesInPortfolio(updatedPortfolio) {
     }
 }
 exports.insertPricesUpdatesInPortfolio = insertPricesUpdatesInPortfolio;
-function calculateDailyInterestUnRlzdCapitalGains(portfolio, date) {
+function calculateDailyIntURlzdDaily(portfolio, date) {
     let thisMonth = (0, common_1.monthlyRlzdDate)(date);
     for (let index = 0; index < portfolio.length; index++) {
         let position = portfolio[index];
@@ -858,7 +850,7 @@ function calculateDailyInterestUnRlzdCapitalGains(portfolio, date) {
     }
     return portfolio;
 }
-function calculateMonthlyInterest(portfolio, date) {
+function calculateMTDInterest(portfolio, date) {
     let currentDayDate = new Date(date).toISOString().slice(0, 10);
     let previousMonthDates = (0, portfolioFunctions_1.getAllDatesSinceLastMonthLastDay)(currentDayDate);
     let monthlyInterest = {};
@@ -918,7 +910,7 @@ async function getMTDParams(portfolio, lastMonthPortfolio, dateInput) {
         return portfolio;
     }
 }
-async function calculateMonthlyURlzd(portfolio, dateInput) {
+async function calculateMTDURlzd(portfolio, dateInput) {
     for (let index = 0; index < portfolio.length; index++) {
         let thisMonth = (0, common_1.monthlyRlzdDate)(dateInput);
         if (!portfolio[index]["Mid"]) {
@@ -934,7 +926,7 @@ async function calculateMonthlyURlzd(portfolio, dateInput) {
     }
     return portfolio;
 }
-async function getPreviousDayMarkPTFURLZD(portfolio, previousDayPortfolio, dateInput) {
+async function getPreviousMarkPreviousFX(portfolio, previousDayPortfolio, dateInput) {
     // try {
     for (let index = 0; index < portfolio.length; index++) {
         let position = portfolio[index];
@@ -955,7 +947,7 @@ async function getPreviousDayMarkPTFURLZD(portfolio, previousDayPortfolio, dateI
     }
     return portfolio;
 }
-function calculateMonthlyDailyRlzdPTFPL(portfolio, date) {
+function calculateMTDPLDayPL(portfolio, date) {
     let thisMonth = (0, common_1.monthlyRlzdDate)(date);
     let thisDay = (0, portfolioFunctions_1.formatDateRlzdDaily)(date);
     for (let index = 0; index < portfolio.length; index++) {
@@ -977,16 +969,47 @@ function calculateMonthlyDailyRlzdPTFPL(portfolio, date) {
 async function editPosition(editedPosition) {
     try {
         let portfolio = await getPortfolio();
+        console.log(editedPosition);
         let positionInPortfolio = {};
         let editedPositionTitles = Object.keys(editedPosition);
         let id = editedPosition["_id"];
-        let unEditableParams = ["#", "$ Value", "Notional Amount", "MTD Mark", "PreviousMark", "Cost", "Duration(Mkt)", "Daily Interest Income", "Ptf Day P&L", "Ptf MTD URlzd", "Ptf MTD Int.Income", "Ptf MTD P&L", "_id", "Daily Accrual", "Quantity", "Day Int.Income USD", "Value", "Previous Mark", "MTD URlzd", "Monthly Interest Income", "Event Type", "Edit Note", "MTD Rlzd"];
+        let unEditableParams = [
+            "Value",
+            "Duration(Mkt)",
+            "MTD Mark",
+            "Previous Mark",
+            "Ptf Day P&L (Base Currency)",
+            "Ptf MTD Rlzd (Base Currency)",
+            "Ptf MTD URlzd (Base Currency)",
+            "Ptf MTD Int.Income (Base Currency)",
+            "Ptf MTD P&L (Base Currency)",
+            "Cost (Local Currency)",
+            "Daily Accrual",
+            "_id",
+            "FX Rate",
+            "Daily Accrual (Local Currency)",
+            "Cost MTD Ptf (Local Currency)",
+            "Quantity",
+            "Daily Interest Income (Base Currency)",
+            "S&P Outlook",
+            "Moody's Bond Rating",
+            "Moddy's Outlook",
+            "Fitch Bond Rating",
+            "Fitch Outlook",
+            "BBG Composite Rating",
+            "Day P&L FX",
+            "MTD P&L FX",
+            "S&P Bond Rating",
+            "MTD FX",
+            "Day URlzd K G/L",
+            "Day Rlzd K G/L",
+            "Ptf Day P&L (Local Currency)",
+            "Ptf MTD Rlzd (Local Currency)",
+            "Ptf MTD URlzd (Local Currency)",
+            "Ptf MTD Int.Income (Local Currency)",
+            "Ptf MTD P&L (Local Currency)",
+        ];
         // these keys are made up by the function frontend table, it reverts keys to original keys
-        let titlesMeaningException = {
-            "Notional Total": "Quantity",
-            "Day Rlzd K G/L": "Day Rlzd K G/L",
-            "Monthly Capital Gains Rlzd": "Monthly Capital Gains Rlzd",
-        };
         let positionIndex = null;
         for (let index = 0; index < portfolio.length; index++) {
             let position = portfolio[index];
@@ -1004,21 +1027,15 @@ async function editPosition(editedPosition) {
             let todayDate = (0, common_1.formatDateReadable)(new Date().toString());
             let monthDate = (0, common_1.monthlyRlzdDate)(new Date().toString());
             if (!unEditableParams.includes(title) && editedPosition[title] != "") {
-                if (titlesMeaningException[title]) {
-                    if (titlesMeaningException[title] == "Quantity") {
-                        positionInPortfolio["Interest"][todayDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Quantity"]);
-                        changes.push(`Quantity changed from ${positionInPortfolio["Quantity"]} to ${editedPosition[title]}`);
-                        positionInPortfolio["Quantity"] = parseFloat(editedPosition[title]);
-                        positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
-                    }
-                    if (titlesMeaningException[title] == "Day Rlzd K G/L") {
-                        changes.push(`Day Rlzd K G/L changed from ${positionInPortfolio["Day Rlzd K G/L"][todayDate]} to ${editedPosition[title]}`);
-                        positionInPortfolio["Day Rlzd K G/L"][todayDate] = parseFloat(editedPosition[title]);
-                    }
-                    if (titlesMeaningException[title] == "Monthly Capital Gains Rlzd") {
-                        changes.push(`Monthly Capital Gains Rlzd changed from ${positionInPortfolio["Monthly Capital Gains Rlzd"][monthDate]} to ${editedPosition[title]}`);
-                        positionInPortfolio["Monthly Capital Gains Rlzd"][monthDate] = parseFloat(editedPosition[title]);
-                    }
+                if (title == "Notional Total") {
+                    positionInPortfolio["Interest"][todayDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Quantity"]);
+                    changes.push(`Quantity changed from ${positionInPortfolio["Quantity"]} to ${editedPosition[title]}`);
+                    positionInPortfolio["Quantity"] = parseFloat(editedPosition[title]);
+                    positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
+                }
+                else if (title == "Long Security Name") {
+                    changes.push(`${title} changed from ${positionInPortfolio[title] || "''"} to ${editedPosition[title]}`);
+                    positionInPortfolio["Issue"] = editedPosition[title];
                 }
                 else {
                     changes.push(`${title} changed from ${positionInPortfolio[title] || "''"} to ${editedPosition[title]}`);
