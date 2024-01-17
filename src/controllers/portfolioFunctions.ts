@@ -756,7 +756,7 @@ export async function readEditInput(path: string) {
   } else {
     let data = xlsx.utils.sheet_to_json(worksheet, {
       defval: "",
-      range: "A1:AY300",
+      range: "A1:BD300",
     });
 
     return data;

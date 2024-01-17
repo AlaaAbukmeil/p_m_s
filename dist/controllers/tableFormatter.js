@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.formatFrontEndSummaryTable = exports.formatSummaryPosition = exports.calculateMTDRlzd = exports.formatFrontEndTable = exports.formatGeneralTable = void 0;
+const common_1 = require("./common");
 function formatGeneralTable(portfolio, date, fund, dates) {
     let currencies = {};
     let formatted = [];
@@ -21,6 +22,9 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         }
         position["FX Rate"] = usdRatio;
         position["Asset Class"] = position["Asset Class"] ? position["Asset Class"] : position["Rating Class"] ? position["Rating Class"] : "";
+        if (!position["Asset Class"]) {
+            position["Asset Class"] = isRatingHigherThanBBBMinus(position["Asset Class"]);
+        }
         position["Cost"] = position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") ? Math.round(position["Average Cost"] * position["Quantity"] * 10000) / (10000 * position["Original Face"]) : Math.round(position["Average Cost"] * position["Quantity"] * 1000000) / 1000000;
         position["Daily Accrual (Local Currency)"] = Math.round(position["Daily Interest Income"] * 1000000 * holdBackRatio) / 1000000;
         position["FX Rate"] = Math.round((position["FX Rate"] || position["FX Rate"]) * 1000000) / 1000000;
@@ -66,7 +70,7 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         position["Maturity"] = position["Maturity"] ? position["Maturity"] : 0;
         position["Call Date"] = position["Call Date"] ? position["Call Date"] : 0;
         position["Color"] = position["Maturity"] ? (areDatesInSameMonthAndYear(position["Maturity"], date) ? "red" : "") : "";
-        position["L/S"] = position["Quantity"] >= 0 && !position["Issue"].includes("CDS") ? "Long" : "Short";
+        position["L/S"] = position["Quantity"] > 0 && !position["Issue"].includes("CDS") ? "Long" : position["Notional Total"] == 0 && !position["Issue"].includes("CDS") ? "Rlzd" : "Short";
         position["_id"] = position["_id"];
         position["Duration(Mkt)"] = yearsUntil(position["Maturity"], date);
         position["Coupon Duration"] = position["Coupon Duration"] ? position["Coupon Duration"] : position["Issue"].split(" ")[0] == "T" || position["Issue"].includes("GOVT") ? 365.0 : 360.0;
@@ -75,6 +79,16 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         position["DV01"] = (position["DV01"] / 1000000) * position["Notional Total"];
         position["DV01"] = Math.round(position["DV01"] * 1000000) / 1000000 || 0;
         position["Long Security Name"] = position["Issue"];
+        let latestDateKey;
+        latestDateKey = Object.keys(position["Interest"]).sort((a, b) => {
+            // Parse the date strings into actual date objects
+            const dateA = new Date(a).getTime();
+            const dateB = new Date(b).getTime();
+            // Compare the dates to sort them
+            return dateB - dateA; // This will sort in descending order
+        })[0]; // Take the first item after sorting
+        const latestDate = latestDateKey ? new Date(latestDateKey) : null;
+        position["Last Day Since Realizd"] = latestDate ? (position["Notional Total"] == 0 ? (0, common_1.getDate)(latestDate) : null) : null;
         if (position["Issue"].includes("CDS")) {
             position["Day P&L FX"] = Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["Previous FX Rate"])) / parseFloat(position["Previous FX Rate"])) * position["Quantity"] * 1000000) / 1000000 || 0;
             position["MTD P&L FX"] = Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["MTD FX"] || position["FX Rate"])) / parseFloat(position["MTD FX"] || position["FX Rate"])) * position["Quantity"] * 1000000) / 1000000 || 0;
@@ -190,11 +204,12 @@ function formatSummaryPosition(position, fundDetails, dates) {
         "Sector",
         "Country",
         "Issuer",
+        "Last Day Since Realizd",
     ];
     let titlesValues = {
         Type: "Type",
         "L/S": "L/S",
-        Strategy: "Strategy",
+        Strategy: "Group",
         "Asset Class": "Asset Class",
         Location: "Location",
         "Long Security Name": "Issue",
@@ -224,6 +239,7 @@ function formatSummaryPosition(position, fundDetails, dates) {
         "Daily Interest Income (USD)": "Daily Interest Income (Base Currency)",
         Sector: "Sector",
         Country: "Country",
+        "Last Day Since Realizd": "Last Day Since Realizd",
     };
     titlesValues[formatMarkDate(dates.lastMonth)] = "MTD Mark";
     titlesValues[formatMarkDate(dates.yesterday)] = "Previous Mark";
@@ -374,7 +390,7 @@ function groupAndSortByLocationAndType(formattedPortfolio, nav) {
             if (groupedByLocation[locationCode].data[index]["L/S"] == "Long") {
                 countryNAVPercentage[country.toLowerCase()] = countryNAVPercentage[country.toLowerCase()] ? countryNAVPercentage[country.toLowerCase()] + groupedByLocation[locationCode].data[index]["Notional Total"] : groupedByLocation[locationCode].data[index]["Notional Total"];
                 sectorNAVPercentage[sector.toLowerCase()] = sectorNAVPercentage[sector.toLowerCase()] ? sectorNAVPercentage[sector.toLowerCase()] + groupedByLocation[locationCode].data[index]["Notional Total"] : groupedByLocation[locationCode].data[index]["Notional Total"];
-                strategyNAVPercentage[strategy.toLowerCase()] = strategyNAVPercentage[strategy.toLowerCase()] ? strategyNAVPercentage[strategy.toLowerCase()] + groupedByLocation[locationCode].data[index]["Notional Total"] : groupedByLocation[locationCode].data[index]["Notional Total"];
+                strategyNAVPercentage[strategy] = strategyNAVPercentage[strategy] ? strategyNAVPercentage[strategy] + groupedByLocation[locationCode].data[index]["Notional Total"] : groupedByLocation[locationCode].data[index]["Notional Total"];
             }
             let dayPl = groupedByLocation[locationCode].data[index]["Day P&L (USD)"];
             let monthPl = groupedByLocation[locationCode].data[index]["MTD P&L (USD)"];
@@ -442,13 +458,28 @@ function groupAndSortByLocationAndType(formattedPortfolio, nav) {
         }
         portfolio.push(...groupedByLocation[locationCode].data);
     }
-    const entries = Object.entries(groupedByLocation).map(([key, value]) => ({
+    // This is your already sorted array of objects
+    // Filter out the items with L/S !== 'rlzd'
+    const nonRlzdItems = portfolio.filter((item) => item["L/S"] !== "Rlzd");
+    // Filter out the items with L/S === 'rlzd' and sort them by lastDate
+    const rlzdItems = portfolio
+        .filter((item) => item["L/S"] === "Rlzd")
+        .sort((a, b) => {
+        // Assuming lastDate is in a format that can be parsed by the Date constructor
+        const dateA = new Date(a["Last Day Since Realizd"]).getTime();
+        const dateB = new Date(b["Last Day Since Realizd"]).getTime();
+        return dateA - dateB; // Use dateB - dateA for descending order
+    });
+    // Assuming the rest of the array should remain in its original order, recombine the arrays
+    portfolio = [...nonRlzdItems, ...rlzdItems];
+    let entries = Object.entries(groupedByLocation).map(([key, value]) => ({
         key,
         groupDayPl: value.groupDayPl,
         groupMonthlyPl: value.groupMonthlyPl,
         data: value.data,
     }));
     // Step 2: Sort the array based on the `groupPL` property
+    entries = entries.filter((object, index) => object["key"] != "Rlzd");
     entries.sort((a, b) => b.groupDayPl - a.groupDayPl);
     // Step 3: Select the top 5 and worst 5 entries
     const top5Daily = entries.slice(0, 5);
@@ -509,9 +540,8 @@ function groupAndSortByLocationAndType(formattedPortfolio, nav) {
     }
     for (let index = 0; index < strategies.length; index++) {
         if (strategyNAVPercentage[strategies[index]]) {
-            strategyNAVPercentage[toTitleCase(strategies[index])] = Math.round((strategyNAVPercentage[strategies[index]] / nav) * 10000) / 100;
-            sumStrategyLong += strategyNAVPercentage[toTitleCase(strategies[index])];
-            delete strategyNAVPercentage[strategies[index]];
+            strategyNAVPercentage[strategies[index]] = Math.round((strategyNAVPercentage[strategies[index]] / nav) * 10000) / 100;
+            sumStrategyLong += strategyNAVPercentage[strategies[index]];
         }
         else {
             delete strategyNAVPercentage[strategies[index]];
@@ -604,4 +634,36 @@ function toTitleCase(str) {
 }
 function areDatesInSameMonthAndYear(customDate, todaysDate) {
     return new Date(customDate).getMonth() === new Date(todaysDate).getMonth() && new Date(customDate).getFullYear() === new Date(todaysDate).getFullYear();
+}
+function isRatingHigherThanBBBMinus(rating) {
+    const ratingsOrder = [
+        "AAA",
+        "AA+",
+        "AA",
+        "AA-",
+        "A+",
+        "A",
+        "A-",
+        "BBB+",
+        "BBB",
+        "BBB-",
+        "BB+",
+        "BB",
+        "BB-",
+        "B+",
+        "B",
+        "B-",
+        "CCC+",
+        "CCC",
+        "CCC-",
+        // Add more if there are other ratings
+    ];
+    const ratingIndex = ratingsOrder.indexOf(rating.toUpperCase());
+    const benchmarkIndex = ratingsOrder.indexOf("BBB-");
+    // Check if the rating is valid
+    if (ratingIndex === -1) {
+        return "";
+    }
+    // If the rating index is less than the benchmark index, it's higher (since the array is sorted from highest to lowest)
+    return ratingIndex < benchmarkIndex ? "IG" : "HY";
 }

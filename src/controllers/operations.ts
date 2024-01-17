@@ -416,29 +416,33 @@ export async function checkMUFGEndOfMonthWithPortfolio(MUFGData: any, portfolio:
 
 export async function editPositionPortfolio(path: string) {
   let data: any = await readEditInput(path);
+
   if (data.error) {
     return { error: data.error };
   } else {
     try {
       let positions: any = [];
       let portfolio = await getPortfolio();
-      let titles = ["Type", "Group", "Country", "Asset Class", "Sector", "FX Rate"];
+      let titles = ["Type", "Group", "Country", "Asset Class", "Sector"];
       for (let index = 0; index < data.length; index++) {
         let row = data[index];
         let identifier = row["_id"];
         let securityInPortfolio: any = getSecurityInPortfolioById(portfolio, identifier);
-        for (let titleIndex = 0; titleIndex < titles.length; titleIndex++) {
-          let title = titles[titleIndex];
-          securityInPortfolio[title] = row[title];
-        }
 
-        positions.push(securityInPortfolio);
+        if (securityInPortfolio != 404) {
+          for (let titleIndex = 0; titleIndex < titles.length; titleIndex++) {
+            let title = titles[titleIndex];
+            securityInPortfolio[title] = row[title];
+          }
+          console.log(securityInPortfolio["Country"]);
+          positions.push(securityInPortfolio);
+        }
       }
       try {
         let updatedPortfolio: any = formatUpdatedPositions(positions, portfolio);
         let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
 
-        return insertion;
+        return "insertion";
       } catch (error) {
         return { error: error };
       }
@@ -455,7 +459,7 @@ export function getSecurityInPortfolioById(portfolio: any, id: string) {
   }
   for (let index = 0; index < portfolio.length; index++) {
     let issue = portfolio[index];
-    if (id == issue["_id"].toString()) {
+    if (id.toString() == issue["_id"].toString()) {
       document = issue;
     }
   }

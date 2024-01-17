@@ -409,21 +409,24 @@ async function editPositionPortfolio(path) {
         try {
             let positions = [];
             let portfolio = await (0, reports_1.getPortfolio)();
-            let titles = ["Type", "Group", "Country", "Asset Class", "Sector", "FX Rate"];
+            let titles = ["Type", "Group", "Country", "Asset Class", "Sector"];
             for (let index = 0; index < data.length; index++) {
                 let row = data[index];
                 let identifier = row["_id"];
                 let securityInPortfolio = getSecurityInPortfolioById(portfolio, identifier);
-                for (let titleIndex = 0; titleIndex < titles.length; titleIndex++) {
-                    let title = titles[titleIndex];
-                    securityInPortfolio[title] = row[title];
+                if (securityInPortfolio != 404) {
+                    for (let titleIndex = 0; titleIndex < titles.length; titleIndex++) {
+                        let title = titles[titleIndex];
+                        securityInPortfolio[title] = row[title];
+                    }
+                    console.log(securityInPortfolio["Country"]);
+                    positions.push(securityInPortfolio);
                 }
-                positions.push(securityInPortfolio);
             }
             try {
                 let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(positions, portfolio);
                 let insertion = await (0, reports_1.insertTradesInPortfolio)(updatedPortfolio[0]);
-                return insertion;
+                return "insertion";
             }
             catch (error) {
                 return { error: error };
@@ -442,7 +445,7 @@ function getSecurityInPortfolioById(portfolio, id) {
     }
     for (let index = 0; index < portfolio.length; index++) {
         let issue = portfolio[index];
-        if (id == issue["_id"].toString()) {
+        if (id.toString() == issue["_id"].toString()) {
             document = issue;
         }
     }
