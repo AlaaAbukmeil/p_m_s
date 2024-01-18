@@ -49,7 +49,8 @@ router.get("/summary-portfolio", async (req, res, next) => {
         if (date.includes("NaN")) {
             date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
         }
-        console.log(date);
+        console.log(new Date(date));
+        date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date(date)).split(" ")[0] + " 23:59";
         let report = await (0, reports_1.getHistoricalSummaryPortfolioWithAnalytics)(date);
         res.send(report);
     }
@@ -457,8 +458,8 @@ router.post("/add-fund", common_1.verifyToken, uploadBeforeExcel.any(), async (r
     }
 });
 router.post("/one-time", uploadBeforeExcel.any(), async (req, res, next) => {
-    // let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 17 * 24 * 60 * 60 * 1000));
-    // let test = await editDayRlzd(day);
+    // let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 3 * 24 * 60 * 60 * 1000));
+    // let test = await editMTDRlzd(day);
     res.sendStatus(200);
 });
 exports.default = router;

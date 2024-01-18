@@ -472,7 +472,8 @@ async function updatePositionPortfolio(path) {
                 let currentPrincipal = parseFloat(row["Principal"].toString().replace(/,/g, ""));
                 let currency = row["Currency"];
                 let bondCouponMaturity = (0, portfolioFunctions_1.parseBondIdentifier)(row["BB Ticker"]);
-                let tradeExistsAlready = triadaIds.includes(row["Triada Trade Id"]);
+                //change
+                let tradeExistsAlready = false; //triadaIds.includes(row["Triada Trade Id"]);
                 let updatingPosition = returnPositionProgress(positions, identifier, location);
                 let tradeDate = new Date(row["Trade Date"]);
                 let thisMonth = (0, common_1.monthlyRlzdDate)(tradeDate);
@@ -617,7 +618,6 @@ async function updatePositionPortfolio(path) {
                 let action3 = await insertTrade(allTrades[2], "emsx");
                 let action2 = await insertTrade(allTrades[1], "ib");
                 let action1 = await insertTrade(allTrades[0], "vcons");
-                // await appendLogs(positions)
                 return positions;
             }
             catch (error) {
@@ -1106,22 +1106,6 @@ async function insertTradesInPortfolioAtASpecificDate(trades, date) {
         // If "ISIN", "BB Ticker", or "Issue" exists, check for both the field and "Location"
         if (trade["ISIN"]) {
             filters.push({
-                ISIN: trade["ISIN"],
-                Location: trade["Location"],
-                _id: new ObjectId(trade["_id"]),
-            });
-        }
-        else if (trade["BB Ticker"]) {
-            filters.push({
-                "BB Ticker": trade["BB Ticker"],
-                Location: trade["Location"],
-                _id: new ObjectId(trade["_id"]),
-            });
-        }
-        else if (trade["Issue"]) {
-            filters.push({
-                Issue: trade["Issue"],
-                Location: trade["Location"],
                 _id: new ObjectId(trade["_id"]),
             });
         }

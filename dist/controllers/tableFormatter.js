@@ -45,8 +45,8 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         position["Monthly Interest Income (Base Currency)"] = Math.round(position["Monthly Interest Income"] * 1000000 * usdRatio * holdBackRatio) / 1000000;
         position["Ptf MTD Rlzd (Base Currency)"] = Math.round(position["MTD Rlzd"] * 1000000 * usdRatio * holdBackRatio) / 1000000;
         position["Ptf MTD URlzd (Base Currency)"] = Math.round(position["MTD URlzd"] * 1000000 * usdRatio * holdBackRatio) / 1000000;
-        position["Cost MTD Ptf (Local Currency)"] = Math.round(position["Cost MTD Ptf"] * 1000000) / 1000000;
-        position["Cost (Local Currency)"] = Math.round(position["Cost"] * 1000000) / 1000000;
+        position["Cost MTD Ptf (Local Currency)"] = Math.round(position["Cost MTD Ptf"] * holdBackRatio * 1000000) / 1000000;
+        position["Cost (Local Currency)"] = Math.round(position["Cost"] * holdBackRatio * 1000000) / 1000000;
         position["Average Cost"] = Math.round(position["Average Cost"] * 1000000) / 1000000;
         if (!position["Previous FX Rate"]) {
             position["Previous FX Rate"] = position["FX Rate"];
@@ -58,11 +58,11 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         position["Quantity"] = position["Quantity"] / originalFace;
         position["#"] = index + 1;
         position["ISIN"] = position["ISIN"].length != 12 ? "" : position["ISIN"];
-        position["Ptf Day P&L (Local Currency)"] = Math.round(position["Ptf Day P&L"] * usdRatio * holdBackRatio * 1000000) / 1000000;
+        position["Ptf Day P&L (Local Currency)"] = Math.round(position["Ptf Day P&L"] * holdBackRatio * 1000000) / 1000000;
         // multiply mtd pl with usd since all components are not  multiplied by usd when they are summed
-        position["Ptf MTD P&L (Local Currency)"] = Math.round(position["Ptf MTD P&L"] * usdRatio * holdBackRatio * 1000000) / 1000000;
-        position["Ptf Day P&L (Base Currency)"] = Math.round(position["Ptf Day P&L"] * holdBackRatio * 1000000) / 1000000;
-        position["Ptf MTD P&L (Base Currency)"] = Math.round(position["Ptf MTD P&L"] * holdBackRatio * 1000000) / 1000000;
+        position["Ptf MTD P&L (Local Currency)"] = Math.round(position["Ptf MTD P&L"] * holdBackRatio * 1000000) / 1000000;
+        position["Ptf Day P&L (Base Currency)"] = Math.round(position["Ptf Day P&L"] * usdRatio * holdBackRatio * 1000000) / 1000000;
+        position["Ptf MTD P&L (Base Currency)"] = Math.round(position["Ptf MTD P&L"] * usdRatio * holdBackRatio * 1000000) / 1000000;
         position["Day Rlzd K G/L"] = Math.round(position["Day Rlzd K G/L"] * usdRatio * holdBackRatio * 1000000) / 1000000;
         position["Day URlzd"] = Math.round(position["Day URlzd"] * usdRatio * holdBackRatio * 1000000) / 1000000;
         position["MTD Rlzd"] = Math.round(position["MTD Rlzd"] * usdRatio * holdBackRatio * 1000000) / 1000000;
@@ -548,9 +548,9 @@ function groupAndSortByLocationAndType(formattedPortfolio, nav) {
             delete strategyNAVPercentage[strategies[index]];
         }
     }
-    countryNAVPercentage["Sum"] = Math.round(sumCountryLong * 10) / 10;
-    sectorNAVPercentage["Sum"] = Math.round(sumSectorLong * 10) / 10;
-    strategyNAVPercentage["Sum"] = Math.round(sumStrategyLong * 10) / 10;
+    countryNAVPercentage["Total"] = Math.round(sumCountryLong * 10) / 10;
+    sectorNAVPercentage["Total"] = Math.round(sumSectorLong * 10) / 10;
+    strategyNAVPercentage["Total"] = Math.round(sumStrategyLong * 10) / 10;
     return { portfolio: portfolio, duration: durationSummary, countryNAVPercentage: sortObjectBasedOnKey(countryNAVPercentage), sectorNAVPercentage: sortObjectBasedOnKey(sectorNAVPercentage), strategyNAVPercentage: sortObjectBasedOnKey(strategyNAVPercentage), riskAssessment: riskAssessment, topWorstPerformaners: topWorstPerformaners };
 }
 function sortSummary(locationCode, group) {

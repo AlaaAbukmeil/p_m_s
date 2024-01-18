@@ -41,7 +41,7 @@ router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: 
     if (date.includes("NaN")) {
       date = getDateTimeInMongoDBCollectionFormat(new Date());
     }
-    console.log(date, "test")
+    console.log(date, "test");
     let report = await getHistoricalPortfolioWithAnalytics(date);
     res.send(report);
   } catch (error: any) {
@@ -51,10 +51,13 @@ router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: 
 router.get("/summary-portfolio", async (req: Request, res: Response, next: NextFunction) => {
   try {
     let date: any = req.query.date;
+
     if (date.includes("NaN")) {
       date = getDateTimeInMongoDBCollectionFormat(new Date());
     }
-    console.log(date);
+    
+    console.log(new Date(date));
+    date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
     let report = await getHistoricalSummaryPortfolioWithAnalytics(date);
 
     res.send(report);
@@ -475,8 +478,8 @@ router.post("/add-fund", verifyToken, uploadBeforeExcel.any(), async (req: Reque
 });
 
 router.post("/one-time", uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  // let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 17 * 24 * 60 * 60 * 1000));
-  // let test = await editDayRlzd(day);
+  // let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 3 * 24 * 60 * 60 * 1000));
+  // let test = await editMTDRlzd(day);
 
   res.sendStatus(200);
 });

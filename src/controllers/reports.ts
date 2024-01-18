@@ -26,7 +26,7 @@ const client = new MongoClient(uri, {
 export async function getHistoricalPortfolioWithAnalytics(date: string) {
   const database = client.db("portfolios");
   let earliestPortfolioName = await getEarliestCollectionName(date);
-  console.log(earliestPortfolioName)
+  console.log(earliestPortfolioName);
   let sameDayCollectionsPublished = earliestPortfolioName[1];
   let yesterdayPortfolioName = getDateTimeInMongoDBCollectionFormat(new Date(new Date(earliestPortfolioName[0]).getTime() - 1 * 24 * 60 * 60 * 1000)).split(" ")[0] + " 23:59";
   let lastDayBeforeToday = await getEarliestCollectionName(yesterdayPortfolioName);
@@ -98,7 +98,7 @@ export async function getHistoricalPortfolioWithAnalytics(date: string) {
   };
   let fundDetailsInfo: any = await getFundDetails(thisMonth);
   let fund = fundDetailsInfo[0];
-  
+
   let portfolioFormattedSorted = formatFrontEndTable(documents, date, fund, dates);
   let fundDetails = portfolioFormattedSorted.fundDetails;
   documents = portfolioFormattedSorted.portfolio;
@@ -502,8 +502,8 @@ export async function updatePositionPortfolio(path: string) {
 
         let currency = row["Currency"];
         let bondCouponMaturity: any = parseBondIdentifier(row["BB Ticker"]);
-    
-        let tradeExistsAlready = triadaIds.includes(row["Triada Trade Id"]);
+        //change
+        let tradeExistsAlready = false; //triadaIds.includes(row["Triada Trade Id"]);
         let updatingPosition = returnPositionProgress(positions, identifier, location);
         let tradeDate: any = new Date(row["Trade Date"]);
         let thisMonth = monthlyRlzdDate(tradeDate);
@@ -580,14 +580,14 @@ export async function updatePositionPortfolio(path: string) {
             }
 
             object["Day Rlzd"] = securityInPortfolio !== 404 ? (securityInPortfolio["Day Rlzd"] ? securityInPortfolio["Day Rlzd"] : {}) : {};
-         
+
             object["Day Rlzd"][thisDay] = securityInPortfolio !== 404 ? (securityInPortfolio["Day Rlzd"] ? (securityInPortfolio["Day Rlzd"][thisDay] ? securityInPortfolio["Day Rlzd"][thisDay] : []) : []) : [];
-         
+
             let dayRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
             if (rlzdOperation == 1) {
               object["Day Rlzd"][thisDay].push(dayRlzdForThisTrade);
             }
-           
+
             if (securityInPortfolio !== 404) {
               securityInPortfolio["Cost MTD Ptf"] = {};
             }
@@ -646,15 +646,15 @@ export async function updatePositionPortfolio(path: string) {
 
             let MTDRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
             if (rlzdOperation == 1) {
-              object["MTD Rlzd"][thisMonth] = object["MTD Rlzd"][thisMonth] ? object["MTD Rlzd"][thisMonth] : []
+              object["MTD Rlzd"][thisMonth] = object["MTD Rlzd"][thisMonth] ? object["MTD Rlzd"][thisMonth] : [];
               object["MTD Rlzd"][thisMonth].push(MTDRlzdForThisTrade);
             }
             object["Day Rlzd"] = updatingPosition["Day Rlzd"];
-            
+
             let dayRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
 
             if (rlzdOperation == 1) {
-              object["Day Rlzd"][thisDay] = object["Day Rlzd"][thisDay] ? object["Day Rlzd"][thisDay] : []
+              object["Day Rlzd"][thisDay] = object["Day Rlzd"][thisDay] ? object["Day Rlzd"][thisDay] : [];
               object["Day Rlzd"][thisDay].push(dayRlzdForThisTrade);
             }
 
@@ -674,7 +674,7 @@ export async function updatePositionPortfolio(path: string) {
         let action3 = await insertTrade(allTrades[2], "emsx");
         let action2 = await insertTrade(allTrades[1], "ib");
         let action1 = await insertTrade(allTrades[0], "vcons");
-        // await appendLogs(positions)
+     
 
         return positions;
       } catch (error) {
@@ -813,7 +813,7 @@ export async function updatePricesPortfolio(path: string) {
           if (firstCurrency !== "USD") {
             currencyInUSD[firstCurrency] = rate;
           } else {
-            rate = 1 / rate; 
+            rate = 1 / rate;
             currencyInUSD[secondCurrency] = rate;
           }
         }
@@ -1187,20 +1187,6 @@ export async function insertTradesInPortfolioAtASpecificDate(trades: any, date: 
       // If "ISIN", "BB Ticker", or "Issue" exists, check for both the field and "Location"
       if (trade["ISIN"]) {
         filters.push({
-          ISIN: trade["ISIN"],
-          Location: trade["Location"],
-          _id: new ObjectId(trade["_id"]),
-        });
-      } else if (trade["BB Ticker"]) {
-        filters.push({
-          "BB Ticker": trade["BB Ticker"],
-          Location: trade["Location"],
-          _id: new ObjectId(trade["_id"]),
-        });
-      } else if (trade["Issue"]) {
-        filters.push({
-          Issue: trade["Issue"],
-          Location: trade["Location"],
           _id: new ObjectId(trade["_id"]),
         });
       }
