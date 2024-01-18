@@ -47,6 +47,7 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     position["CR01"] = "0";
     position["MTD Rlzd"] = position["MTD Rlzd"] ? position["MTD Rlzd"] : 0;
     position["MTD Mark"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["MTD Mark"] * 1000000) / 1000000 : Math.round(position["MTD Mark"] * 1000000) / 10000;
+    position["Day Rlzd"] = position["Day Rlzd"] ? position["Day Rlzd"] : 0;
     position["Previous Mark"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Previous Mark"] * 1000000) / 1000000 : Math.round(position["Previous Mark"] * 1000000) / 10000;
 
     position["Ptf MTD Int.Income (Local Currency)"] = Math.round(position["Monthly Interest Income"] * 1000000 * holdBackRatio) / 1000000;
@@ -77,14 +78,15 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     // multiply mtd pl with usd since all components are not  multiplied by usd when they are summed
     position["Ptf MTD P&L (Local Currency)"] = Math.round(position["Ptf MTD P&L"] * usdRatio * holdBackRatio * 1000000) / 1000000;
 
-    position["Ptf Day P&L (Base Currency)"] = Math.round(position["Ptf Day P&L"] * usdRatio * holdBackRatio * 1000000) / 1000000;
-    // multiply mtd pl with usd since all components are not  multiplied by usd when they are summed
-    position["Ptf MTD P&L (Base Currency)"] = Math.round(position["Ptf MTD P&L"] * usdRatio * holdBackRatio * 1000000) / 1000000;
+    position["Ptf Day P&L (Base Currency)"] = Math.round(position["Ptf Day P&L"]  * holdBackRatio * 1000000) / 1000000;
+    position["Ptf MTD P&L (Base Currency)"] = Math.round(position["Ptf MTD P&L"]  * holdBackRatio * 1000000) / 1000000;
+
 
     position["Day Rlzd K G/L"] = Math.round(position["Day Rlzd K G/L"] * usdRatio * holdBackRatio * 1000000) / 1000000;
-    position["Day URlzd K G/L"] = Math.round(position["Day URlzd K G/L"] * usdRatio * holdBackRatio * 1000000) / 1000000;
+    position["Day URlzd"] = Math.round(position["Day URlzd"] * usdRatio * holdBackRatio * 1000000) / 1000000;
 
     position["MTD Rlzd"] = Math.round(position["MTD Rlzd"] * usdRatio * holdBackRatio * 1000000) / 1000000;
+    position["Day Rlzd"] = Math.round(position["Day Rlzd"] * usdRatio * holdBackRatio * 1000000) / 1000000;
 
     position["Previous FX Rate"] = Math.round(position["Previous FX Rate"] * 1000000) / 1000000;
     position["Maturity"] = position["Maturity"] ? position["Maturity"] : 0;
@@ -136,9 +138,10 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     dayfx += position["Day P&L FX"];
     mtdfx += position["MTD P&L FX"];
 
-    dayurlzd += position["Day URlzd K G/L"];
-    dayrlzd += position["Day Rlzd K G/L"];
+    dayurlzd += position["Day URlzd"];
+    dayrlzd += position["Day Rlzd"];
   }
+ 
 
   let fundDetails = {
     nav: parseFloat(fund.nav),
@@ -191,7 +194,7 @@ function yearsUntil(dateString: any, dateInput: any) {
   return Math.round(years * 100) / 100;
 }
 
-export function calculateMTDRlzd(trades: tradesMTDRlzd[], mtdMark: number, issue: string) {
+export function calculateRlzd(trades: tradesMTDRlzd[], mark: number, issue: string) {
   let total = 0;
 
   for (let index = 0; index < trades.length; index++) {
@@ -199,7 +202,7 @@ export function calculateMTDRlzd(trades: tradesMTDRlzd[], mtdMark: number, issue
     let price = trade.price;
     let quantity = trade.quantity;
 
-    let rlzdTrade = (price - mtdMark) * quantity;
+    let rlzdTrade = (price - mark) * quantity;
 
     total += rlzdTrade;
   }
@@ -445,10 +448,10 @@ function groupAndSortByLocationAndType(formattedPortfolio: any, nav: number) {
       let dv01 = groupedByLocation[locationCode].data[index]["DV01"] || 0;
 
       let strategy = groupedByLocation[locationCode].data[index]["Strategy"] ? groupedByLocation[locationCode].data[index]["Strategy"] : "Unspecified";
-      if (groupedByLocation[locationCode].data[index]["L/S"] == "Long") {
-        countryNAVPercentage[country.toLowerCase()] = countryNAVPercentage[country.toLowerCase()] ? countryNAVPercentage[country.toLowerCase()] + groupedByLocation[locationCode].data[index]["Notional Total"] : groupedByLocation[locationCode].data[index]["Notional Total"];
-        sectorNAVPercentage[sector.toLowerCase()] = sectorNAVPercentage[sector.toLowerCase()] ? sectorNAVPercentage[sector.toLowerCase()] + groupedByLocation[locationCode].data[index]["Notional Total"] : groupedByLocation[locationCode].data[index]["Notional Total"];
-        strategyNAVPercentage[strategy] = strategyNAVPercentage[strategy] ? strategyNAVPercentage[strategy] + groupedByLocation[locationCode].data[index]["Notional Total"] : groupedByLocation[locationCode].data[index]["Notional Total"];
+      if (groupedByLocation[locationCode].data[index]["USD Market Value"] > 0) {
+        countryNAVPercentage[country.toLowerCase()] = countryNAVPercentage[country.toLowerCase()] ? countryNAVPercentage[country.toLowerCase()] + groupedByLocation[locationCode].data[index]["USD Market Value"] : groupedByLocation[locationCode].data[index]["USD Market Value"];
+        sectorNAVPercentage[sector.toLowerCase()] = sectorNAVPercentage[sector.toLowerCase()] ? sectorNAVPercentage[sector.toLowerCase()] + groupedByLocation[locationCode].data[index]["USD Market Value"] : groupedByLocation[locationCode].data[index]["USD Market Value"];
+        strategyNAVPercentage[strategy] = strategyNAVPercentage[strategy] ? strategyNAVPercentage[strategy] + groupedByLocation[locationCode].data[index]["USD Market Value"] : groupedByLocation[locationCode].data[index]["USD Market Value"];
       }
 
       let dayPl = groupedByLocation[locationCode].data[index]["Day P&L (USD)"];

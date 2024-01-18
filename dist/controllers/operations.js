@@ -77,6 +77,7 @@ async function updatePreviousPricesPortfolioMUFG(data, collectionDate, path) {
                     let position = object[index];
                     let faceValue = position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? 100 : 1;
                     position["Mid"] = (parseFloat(row["Price"]) / 100.0) * faceValue;
+                    position["Last Price Update"] = new Date();
                     updatedPricePortfolio.push(position);
                 }
             }
@@ -279,7 +280,7 @@ async function updatePreviousPricesPortfolioBloomberg(data, collectionDate, path
                 await insertEditLogs(["prices update"], "Update Previous Prices based on bloomberg", dateTime, "Bloomberg Previous Pricing Sheet on " + collectionDate, "Link: " + path);
                 let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio[0], collectionDate);
                 console.log(updatedPricePortfolio.length, "number of positions prices updated");
-                if (!updatedPortfolio[1].length) {
+                if (!Object.keys(updatedPortfolio[1]).length) {
                     return updatedPortfolio[1];
                 }
                 else {

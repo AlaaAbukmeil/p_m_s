@@ -9,7 +9,6 @@ const excelFormat_1 = require("../controllers/excelFormat");
 const graphApiConnect_1 = require("../controllers/graphApiConnect");
 const mufgOperations_1 = require("../controllers/mufgOperations");
 const operations_1 = require("../controllers/operations");
-const oneTimeFunctions_1 = require("../controllers/oneTimeFunctions");
 require("dotenv").config();
 const readLastLines = require("read-last-lines");
 const path = require("path");
@@ -36,6 +35,7 @@ router.get("/portfolio", common_1.verifyToken, async (req, res, next) => {
         if (date.includes("NaN")) {
             date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
         }
+        console.log(date, "test");
         let report = await (0, reports_1.getHistoricalPortfolioWithAnalytics)(date);
         res.send(report);
     }
@@ -457,8 +457,8 @@ router.post("/add-fund", common_1.verifyToken, uploadBeforeExcel.any(), async (r
     }
 });
 router.post("/one-time", uploadBeforeExcel.any(), async (req, res, next) => {
-    let test = await (0, oneTimeFunctions_1.editMTDRlzd)();
-    // let test = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 10.9 * 24 * 60 * 60 * 1000));
+    // let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 17 * 24 * 60 * 60 * 1000));
+    // let test = await editDayRlzd(day);
     res.sendStatus(200);
 });
 exports.default = router;

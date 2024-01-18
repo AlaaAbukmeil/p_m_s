@@ -9,7 +9,7 @@ import { uploadArrayAndReturnFilePath, getTriadaTrades, formatCentralizedRawFile
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/graphApiConnect";
 import { formatMufg, formatFxMufg, tradesTriada } from "../controllers/mufgOperations";
 import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, checkMUFGEndOfMonthWithPortfolio, getPortfolioOnSpecificDate, editPositionPortfolio, getFundDetails, getAllFundDetails, editFund, deleteFund, addFund } from "../controllers/operations";
-import { editMTDRlzd } from "../controllers/oneTimeFunctions";
+import { editDayRlzd, editMTDRlzd } from "../controllers/oneTimeFunctions";
 require("dotenv").config();
 
 const readLastLines = require("read-last-lines");
@@ -41,6 +41,7 @@ router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: 
     if (date.includes("NaN")) {
       date = getDateTimeInMongoDBCollectionFormat(new Date());
     }
+    console.log(date, "test")
     let report = await getHistoricalPortfolioWithAnalytics(date);
     res.send(report);
   } catch (error: any) {
@@ -474,8 +475,8 @@ router.post("/add-fund", verifyToken, uploadBeforeExcel.any(), async (req: Reque
 });
 
 router.post("/one-time", uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  let test = await editMTDRlzd();
-  // let test = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 10.9 * 24 * 60 * 60 * 1000));
+  // let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 17 * 24 * 60 * 60 * 1000));
+  // let test = await editDayRlzd(day);
 
   res.sendStatus(200);
 });

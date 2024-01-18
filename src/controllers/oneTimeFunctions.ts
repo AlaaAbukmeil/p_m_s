@@ -1,7 +1,8 @@
 import util from "util";
-import { getPortfolio } from "./reports";
+import { getPortfolio, insertTradesInPortfolioAtASpecificDate } from "./reports";
 import { monthlyRlzdDate, uri } from "./common";
 import { insertTradesInPortfolio } from "./reports";
+import { getPortfolioOnSpecificDate } from "./operations";
 const fs = require("fs");
 const writeFile = util.promisify(fs.writeFile);
 const { MongoClient, ServerApiVersion } = require("mongodb");
@@ -18,112 +19,181 @@ let month = monthlyRlzdDate(new Date(new Date().getTime() - 0 * 24 * 60 * 60 * 1
 
 export async function appendLogs(positions: any) {
   for (let obj of positions) {
-    
-    let logs = `"${JSON.stringify(obj)}"}\n\n,`;
+    // Create a new object with only the _id and Day Rlzd properties
+    const logEntry = {
+      _id: obj._id,
+      "Day Rlzd": obj["Day Rlzd"],
+    };
 
+    // Convert the log entry to a string
+    let logs = `${JSON.stringify(logEntry)}\n\n,`;
+
+    // Append the log entry to the file
     await writeFile("trades-logs.txt", logs, { flag: "a" });
   }
 }
 let changes: any = {
-  "LLOYDS 4 ⅜ 04/05/34 EMTN": { data: [{ price: 0.9948999999999999, quantity: -1000000 }], location: "B255" },
+  "6594fabed36b5469e8326efd": { "Day Rlzd": { "02/01/2024": [{ price: 0.9948999999999999, quantity: -1000000 }] } },
 
-  "DBR 0 ¼ 02/15/29": { data: [{ price: 0.91983, quantity: 1000000 }], location: "B255" },
+  "6594fabed36b5469e8326efe": { "Day Rlzd": { "02/01/2024": [], "03/01/2024": [{ price: 0.91983, quantity: 1000000 }] } },
 
-  "STANDARD CHARTERED BANK 6.0% Perpr Regs": { data: [{ price: 0.985, quantity: 200000 }], location: "B129" },
+  "656445e4940f329586a6774d": { "Day Rlzd": { "03/01/2024": [] } },
 
-  "SOCGEN 10 PERP REGS": { data: [{ price: 1.0515, quantity: 500000 }], location: "B227" },
+  "65647960d76b3f9988ec67e1": { "Day Rlzd": { "03/01/2024": [{ price: 1.0515, quantity: 500000 }] } },
 
-  "HSBC 8.0% PERP Corp": { data: [{ price: 1.0301, quantity: 300000 }], location: "B143" },
+  "656445e4940f329586a67735": { "Day Rlzd": { "03/01/2024": [] } },
 
-  "CFLD Cayman 2.5% 31-Jan-2031 RegS (NB1)": { data: [{ price: 0.025, quantity: 4491000 }], location: "NB1" },
+  "656445e4940f329586a6772a": { "Day Rlzd": { "03/01/2024": [] } },
 
-  "BNP PARIBAS SA 8.5% Perp": {
-    data: [
-      { price: 1.03375, quantity: 500000 },
-      { price: 1.036, quantity: 500000 },
-    ],
-    location: "B191",
+  "656445e4940f329586a67725": { "Day Rlzd": { "03/01/2024": [{ price: 1.03375, quantity: 500000 }] } },
+
+  "656445e4940f329586a67724": { "Day Rlzd": { "03/01/2024": [] } },
+
+  "65681c2a30e5ed81bc615f63": { "Day Rlzd": { "03/01/2024": [{ price: 1.03125, quantity: 1000000 }] } },
+
+  "656445e4940f329586a6771e": { "Day Rlzd": { "03/01/2024": [{ price: 1.0214, quantity: 1000000 }] } },
+
+  "656445e4940f329586a6775d": { "Day Rlzd": { "03/01/2024": [{ price: 0.99296875, quantity: -960000 }] } },
+
+  "656445e4940f329586a6773a": { "Day Rlzd": { "03/01/2024": [] } },
+
+  "65647960d76b3f9988ec67ef": { "Day Rlzd": { "03/01/2024": [] } },
+
+  "656445e4940f329586a6774a": { "Day Rlzd": { "04/01/2024": [] } },
+
+  "656445e4940f329586a67758": { "Day Rlzd": { "04/01/2024": [] } },
+
+  "6597cd955b6fc6ab3c573032": { "Day Rlzd": { "04/01/2024": [] } },
+
+  "656445e4940f329586a67747": { "Day Rlzd": { "05/01/2024": [] } },
+
+  "6597cd955b6fc6ab3c573033": { "Day Rlzd": { "05/01/2024": [] } },
+
+  "659d226d20b9fc53ce17e85a": {
+    "Day Rlzd": {
+      "08/01/2024": [],
+      "09/01/2024": [
+        { price: 1.0385546875, quantity: -860000 },
+        { price: 1.0385546875, quantity: -1000000 },
+      ],
+    },
   },
 
-  "BNP Paribas 6.625% PerpectualRegS": { data: [{ price: 0.9952, quantity: 300000 }], location: "B198" },
+  "659d226d20b9fc53ce17e85b": { "Day Rlzd": { "08/01/2024": [], "09/01/2024": [{ price: 0.996, quantity: 1000000 }] } },
 
-  "BHRAIN 7 ¾ 04/18/35 REGS": { data: [{ price: 1.03125, quantity: 1000000 }], location: "B135" },
+  "659d226d20b9fc53ce17e85c": { "Day Rlzd": { "08/01/2024": [], "09/01/2024": [{ price: 1.01, quantity: 250000 }] } },
 
-  "Bangkok Bank Public Co Ltd 5.5% 21-Sep-2033 RegS": { data: [{ price: 1.0214, quantity: 1000000 }], location: "B206" },
+  "659d226d20b9fc53ce17e85d": { "Day Rlzd": { "08/01/2024": [], "09/01/2024": [{ price: 0.99193, quantity: 2000000 }] } },
 
-  "U.S. GOVT -TREASURY DEPT 3.875% 15-Aug-2033": { data: [{ price: 0.99296875, quantity: -960000 }], location: "B206" },
-
-  "ICELTD 10 ⅞ 12/15/27 REGS": { data: [{ price: 1.0425, quantity: 500000 }], location: "B184" },
-
-  "BACR 9 ⅝ PERP": { data: [{ price: 1.025, quantity: 500000 }], location: "B233" },
-
-  "POSCO Holdings Inc 5.875% 17-Jan-2033 RegS": { data: [{ price: 1.04125, quantity: 500000 }], location: "B070" },
-
-  "U.S. GOVT -TREASURY DEPT 3.5% 15-Feb-2033": { data: [{ price: 0.9677734375, quantity: -438000 }], location: "B070" },
-
-  "ROTH Float PERP": { data: [], location: "B256" },
-
-  "NIPPON LIFE INSURANCE CO 6.250% 13-Sep-2053": { data: [{ price: 1.045, quantity: 500000 }], location: "B204" },
-
-  "UPLLIN 5 ¼ PERP": { data: [], location: "B257" },
-
-  "T 4 ½ 11/15/33": {
-    data: [
-      { price: 1.0385546875, quantity: -860000 },
-      { price: 1.0385546875, quantity: -1000000 },
-    ],
-    location: "B260",
+  "659d226d20b9fc53ce17e85e": {
+    "Day Rlzd": {
+      "09/01/2024": [
+        { price: 1, quantity: -2000000 },
+        { price: 1.0005, quantity: -1500000 },
+      ],
+    },
   },
 
-  "TCZIRA 8 01/16/29": { data: [{ price: 0.996, quantity: 1000000 }], location: "B259" },
+  "659d226d20b9fc53ce17e85f": { "Day Rlzd": { "09/01/2024": [{ price: 1, quantity: -2000000 }] } },
 
-  "STTGDC 5.7 PERP": { data: [{ price: 1.01, quantity: 250000 }], location: "B259" },
+  "659e298a99e3772783f6a4e6": { "Day Rlzd": { "09/01/2024": [], "11/01/2024": [{ price: 1.01375, quantity: 500000 }] } },
 
-  "KSA 5 01/16/34 REGS": { data: [{ price: 0.99193, quantity: 2000000 }], location: "B260" },
+  "659e298a99e3772783f6a4e7": { "Day Rlzd": { "09/01/2024": [], "10/01/2024": [{ price: 1.0006300000000001, quantity: 1000000 }] } },
 
-  "ANZ Float 01/16/34 MTN": {
-    data: [
-      { price: 1, quantity: -2000000 },
-      { price: 1.0005, quantity: -1500000 },
-    ],
-    location: "B261",
+  "659e298a99e3772783f6a4e8": { "Day Rlzd": { "09/01/2024": [] } },
+
+  "659e298a99e3772783f6a4e9": { "Day Rlzd": { "09/01/2024": [], "10/01/2024": [{ price: 1.0105, quantity: 1000000 }] } },
+
+  "659e298a99e3772783f6a4ea": { "Day Rlzd": { "10/01/2024": [{ price: 0.9903125, quantity: -1060000 }] } },
+
+  "659e298a99e3772783f6a4eb": { "Day Rlzd": { "10/01/2024": [], "16/01/2024": [{ price: 0.7475, quantity: 500000 }] } },
+
+  "659fcb3df54cb5616904558f": { "Day Rlzd": { "10/01/2024": [], "11/01/2024": [{ price: 0.990546875, quantity: -194000 }] } },
+
+  "659fcb3df54cb56169045590": { "Day Rlzd": { "10/01/2024": [], "11/01/2024": [{ price: 1.0125, quantity: 500000 }] } },
+
+  "659fcb3df54cb56169045591": { "Day Rlzd": { "10/01/2024": [] } },
+
+  "659fcb3df54cb56169045592": { "Day Rlzd": { "10/01/2024": [], "11/01/2024": [{ price: 1.00299, quantity: 200000 }] } },
+
+  "659fcb3df54cb56169045593": { "Day Rlzd": { "10/01/2024": [] } },
+
+  "65647960d76b3f9988ec67f8": { "Day Rlzd": { "11/01/2024": [] } },
+
+  "65a0f215809ea6d6a8578312": { "Day Rlzd": { "11/01/2024": [{ price: 0.9968, quantity: 1000000 }] } },
+
+  "65a0f215809ea6d6a8578313": { "Day Rlzd": { "11/01/2024": [] } },
+
+  "65a628b73a7e854ad9737986": { "Day Rlzd": { "15/01/2024": [], "16/01/2024": [{ price: 0.99786, quantity: -920000 }] } },
+
+  "65a628b73a7e854ad9737987": { "Day Rlzd": { "15/01/2024": [] } },
+
+  "65a628b73a7e854ad9737988": { "Day Rlzd": { "15/01/2024": [], "16/01/2024": [{ price: 0.99921, quantity: 400000 }] } },
+
+  "65a628b73a7e854ad9737989": { "Day Rlzd": { "15/01/2024": [], "16/01/2024": [{ price: 0.9968899999999999, quantity: 1000000 }] } },
+
+  "65a628b73a7e854ad973798a": { "Day Rlzd": { "15/01/2024": [], "16/01/2024": [{ price: 1.00052, quantity: 1000000 }] } },
+
+  "65a628b73a7e854ad973798b": { "Day Rlzd": { "16/01/2024": [{ price: 0.7757999999999999, quantity: -404000 }] } },
+
+  "65a68f84b0a385a6c7f1ae47": { "Day Rlzd": { "16/01/2024": [{ price: 1, quantity: -1000000 }] } },
+
+  "65a79a699fb5f79822e3ba0e": {
+    "Day Rlzd": {
+      "16/01/2024": [],
+      "17/01/2024": [
+        { price: 0.9915625, quantity: -980000 },
+        { price: 0.9915625, quantity: -980000 },
+        { price: 0.991328125, quantity: -980000 },
+      ],
+    },
   },
 
-  "ANZ 5.888 01/16/34 MTN": { data: [{ price: 1, quantity: -2000000 }], location: "B261" },
+  "65a79a699fb5f79822e3ba0f": {
+    "Day Rlzd": {
+      "16/01/2024": [],
+      "17/01/2024": [
+        { price: 0.9993500000000001, quantity: 1000000 },
+        { price: 1, quantity: 1000000 },
+        { price: 1, quantity: 1000000 },
+      ],
+    },
+  },
+  "65a79a699fb5f79822e3ba10": { "Day Rlzd": { "16/01/2024": [], "17/01/2024": [{ price: 0.99722, quantity: 1000000 }] } },
 
-  "YKBNK 9 ¼ 01/17/34 REGS": { data: [], location: "B264" },
+  "65a79a699fb5f79822e3ba11": { "Day Rlzd": { "16/01/2024": [], "17/01/2024": [{ price: 1.001, quantity: 1000000 }] } },
 
-  "SAMTOT 5 ½ 07/18/29": { data: [{ price: 1.0006300000000001, quantity: 1000000 }], location: "B262" },
-
-  "ECOPET 8 ⅜ 01/19/36": { data: [], location: "B263" },
-
-  "AXASA 6 ⅜ PERP EMTN": { data: [], location: "B264" },
-
-  "T 3 ¾ 12/31/28": { data: [{ price: 0.9903125, quantity: -1060000 }], location: "B262" },
-
-  "ECOPET 5 ⅞ 05/28/45": { data: [], location: "B263" },
-
-  "ESH4 IB": {
-    data: [
-      { price: 4787.5, quantity: -50 },
-      { price: 4746.5, quantity: -150 },
-      { price: 4734, quantity: 50 },
-    ],
-    location: "TA3",
+  "65a79a699fb5f79822e3ba12": {
+    "Day Rlzd": {
+      "17/01/2024": [
+        { price: 1.0004296875, quantity: -1480000 },
+        { price: 1.000625, quantity: -1480000 },
+      ],
+    },
   },
 
-  "ZN   MAR 24 IB": { data: [], location: "TA4" },
+  "6572ec0db4a7516beed3dddb": { "Day Rlzd": { "02/01/2024": [], "05/01/2024": [{ price: 4734, quantity: 50 }], "10/01/2024": [{ price: 4821, quantity: 50 }] } },
 
-  "1393 HK": {
-    data: [
-      { price: 0.143, quantity: 200000 },
-      { price: 0.136, quantity: 196000 },
-      { price: 0.138, quantity: 200000 },
-      { price: 0.132, quantity: 10000 },
-      { price: 0.142, quantity: 200000 },
-      { price: 0.135, quantity: 200000 },
-    ],
-    location: "E004",
+  "6569c298aa2c673a5a76eee3": { "Day Rlzd": { "05/01/2024": [], "11/01/2024": [{ price: 112.328125, quantity: 2000 }] } },
+
+  "65a0f215809ea6d6a8578314": { "Day Rlzd": { "11/01/2024": [] } },
+
+  "65647960d76b3f9988ec67db": {
+    "Day Rlzd": {
+      "02/01/2024": [{ price: 0.143, quantity: 200000 }],
+      "03/01/2024": [{ price: 0.136, quantity: 196000 }],
+      "04/01/2024": [{ price: 0.138, quantity: 200000 }],
+      "05/01/2024": [{ price: 0.132, quantity: 10000 }],
+      "08/01/2024": [
+        { price: 0.142, quantity: 200000 },
+        { price: 0.135, quantity: 200000 },
+      ],
+      "12/01/2024": [
+        { price: 0.11, quantity: 200000 },
+        { price: 0.118, quantity: 0 },
+      ],
+      "17/01/2024": [{ price: 0.101, quantity: 200000 }],
+    },
   },
 };
 
@@ -140,6 +210,24 @@ export async function editMTDRlzd() {
     }
   }
   // await insertTradesInPortfolioAtASpecificDate(portfolio);
+
+  return;
+}
+export async function editDayRlzd(collectionDate: string) {
+  let action: any = await getPortfolioOnSpecificDate(collectionDate);
+  let portfolio = action[0];
+  collectionDate = action[1];
+
+  let positionChanged = 0;
+  for (let index = 0; index < portfolio.length; index++) {
+    if (changes[portfolio[index]["_id"]]) {
+      portfolio[index]["Day Rlzd"] = {};
+      portfolio[index]["Day Rlzd"] = changes[portfolio[index]["_id"]]["Day Rlzd"];
+      positionChanged++;
+    }
+  }
+  console.log(collectionDate);
+  // await insertTradesInPortfolioAtASpecificDate(portfolio, `portfolio-${collectionDate}`);
 
   return;
 }
