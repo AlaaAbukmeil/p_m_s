@@ -252,6 +252,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Country",
     "Issuer",
     "Last Day Since Realizd",
+    "Currency",
   ];
 
   let titlesValues: any = {
@@ -288,6 +289,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     Sector: "Sector",
     Country: "Country",
     "Last Day Since Realizd": "Last Day Since Realizd",
+    Currency: "Currency",
   };
 
   titlesValues[formatMarkDate(dates.lastMonth)] = "MTD Mark";
@@ -418,14 +420,14 @@ function groupAndSortByLocationAndType(formattedPortfolio: any, nav: number) {
         hedgeCurrencyNotional += groupedByLocation[locationCode].data[index]["Notional Total"] || 0;
       }
     } else if (groupedByLocation[locationCode].order == 5) {
-      groupedByLocation[locationCode].color = "#FFF59D";
+      groupedByLocation[locationCode].color = "#81D4FA";
     } else if (groupedByLocation[locationCode].order == 6) {
-      groupedByLocation[locationCode].color = "#FFECB3";
+      groupedByLocation[locationCode].color = "#CE93D8";
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
         cdsNotional += groupedByLocation[locationCode].data[index]["Notional Total"] || 0;
       }
     } else if (groupedByLocation[locationCode].order == 7) {
-      groupedByLocation[locationCode].color = "#CE93D8";
+      groupedByLocation[locationCode].color = "#FFECB3";
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
         globalHedgeNotional += groupedByLocation[locationCode].data[index]["Notional Total"] || 0;
         globalHedgeDV01Sum += groupedByLocation[locationCode].data[index]["DV01"] || 0;
@@ -433,6 +435,10 @@ function groupAndSortByLocationAndType(formattedPortfolio: any, nav: number) {
     } else if (groupedByLocation[locationCode].order == 8) {
       groupedByLocation[locationCode].color = "#E8F5E9";
     } else if (groupedByLocation[locationCode].order == 9) {
+      groupedByLocation[locationCode].color = "#9FA8DA";
+    } else if (groupedByLocation[locationCode].order == 10) {
+      groupedByLocation[locationCode].color = "#E5D1B4";
+    } else if (groupedByLocation[locationCode].order == 11) {
       groupedByLocation[locationCode].color = "#C5E1A5";
     }
 
@@ -638,12 +644,14 @@ function sortSummary(locationCode: string, group: any) {
     UST_HEDGE: 1,
     IG: 2,
     HY: 3,
-    FUT: 4,
-    undefined: 5,
-    CDS: 6,
-    UST_GLOBAL: 7,
-    Illiquid: 8,
-    RLZD: 9,
+    CURR_HEDGE: 4,
+    NON_USD: 5,
+    FUT: 6,
+    CDS: 7,
+    UST_GLOBAL: 8,
+    Illiquid: 9,
+    undefined: 10,
+    RLZD: 11,
   };
 
   try {
@@ -657,12 +665,16 @@ function sortSummary(locationCode: string, group: any) {
         if (!position["Type"]) {
           return assetClassOrder.undefined;
         }
-        if ((position["Type"].includes("UST") || position["Type"].includes("FUT")) && position["Notional Total"] <= 0 && unrlzdPositionsNum > 1) {
+        if (position["Type"].includes("UST") && position["Notional Total"] <= 0 && unrlzdPositionsNum > 1) {
           return assetClassOrder.UST_HEDGE;
+        }
+        if (position["Type"].includes("FUT") && position["Notional Total"] <= 0 && unrlzdPositionsNum > 1) {
+          return assetClassOrder.CURR_HEDGE;
         }
         if (position["Type"].includes("UST") && position["Notional Total"] <= 0 && unrlzdPositionsNum == 1) {
           return assetClassOrder.UST_GLOBAL;
         }
+
         if (position["Type"] == "FUT" && position["Notional Total"] <= 0) {
           return assetClassOrder.FUT;
         }
@@ -671,6 +683,9 @@ function sortSummary(locationCode: string, group: any) {
         }
         if (position["Type"] == "CDS") {
           return assetClassOrder.CDS;
+        }
+        if (position["Currency"] != "USD" && unrlzdPositionsNum == 1) {
+          return assetClassOrder.NON_USD;
         }
         if (position["Asset Class"] == "IG") {
           type = "IG";

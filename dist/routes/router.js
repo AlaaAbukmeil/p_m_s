@@ -49,7 +49,6 @@ router.get("/summary-portfolio", async (req, res, next) => {
         if (date.includes("NaN")) {
             date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
         }
-        console.log(new Date(date));
         date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date(date)).split(" ")[0] + " 23:59";
         let report = await (0, reports_1.getHistoricalSummaryPortfolioWithAnalytics)(date);
         res.send(report);

@@ -56,7 +56,7 @@ router.get("/summary-portfolio", async (req: Request, res: Response, next: NextF
       date = getDateTimeInMongoDBCollectionFormat(new Date());
     }
     
-    console.log(new Date(date));
+    
     date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
     let report = await getHistoricalSummaryPortfolioWithAnalytics(date);
 

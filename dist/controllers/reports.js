@@ -472,8 +472,7 @@ async function updatePositionPortfolio(path) {
                 let currentPrincipal = parseFloat(row["Principal"].toString().replace(/,/g, ""));
                 let currency = row["Currency"];
                 let bondCouponMaturity = (0, portfolioFunctions_1.parseBondIdentifier)(row["BB Ticker"]);
-                //change
-                let tradeExistsAlready = false; //triadaIds.includes(row["Triada Trade Id"]);
+                let tradeExistsAlready = triadaIds.includes(row["Triada Trade Id"]);
                 let updatingPosition = returnPositionProgress(positions, identifier, location);
                 let tradeDate = new Date(row["Trade Date"]);
                 let thisMonth = (0, common_1.monthlyRlzdDate)(tradeDate);
@@ -618,7 +617,7 @@ async function updatePositionPortfolio(path) {
                 let action3 = await insertTrade(allTrades[2], "emsx");
                 let action2 = await insertTrade(allTrades[1], "ib");
                 let action1 = await insertTrade(allTrades[0], "vcons");
-                return positions;
+                return insertion;
             }
             catch (error) {
                 return { error: error };
@@ -910,7 +909,7 @@ async function getMTDParams(portfolio, lastMonthPortfolio, dateInput) {
             for (let lastMonthIndex = 0; lastMonthIndex < lastMonthPortfolio.length; lastMonthIndex++) {
                 lastMonthPosition = lastMonthPortfolio[lastMonthIndex];
                 portfolio[index]["Notes"] = "";
-                if ((lastMonthPosition["ISIN"] == position["ISIN"] || lastMonthPosition["BB Ticker"] == position["BB Ticker"]) && lastMonthPosition["Location"] == position["Location"]) {
+                if (lastMonthPosition["ISIN"] == position["ISIN"]) {
                     portfolio[index]["MTD Mark"] = lastMonthPosition["Mid"];
                     portfolio[index]["MTD FX"] = lastMonthPosition["FX Rate"] ? lastMonthPosition["FX Rate"] : lastMonthPosition["holdPortfXrate"] ? lastMonthPosition["holdPortfXrate"] : null;
                 }
@@ -948,9 +947,9 @@ async function getPreviousMarkPreviousFX(portfolio, previousDayPortfolio, dateIn
     // try {
     for (let index = 0; index < portfolio.length; index++) {
         let position = portfolio[index];
-        let previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue) => previousDayIssue["ISIN"] == position["ISIN"] && previousDayIssue["Location"] == position["Location"]) : null;
+        let previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue) => previousDayIssue["ISIN"] == position["ISIN"]) : null;
         if (!previousDayPosition) {
-            previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue) => previousDayIssue["Issue"] == position["Issue"] && previousDayIssue["Location"] == position["Location"]) : null;
+            previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue) => previousDayIssue["Issue"] == position["Issue"]) : null;
         }
         let previousMark = previousDayPosition ? previousDayPosition["Mid"] : "0";
         let previousFxRate = previousDayPosition ? (previousDayPosition["FX Rate"] ? previousDayPosition["FX Rate"] : previousDayPosition["holdPortfXrate"] ? previousDayPosition["holdPortfXrate"] : 0) : 0;

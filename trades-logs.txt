@@ -1,0 +1,290 @@
+LLOYDS 4 ⅜ 04/05/34 EMTN: 
+
+ {"price":0.9948999999999999,"quantity":-1000000}
+,{"price":0.9948999999999999,"quantity":-1000000}
+
+,DBR 0 ¼ 02/15/29: 
+
+ {"price":0.91983,"quantity":1000000}
+,{"price":0.91983,"quantity":1000000}
+
+,STANDARD CHARTERED BANK 6.0% Perpr Regs: 
+
+ {"price":0.985,"quantity":200000}
+
+,SOCGEN 10 PERP REGS: 
+
+ {"price":1.0515,"quantity":500000}
+,{"price":1.0515,"quantity":500000}
+
+,HSBC 8.0% PERP Corp: 
+
+ {"price":1.0301,"quantity":300000}
+
+,CFLD Cayman 2.5% 31-Jan-2031 RegS (NB1): 
+
+ {"price":0.025,"quantity":4491000}
+
+,BNP PARIBAS SA 8.5% Perp: 
+
+ {"price":1.03375,"quantity":500000}
+,{"price":1.036,"quantity":500000}
+,{"price":1.03375,"quantity":500000}
+
+,BNP Paribas 6.625% PerpectualRegS: 
+
+ {"price":0.9952,"quantity":300000}
+
+,BHRAIN 7 ¾ 04/18/35 REGS: 
+
+ {"price":1.03125,"quantity":1000000}
+,{"price":1.03125,"quantity":1000000}
+
+,Bangkok Bank Public Co Ltd 5.5% 21-Sep-2033 RegS: 
+
+ {"price":1.0214,"quantity":1000000}
+,{"price":1.0214,"quantity":1000000}
+
+,U.S. GOVT -TREASURY DEPT 3.875% 15-Aug-2033: 
+
+ {"price":0.99296875,"quantity":-960000}
+,{"price":0.99296875,"quantity":-960000}
+
+,ICELTD 10 ⅞ 12/15/27 REGS: 
+
+ {"price":1.0425,"quantity":500000}
+
+,BACR 9 ⅝ PERP: 
+
+ {"price":1.025,"quantity":500000}
+
+,POSCO Holdings Inc 5.875% 17-Jan-2033 RegS: 
+
+ {"price":1.04125,"quantity":500000}
+
+,U.S. GOVT -TREASURY DEPT 3.5% 15-Feb-2033: 
+
+ {"price":0.9677734375,"quantity":-438000}
+
+,ROTH Float PERP: 
+
+ 
+
+,NIPPON LIFE INSURANCE CO 6.250% 13-Sep-2053: 
+
+ {"price":1.045,"quantity":500000}
+
+,UPLLIN 5 ¼ PERP: 
+
+ 
+
+,T 4 ½ 11/15/33: 
+
+ {"price":1.0385546875,"quantity":-860000}
+,{"price":1.0385546875,"quantity":-1000000}
+,{"price":1.0385546875,"quantity":-860000}
+,{"price":1.0385546875,"quantity":-1000000}
+
+,TCZIRA 8 01/16/29: 
+
+ {"price":0.996,"quantity":1000000}
+,{"price":0.996,"quantity":1000000}
+
+,STTGDC 5.7 PERP: 
+
+ {"price":1.01,"quantity":250000}
+,{"price":1.01,"quantity":250000}
+
+,KSA 5 01/16/34 REGS: 
+
+ {"price":0.99193,"quantity":2000000}
+,{"price":0.99193,"quantity":2000000}
+
+,ANZ Float 01/16/34 MTN: 
+
+ {"price":1,"quantity":-2000000}
+,{"price":1.0005,"quantity":-1500000}
+,{"price":1,"quantity":-2000000}
+,{"price":1.0005,"quantity":-1500000}
+
+,ANZ 5.888 01/16/34 MTN: 
+
+ {"price":1,"quantity":-2000000}
+,{"price":1,"quantity":-2000000}
+
+,YKBNK 9 ¼ 01/17/34 REGS: 
+
+ {"price":1.01375,"quantity":500000}
+,{"price":1.01375,"quantity":500000}
+
+,SAMTOT 5 ½ 07/18/29: 
+
+ {"price":1.0006300000000001,"quantity":1000000}
+,{"price":1.0006300000000001,"quantity":1000000}
+
+,ECOPET 8 ⅜ 01/19/36: 
+
+ 
+
+,AXASA 6 ⅜ PERP EMTN: 
+
+ {"price":1.0105,"quantity":1000000}
+,{"price":1.0105,"quantity":1000000}
+
+,T 3 ¾ 12/31/28: 
+
+ {"price":0.9903125,"quantity":-1060000}
+,{"price":0.9903125,"quantity":-1060000}
+
+,ECOPET 5 ⅞ 05/28/45: 
+
+ {"price":0.7475,"quantity":500000}
+,{"price":0.7475,"quantity":500000}
+
+,T 3 ¾ 12/31/28: 
+
+ {"price":0.990546875,"quantity":-194000}
+,{"price":0.990546875,"quantity":-194000}
+
+,TEBNK 9 ⅜ 01/17/34: 
+
+ {"price":1.0125,"quantity":500000}
+,{"price":1.0125,"quantity":500000}
+
+,SUMILF 5 ⅞ PERP REGS: 
+
+ 
+
+,RCBPM 5 ½ 01/18/29 EMTN: 
+
+ {"price":1.00299,"quantity":200000}
+,{"price":1.00299,"quantity":200000}
+
+,LMRTSP 7 ¼ 06/19/24: 
+
+ 
+
+,CBGLN 11 ⅛ PERP: 
+
+ {"price":1.031,"quantity":500000}
+
+,BCPPL 8 ⅛ PERP: 
+
+ {"price":1,"quantity":-2000000}
+,{"price":0.9968,"quantity":1000000}
+
+,MGMTGE 11 ½ 01/18/27: 
+
+ 
+
+,DBR 2.2 02/15/34 10Y: 
+
+ {"price":0.99786,"quantity":-920000}
+,{"price":0.99786,"quantity":-920000}
+
+,DBR 0 ¼ 02/15/29: 
+
+ 
+
+,SOCGEN 5 ¾ 01/22/32 EMTN: 
+
+ {"price":0.99921,"quantity":400000}
+,{"price":0.99921,"quantity":400000}
+
+,SANTAN 5 04/22/34 EMTN: 
+
+ {"price":0.9968899999999999,"quantity":1000000}
+,{"price":0.9968899999999999,"quantity":1000000}
+
+,ACAFP 3 ¾ 01/22/34 EMTN: 
+
+ {"price":1.00052,"quantity":1000000}
+,{"price":1.00052,"quantity":1000000}
+
+,UKT 0 ¼ 07/31/31: 
+
+ {"price":0.7757999999999999,"quantity":-404000}
+,{"price":0.7757999999999999,"quantity":-404000}
+
+,SANTAN 6.499 01/23/31: 
+
+ {"price":1,"quantity":-1000000}
+
+,DBR 0 ¼ 02/15/29: 
+
+ 
+
+,T 3 ¾ 12/31/28: 
+
+ {"price":0.9915625,"quantity":-980000}
+,{"price":0.9915625,"quantity":-980000}
+,{"price":0.991328125,"quantity":-980000}
+,{"price":0.9915625,"quantity":-980000}
+,{"price":0.9915625,"quantity":-980000}
+,{"price":0.991328125,"quantity":-980000}
+
+,SUMIFL 5.109 01/23/29 EMTN: 
+
+ {"price":0.9993500000000001,"quantity":1000000}
+,{"price":1,"quantity":1000000}
+,{"price":1,"quantity":1000000}
+,{"price":0.9993500000000001,"quantity":1000000}
+,{"price":1,"quantity":1000000}
+,{"price":1,"quantity":1000000}
+
+,SKENER 4 ⅞ 01/23/27: 
+
+ {"price":0.99722,"quantity":1000000}
+,{"price":0.99722,"quantity":1000000}
+
+,SHFLIN 6 ⅝ 04/22/27 REGS: 
+
+ {"price":1.001,"quantity":1000000}
+,{"price":1.001,"quantity":1000000}
+
+,T 4 ¼ 12/31/25: 
+
+ {"price":1.0004296875,"quantity":-1480000}
+,{"price":1.000625,"quantity":-1480000}
+,{"price":1.0004296875,"quantity":-1480000}
+,{"price":1.000625,"quantity":-1480000}
+
+,ESH4 IB: 
+
+ {"price":4787.5,"quantity":-50}
+,{"price":4746.5,"quantity":-150}
+,{"price":4734,"quantity":50}
+,{"price":4798.75,"quantity":-50}
+,{"price":4734,"quantity":50}
+,{"price":4821,"quantity":50}
+
+,ZN   MAR 24 IB: 
+
+ {"price":112.328125,"quantity":2000}
+,{"price":112.328125,"quantity":2000}
+
+,6EH4 IB: 
+
+ 
+
+,1393 HK: 
+
+ {"price":0.143,"quantity":200000}
+,{"price":0.136,"quantity":196000}
+,{"price":0.138,"quantity":200000}
+,{"price":0.132,"quantity":10000}
+,{"price":0.142,"quantity":200000}
+,{"price":0.135,"quantity":200000}
+,{"price":0.11,"quantity":200000}
+,{"price":0.101,"quantity":200000}
+,{"price":0.143,"quantity":200000}
+,{"price":0.136,"quantity":196000}
+,{"price":0.138,"quantity":200000}
+,{"price":0.132,"quantity":10000}
+,{"price":0.142,"quantity":200000}
+,{"price":0.135,"quantity":200000}
+,{"price":0.11,"quantity":200000}
+,{"price":0.118,"quantity":0}
+,{"price":0.101,"quantity":200000}
+
+,

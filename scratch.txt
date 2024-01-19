@@ -8,3 +8,17 @@ BNP Paribas 6.625% PerpectualRegS B198
     ,U.S. GOVT -TREASURY DEPT 3.5% 15-Feb-2033 B070
      ,6EZ3 IB B240 
      ,LLOYDS 4 ⅜ 04/05/34 EMTN B255 ,DBR 0 ¼ 02/15/29 B255
+
+
+
+     "#FEEBED"
+     "#E1BEE7"
+     "#C5CAE9"
+     "#FFF9C4"
+     "#81D4FA"
+     "#CE93D8"
+     "#FFECB3"
+     "#E8F5E9"
+     "#9FA8DA"
+     "#E5D1B4"
+     "#C5E1A5"
