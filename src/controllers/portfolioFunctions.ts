@@ -421,14 +421,14 @@ export async function readCentralizedEBlot(path: string) {
     let filtered = data.filter((trade: any, index: any) => trade["Trade App Status"] == "new");
     filtered.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
 
-    let missingLocation = data.filter((trade: any, index: any) => trade["Location"] == "" || !trade["Location"] || trade["Location"].trim().split(" ").length > 1);
+    let missingLocation = data.filter((trade: any, index: any) => trade["Location"] == "" || trade["ISIN"] == "" || !trade["Location"] || trade["Location"].trim().split(" ").length > 1);
     if (missingLocation.length) {
       let issueMissing = "";
       for (let indexMissingIssue = 0; indexMissingIssue < missingLocation.length; indexMissingIssue++) {
         let issueName = missingLocation[indexMissingIssue]["Issue"];
         issueMissing += issueName + " //";
       }
-      return { error: `Issue ${issueMissing} has missing or more than one location` };
+      return { error: `Issue ${issueMissing} has missing or more than one location/ISIN` };
     }
     let vconTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "vcon");
     let ibTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "ib");

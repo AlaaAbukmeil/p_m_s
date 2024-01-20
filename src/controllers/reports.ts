@@ -23,10 +23,10 @@ const client = new MongoClient(uri, {
   },
 });
 
-export async function getHistoricalPortfolioWithAnalytics(date: string) {
+export async function getHistoricalPortfolioWithAnalytics(date: string, sort: any, sign: number) {
   const database = client.db("portfolios");
   let earliestPortfolioName = await getEarliestCollectionName(date);
-  console.log(earliestPortfolioName);
+
   let sameDayCollectionsPublished = earliestPortfolioName[1];
   let yesterdayPortfolioName = getDateTimeInMongoDBCollectionFormat(new Date(new Date(earliestPortfolioName[0]).getTime() - 1 * 24 * 60 * 60 * 1000)).split(" ")[0] + " 23:59";
   let lastDayBeforeToday = await getEarliestCollectionName(yesterdayPortfolioName);
@@ -99,14 +99,14 @@ export async function getHistoricalPortfolioWithAnalytics(date: string) {
   let fundDetailsInfo: any = await getFundDetails(thisMonth);
   let fund = fundDetailsInfo[0];
 
-  let portfolioFormattedSorted = formatFrontEndTable(documents, date, fund, dates);
+  let portfolioFormattedSorted = formatFrontEndTable(documents, date, fund, dates, sort, sign);
   let fundDetails = portfolioFormattedSorted.fundDetails;
   documents = portfolioFormattedSorted.portfolio;
 
   return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis };
 }
 
-export async function getHistoricalSummaryPortfolioWithAnalytics(date: string) {
+export async function getHistoricalSummaryPortfolioWithAnalytics(date: string, sort: string, sign: number) {
   const database = client.db("portfolios");
   let earliestPortfolioName = await getEarliestCollectionName(date);
   let sameDayCollectionsPublished = earliestPortfolioName[1];
@@ -179,7 +179,7 @@ export async function getHistoricalSummaryPortfolioWithAnalytics(date: string) {
   documents = await calculateMTDURlzd(documents, new Date(date));
   documents = calculateMTDPLDayPL(documents, date);
 
-  let portfolioFormattedSorted = formatFrontEndSummaryTable(documents, date, fund, dates);
+  let portfolioFormattedSorted = formatFrontEndSummaryTable(documents, date, fund, dates, sort, sign);
   let fundDetails = portfolioFormattedSorted.fundDetails;
   documents = portfolioFormattedSorted.portfolio;
 
@@ -474,20 +474,7 @@ export async function updatePositionPortfolio(path: string) {
         let securityInPortfolio: any = getSecurityInPortfolio(portfolio, identifier, location);
 
         if (securityInPortfolio !== 404) {
-          object["Type"] = securityInPortfolio["Type"];
-          object["Coupon Rate"] = securityInPortfolio["Coupon Rate"];
-          object["Group"] = securityInPortfolio["Group"];
-          object["Sector"] = securityInPortfolio["Sector"];
-          object["Mid"] = securityInPortfolio["Mid"];
-          object["Bid"] = securityInPortfolio["Bid"];
-          object["Ask"] = securityInPortfolio["Ask"];
-          object["Issue"] = securityInPortfolio["Issue"] && securityInPortfolio["Issue"] != "" ? securityInPortfolio["Issue"] : null;
-          object["_id"] = securityInPortfolio["_id"];
-          object["Country"] = securityInPortfolio["Country"];
-          object["Asset Class"] = securityInPortfolio["Asset Class"] || securityInPortfolio["Rating Class"];
-          object["FX Rate"] = securityInPortfolio["FX Rate"] || securityInPortfolio["holdPortfXrate"];
-          object["DV01"] = securityInPortfolio["DV01"];
-          object["YTM"] = securityInPortfolio["YTM"];
+          object = securityInPortfolio;
         }
         let couponDaysYear = securityInPortfolio !== 404 ? securityInPortfolio["Coupon Duration"] : row["Issue"].split(" ")[0] == "T" ? 365.0 : 360.0;
         let previousQuantity = securityInPortfolio["Quantity"];
@@ -602,6 +589,7 @@ export async function updatePositionPortfolio(path: string) {
             if (!object["Entry Price"][thisMonth]) {
               object["Entry Price"][thisMonth] = currentPrice;
             }
+            object["Last Upload Trade"] = new Date();
 
             positions.push(object);
           } else if (returnPositionProgress(positions, identifier, location)) {
@@ -657,7 +645,7 @@ export async function updatePositionPortfolio(path: string) {
               object["Day Rlzd"][thisDay] = object["Day Rlzd"][thisDay] ? object["Day Rlzd"][thisDay] : [];
               object["Day Rlzd"][thisDay].push(dayRlzdForThisTrade);
             }
-
+            object["Last Upload Trade"] = new Date();
             positions = updateExisitingPosition(positions, identifier, location, object);
           }
         }
@@ -978,7 +966,7 @@ async function getMTDParams(portfolio: any, lastMonthPortfolio: any, dateInput: 
       for (let lastMonthIndex = 0; lastMonthIndex < lastMonthPortfolio.length; lastMonthIndex++) {
         lastMonthPosition = lastMonthPortfolio[lastMonthIndex];
         portfolio[index]["Notes"] = "";
-        if (lastMonthPosition["ISIN"] == position["ISIN"]) {
+        if ((lastMonthPosition["ISIN"] == position["ISIN"] && position["ISIN"] && lastMonthPosition["ISIN"]) || (lastMonthPosition["Issue"] == position["Issue"] && position["Issue"] && lastMonthPosition["Issue"])) {
           portfolio[index]["MTD Mark"] = lastMonthPosition["Mid"];
           portfolio[index]["MTD FX"] = lastMonthPosition["FX Rate"] ? lastMonthPosition["FX Rate"] : lastMonthPosition["holdPortfXrate"] ? lastMonthPosition["holdPortfXrate"] : null;
         }
@@ -1019,9 +1007,9 @@ async function getPreviousMarkPreviousFX(portfolio: any, previousDayPortfolio: a
 
   for (let index = 0; index < portfolio.length; index++) {
     let position = portfolio[index];
-    let previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue: any) => previousDayIssue["ISIN"] == position["ISIN"]) : null;
+    let previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue: any) => previousDayIssue["ISIN"] == position["ISIN"] && previousDayIssue["ISIN"] && position["ISIN"]) : null;
     if (!previousDayPosition) {
-      previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue: any) => previousDayIssue["Issue"] == position["Issue"]) : null;
+      previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue: any) => previousDayIssue["Issue"] == position["Issue"] && previousDayIssue["Issue"] && position["Issue"]) : null;
     }
 
     let previousMark = previousDayPosition ? previousDayPosition["Mid"] : "0";

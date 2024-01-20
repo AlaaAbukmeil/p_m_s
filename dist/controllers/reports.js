@@ -25,10 +25,9 @@ const client = new MongoClient(common_2.uri, {
         deprecationErrors: true,
     },
 });
-async function getHistoricalPortfolioWithAnalytics(date) {
+async function getHistoricalPortfolioWithAnalytics(date, sort, sign) {
     const database = client.db("portfolios");
     let earliestPortfolioName = await getEarliestCollectionName(date);
-    console.log(earliestPortfolioName);
     let sameDayCollectionsPublished = earliestPortfolioName[1];
     let yesterdayPortfolioName = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date(new Date(earliestPortfolioName[0]).getTime() - 1 * 24 * 60 * 60 * 1000)).split(" ")[0] + " 23:59";
     let lastDayBeforeToday = await getEarliestCollectionName(yesterdayPortfolioName);
@@ -92,13 +91,13 @@ async function getHistoricalPortfolioWithAnalytics(date) {
     };
     let fundDetailsInfo = await (0, operations_1.getFundDetails)(thisMonth);
     let fund = fundDetailsInfo[0];
-    let portfolioFormattedSorted = (0, tableFormatter_1.formatFrontEndTable)(documents, date, fund, dates);
+    let portfolioFormattedSorted = (0, tableFormatter_1.formatFrontEndTable)(documents, date, fund, dates, sort, sign);
     let fundDetails = portfolioFormattedSorted.fundDetails;
     documents = portfolioFormattedSorted.portfolio;
     return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis };
 }
 exports.getHistoricalPortfolioWithAnalytics = getHistoricalPortfolioWithAnalytics;
-async function getHistoricalSummaryPortfolioWithAnalytics(date) {
+async function getHistoricalSummaryPortfolioWithAnalytics(date, sort, sign) {
     const database = client.db("portfolios");
     let earliestPortfolioName = await getEarliestCollectionName(date);
     let sameDayCollectionsPublished = earliestPortfolioName[1];
@@ -161,7 +160,7 @@ async function getHistoricalSummaryPortfolioWithAnalytics(date) {
     documents = await calculateDailyIntURlzdDaily(documents, new Date(date));
     documents = await calculateMTDURlzd(documents, new Date(date));
     documents = calculateMTDPLDayPL(documents, date);
-    let portfolioFormattedSorted = (0, tableFormatter_1.formatFrontEndSummaryTable)(documents, date, fund, dates);
+    let portfolioFormattedSorted = (0, tableFormatter_1.formatFrontEndSummaryTable)(documents, date, fund, dates, sort, sign);
     let fundDetails = portfolioFormattedSorted.fundDetails;
     documents = portfolioFormattedSorted.portfolio;
     return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis };
@@ -446,20 +445,7 @@ async function updatePositionPortfolio(path) {
                 let location = row["Location"].trim();
                 let securityInPortfolio = getSecurityInPortfolio(portfolio, identifier, location);
                 if (securityInPortfolio !== 404) {
-                    object["Type"] = securityInPortfolio["Type"];
-                    object["Coupon Rate"] = securityInPortfolio["Coupon Rate"];
-                    object["Group"] = securityInPortfolio["Group"];
-                    object["Sector"] = securityInPortfolio["Sector"];
-                    object["Mid"] = securityInPortfolio["Mid"];
-                    object["Bid"] = securityInPortfolio["Bid"];
-                    object["Ask"] = securityInPortfolio["Ask"];
-                    object["Issue"] = securityInPortfolio["Issue"] && securityInPortfolio["Issue"] != "" ? securityInPortfolio["Issue"] : null;
-                    object["_id"] = securityInPortfolio["_id"];
-                    object["Country"] = securityInPortfolio["Country"];
-                    object["Asset Class"] = securityInPortfolio["Asset Class"] || securityInPortfolio["Rating Class"];
-                    object["FX Rate"] = securityInPortfolio["FX Rate"] || securityInPortfolio["holdPortfXrate"];
-                    object["DV01"] = securityInPortfolio["DV01"];
-                    object["YTM"] = securityInPortfolio["YTM"];
+                    object = securityInPortfolio;
                 }
                 let couponDaysYear = securityInPortfolio !== 404 ? securityInPortfolio["Coupon Duration"] : row["Issue"].split(" ")[0] == "T" ? 365.0 : 360.0;
                 let previousQuantity = securityInPortfolio["Quantity"];
@@ -559,6 +545,7 @@ async function updatePositionPortfolio(path) {
                         if (!object["Entry Price"][thisMonth]) {
                             object["Entry Price"][thisMonth] = currentPrice;
                         }
+                        object["Last Upload Trade"] = new Date();
                         positions.push(object);
                     }
                     else if (returnPositionProgress(positions, identifier, location)) {
@@ -603,6 +590,7 @@ async function updatePositionPortfolio(path) {
                             object["Day Rlzd"][thisDay] = object["Day Rlzd"][thisDay] ? object["Day Rlzd"][thisDay] : [];
                             object["Day Rlzd"][thisDay].push(dayRlzdForThisTrade);
                         }
+                        object["Last Upload Trade"] = new Date();
                         positions = updateExisitingPosition(positions, identifier, location, object);
                     }
                 }
@@ -909,7 +897,7 @@ async function getMTDParams(portfolio, lastMonthPortfolio, dateInput) {
             for (let lastMonthIndex = 0; lastMonthIndex < lastMonthPortfolio.length; lastMonthIndex++) {
                 lastMonthPosition = lastMonthPortfolio[lastMonthIndex];
                 portfolio[index]["Notes"] = "";
-                if (lastMonthPosition["ISIN"] == position["ISIN"]) {
+                if ((lastMonthPosition["ISIN"] == position["ISIN"] && position["ISIN"] && lastMonthPosition["ISIN"]) || (lastMonthPosition["Issue"] == position["Issue"] && position["Issue"] && lastMonthPosition["Issue"])) {
                     portfolio[index]["MTD Mark"] = lastMonthPosition["Mid"];
                     portfolio[index]["MTD FX"] = lastMonthPosition["FX Rate"] ? lastMonthPosition["FX Rate"] : lastMonthPosition["holdPortfXrate"] ? lastMonthPosition["holdPortfXrate"] : null;
                 }
@@ -947,9 +935,9 @@ async function getPreviousMarkPreviousFX(portfolio, previousDayPortfolio, dateIn
     // try {
     for (let index = 0; index < portfolio.length; index++) {
         let position = portfolio[index];
-        let previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue) => previousDayIssue["ISIN"] == position["ISIN"]) : null;
+        let previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue) => previousDayIssue["ISIN"] == position["ISIN"] && previousDayIssue["ISIN"] && position["ISIN"]) : null;
         if (!previousDayPosition) {
-            previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue) => previousDayIssue["Issue"] == position["Issue"]) : null;
+            previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue) => previousDayIssue["Issue"] == position["Issue"] && previousDayIssue["Issue"] && position["Issue"]) : null;
         }
         let previousMark = previousDayPosition ? previousDayPosition["Mid"] : "0";
         let previousFxRate = previousDayPosition ? (previousDayPosition["FX Rate"] ? previousDayPosition["FX Rate"] : previousDayPosition["holdPortfXrate"] ? previousDayPosition["holdPortfXrate"] : 0) : 0;

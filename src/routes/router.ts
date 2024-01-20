@@ -41,8 +41,12 @@ router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: 
     if (date.includes("NaN")) {
       date = getDateTimeInMongoDBCollectionFormat(new Date());
     }
-    console.log(date, "test");
-    let report = await getHistoricalPortfolioWithAnalytics(date);
+    
+    let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMonthlyPl" | "groupDV01Sum" | any = req.query.sort || "order";
+    let sign: any = req.query.sign || 1;
+    
+    let report = await getHistoricalPortfolioWithAnalytics(date, sort, sign);
+   
     res.send(report);
   } catch (error: any) {
     res.send({ error: error.toString() });
@@ -51,14 +55,15 @@ router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: 
 router.get("/summary-portfolio", async (req: Request, res: Response, next: NextFunction) => {
   try {
     let date: any = req.query.date;
-
+    let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMonthlyPl" | "groupDV01Sum" | any = req.query.sort || "order";
+    let sign: any = req.query.sign || 1;
+   
     if (date.includes("NaN")) {
       date = getDateTimeInMongoDBCollectionFormat(new Date());
     }
-    
-    
+
     date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
-    let report = await getHistoricalSummaryPortfolioWithAnalytics(date);
+    let report = await getHistoricalSummaryPortfolioWithAnalytics(date, sort, sign);
 
     res.send(report);
   } catch (error: any) {

@@ -35,8 +35,9 @@ router.get("/portfolio", common_1.verifyToken, async (req, res, next) => {
         if (date.includes("NaN")) {
             date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
         }
-        console.log(date, "test");
-        let report = await (0, reports_1.getHistoricalPortfolioWithAnalytics)(date);
+        let sort = req.query.sort || "order";
+        let sign = req.query.sign || 1;
+        let report = await (0, reports_1.getHistoricalPortfolioWithAnalytics)(date, sort, sign);
         res.send(report);
     }
     catch (error) {
@@ -46,11 +47,13 @@ router.get("/portfolio", common_1.verifyToken, async (req, res, next) => {
 router.get("/summary-portfolio", async (req, res, next) => {
     try {
         let date = req.query.date;
+        let sort = req.query.sort || "order";
+        let sign = req.query.sign || 1;
         if (date.includes("NaN")) {
             date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
         }
         date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date(date)).split(" ")[0] + " 23:59";
-        let report = await (0, reports_1.getHistoricalSummaryPortfolioWithAnalytics)(date);
+        let report = await (0, reports_1.getHistoricalSummaryPortfolioWithAnalytics)(date, sort, sign);
         res.send(report);
     }
     catch (error) {
