@@ -1,11 +1,12 @@
 require("dotenv").config();
 
-const axios = require("axios");
-const FormData = require("form-data");
 import { renderVcon, renderFx } from "./excelFormat";
 import { getPortfolio } from "./reports";
 import { mergeSort } from "./portfolioFunctions";
 import { convertExcelDateToJSDate, getTradeDateYearTrades } from "./common";
+const { v4: uuidv4 } = require("uuid");
+const axios = require("axios");
+const FormData = require("form-data");
 
 export async function getGraphToken() {
   try {
@@ -71,10 +72,6 @@ export async function getVcons(token: string, start_time: string, end_time: stri
 
       if (triadaId) {
         continue;
-        // id = triadaId["Triada Trade Id"];
-        // location = triadaId["Location"];
-        // trade_status = "uploaded_to_app";
-        // vcon["Triada Trade Id"] = id;
       }
       vcon["Location"] = location;
 
@@ -85,8 +82,7 @@ export async function getVcons(token: string, start_time: string, end_time: stri
     for (let customIndex = 0; customIndex < object.length; customIndex++) {
       let trade = object[customIndex];
       if (!trade["Triada Trade Id"]) {
-        let tradeDate = getTradeDateYearTrades(convertExcelDateToJSDate(trade["Trade Date"]));
-        id = `Triada-BBB-${tradeDate}-${count}`;
+        id = uuidv4();
         trade["Triada Trade Id"] = id;
         count++;
       }
@@ -98,7 +94,6 @@ export async function getVcons(token: string, start_time: string, end_time: stri
 }
 
 export async function getFxTrades(token: string, start_time: string, end_time: string, trades: any) {
-  // let portfolio = await getPortfolio()
   try {
     let url = `https://graph.microsoft.com/v1.0/users/vcons@triadacapital.com/messages?$filter=contains(subject,'Fill Alert') and receivedDateTime ge ${format_date_ISO(start_time)} and receivedDateTime le ${format_date_ISO(end_time)}&$top=1000000`;
     let action = await axios.get(url, {

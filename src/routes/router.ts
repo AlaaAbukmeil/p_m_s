@@ -3,12 +3,12 @@ import { image } from "../models/image";
 import { registerUser, checkIfUserExists, sendResetPasswordRequest, resetPassword } from "../controllers/auth";
 import { Request, Response } from "express";
 import { verifyToken, formatDateVconFile, generateRandomString, monthlyRlzdDate } from "../controllers/common";
-import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, getTrades, getPortfolio, editPosition, getHistoricalSummaryPortfolioWithAnalytics } from "../controllers/reports";
-import { bloombergToTriada, getDateTimeInMongoDBCollectionFormat, readIBRawExcel, readPricingSheet } from "../controllers/portfolioFunctions";
+import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, getTrades, getPortfolio, editPosition, getHistoricalSummaryPortfolioWithAnalytics, getEarliestCollectionName } from "../controllers/reports";
+import { bloombergToTriada, getAllDatesSinceLastMonthLastDay, getDateTimeInMongoDBCollectionFormat, readIBRawExcel, readPricingSheet } from "../controllers/portfolioFunctions";
 import { uploadArrayAndReturnFilePath, getTriadaTrades, formatCentralizedRawFiles, formatIbTrades, formatEmsxTrades, readEmsxRawExcel } from "../controllers/excelFormat";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/graphApiConnect";
 import { formatMufg, formatFxMufg, tradesTriada } from "../controllers/mufgOperations";
-import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, checkMUFGEndOfMonthWithPortfolio, getPortfolioOnSpecificDate, editPositionPortfolio, getFundDetails, getAllFundDetails, editFund, deleteFund, addFund } from "../controllers/operations";
+import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, checkMUFGEndOfMonthWithPortfolio, getPortfolioOnSpecificDate, editPositionPortfolio, getFundDetails, getAllFundDetails, editFund, deleteFund, addFund, editTrade, deleteTrade, recalculateRlzd, deletePosition } from "../controllers/operations";
 import { editDayRlzd, editMTDRlzd } from "../controllers/oneTimeFunctions";
 require("dotenv").config();
 
@@ -41,12 +41,12 @@ router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: 
     if (date.includes("NaN")) {
       date = getDateTimeInMongoDBCollectionFormat(new Date());
     }
-    
+
     let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMonthlyPl" | "groupDV01Sum" | any = req.query.sort || "order";
     let sign: any = req.query.sign || 1;
-    
+
     let report = await getHistoricalPortfolioWithAnalytics(date, sort, sign);
-   
+
     res.send(report);
   } catch (error: any) {
     res.send({ error: error.toString() });
@@ -55,9 +55,9 @@ router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: 
 router.get("/summary-portfolio", async (req: Request, res: Response, next: NextFunction) => {
   try {
     let date: any = req.query.date;
-    let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMonthlyPl" | "groupDV01Sum" | any = req.query.sort || "order";
+    let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMonthlyPl" | "groupDV01Sum" | "groupDuration" | any = req.query.sort || "order";
     let sign: any = req.query.sign || 1;
-   
+
     if (date.includes("NaN")) {
       date = getDateTimeInMongoDBCollectionFormat(new Date());
     }
@@ -150,6 +150,21 @@ router.post("/signUp", async (req: Request, res: Response, next: NextFunction) =
   let result = await registerUser(email, password, verificationCode);
   res.send(result);
 });
+router.post("/send-reset-code", async (req: Request, res: Response, next: NextFunction) => {
+  let data = req.body;
+  console.log(data, "x");
+  console.log(data.email);
+  let result = await sendResetPasswordRequest(data.email);
+  console.log(result);
+  res.send(result);
+});
+
+router.post("/reset-password", async (req: Request, res: Response, next: NextFunction) => {
+  let data = req.body;
+  let result = await resetPassword(data.email, data.code, data.password);
+
+  res.send(result);
+});
 
 router.post("/elec-blot", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   const fileName = req.files[0].filename;
@@ -163,42 +178,6 @@ router.post("/elec-blot", verifyToken, uploadBeforeExcel.any(), async (req: Requ
     let eBlotName = await uploadArrayAndReturnFilePath(arr, "test"); //
     let downloadEBlotName = "https://storage.googleapis.com/capital-trade-396911.appspot.com/" + eBlotName;
     res.send(downloadEBlotName);
-  }
-});
-
-router.post("/upload-trades", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  try {
-    let files = req.files;
-    const fileName = req.files[0].filename;
-    const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
-
-    let action: any = await updatePositionPortfolio(path); //updatePositionPortfolio
-    console.log(action);
-
-    if (action?.error) {
-      res.send({ error: action.error });
-    } else {
-      res.sendStatus(200);
-    }
-  } catch (error) {
-    console.log(error);
-    res.send({ error: "File Template is not correct" });
-  }
-});
-
-router.post("/update-prices", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  try {
-    const fileName = req.files[0].filename;
-    const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
-    let action: any = await updatePricesPortfolio(path);
-    console.log(action);
-    if (action?.error) {
-      res.send({ error: action.error });
-    } else {
-      res.sendStatus(200);
-    }
-  } catch (error) {
-    res.send({ error: "File Template is not correct" });
   }
 });
 
@@ -288,11 +267,13 @@ router.post("/centralized-blotter", verifyToken, uploadBeforeExcel.any(), async 
     let data = req.body;
     let token = await getGraphToken();
     // to be modified
-    let vconTrades = await getTriadaTrades("vcons", new Date(data.timestamp_start).getTime() - 2 * 24 * 60 * 60 * 1000, new Date(data.timestamp_end).getTime() + 2 * 24 * 60 * 60 * 1000);
+    let start = new Date(data.timestamp_start).getTime() - 2 * 24 * 60 * 60 * 1000;
+    let end = new Date(data.timestamp_end).getTime() + 2 * 24 * 60 * 60 * 1000;
+    let vconTrades = await getTriadaTrades("vcons", start, end);
 
     let vcons: any = await getVcons(token, data.timestamp_start, data.timestamp_end, vconTrades[0], vconTrades[1]);
-    let ibTrades = await getTriadaTrades("ib", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
-    let emsxTrades = await getTriadaTrades("emsx", new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime());
+    let ibTrades = await getTriadaTrades("ib", start, end);
+    let emsxTrades = await getTriadaTrades("emsx", start, end);
     let action: any = await formatCentralizedRawFiles(req.files, vcons, vconTrades[0], ibTrades[0], emsxTrades[0]);
 
     if (action.error) {
@@ -313,23 +294,6 @@ router.post("/centralized-blotter", verifyToken, uploadBeforeExcel.any(), async 
   }
 });
 
-router.post("/bulk-edit", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  try {
-    const fileName = req.files[0].filename;
-    const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
-    let action: any = await editPositionPortfolio(path);
-    console.log(action);
-    if (action?.error) {
-      res.send({ error: action.error });
-    } else {
-      res.sendStatus(200);
-    }
-  } catch (error) {
-    console.log(error);
-    res.send({ error: "File Template is not correct" });
-  }
-});
-
 router.post("/emsx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let files = req.files;
@@ -337,7 +301,7 @@ router.post("/emsx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Req
     const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
     //to be modified
     let trades = await getTriadaTrades("emsx");
-    console.log(trades[0]);
+
     let data = await readEmsxRawExcel(path);
 
     let portfolio = await getPortfolio();
@@ -353,33 +317,6 @@ router.post("/emsx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Req
   } catch (error) {
     console.log(error);
     res.send({ error: "File Template is not correct" });
-  }
-});
-
-router.post("/send-reset-code", async (req: Request, res: Response, next: NextFunction) => {
-  let data = req.body;
-  console.log(data, "x");
-  console.log(data.email);
-  let result = await sendResetPasswordRequest(data.email);
-  console.log(result);
-  res.send(result);
-});
-
-router.post("/reset-password", async (req: Request, res: Response, next: NextFunction) => {
-  let data = req.body;
-  let result = await resetPassword(data.email, data.code, data.password);
-
-  res.send(result);
-});
-
-router.post("/edit-position", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  try {
-    let action = await editPosition(req.body, req.body.date);
-
-    res.sendStatus(200);
-  } catch (error) {
-    console.log(error);
-    res.send({ error: "Template is not correct" });
   }
 });
 
@@ -399,10 +336,124 @@ router.post("/fx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Reque
   }
 });
 
+router.post("/upload-trades", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let files = req.files;
+    const fileName = req.files[0].filename;
+    const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+
+    let action: any = await updatePositionPortfolio(path); //updatePositionPortfolio
+    console.log(action);
+
+    if (action?.error) {
+      res.send({ error: action.error });
+    } else {
+      res.sendStatus(200);
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ error: "File Template is not correct" });
+  }
+});
+
+router.post("/edit-position", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let action = await editPosition(req.body, req.body.date);
+
+    res.sendStatus(200);
+  } catch (error) {
+    console.log(error);
+    res.send({ error: "Template is not correct" });
+  }
+});
+
+router.post("/edit-trade", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let action = await editTrade(req.body, req.body.tradeType);
+
+    if (action.error) {
+      res.send({ error: action.error });
+    } else {
+      res.send({ error: action.error });
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ error: "Template is not correct" });
+  }
+});
+
+router.post("/delete-trade", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let data = req.body;
+    let tradeType = req.body.tradeType;
+    console.log(data);
+    let action: any = await deleteTrade(tradeType, data["_id"], data["Issue"]);
+    if (action.error) {
+      res.send({ error: action.error, status: 404 });
+    } else {
+      res.send({ message: "success", status: 200 });
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ error: "Unexpected Error" });
+  }
+});
+
+router.post("/delete-position", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let data = req.body;
+    let tradeType = req.body.tradeType;
+
+    let action: any = await deletePosition(data["_id"]);
+    if (action.error) {
+      res.send({ error: action.error, status: 404 });
+    } else {
+      res.send({ message: "success", status: 200 });
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ error: "Unexpected Error" });
+  }
+});
+
+router.post("/update-prices", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    const fileName = req.files[0].filename;
+    const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+    let action: any = await updatePricesPortfolio(path);
+    console.log(action);
+    if (action?.error) {
+      res.send({ error: action.error });
+    } else {
+      res.sendStatus(200);
+    }
+  } catch (error) {
+    res.send({ error: "File Template is not correct" });
+  }
+});
+
+router.post("/bulk-edit", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    const fileName = req.files[0].filename;
+    const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
+    let action: any = await editPositionPortfolio(path);
+    console.log(action);
+    if (action?.error) {
+      res.send({ error: action.error });
+    } else {
+      res.sendStatus(200);
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ error: "File Template is not correct" });
+  }
+});
+
 router.post("/update-previous-prices", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let collectionDate: string = req.body.collectionDate;
     let collectionType: string = req.body.collectionType;
+
     const fileName = req.files[0].filename;
     const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
     let data: any = collectionType == "MUFG" ? await readMUFGPrices(path) : await readPricingSheet(path);
@@ -467,6 +518,7 @@ router.post("/delete-fund", verifyToken, uploadBeforeExcel.any(), async (req: Re
     res.send({ error: "Template is not correct" });
   }
 });
+
 router.post("/add-fund", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     console.log(req.body, "before");
@@ -482,11 +534,6 @@ router.post("/add-fund", verifyToken, uploadBeforeExcel.any(), async (req: Reque
   }
 });
 
-router.post("/one-time", uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  // let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 3 * 24 * 60 * 60 * 1000));
-  // let test = await editMTDRlzd(day);
-
-  res.sendStatus(200);
-});
+router.post("/one-time", uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {});
 
 export default router;

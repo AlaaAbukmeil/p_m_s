@@ -81,7 +81,7 @@ async function checkIfUserExists(email, password) {
             }
         }
         else {
-            return { message: "user does not exit", status: 401 };
+            return { message: "user does not exist", status: 401 };
         }
     }
     catch (error) {
@@ -114,7 +114,7 @@ async function sendResetPasswordRequest(userEmail) {
         }
     }
     else {
-        return { message: "User does not exit, please sign up!", status: 401 };
+        return { message: "User does not exist, please sign up!", status: 401 };
     }
 }
 exports.sendResetPasswordRequest = sendResetPasswordRequest;
@@ -191,7 +191,7 @@ async function resetPassword(userEmail, resetCode, enteredPassword) {
         }
     }
     else {
-        return { message: "User does not exit, please sign up!", status: 401 };
+        return { message: "User does not exist, please sign up!", status: 401 };
     }
 }
 exports.resetPassword = resetPassword;

@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.insertTradesInPortfolioAtASpecificDate = exports.editPosition = exports.insertPricesUpdatesInPortfolio = exports.updatePricesPortfolio = exports.insertTradesInPortfolio = exports.updatePositionPortfolio = exports.getBBTicker = exports.insertTrade = exports.getDailyEarnedInterestRlzPtf = exports.getSecurityInPortfolio = exports.getTrades = exports.getHistoricalPortfolio = exports.getPortfolio = exports.getAllCollectionDatesSinceStartMonth = exports.getEarliestCollectionName = exports.getHistoricalSummaryPortfolioWithAnalytics = exports.getHistoricalPortfolioWithAnalytics = void 0;
+exports.insertTradesInPortfolioAtASpecificDate = exports.editPosition = exports.insertPricesUpdatesInPortfolio = exports.updatePricesPortfolio = exports.insertTradesInPortfolio = exports.updatePositionPortfolio = exports.updateExisitingPosition = exports.returnPositionProgress = exports.getBBTicker = exports.tradesTriadaIds = exports.insertTrade = exports.getDailyEarnedInterestRlzPtf = exports.getSecurityInPortfolio = exports.getTrades = exports.getHistoricalPortfolio = exports.getPortfolio = exports.getAllCollectionDatesSinceStartMonth = exports.getEarliestCollectionName = exports.getHistoricalSummaryPortfolioWithAnalytics = exports.getHistoricalPortfolioWithAnalytics = void 0;
 require("dotenv").config();
 const portfolioFunctions_1 = require("./portfolioFunctions");
 const util_1 = __importDefault(require("util"));
@@ -45,6 +45,7 @@ async function getHistoricalPortfolioWithAnalytics(date, sort, sign) {
     let now = new Date(date);
     let currentMonth = now.getMonth();
     let currentYear = now.getFullYear();
+    let uploadTradesDate = "";
     let thisMonth = (0, common_1.monthlyRlzdDate)(date);
     documents = documents.filter((position) => {
         if (position["Quantity"] == 0) {
@@ -58,6 +59,14 @@ async function getHistoricalPortfolioWithAnalytics(date, sort, sign) {
         }
     });
     documents.sort((current, next) => {
+        if (current["Last Upload Trade"]) {
+            if (uploadTradesDate != "" && new Date(uploadTradesDate).getTime() < new Date(current["Last Upload Trade"]).getTime()) {
+                uploadTradesDate = current["Last Upload Trade"];
+            }
+            else if (uploadTradesDate == "") {
+                uploadTradesDate = current["Last Upload Trade"];
+            }
+        }
         if (current["Quantity"] === 0 && next["Quantity"] !== 0) {
             return 1; // a should come after b
         }
@@ -94,7 +103,7 @@ async function getHistoricalPortfolioWithAnalytics(date, sort, sign) {
     let portfolioFormattedSorted = (0, tableFormatter_1.formatFrontEndTable)(documents, date, fund, dates, sort, sign);
     let fundDetails = portfolioFormattedSorted.fundDetails;
     documents = portfolioFormattedSorted.portfolio;
-    return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis };
+    return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: uploadTradesDate };
 }
 exports.getHistoricalPortfolioWithAnalytics = getHistoricalPortfolioWithAnalytics;
 async function getHistoricalSummaryPortfolioWithAnalytics(date, sort, sign) {
@@ -114,6 +123,7 @@ async function getHistoricalSummaryPortfolioWithAnalytics(date, sort, sign) {
     ])
         .toArray();
     let now = new Date(date);
+    let uploadTradesDate = "";
     let thisMonth = (0, common_1.monthlyRlzdDate)(date);
     documents = documents.filter((position) => {
         if (position["Quantity"] == 0) {
@@ -127,6 +137,14 @@ async function getHistoricalSummaryPortfolioWithAnalytics(date, sort, sign) {
         }
     });
     documents.sort((current, next) => {
+        if (current["Last Upload Trade"]) {
+            if (uploadTradesDate != "" && new Date(uploadTradesDate).getTime() < new Date(current["Last Upload Trade"]).getTime()) {
+                uploadTradesDate = current["Last Upload Trade"];
+            }
+            else if (uploadTradesDate == "") {
+                uploadTradesDate = current["Last Upload Trade"];
+            }
+        }
         if (current["Quantity"] === 0 && next["Quantity"] !== 0) {
             return 1; // a should come after b
         }
@@ -163,7 +181,7 @@ async function getHistoricalSummaryPortfolioWithAnalytics(date, sort, sign) {
     let portfolioFormattedSorted = (0, tableFormatter_1.formatFrontEndSummaryTable)(documents, date, fund, dates, sort, sign);
     let fundDetails = portfolioFormattedSorted.fundDetails;
     documents = portfolioFormattedSorted.portfolio;
-    return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis };
+    return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: uploadTradesDate };
 }
 exports.getHistoricalSummaryPortfolioWithAnalytics = getHistoricalSummaryPortfolioWithAnalytics;
 async function getEarliestCollectionName(originalDate) {
@@ -376,6 +394,7 @@ async function tradesTriadaIds() {
         return error;
     }
 }
+exports.tradesTriadaIds = tradesTriadaIds;
 async function getBBTicker(obj) {
     let index = 0;
     let bbTicker = {};
@@ -417,6 +436,7 @@ function returnPositionProgress(positions, identifier, location) {
     }
     return updateingPosition;
 }
+exports.returnPositionProgress = returnPositionProgress;
 function updateExisitingPosition(positions, identifier, location, updatedPosition) {
     for (let index = 0; index < positions.length; index++) {
         let position = positions[index];
@@ -426,6 +446,7 @@ function updateExisitingPosition(positions, identifier, location, updatedPositio
     }
     return positions;
 }
+exports.updateExisitingPosition = updateExisitingPosition;
 async function updatePositionPortfolio(path) {
     let allTrades = await (0, portfolioFunctions_1.readCentralizedEBlot)(path);
     if (allTrades.error) {
@@ -545,7 +566,7 @@ async function updatePositionPortfolio(path) {
                         if (!object["Entry Price"][thisMonth]) {
                             object["Entry Price"][thisMonth] = currentPrice;
                         }
-                        object["Last Upload Trade"] = new Date();
+                        object["Last Individual Upload Trade"] = new Date();
                         positions.push(object);
                     }
                     else if (returnPositionProgress(positions, identifier, location)) {
@@ -590,7 +611,7 @@ async function updatePositionPortfolio(path) {
                             object["Day Rlzd"][thisDay] = object["Day Rlzd"][thisDay] ? object["Day Rlzd"][thisDay] : [];
                             object["Day Rlzd"][thisDay].push(dayRlzdForThisTrade);
                         }
-                        object["Last Upload Trade"] = new Date();
+                        object["Last Individual Upload Trade"] = new Date();
                         positions = updateExisitingPosition(positions, identifier, location, object);
                     }
                 }
@@ -600,7 +621,7 @@ async function updatePositionPortfolio(path) {
                 let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
                 // await appendLogs(positions);
                 await (0, operations_1.insertEditLogs)(["trades upload"], "Upload Trades", dateTime, "Centarlized Blotter", "Link: " + path);
-                let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(positions, portfolio);
+                let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(positions, portfolio, "Last Upload Trade");
                 let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
                 let action3 = await insertTrade(allTrades[2], "emsx");
                 let action2 = await insertTrade(allTrades[1], "ib");
@@ -715,7 +736,7 @@ async function updatePricesPortfolio(path) {
                         if (row["ModDurPerp"]) {
                             object["Modified Duration"] = row["ModDurPerp"].toString().includes("#") ? (row["ModDur"].toString().includes("N/A") ? 0 : row["ModDur"]) : row["ModDurPerp"];
                         }
-                        if (!row["Call Date"].includes("N/A") || !row["Call Date"].includes("#")) {
+                        if (!row["Call Date"].includes("N/A") && !row["Call Date"].includes("#")) {
                             object["Call Date"] = row["Call Date"];
                         }
                         if (currencyInUSD[object["Currency"]]) {
@@ -724,7 +745,6 @@ async function updatePricesPortfolio(path) {
                         else {
                             object["FX Rate"] = 1;
                         }
-                        object["Last Price Update"] = new Date();
                         if (!object["Country"] && row["Country"] && !row["Country"].includes("#N/A")) {
                             object["Country"] = row["Country"];
                         }
@@ -749,7 +769,7 @@ async function updatePricesPortfolio(path) {
             }
             try {
                 let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
-                let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(updatedPricePortfolio, portfolio);
+                let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(updatedPricePortfolio, portfolio, "Last Price Update");
                 let insertion = await insertPricesUpdatesInPortfolio(updatedPortfolio[0]);
                 await (0, operations_1.insertEditLogs)(["prices update"], "Update Prices", dateTime, `Bloomberg Pricing Sheet - positions that did not update: ${updatedPortfolio[1]}`, "Link: " + path);
                 if (!Object.keys(updatedPortfolio[1]).length) {

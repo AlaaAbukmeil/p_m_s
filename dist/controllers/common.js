@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCurrentDateTime = exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDateTime = exports.convertExcelDateToJSDate = exports.getDateMufg = exports.monthlyRlzdDate = exports.getTradeDateYearTradesWithoutTheCentury = exports.getTradeDateYearTrades = exports.getSettlementDateYearTrades = exports.formatSettleDateVcon = exports.formatTradeDate = exports.getCurrentDateVconFormat = exports.verifyToken = exports.getTime = exports.formatDateReadable = exports.formatDateVconFile = exports.formatDate = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = exports.uri = void 0;
+exports.getCurrentDateTime = exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDateTime = exports.convertExcelDateToJSDate = exports.swapMonthDay = exports.getDateMufg = exports.monthlyRlzdDate = exports.getTradeDateYearTradesWithoutTheCentury = exports.getTradeDateYearTrades = exports.getSettlementDateYearTrades = exports.formatSettleDateVcon = exports.formatTradeDate = exports.getCurrentDateVconFormat = exports.verifyToken = exports.getTime = exports.formatDateReadable = exports.formatDateVconFile = exports.formatDate = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = exports.uri = void 0;
 require("dotenv").config();
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 exports.uri = "mongodb+srv://alaa:" + process.env.MONGODBPASSWORD + "@atlascluster.zpfpywq.mongodb.net/?retryWrites=true&w=majority";
 function getCurrentMonthDateRange() {
     const now = new Date();
@@ -10,12 +10,7 @@ function getCurrentMonthDateRange() {
     const currentYear = now.getFullYear();
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
     const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
-    const monthNames = [
-        "January", "February", "March",
-        "April", "May", "June", "July",
-        "August", "September", "October",
-        "November", "December"
-    ];
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const formattedFirstDay = `${monthNames[currentMonth]} ${firstDayOfMonth.getDate()}${getOrdinalSuffix(firstDayOfMonth.getDate())} ${currentYear}`;
     const formattedLastDay = `${monthNames[currentMonth]} ${lastDayOfMonth.getDate()}${getOrdinalSuffix(lastDayOfMonth.getDate())} ${currentYear}`;
     return `${formattedFirstDay} - ${formattedLastDay}`;
@@ -32,10 +27,10 @@ function getDate(dateInput) {
     if (dateInput) {
         date = new Date(dateInput); // Current date
     }
-    const formattedDate = date.toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric', // four-digit year
+    const formattedDate = date.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric", // four-digit year
     });
     return formattedDate;
 }
@@ -45,33 +40,33 @@ function formatDate(date) {
     if (!date) {
         return "Not Applicable";
     }
-    const formattedDate = date.toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric', // four-digit year
+    const formattedDate = date.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric", // four-digit year
     });
     return formattedDate;
 }
 exports.formatDate = formatDate;
 function formatDateVconFile(date) {
-    let d = new Date(date), month = '' + (d.getMonth() + 1), day = '' + d.getDate();
+    let d = new Date(date), month = "" + (d.getMonth() + 1), day = "" + d.getDate();
     if (month.length < 2)
-        month = '0' + month;
+        month = "0" + month;
     if (day.length < 2)
-        day = '0' + day;
-    return [month, day].join('-');
+        day = "0" + day;
+    return [month, day].join("-");
 }
 exports.formatDateVconFile = formatDateVconFile;
 function formatDateReadable(date) {
-    let d = new Date(date), month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
+    let d = new Date(date), month = "" + (d.getMonth() + 1), day = "" + d.getDate(), year = d.getFullYear();
     if (year == 1970) {
         return 0;
     }
     if (month.length < 2)
-        month = '0' + month;
+        month = "0" + month;
     if (day.length < 2)
-        day = '0' + day;
-    return [month, day, year].join('/');
+        day = "0" + day;
+    return [month, day, year].join("/");
 }
 exports.formatDateReadable = formatDateReadable;
 function getTime() {
@@ -79,15 +74,15 @@ function getTime() {
     let hours = date.getHours();
     let minutes = date.getMinutes();
     // Convert hours and minutes to strings and pad with zeros if necessary
-    hours = hours < 10 ? '0' + hours : '' + hours;
-    minutes = minutes < 10 ? '0' + minutes : '' + minutes;
+    hours = hours < 10 ? "0" + hours : "" + hours;
+    minutes = minutes < 10 ? "0" + minutes : "" + minutes;
     const time = `${hours}:${minutes}`;
     return time;
 }
 exports.getTime = getTime;
 const verifyToken = (req, res, next) => {
     var _a;
-    const token = (_a = req.headers.authorization) === null || _a === void 0 ? void 0 : _a.split(' ')[1];
+    const token = (_a = req.headers.authorization) === null || _a === void 0 ? void 0 : _a.split(" ")[1];
     if (!token) {
         return res.sendStatus(401);
     }
@@ -105,8 +100,8 @@ function getCurrentDateVconFormat() {
     // Get current date
     const date = new Date();
     // Get day, month, and year
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based in JavaScript
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0"); // Months are 0-based in JavaScript
     const year = date.getFullYear();
     // Format date as dd/mm/yyyy
     return `${day}/${month}/${year}`;
@@ -117,8 +112,8 @@ function formatTradeDate(date) {
     const year = date.getFullYear().toString();
     let month = (date.getMonth() + 1).toString();
     let day = date.getDate().toString();
-    month = month.length < 2 ? '0' + month : month;
-    day = day.length < 2 ? '0' + day : day;
+    month = month.length < 2 ? "0" + month : month;
+    day = day.length < 2 ? "0" + day : day;
     return `${month}/${day}/${year}`;
 }
 exports.formatTradeDate = formatTradeDate;
@@ -127,8 +122,8 @@ function formatSettleDateVcon(date) {
     const year = date.getFullYear().toString().slice(-2);
     let month = (date.getMonth() + 1).toString();
     let day = date.getDate().toString();
-    month = month.length < 2 ? '0' + month : month;
-    day = day.length < 2 ? '0' + day : day;
+    month = month.length < 2 ? "0" + month : month;
+    day = day.length < 2 ? "0" + day : day;
     return `${month}/${day}`;
 }
 exports.formatSettleDateVcon = formatSettleDateVcon;
@@ -139,7 +134,7 @@ function getSettlementDateYearTrades(date1, date2) {
         let dateObj2 = new Date(date2);
         // Check if the dates are valid
         if (isNaN(dateObj1.getTime()) || isNaN(dateObj2.getTime())) {
-            throw new Error('Invalid date format. Use mm/dd/yyyy.');
+            throw new Error("Invalid date format. Use mm/dd/yyyy.");
         }
         // If the month of the second date is less than the month of the first date,
         // it means we've crossed into a new year, so increment the year
@@ -148,14 +143,14 @@ function getSettlementDateYearTrades(date1, date2) {
         }
         // Format the date as mm/dd/yyyy
         let year = dateObj2.getFullYear();
-        let month = (dateObj2.getMonth() + 1).toString().padStart(2, '0'); // padStart ensures two-digit month
-        let day = dateObj2.getDate().toString().padStart(2, '0'); // padStart ensures two-digit day
+        let month = (dateObj2.getMonth() + 1).toString().padStart(2, "0"); // padStart ensures two-digit month
+        let day = dateObj2.getDate().toString().padStart(2, "0"); // padStart ensures two-digit day
         // Return the second date with the potentially updated year
         return `${month}/${day}/${year}`;
     }
     catch (error) {
         console.error(error.message);
-        return '';
+        return "";
     }
 }
 exports.getSettlementDateYearTrades = getSettlementDateYearTrades;
@@ -174,18 +169,33 @@ exports.getTradeDateYearTradesWithoutTheCentury = getTradeDateYearTradesWithoutT
 function monthlyRlzdDate(dateInput) {
     let date = new Date(dateInput);
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, "0");
     return `${year}/${month}`;
 }
 exports.monthlyRlzdDate = monthlyRlzdDate;
 function getDateMufg(inputDate) {
     let date = new Date(inputDate);
-    let day = `${date.getDate()}`.padStart(2, '0'); // get the day
-    let month = `${date.getMonth() + 1}`.padStart(2, '0'); // get the month (months are 0-indexed in JS, so add 1)
+    let day = `${date.getDate()}`.padStart(2, "0"); // get the day
+    let month = `${date.getMonth() + 1}`.padStart(2, "0"); // get the month (months are 0-indexed in JS, so add 1)
     let year = `${date.getFullYear()}`.slice(-2); // get the year and take the last two digits
     return `${month}/${day}/${year}`;
 }
 exports.getDateMufg = getDateMufg;
+function swapMonthDay(dateStr) {
+    // Split the string into components
+    const parts = dateStr.split("/");
+    // Check if the input is correct
+    if (parts.length === 3 && parts.every((part) => !isNaN(part))) {
+        const [day, month, year] = parts;
+        // Reassemble the date string in the format "mm/dd/yyyy"
+        return `${month}/${day}/${year}`;
+    }
+    else {
+        // If the input is not valid, return an error message
+        return "Invalid date format. Please use 'dd/mm/yyyy'.";
+    }
+}
+exports.swapMonthDay = swapMonthDay;
 function convertExcelDateToJSDate(serial) {
     if (parseFloat(serial) < 45000) {
         return serial;
@@ -197,8 +207,8 @@ function convertExcelDateToJSDate(serial) {
     const year = jsDate.getFullYear();
     const month = jsDate.getMonth() + 1; // JavaScript months start at 0
     const day = jsDate.getDate();
-    const formattedMonth = month < 10 ? '0' + month : month;
-    const formattedDay = day < 10 ? '0' + day : day;
+    const formattedMonth = month < 10 ? "0" + month : month;
+    const formattedDay = day < 10 ? "0" + day : day;
     return `${formattedMonth}/${formattedDay}/${year}`;
 }
 exports.convertExcelDateToJSDate = convertExcelDateToJSDate;
@@ -216,11 +226,11 @@ function convertExcelDateToJSDateTime(serial) {
     const hours = jsDate.getHours();
     const minutes = jsDate.getMinutes();
     const seconds = jsDate.getSeconds();
-    const formattedMonth = month < 10 ? '0' + month : month;
-    const formattedDay = day < 10 ? '0' + day : day;
-    const formattedHours = hours < 10 ? '0' + hours : hours;
-    const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
-    const formattedSeconds = seconds < 10 ? '0' + seconds : seconds;
+    const formattedMonth = month < 10 ? "0" + month : month;
+    const formattedDay = day < 10 ? "0" + day : day;
+    const formattedHours = hours < 10 ? "0" + hours : hours;
+    const formattedMinutes = minutes < 10 ? "0" + minutes : minutes;
+    const formattedSeconds = seconds < 10 ? "0" + seconds : seconds;
     return `${formattedHours}:${formattedMinutes}`;
 }
 exports.convertExcelDateToJSDateTime = convertExcelDateToJSDateTime;
@@ -235,8 +245,8 @@ function convertBBGEmexDate(date) {
 }
 exports.convertBBGEmexDate = convertBBGEmexDate;
 function generateRandomString(length) {
-    let result = '';
-    let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = "";
+    let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let charactersLength = characters.length;
     for (let i = 0; i < length; i++) {
         result += characters.charAt(Math.floor(Math.random() * charactersLength));
@@ -246,11 +256,11 @@ function generateRandomString(length) {
 exports.generateRandomString = generateRandomString;
 function getCurrentDateTime() {
     const now = new Date();
-    const month = String(now.getMonth() + 1).padStart(2, '0'); // Months are 0-11 in JavaScript
-    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, "0"); // Months are 0-11 in JavaScript
+    const day = String(now.getDate()).padStart(2, "0");
     const year = now.getFullYear();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
     return `${month}/${day}/${year} ${hours}:${minutes}`;
 }
 exports.getCurrentDateTime = getCurrentDateTime;

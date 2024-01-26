@@ -79,7 +79,7 @@ export async function checkIfUserExists(email: string, password: string) {
         // handle error appropriately
       }
     } else {
-      return { message: "user does not exit", status: 401 };
+      return { message: "user does not exist", status: 401 };
     }
   } catch (error) {
     return error;
@@ -111,7 +111,7 @@ export async function sendResetPasswordRequest(userEmail: string) {
       // handle error appropriately
     }
   } else {
-    return { message: "User does not exit, please sign up!", status: 401 };
+    return { message: "User does not exist, please sign up!", status: 401 };
   }
 }
 export function generateRandomIntegers(n = 5, min = 1, max = 10) {
@@ -185,6 +185,6 @@ export async function resetPassword(userEmail: string, resetCode: string, entere
       // handle error appropriately
     }
   } else {
-    return { message: "User does not exit, please sign up!", status: 401 };
+    return { message: "User does not exist, please sign up!", status: 401 };
   }
 }

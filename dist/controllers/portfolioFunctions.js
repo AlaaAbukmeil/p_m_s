@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mapDatetimeToSameDay = exports.getDateTimeInMongoDBCollectionFormat = exports.formatDateRlzdDaily = exports.formatUpdatedPositions = exports.sortVconTrades = exports.getAllDatesSinceLastMonthLastDay = exports.uploadTriadaAndReturnFilePath = exports.calculateMonthlyProfitLoss = exports.calculateDailyProfitLoss = exports.readPricingSheet = exports.readBloombergTriadaEBlot = exports.readPortfolioFromLivePorfolio = exports.readPortfolioFromImagine = exports.readEditInput = exports.readMUFGEBlot = exports.readEmsxEBlot = exports.readIBRawExcel = exports.readIBEblot = exports.formatEmsxTradesToVcon = exports.formatIbTradesToVcon = exports.readCentralizedEBlot = exports.readVconEBlot = exports.mergeSort = exports.uploadToGCloudBucket = exports.getSettlementDateYear = exports.bloombergToTriada = exports.parseBondIdentifier = exports.formatTradesObj = exports.settlementDatePassed = exports.getAverageCost = exports.formatExcelDate = void 0;
+exports.mapDatetimeToSameDay = exports.getDateTimeInMongoDBCollectionFormat = exports.formatDateRlzdDaily = exports.formatUpdatedPositions = exports.sortVconTrades = exports.getAllDatesSinceLastMonthLastDay = exports.uploadTriadaAndReturnFilePath = exports.calculateMonthlyProfitLoss = exports.calculateDailyProfitLoss = exports.readPricingSheet = exports.readBloombergTriadaEBlot = exports.readPortfolioFromLivePorfolio = exports.readPortfolioFromImagine = exports.readEditInput = exports.readMUFGEBlot = exports.readEmsxEBlot = exports.readIBRawExcel = exports.readIBEblot = exports.formatEmsxTradesToVcon = exports.formatIbTradesToVcon = exports.readCentralizedEBlot = exports.readVconEBlot = exports.mergeSort = exports.uploadToGCloudBucket = exports.getSettlementDateYear = exports.bloombergToTriada = exports.getMaturity = exports.parseBondIdentifier = exports.formatTradesObj = exports.settlementDatePassed = exports.getAverageCost = exports.formatExcelDate = void 0;
 const common_1 = require("./common");
 const reports_1 = require("./reports");
 const xlsx = require("xlsx");
@@ -147,10 +147,10 @@ function parseBondIdentifier(identifier) {
             try {
                 let rate = parseFloat(components[1].replace("V", "").trim()) ? parseFloat(components[1].replace("V", "").trim()) : "";
                 let dateComponents = components[2].split("/");
-                let date = parseInt(dateComponents[1]) < 12 ? new Date(`${"20" + dateComponents[2]}-${dateComponents[1]}-${dateComponents[0]}`) : new Date(`${"20" + dateComponents[2]}-${dateComponents[0]}-${dateComponents[1]}`);
+                let date = new Date(`${dateComponents[0]}/${dateComponents[1]}/${"20" + dateComponents[2]}`);
                 // let date: any = new Date(components[2])
                 if (date) {
-                    date = (0, common_1.formatDate)(date);
+                    date = (0, common_1.getDateMufg)(date);
                 }
                 return [rate, date];
             }
@@ -167,6 +167,35 @@ function parseBondIdentifier(identifier) {
     }
 }
 exports.parseBondIdentifier = parseBondIdentifier;
+function getMaturity(identifier) {
+    // Split the identifier into components
+    try {
+        if (identifier) {
+            const components = identifier.split(" ");
+            try {
+                let dateComponents = components[2].split("/");
+                let date = `${dateComponents[0]}/${dateComponents[1]}/${"20" + dateComponents[2]}`;
+                // let date: any = new Date(components[2])
+                if (new Date(date) && !date.includes("undefined")) {
+                    return date;
+                }
+                else {
+                    return 0;
+                }
+            }
+            catch (error) {
+                return 0;
+            }
+        }
+        else {
+            return ["", "Invalid Date"];
+        }
+    }
+    catch (error) {
+        return ["", ""];
+    }
+}
+exports.getMaturity = getMaturity;
 async function bloombergToTriada(path, inputTrader, inputStrategy) {
     const data = await readBloombergEBlot(path);
     if (data.error) {
@@ -369,20 +398,9 @@ async function readCentralizedEBlot(path) {
             defval: "",
             range: "A1:V300",
         });
-        let bbTicker = {
-            "6BZ3 IB": "BPZ3 Curncy",
-            "ESZ3 IB": "ESZ3 Index",
-            "ECZ3 IB": "ECZ3 Curncy",
-            "6EX3 IB": "ECX3 Curncy",
-            "ZN   DEC 23 IB": "TYZ3 Comdty",
-            "6EZ3 IB": "ECZ3 Curncy",
-            "ZN   MAR 24 IB": "TYH4 Comdty",
-            "6BG4 IB": "BPG4 Curncy",
-            "6EG4 IB": "ECG4 Curncy",
-        };
         let filtered = data.filter((trade, index) => trade["Trade App Status"] == "new");
         filtered.sort((a, b) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
-        let missingLocation = data.filter((trade, index) => trade["Location"] == "" || trade["ISIN"] == "" || !trade["Location"] || trade["Location"].trim().split(" ").length > 1);
+        let missingLocation = data.filter((trade, index) => trade["Location"] == "" || (trade["ISIN"] == "" && trade["Trade Type"] == "vcon") || !trade["Location"] || trade["Location"].trim().split(" ").length > 1);
         if (missingLocation.length) {
             let issueMissing = "";
             for (let indexMissingIssue = 0; indexMissingIssue < missingLocation.length; indexMissingIssue++) {
@@ -409,7 +427,6 @@ async function readCentralizedEBlot(path) {
             vconTrades[rowIndex]["Trade App Status"] = "uploaded_to_app";
         }
         for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
-            ibTrades[ibTradesIndex]["BB Ticker"] = bbTicker[ibTrades[ibTradesIndex]["Issue"]];
             ibTrades[ibTradesIndex]["Quantity"] = Math.abs(ibTrades[ibTradesIndex]["Notional Amount"]);
             ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["Issue"];
             ibTrades[ibTradesIndex]["timestamp"] = new Date(ibTrades[ibTradesIndex]["Trade Date"]).getTime();
@@ -930,7 +947,7 @@ function sortVconTrades(object) {
     return trades;
 }
 exports.sortVconTrades = sortVconTrades;
-function formatUpdatedPositions(positions, portfolio) {
+function formatUpdatedPositions(positions, portfolio, lastUpdatedDescription) {
     try {
         let positionsIndexThatExists = [];
         let positionsThatGotUpdated = [];
@@ -945,6 +962,7 @@ function formatUpdatedPositions(positions, portfolio) {
                     positionsThatGotUpdated.push(`${position["Issue"]} ${position["Location"]}\n`);
                     positionsIndexThatExists.push(indexPositions);
                 }
+                portfolio[indexPortfolio][lastUpdatedDescription] = new Date();
             }
         }
         for (let indexPositionsExists = 0; indexPositionsExists < positions.length; indexPositionsExists++) {

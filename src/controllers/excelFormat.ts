@@ -1,18 +1,16 @@
 require("dotenv").config();
 
 import { uploadToGCloudBucket } from "./portfolioFunctions";
-import { readBBGBlot, readIB, readBBE } from "./mufgOperations";
-import { getTradeDateYearTrades, getTradeDateYearTradesWithoutTheCentury, formatDateReadable, convertExcelDateToJSDate, convertExcelDateToJSDateTime, generateRandomString } from "./common";
-import { getSettlementDateYear, readIBEblot, getDateTimeInMongoDBCollectionFormat, readEmsxEBlot } from "./portfolioFunctions";
-import { formatDateVconFile } from "./common";
+import { readBBGBlot } from "./mufgOperations";
+import { getTradeDateYearTrades, formatDateReadable, convertExcelDateToJSDate, convertExcelDateToJSDateTime, generateRandomString } from "./common";
+import { getSettlementDateYear, readIBEblot, readEmsxEBlot } from "./portfolioFunctions";
 import { getSecurityInPortfolioWithoutLocation } from "./graphApiConnect";
 import { formatTradeDate } from "./common";
-import { rules } from "../models/rulesExcel";
 
 const xlsx = require("xlsx");
 const { PassThrough } = require("stream");
 const { MongoClient, ServerApiVersion } = require("mongodb");
-
+const { v4: uuidv4 } = require("uuid");
 const uri = "mongodb+srv://alaa:" + process.env.MONGODBPASSWORD + "@atlascluster.zpfpywq.mongodb.net/?retryWrites=true&w=majority";
 const axios = require("axios");
 const client = new MongoClient(uri, {
@@ -331,7 +329,6 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
   blot_emsx.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
   blot = [...blot_vcons, ...blot_ib, ...blot_emsx];
   if (blot.length > 0) {
-    
     let formattedObject: any = {};
     centralizedBlotterHeader.forEach((title) => {
       // If the original object has the key, add it to the formatted object
@@ -369,8 +366,6 @@ export function formatIbTrades(data: any, ibTrades: any, portfolio: any, tradesC
   let trades = [];
 
   try {
-    let count = tradesCount + 1;
-
     for (let index = 0; index < data.length; index++) {
       let trade = data[index];
       let id;
@@ -398,8 +393,7 @@ export function formatIbTrades(data: any, ibTrades: any, portfolio: any, tradesC
           id = existingTrade["Triada Trade Id"];
           trade_status = "uploaded_to_app";
         } else {
-          id = `Triada-IB-${trade["Trade Date"]}-${count}`;
-          count++;
+          id = uuidv4();
         }
         object["Currency"] = trade["Currency"];
         object["Symbol"] = trade["Symbol"];
@@ -505,7 +499,7 @@ export function formatEmsxTrades(data: any, emsxTrades: any, portfolio: any, tra
         id = existingTrade["Triada Trade Id"];
         trade_status = "uploaded_to_app";
       } else {
-        id = `Triada-EMSX-${trade["Trade Date"]}-${count}`;
+        id = uuidv4();
         count++;
       }
       object["Status"] = trade["Status"];

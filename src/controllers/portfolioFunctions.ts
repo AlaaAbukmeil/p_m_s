@@ -1,4 +1,4 @@
-import { formatDate, getDate, getTime, convertExcelDateToJSDate, formatTradeDate, formatSettleDateVcon } from "./common";
+import { formatDate, getDate, getTime, convertExcelDateToJSDate, formatTradeDate, formatSettleDateVcon, getDateMufg } from "./common";
 import { getBBTicker } from "./reports";
 
 const xlsx = require("xlsx");
@@ -156,15 +156,42 @@ export function parseBondIdentifier(identifier: any) {
       try {
         let rate = parseFloat(components[1].replace("V", "").trim()) ? parseFloat(components[1].replace("V", "").trim()) : "";
         let dateComponents = components[2].split("/");
-        let date: any = parseInt(dateComponents[1]) < 12 ? new Date(`${"20" + dateComponents[2]}-${dateComponents[1]}-${dateComponents[0]}`) : new Date(`${"20" + dateComponents[2]}-${dateComponents[0]}-${dateComponents[1]}`);
+        let date: any = new Date(`${dateComponents[0]}/${dateComponents[1]}/${"20" + dateComponents[2]}`);
         // let date: any = new Date(components[2])
 
         if (date) {
-          date = formatDate(date);
+          date = getDateMufg(date);
         }
         return [rate, date];
       } catch (error) {
         return error;
+      }
+    } else {
+      return ["", "Invalid Date"];
+    }
+  } catch (error) {
+    return ["", ""];
+  }
+}
+
+export function getMaturity(identifier: any) {
+  // Split the identifier into components
+  try {
+    if (identifier) {
+      const components: any = identifier.split(" ");
+
+      try {
+        let dateComponents = components[2].split("/");
+        let date: any = `${dateComponents[0]}/${dateComponents[1]}/${"20" + dateComponents[2]}`;
+        // let date: any = new Date(components[2])
+
+        if (new Date(date) && !date.includes("undefined")) {
+          return date;
+        } else {
+          return 0;
+        }
+      } catch (error) {
+        return 0;
       }
     } else {
       return ["", "Invalid Date"];
@@ -406,22 +433,11 @@ export async function readCentralizedEBlot(path: string) {
       defval: "",
       range: "A1:V300",
     });
-    let bbTicker: any = {
-      "6BZ3 IB": "BPZ3 Curncy",
-      "ESZ3 IB": "ESZ3 Index",
-      "ECZ3 IB": "ECZ3 Curncy",
-      "6EX3 IB": "ECX3 Curncy",
-      "ZN   DEC 23 IB": "TYZ3 Comdty",
-      "6EZ3 IB": "ECZ3 Curncy",
-      "ZN   MAR 24 IB": "TYH4 Comdty",
-      "6BG4 IB": "BPG4 Curncy",
-      "6EG4 IB": "ECG4 Curncy",
-    };
 
     let filtered = data.filter((trade: any, index: any) => trade["Trade App Status"] == "new");
     filtered.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
 
-    let missingLocation = data.filter((trade: any, index: any) => trade["Location"] == "" || trade["ISIN"] == "" || !trade["Location"] || trade["Location"].trim().split(" ").length > 1);
+    let missingLocation = data.filter((trade: any, index: any) => trade["Location"] == "" || (trade["ISIN"] == "" && trade["Trade Type"] == "vcon") || !trade["Location"] || trade["Location"].trim().split(" ").length > 1);
     if (missingLocation.length) {
       let issueMissing = "";
       for (let indexMissingIssue = 0; indexMissingIssue < missingLocation.length; indexMissingIssue++) {
@@ -450,7 +466,6 @@ export async function readCentralizedEBlot(path: string) {
     }
 
     for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
-      ibTrades[ibTradesIndex]["BB Ticker"] = bbTicker[ibTrades[ibTradesIndex]["Issue"]];
       ibTrades[ibTradesIndex]["Quantity"] = Math.abs(ibTrades[ibTradesIndex]["Notional Amount"]);
       ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["Issue"];
       ibTrades[ibTradesIndex]["timestamp"] = new Date(ibTrades[ibTradesIndex]["Trade Date"]).getTime();
@@ -1019,7 +1034,7 @@ export function sortVconTrades(object: any) {
   return trades;
 }
 
-export function formatUpdatedPositions(positions: any, portfolio: any) {
+export function formatUpdatedPositions(positions: any, portfolio: any, lastUpdatedDescription: string) {
   try {
     let positionsIndexThatExists = [];
     let positionsThatGotUpdated = [];
@@ -1035,6 +1050,7 @@ export function formatUpdatedPositions(positions: any, portfolio: any) {
           positionsThatGotUpdated.push(`${position["Issue"]} ${position["Location"]}\n`);
           positionsIndexThatExists.push(indexPositions);
         }
+        portfolio[indexPortfolio][lastUpdatedDescription] = new Date();
       }
     }
 

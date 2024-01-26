@@ -2,9 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.formatFrontEndSummaryTable = exports.formatSummaryPosition = exports.calculateRlzd = exports.formatFrontEndTable = exports.formatGeneralTable = void 0;
 const common_1 = require("./common");
+const portfolioFunctions_1 = require("./portfolioFunctions");
 function formatGeneralTable(portfolio, date, fund, dates) {
     let currencies = {};
     let formatted = [];
+    let dv01Sum = 0;
     let mtdpl = 0, mtdrlzd = 0, mtdurlzd = 0, mtdint = 0, dayint = 0, daypl = 0, dayfx = 0, mtdfx = 0, dayurlzd = 0, dayrlzd = 0;
     for (let index = 0; index < portfolio.length; index++) {
         let position = portfolio[index];
@@ -26,9 +28,9 @@ function formatGeneralTable(portfolio, date, fund, dates) {
             position["Asset Class"] = isRatingHigherThanBBBMinus(position["Asset Class"]);
         }
         position["Cost"] = position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") ? Math.round(position["Average Cost"] * position["Quantity"] * 10000) / (10000 * position["Original Face"]) : Math.round(position["Average Cost"] * position["Quantity"] * 1000000) / 1000000;
-        position["Daily Accrual (Local Currency)"] = Math.round(position["Daily Interest Income"] * 1000000 * holdBackRatio) / 1000000;
         position["FX Rate"] = Math.round((position["FX Rate"] || position["FX Rate"]) * 1000000) / 1000000;
-        position["Value"] = position["ISIN"].includes("CDS") || position["ISIN"].includes("ITRX") ? Math.round((position["Quantity"] * position["Mid"] * 10000 * usdRatio) / originalFace) / 10000 || 0 : Math.round(position["Quantity"] * position["Mid"] * usdRatio * 10000) / 10000 || 0;
+        position["Value (Local Currency)"] = position["ISIN"].includes("CDS") || position["ISIN"].includes("ITRX") ? Math.round((position["Quantity"] * position["Mid"]) / originalFace) || 0 : Math.round(position["Quantity"] * position["Mid"]) || 0;
+        position["Value (Base Currency)"] = position["ISIN"].includes("CDS") || position["ISIN"].includes("ITRX") ? Math.round((position["Quantity"] * position["Mid"] * usdRatio) / originalFace) || 0 : Math.round(position["Quantity"] * position["Mid"] * usdRatio) || 0;
         position["Mid"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Mid"] * 1000000) / 1000000 : Math.round(position["Mid"] * 1000000) / 10000;
         position["Bid"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Bid"] * 1000000) / 1000000 : Math.round(position["Bid"] * 1000000) / 10000;
         position["Ask"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Ask"] * 1000000) / 1000000 : Math.round(position["Ask"] * 1000000) / 10000;
@@ -39,7 +41,7 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         position["MTD Mark"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["MTD Mark"] * 1000000) / 1000000 : Math.round(position["MTD Mark"] * 1000000) / 10000;
         position["Day Rlzd"] = position["Day Rlzd"] ? position["Day Rlzd"] : 0;
         position["Previous Mark"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Previous Mark"] * 1000000) / 1000000 : Math.round(position["Previous Mark"] * 1000000) / 10000;
-        position["Ptf MTD Int.Income (Local Currency)"] = Math.round(position["Monthly Interest Income"] * 1000000 * holdBackRatio) / 1000000;
+        position["Monthly Interest Income (Local Currency)"] = Math.round(position["Monthly Interest Income"] * 1000000 * holdBackRatio) / 1000000;
         position["Ptf MTD Rlzd (Local Currency)"] = Math.round(position["MTD Rlzd"] * 1000000 * holdBackRatio) / 1000000;
         position["Ptf MTD URlzd (Local Currency)"] = Math.round(position["MTD URlzd"] * 1000000 * holdBackRatio) / 1000000;
         position["Monthly Interest Income (Base Currency)"] = Math.round(position["Monthly Interest Income"] * 1000000 * usdRatio * holdBackRatio) / 1000000;
@@ -53,10 +55,10 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         }
         position["MTD FX"] = position["MTD FX"] ? Math.round(position["MTD FX"] * 1000000) / 1000000 : Math.round(position["Previous FX Rate"] * 1000000) / 1000000;
         position["Daily Interest FX P&L"] = Math.round((position["FX Rate"] - position["Previous FX Rate"]) * 1000000 * position["Daily Interest Income"]) / 1000000;
+        position["Daily Interest Income (Local Currency)"] = Math.round(position["Daily Interest Income"] * 1000000 * holdBackRatio) / 1000000;
         position["Daily Interest Income (Base Currency)"] = position["Daily Interest Income"] * usdRatio * holdBackRatio;
         position["Notional Total"] = position["Quantity"];
         position["Quantity"] = position["Quantity"] / originalFace;
-        position["#"] = index + 1;
         position["ISIN"] = position["ISIN"].length != 12 ? "" : position["ISIN"];
         position["Ptf Day P&L (Local Currency)"] = Math.round(position["Ptf Day P&L"] * holdBackRatio * 1000000) / 1000000;
         // multiply mtd pl with usd since all components are not  multiplied by usd when they are summed
@@ -65,19 +67,22 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         position["Ptf MTD P&L (Base Currency)"] = Math.round(position["Ptf MTD P&L"] * usdRatio * holdBackRatio * 1000000) / 1000000;
         position["Day Rlzd K G/L"] = Math.round(position["Day Rlzd K G/L"] * usdRatio * holdBackRatio * 1000000) / 1000000;
         position["Day URlzd"] = Math.round(position["Day URlzd"] * usdRatio * holdBackRatio * 1000000) / 1000000;
+        position["Ptf Day URlzd (Base Currency)"] = position["Day URlzd"];
+        position["Ptf Day URlzd (Local Currency)"] = Math.round((position["Day URlzd"] / usdRatio) * holdBackRatio * 1000000) / 1000000;
         position["MTD Rlzd"] = Math.round(position["MTD Rlzd"] * usdRatio * holdBackRatio * 1000000) / 1000000;
         position["Day Rlzd"] = Math.round(position["Day Rlzd"] * usdRatio * holdBackRatio * 1000000) / 1000000;
+        position["Ptf Day Rlzd (Base Currency)"] = position["Day Rlzd"];
+        position["Ptf Day Rlzd (Local Currency)"] = Math.round((position["Day Rlzd"] / usdRatio) * holdBackRatio * 1000000) / 1000000;
         position["Previous FX Rate"] = Math.round(position["Previous FX Rate"] * 1000000) / 1000000;
-        position["Maturity"] = position["Maturity"] ? position["Maturity"] : 0;
+        position["Maturity"] = position["BB Ticker"] ? (0, portfolioFunctions_1.getMaturity)(position["BB Ticker"]) : 0;
         position["Call Date"] = position["Call Date"] ? position["Call Date"] : 0;
-        position["Color"] = position["Maturity"] ? (areDatesInSameMonthAndYear(position["Maturity"], date) ? "red" : "") : "";
         position["L/S"] = position["Quantity"] > 0 && !position["Issue"].includes("CDS") ? "Long" : position["Notional Total"] == 0 && !position["Issue"].includes("CDS") ? "Rlzd" : "Short";
         position["_id"] = position["_id"];
-        position["Duration(Mkt)"] = yearsUntil(position["Maturity"], date);
+        position["Duration(Mkt)"] = yearsUntil(position["Call Date"] ? position["Call Date"] : position["Maturity"], date);
         position["Coupon Duration"] = position["Coupon Duration"] ? position["Coupon Duration"] : position["Issue"].split(" ")[0] == "T" || position["Issue"].includes("GOVT") ? 365.0 : 360.0;
         position["Coupon Rate"] = position["Coupon Rate"] ? position["Coupon Rate"] : 0;
         position["Issuer"] = position["Issuer"] == "0" ? "" : position["Issuer"];
-        position["DV01"] = (position["DV01"] / 1000000) * position["Notional Total"];
+        position["DV01"] = (position["DV01"] / 1000000) * position["Notional Total"] * usdRatio;
         position["DV01"] = Math.round(position["DV01"] * 1000000) / 1000000 || 0;
         position["Long Security Name"] = position["Issue"];
         let latestDateKey;
@@ -89,7 +94,7 @@ function formatGeneralTable(portfolio, date, fund, dates) {
             return dateB - dateA; // This will sort in descending order
         })[0]; // Take the first item after sorting
         const latestDate = latestDateKey ? new Date(latestDateKey) : null;
-        position["Last Day Since Realizd"] = latestDate ? (position["Notional Total"] == 0 ? (0, common_1.getDate)(latestDate) : null) : null;
+        position["Last Day Since Realizd"] = position["Notional Total"] == 0 ? (0, common_1.getDateMufg)(latestDate) : null;
         if (position["Issue"].includes("CDS")) {
             position["Day P&L FX"] = Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["Previous FX Rate"])) / parseFloat(position["Previous FX Rate"])) * position["Quantity"] * 1000000) / 1000000 || 0;
             position["MTD P&L FX"] = Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["MTD FX"] || position["FX Rate"])) / parseFloat(position["MTD FX"] || position["FX Rate"])) * position["Quantity"] * 1000000) / 1000000 || 0;
@@ -108,22 +113,28 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         mtdfx += position["MTD P&L FX"];
         dayurlzd += position["Day URlzd"];
         dayrlzd += position["Day Rlzd"];
+        dv01Sum += position["DV01"];
     }
+    let monthGross = Math.round((mtdpl / parseFloat(fund.nav)) * 100000) / 1000;
+    let dayGross = Math.round((daypl / parseFloat(fund.nav)) * 100000) / 1000;
     let fundDetails = {
         nav: parseFloat(fund.nav),
         holdbackRatio: parseFloat(fund.holdBackRatio),
-        monthGross: Math.round((mtdpl / parseFloat(fund.nav)) * 100000) / 1000,
-        dayGross: Math.round((daypl / parseFloat(fund.nav)) * 100000) / 1000,
+        monthGross: monthGross,
+        dayGross: dayGross,
         mtdpl: Math.round(mtdpl * 1000) / 1000,
         mtdrlzd: Math.round(mtdrlzd * 1000) / 1000,
         mtdurlzd: Math.round(mtdurlzd * 1000) / 1000,
         mtdint: Math.round(mtdint * 1000) / 1000,
         dayint: Math.round(dayint * 1000) / 1000,
+        mtdintPercentage: Math.round((mtdint / parseFloat(fund.nav)) * 100000) / 1000,
+        dayintPercentage: Math.round((dayint / parseFloat(fund.nav)) * 100000) / 1000,
         daypl: Math.round(daypl * 1000) / 1000,
         dayfx: Math.round(dayfx * 1000) / 1000,
         mtdfx: Math.round(mtdfx * 1000) / 1000,
         dayurlzd: Math.round(dayurlzd * 1000) / 1000,
         dayrlzd: Math.round(dayrlzd * 1000) / 1000,
+        dv01Sum: Math.round(dv01Sum * 1000) / 1000,
     };
     return { portfolio: portfolio, fundDetails: fundDetails, currencies: currencies };
 }
@@ -208,6 +219,9 @@ function formatSummaryPosition(position, fundDetails, dates) {
         "Last Day Since Realizd",
         "Currency",
         "Security Description",
+        "Duration(Mkt)",
+        "BBG Composite Rating",
+        "Moody's Bond Rating",
     ];
     let titlesValues = {
         Type: "Type",
@@ -218,7 +232,7 @@ function formatSummaryPosition(position, fundDetails, dates) {
         "Long Security Name": "Issue",
         "BB Ticker": "BB Ticker",
         "Notional Total": "Notional Total",
-        "USD Market Value": "Value",
+        "USD Market Value": "Value (Base Currency)",
         Maturity: "Maturity",
         "USD MTM % of NAV": "USD MTM % of NAV",
         YTM: "YTM",
@@ -245,6 +259,9 @@ function formatSummaryPosition(position, fundDetails, dates) {
         "Last Day Since Realizd": "Last Day Since Realizd",
         Currency: "Currency",
         "Security Description": "Security Description",
+        "Duration(Mkt)": "Duration(Mkt)",
+        "BBG Composite Rating": "BBG Composite Rating",
+        "Moody's Bond Rating": "Moody's Bond Rating",
     };
     titlesValues[formatMarkDate(dates.lastMonth)] = "MTD Mark";
     titlesValues[formatMarkDate(dates.yesterday)] = "Previous Mark";
@@ -274,6 +291,7 @@ function formatSummaryPosition(position, fundDetails, dates) {
     object["ISIN"] = position["ISIN"];
     object["Issuer"] = position["Issuer"];
     object["Last Price Update"] = position["Last Price Update"];
+    object["Rating Score"] = position["BBG Composite Rating"] && position["BBG Composite Rating"] !== "NR" ? bbgRating(position["BBG Composite Rating"]) : position["Moody's Bond Rating"] ? moodyRating(position["Moody's Bond Rating"]) : -99;
     return object;
 }
 exports.formatSummaryPosition = formatSummaryPosition;
@@ -308,33 +326,43 @@ function getDuration(duration) {
         return "> 30";
     }
 }
-function getSectorIGAssetClass(issue) {
+function getSectorIGAssetClass(issue, sector) {
     if (issue.toLocaleLowerCase().includes("perp")) {
-        return "Perps";
+        if (sector) {
+            if (sector.toLocaleLowerCase().includes("bank")) {
+                return "FINS Perps";
+            }
+            else {
+                return "Corps Perps";
+            }
+        }
+        else {
+            return "Corps Perps";
+        }
     }
     else {
-        return "Corps";
+        return "Bonds";
     }
 }
 function getSectorHYAssetClass(issue, sector) {
     if (issue.toLocaleLowerCase().includes("perp")) {
         if (sector) {
             if (sector.toLocaleLowerCase().includes("bank")) {
-                return "FIN Perps";
+                return "FINS Perps";
             }
             else {
-                return "Corp Perps";
+                return "Corps Perps";
             }
         }
         else {
-            return "Corp Perps";
+            return "Corps Perps";
         }
     }
     else {
-        return "Corps";
+        return "Bonds";
     }
 }
-function assignColorAndSortParams(pairHedgeNotional, pairIGNotional, pairHedgeDV01Sum, pairIGDV01Sum, globalHedgeNotional, singleIGNotional, globalHedgeDV01Sum, singleIGDV01Sum, hedgeCurrencyNotional, HYNotional, HYDV01Sum, cdsNotional, countryNAVPercentage, sectorNAVPercentage, strategyNAVPercentage, longShortDV01Sum, durationSummary, groupedByLocation, view, ustTable, igTable, hyTable, currTable) {
+function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNotional, pairHedgeDV01Sum, pairIGDV01Sum, globalHedgeNotional, singleIGNotional, globalHedgeDV01Sum, singleIGDV01Sum, hedgeCurrencyNotional, HYNotional, HYDV01Sum, cdsNotional, countryNAVPercentage, sectorNAVPercentage, strategyNAVPercentage, longShortDV01Sum, durationSummary, groupedByLocation, view, ustTable, igTable, hyTable, currTable, issuerTable) {
     for (let locationCode in groupedByLocation) {
         groupedByLocation[locationCode].order = sortSummary(locationCode, groupedByLocation[locationCode].data);
         if (groupedByLocation[locationCode].order == 1) {
@@ -360,7 +388,7 @@ function assignColorAndSortParams(pairHedgeNotional, pairIGNotional, pairHedgeDV
                 else {
                     pairHedgeNotional += groupedByLocation[locationCode].data[index]["Notional Total"] || 0;
                     pairHedgeDV01Sum += groupedByLocation[locationCode].data[index]["DV01"] || 0;
-                    let duration = getDuration(groupedByLocation[locationCode].data[index]["YTM"]);
+                    let duration = getDuration(groupedByLocation[locationCode].data[index]["Duration(Mkt)"]);
                     ustTable[duration].push(groupedByLocation[locationCode].data[index]);
                     ustTable[duration + " Aggregated"].DV01Sum += dv01;
                     ustTable[duration + " Aggregated"].MTDPL += monthPl;
@@ -368,6 +396,10 @@ function assignColorAndSortParams(pairHedgeNotional, pairIGNotional, pairHedgeDV
                     ustTable["Total"].DV01Sum += dv01;
                     ustTable["Total"].MTDPL += monthPl;
                     ustTable["Total"].DayPL += dayPl;
+                }
+                let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
+                if (issuer) {
+                    issuerTable[issuer] = groupedByLocation[locationCode].data[index];
                 }
             }
         }
@@ -389,7 +421,7 @@ function assignColorAndSortParams(pairHedgeNotional, pairIGNotional, pairHedgeDV
                     dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf Day P&L (Base Currency)"]);
                     monthPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf MTD P&L (Base Currency)"]);
                 }
-                let sectorIGAssetClass = getSectorIGAssetClass(groupedByLocation[locationCode].data[index]["Long Security Name"]);
+                let sectorIGAssetClass = getSectorIGAssetClass(groupedByLocation[locationCode].data[index]["Long Security Name"], groupedByLocation[locationCode].data[index]["Sector"]);
                 igTable[sectorIGAssetClass].push(groupedByLocation[locationCode].data[index]);
                 igTable[sectorIGAssetClass + " Aggregated"].DV01Sum += dv01;
                 igTable[sectorIGAssetClass + " Aggregated"].MTDPL += monthPl;
@@ -397,6 +429,10 @@ function assignColorAndSortParams(pairHedgeNotional, pairIGNotional, pairHedgeDV
                 igTable["Total"].DV01Sum += dv01;
                 igTable["Total"].MTDPL += monthPl;
                 igTable["Total"].DayPL += dayPl;
+                let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
+                if (issuer) {
+                    issuerTable[issuer] = groupedByLocation[locationCode].data[index];
+                }
             }
         }
         else if (groupedByLocation[locationCode].order == 3) {
@@ -425,6 +461,10 @@ function assignColorAndSortParams(pairHedgeNotional, pairIGNotional, pairHedgeDV
                 hyTable["Total"].DV01Sum += dv01;
                 hyTable["Total"].MTDPL += monthPl;
                 hyTable["Total"].DayPL += dayPl;
+                let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
+                if (issuer) {
+                    issuerTable[issuer] = groupedByLocation[locationCode].data[index];
+                }
             }
         }
         else if (groupedByLocation[locationCode].order == 4) {
@@ -466,6 +506,10 @@ function assignColorAndSortParams(pairHedgeNotional, pairIGNotional, pairHedgeDV
                 currTable["Total"].DV01Sum += dv01;
                 currTable["Total"].MTDPL += monthPl;
                 currTable["Total"].DayPL += dayPl;
+                let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
+                if (issuer) {
+                    issuerTable[issuer] = groupedByLocation[locationCode].data[index];
+                }
             }
         }
         else if (groupedByLocation[locationCode].order == 5) {
@@ -507,6 +551,10 @@ function assignColorAndSortParams(pairHedgeNotional, pairIGNotional, pairHedgeDV
                 currTable["Total"].DV01Sum += dv01;
                 currTable["Total"].MTDPL += monthPl;
                 currTable["Total"].DayPL += dayPl;
+                let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
+                if (issuer) {
+                    issuerTable[issuer] = groupedByLocation[locationCode].data[index];
+                }
             }
         }
         else if (groupedByLocation[locationCode].order == 6) {
@@ -548,12 +596,20 @@ function assignColorAndSortParams(pairHedgeNotional, pairIGNotional, pairHedgeDV
                 currTable["Total"].DV01Sum += dv01;
                 currTable["Total"].MTDPL += monthPl;
                 currTable["Total"].DayPL += dayPl;
+                let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
+                if (issuer) {
+                    issuerTable[issuer] = groupedByLocation[locationCode].data[index];
+                }
             }
         }
         else if (groupedByLocation[locationCode].order == 7) {
             groupedByLocation[locationCode].color = "#CE93D8";
             for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
                 cdsNotional += groupedByLocation[locationCode].data[index]["Notional Total"] || 0;
+                let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
+                if (issuer) {
+                    issuerTable[issuer] = groupedByLocation[locationCode].data[index];
+                }
             }
         }
         else if (groupedByLocation[locationCode].order == 8) {
@@ -577,7 +633,7 @@ function assignColorAndSortParams(pairHedgeNotional, pairIGNotional, pairHedgeDV
                 else {
                     pairHedgeNotional += groupedByLocation[locationCode].data[index]["Notional Total"] || 0;
                     pairHedgeDV01Sum += groupedByLocation[locationCode].data[index]["DV01"] || 0;
-                    let duration = getDuration(groupedByLocation[locationCode].data[index]["YTM"]);
+                    let duration = getDuration(groupedByLocation[locationCode].data[index]["Duration(Mkt)"]);
                     ustTable[duration].push(groupedByLocation[locationCode].data[index]);
                     ustTable[duration + " Aggregated"].DV01Sum += dv01;
                     ustTable[duration + " Aggregated"].MTDPL += monthPl;
@@ -586,24 +642,41 @@ function assignColorAndSortParams(pairHedgeNotional, pairIGNotional, pairHedgeDV
                     ustTable["Total"].MTDPL += monthPl;
                     ustTable["Total"].DayPL += dayPl;
                 }
+                let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
+                if (issuer) {
+                    issuerTable[issuer] = groupedByLocation[locationCode].data[index];
+                }
             }
         }
         else if (groupedByLocation[locationCode].order == 9) {
             groupedByLocation[locationCode].color = "#9FA8DA";
+            for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
+                let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
+                if (issuer) {
+                    issuerTable[issuer] = groupedByLocation[locationCode].data[index];
+                }
+            }
         }
         else if (groupedByLocation[locationCode].order == 10) {
             groupedByLocation[locationCode].color = "#E5D1B4";
+            for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
+                let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
+                if (issuer) {
+                    issuerTable[issuer] = groupedByLocation[locationCode].data[index];
+                }
+            }
         }
         else if (groupedByLocation[locationCode].order == 11) {
             groupedByLocation[locationCode].color = "#C5E1A5";
         }
-        let groupDayPl = 0, groupMonthlyPl = 0, groupDV01Sum = 0, groupUSDMarketValue = 0;
+        let groupDayPl = 0, groupMonthlyPl = 0, groupDV01Sum = 0, groupUSDMarketValue = 0, groupDuration = 0, groupRating = -99;
         for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
             let country = groupedByLocation[locationCode].data[index]["Country"] ? groupedByLocation[locationCode].data[index]["Country"] : "Unspecified";
             let sector = groupedByLocation[locationCode].data[index]["Sector"] ? groupedByLocation[locationCode].data[index]["Sector"] : "Unspecified";
-            let duration = parseFloat(groupedByLocation[locationCode].data[index]["YTM"]) || 0;
+            let duration = parseFloat(groupedByLocation[locationCode].data[index]["Duration(Mkt)"]) || 0;
             let dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
-            let strategy = groupedByLocation[locationCode].data[index]["Strategy"] ? groupedByLocation[locationCode].data[index]["Strategy"] : "Unspecified";
+            let strategy = view == "frontOffice" ? (groupedByLocation[locationCode].data[index]["Strategy"] ? groupedByLocation[locationCode].data[index]["Strategy"] : "Unspecified") : groupedByLocation[locationCode].data[index]["Group"] ? groupedByLocation[locationCode].data[index]["Group"] : "Unspecified";
+            let ratingScore = groupedByLocation[locationCode].data[index]["Rating Score"];
             let usdMarketValue;
             let dayPl;
             let monthPl;
@@ -613,7 +686,7 @@ function assignColorAndSortParams(pairHedgeNotional, pairIGNotional, pairHedgeDV
                 monthPl = parseFloat(groupedByLocation[locationCode].data[index]["MTD P&L (USD)"]);
             }
             else {
-                usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["Value"]) || 0;
+                usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["Value (Base Currency)"]) || 0;
                 dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf Day P&L (Base Currency)"]);
                 monthPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf MTD P&L (Base Currency)"]);
             }
@@ -630,6 +703,8 @@ function assignColorAndSortParams(pairHedgeNotional, pairIGNotional, pairHedgeDV
             groupMonthlyPl += monthPl;
             groupDV01Sum += dv01;
             groupUSDMarketValue += usdMarketValue;
+            groupDuration += duration;
+            groupRating = groupRating < ratingScore ? ratingScore : groupRating;
             if (duration < 2) {
                 durationSummary["0 To 2"].durationSum += duration;
                 durationSummary["0 To 2"].dv01Sum += dv01;
@@ -660,6 +735,8 @@ function assignColorAndSortParams(pairHedgeNotional, pairIGNotional, pairHedgeDV
         groupedByLocation[locationCode].groupDV01Sum = groupDV01Sum;
         groupedByLocation[locationCode].groupUSDMarketValue = groupUSDMarketValue;
         groupedByLocation[locationCode].groupMonthlyPl = groupMonthlyPl;
+        groupedByLocation[locationCode].groupDuration = groupDuration;
+        groupedByLocation[locationCode].groupRating = groupRating;
     }
 }
 function getTopWorst(groupedByLocation) {
@@ -728,7 +805,7 @@ function getCountrySectorStrategySum(countryNAVPercentage, sectorNAVPercentage, 
         sumSectorLong: sumSectorLong,
     };
 }
-function assignBorder(portfolio, groupedByLocation, sort, sign) {
+function assignBorderAndCustomSort(portfolio, groupedByLocation, sort, sign) {
     sign = parseFloat(sign);
     if (sort == "order") {
         //because order should be descending
@@ -752,6 +829,8 @@ function assignBorder(portfolio, groupedByLocation, sort, sign) {
         for (let groupPositionIndex = 0; groupPositionIndex < groupedByLocation[locationCode].data.length; groupPositionIndex++) {
             if (groupedByLocation[locationCode].data[groupPositionIndex]["Notional Total"] == 0) {
                 groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = "#C5E1A5";
+                //no need for borders when rlzd
+                continue;
             }
             else {
                 groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = groupedByLocation[locationCode].color;
@@ -772,10 +851,10 @@ function assignBorder(portfolio, groupedByLocation, sort, sign) {
         if (groupedByLocation[locationCode].data.length > 1 && locationCode != "Rlzd") {
             let portfolioViewType = groupedByLocation[locationCode].data[groupedByLocation[locationCode].data.length - 1]["Ptf MTD P&L (Base Currency)"] ? "backOffice" : "frontOffice";
             if (portfolioViewType == "frontOffice") {
-                groupedByLocation[locationCode].data[groupedByLocation[locationCode].data.length] = { "L/S": "Sum", Color: "white", "USD Market Value": groupedByLocation[locationCode].groupUSDMarketValue, DV01: groupedByLocation[locationCode].groupDV01Sum, "Day P&L (USD)": groupedByLocation[locationCode].groupDayPl, "MTD P&L (USD)": groupedByLocation[locationCode].groupMonthlyPl };
+                groupedByLocation[locationCode].data[groupedByLocation[locationCode].data.length] = { "L/S": "Sum", Color: "white", "USD Market Value": groupedByLocation[locationCode].groupUSDMarketValue, DV01: groupedByLocation[locationCode].groupDV01Sum, "Day P&L (USD)": groupedByLocation[locationCode].groupDayPl, "MTD P&L (USD)": groupedByLocation[locationCode].groupMonthlyPl, "Duration(Mkt)": groupedByLocation[locationCode].groupDuration };
             }
             else {
-                groupedByLocation[locationCode].data[groupedByLocation[locationCode].data.length] = { Type: "Sum", Color: "white", Value: groupedByLocation[locationCode].groupUSDMarketValue, DV01: groupedByLocation[locationCode].groupDV01Sum, "Ptf Day P&L (Base Currency)": groupedByLocation[locationCode].groupDayPl, "Ptf MTD P&L (Base Currency)": groupedByLocation[locationCode].groupMonthlyPl };
+                groupedByLocation[locationCode].data[groupedByLocation[locationCode].data.length] = { Type: "Sum", Color: "white", Value: groupedByLocation[locationCode].groupUSDMarketValue, DV01: groupedByLocation[locationCode].groupDV01Sum, "Ptf Day P&L (Base Currency)": groupedByLocation[locationCode].groupDayPl, "Ptf MTD P&L (Base Currency)": groupedByLocation[locationCode].groupMonthlyPl, "Duration(Mkt)": groupedByLocation[locationCode].groupDuration };
             }
         }
         portfolio.push(...groupedByLocation[locationCode].data);
@@ -810,24 +889,27 @@ function groupAndSortByLocationAndType(formattedPortfolio, nav, sort, sign, view
         Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
     };
     let igTable = {
-        Corps: [],
-        "Corps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
-        Perps: [],
-        "Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
+        Bonds: [],
+        "Bonds Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
+        "FINS Perps": [],
+        "FINS Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
+        "Corps Perps": [],
+        "Corps Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
         Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
     };
     let hyTable = {
-        Corps: [],
-        "Corps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
-        "FIN Perps": [],
-        "FIN Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
-        "Corp Perps": [],
-        "Corp Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
+        Bonds: [],
+        "Bonds Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
+        "FINS Perps": [],
+        "FINS Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
+        "Corps Perps": [],
+        "Corps Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
         Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
     };
     let currTable = {
         Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
     };
+    let issuerTable = {};
     const groupedByLocation = formattedPortfolio.reduce((group, item) => {
         const { Location } = item;
         let notional = item["Notional Total"];
@@ -842,23 +924,23 @@ function groupAndSortByLocationAndType(formattedPortfolio, nav, sort, sign, view
             return group;
         }
     }, {});
-    assignColorAndSortParams(pairHedgeNotional, pairIGNotional, pairHedgeDV01Sum, pairIGDV01Sum, globalHedgeNotional, singleIGNotional, globalHedgeDV01Sum, singleIGDV01Sum, hedgeCurrencyNotional, HYNotional, HYDV01Sum, cdsNotional, countryNAVPercentage, sectorNAVPercentage, strategyNAVPercentage, longShortDV01Sum, durationSummary, groupedByLocation, view, ustTable, igTable, hyTable, currTable);
+    assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNotional, pairHedgeDV01Sum, pairIGDV01Sum, globalHedgeNotional, singleIGNotional, globalHedgeDV01Sum, singleIGDV01Sum, hedgeCurrencyNotional, HYNotional, HYDV01Sum, cdsNotional, countryNAVPercentage, sectorNAVPercentage, strategyNAVPercentage, longShortDV01Sum, durationSummary, groupedByLocation, view, ustTable, igTable, hyTable, currTable, issuerTable);
     let portfolio = [];
-    assignBorder(portfolio, groupedByLocation, sort, sign);
+    assignBorderAndCustomSort(portfolio, groupedByLocation, sort, sign);
     // This is your already sorted array of objects
     // Filter out the items with L/S !== 'rlzd'
     const nonRlzdItems = portfolio.filter((item) => item["L/S"] !== "Rlzd");
     // Filter out the items with L/S === 'rlzd' and sort them by lastDate
     const rlzdItems = portfolio
-        .filter((item) => item["L/S"] === "Rlzd")
+        .filter((item) => item["Notional Total"] === 0)
         .sort((a, b) => {
         // Assuming lastDate is in a format that can be parsed by the Date constructor
         const dateA = new Date(a["Last Day Since Realizd"]).getTime();
         const dateB = new Date(b["Last Day Since Realizd"]).getTime();
-        return dateA - dateB; // Use dateB - dateA for descending order
+        return dateB - dateA; // Use dateB - dateA for descending order
     });
     // Assuming the rest of the array should remain in its original order, recombine the arrays
-    portfolio = [...nonRlzdItems, ...rlzdItems];
+    let updatedPortfolio = [...nonRlzdItems, ...rlzdItems];
     let topWorstPerformaners = getTopWorst(groupedByLocation);
     let riskAssessment = {
         pairHedgeNotional: pairHedgeNotional,
@@ -885,7 +967,7 @@ function groupAndSortByLocationAndType(formattedPortfolio, nav, sort, sign, view
     strategyNAVPercentage["Total"] = Math.round(sumStrategyLong * 10) / 10;
     durationSummary["Total"].dv01Sum = Math.round(durationSummary["0 To 2"].dv01Sum + durationSummary["2 To 5"].dv01Sum + durationSummary["5 To 10"].dv01Sum + durationSummary["10 To 30"].dv01Sum + durationSummary["> 30"].dv01Sum);
     longShortDV01Sum["Total"] = Math.round(longShortDV01Sum["Long"] + longShortDV01Sum["Short"]);
-    return { portfolio: portfolio, duration: durationSummary, countryNAVPercentage: sortObjectBasedOnKey(countryNAVPercentage), sectorNAVPercentage: sortObjectBasedOnKey(sectorNAVPercentage), strategyNAVPercentage: sortObjectBasedOnKey(strategyNAVPercentage), riskAssessment: riskAssessment, topWorstPerformaners: topWorstPerformaners, longShortDV01Sum: longShortDV01Sum, ustTable: ustTable, igTable: igTable, hyTable: hyTable, currTable: currTable, currencies: currencies };
+    return { portfolio: updatedPortfolio, duration: durationSummary, countryNAVPercentage: sortObjectBasedOnKey(countryNAVPercentage), sectorNAVPercentage: sortObjectBasedOnKey(sectorNAVPercentage), strategyNAVPercentage: sortObjectBasedOnKey(strategyNAVPercentage), riskAssessment: riskAssessment, topWorstPerformaners: topWorstPerformaners, longShortDV01Sum: longShortDV01Sum, ustTable: ustTable, igTable: igTable, hyTable: hyTable, currTable: currTable, currencies: currencies, issuerTable: issuerTable };
 }
 function sortSummary(locationCode, group) {
     let assetClassOrder = {
@@ -1009,4 +1091,44 @@ function isRatingHigherThanBBBMinus(rating) {
     }
     // If the rating index is less than the benchmark index, it's higher (since the array is sorted from highest to lowest)
     return ratingIndex < benchmarkIndex ? "IG" : "HY";
+}
+function bbgRating(rating) {
+    const ratingsOrder = [
+        "AAA",
+        "AA+",
+        "AA",
+        "AA-",
+        "A+",
+        "A",
+        "A-",
+        "BBB+",
+        "BBB",
+        "BBB-",
+        "BB+",
+        "BB",
+        "BB-",
+        "B+",
+        "B",
+        "B-",
+        "CCC+",
+        "CCC",
+        "CCC-",
+        // Add more if there are other ratings
+    ];
+    const ratingIndex = ratingsOrder.indexOf(rating.toUpperCase());
+    const benchmarkIndex = ratingsOrder.indexOf("BBB-");
+    // Check if the rating is valid
+    if (ratingIndex === -1) {
+        return "";
+    }
+    // If the rating index is less than the benchmark index, it's higher (since the array is sorted from highest to lowest)
+    return -benchmarkIndex;
+}
+function moodyRating(rating) {
+    const ratings = ["Aaa", "Aa1", "Aa2", "Aa3", "A1", "A2", "A3", "Baa1", "Baa2", "Baa3", "Ba1", "Ba2", "Ba3", "B1", "B2", "B3", "Caa1", "Caa2", "Caa3", "Ca", "C"];
+    const index = ratings.indexOf(rating);
+    if (index !== -1) {
+        return -index;
+    }
+    return "";
 }

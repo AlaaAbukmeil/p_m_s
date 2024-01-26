@@ -11,6 +11,7 @@ const common_2 = require("./common");
 const xlsx = require("xlsx");
 const { PassThrough } = require("stream");
 const { MongoClient, ServerApiVersion } = require("mongodb");
+const { v4: uuidv4 } = require("uuid");
 const uri = "mongodb+srv://alaa:" + process.env.MONGODBPASSWORD + "@atlascluster.zpfpywq.mongodb.net/?retryWrites=true&w=majority";
 const axios = require("axios");
 const client = new MongoClient(uri, {
@@ -345,7 +346,6 @@ function formatIbTrades(data, ibTrades, portfolio, tradesCount) {
     }
     let trades = [];
     try {
-        let count = tradesCount + 1;
         for (let index = 0; index < data.length; index++) {
             let trade = data[index];
             let id;
@@ -371,8 +371,7 @@ function formatIbTrades(data, ibTrades, portfolio, tradesCount) {
                     trade_status = "uploaded_to_app";
                 }
                 else {
-                    id = `Triada-IB-${trade["Trade Date"]}-${count}`;
-                    count++;
+                    id = uuidv4();
                 }
                 object["Currency"] = trade["Currency"];
                 object["Symbol"] = trade["Symbol"];
@@ -475,7 +474,7 @@ function formatEmsxTrades(data, emsxTrades, portfolio, tradesCount) {
                 trade_status = "uploaded_to_app";
             }
             else {
-                id = `Triada-EMSX-${trade["Trade Date"]}-${count}`;
+                id = uuidv4();
                 count++;
             }
             object["Status"] = trade["Status"];
