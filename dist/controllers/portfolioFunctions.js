@@ -146,6 +146,15 @@ function parseBondIdentifier(identifier) {
             };
             try {
                 let rate = parseFloat(components[1].replace("V", "").trim()) ? parseFloat(components[1].replace("V", "").trim()) : "";
+                if (rate) {
+                    let fractions = Object.keys(fractionMap);
+                    for (let index = 0; index < fractions.length; index++) {
+                        let fraction = fractions[index];
+                        if (components.includes(fraction)) {
+                            rate += fractionMap[fraction];
+                        }
+                    }
+                }
                 let dateComponents = components[2].split("/");
                 let date = new Date(`${dateComponents[0]}/${dateComponents[1]}/${"20" + dateComponents[2]}`);
                 // let date: any = new Date(components[2])
@@ -167,13 +176,27 @@ function parseBondIdentifier(identifier) {
     }
 }
 exports.parseBondIdentifier = parseBondIdentifier;
+function getDateIndex(word) {
+    let components = word.split(" ");
+    for (let index = 0; index < components.length; index++) {
+        let component = components[index];
+        if (component.split("/").length == 3) {
+            return index;
+        }
+    }
+    return 0;
+}
 function getMaturity(identifier) {
     // Split the identifier into components
     try {
         if (identifier) {
             const components = identifier.split(" ");
             try {
-                let dateComponents = components[2].split("/");
+                let index = getDateIndex(identifier);
+                if (!index) {
+                    return 0;
+                }
+                let dateComponents = components[index].split("/");
                 let date = `${dateComponents[0]}/${dateComponents[1]}/${"20" + dateComponents[2]}`;
                 // let date: any = new Date(components[2])
                 if (new Date(date) && !date.includes("undefined")) {
@@ -858,7 +881,7 @@ async function readPricingSheet(path) {
     else {
         const data = xlsx.utils.sheet_to_json(worksheet, {
             defval: "",
-            range: "A3:AY300",
+            range: "A3:BA300",
         });
         let keys = Object.keys(data[0]);
         let reformedData = [];

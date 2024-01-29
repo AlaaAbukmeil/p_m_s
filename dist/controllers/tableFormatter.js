@@ -3,6 +3,26 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.formatFrontEndSummaryTable = exports.formatSummaryPosition = exports.calculateRlzd = exports.formatFrontEndTable = exports.formatGeneralTable = void 0;
 const common_1 = require("./common");
 const portfolioFunctions_1 = require("./portfolioFunctions");
+function oasWithChange(oas) {
+    if (oas > 0 && oas < 50) {
+        return 30;
+    }
+    else if (oas >= 50 && oas < 100) {
+        return 40;
+    }
+    else if (oas >= 100 && oas < 150) {
+        return 50;
+    }
+    else if (oas >= 150 && oas < 250) {
+        return 75;
+    }
+    else if (oas >= 250 && oas < 400) {
+        return 100;
+    }
+    else if (oas >= 400) {
+        return oas * 0.25;
+    }
+}
 function formatGeneralTable(portfolio, date, fund, dates) {
     let currencies = {};
     let formatted = [];
@@ -75,7 +95,8 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         position["Ptf Day Rlzd (Local Currency)"] = Math.round((position["Day Rlzd"] / usdRatio) * holdBackRatio * 1000000) / 1000000;
         position["Previous FX Rate"] = Math.round(position["Previous FX Rate"] * 1000000) / 1000000;
         position["Maturity"] = position["BB Ticker"] ? (0, portfolioFunctions_1.getMaturity)(position["BB Ticker"]) : 0;
-        position["Call Date"] = position["Call Date"] ? position["Call Date"] : 0;
+        // console.log(position["Maturity"], position["Issue"], position["BB Ticker"])
+        position["Call Date"] = position["Call Date"] ? (0, common_1.swapMonthDay)(position["Call Date"]) : 0;
         position["L/S"] = position["Quantity"] > 0 && !position["Issue"].includes("CDS") ? "Long" : position["Notional Total"] == 0 && !position["Issue"].includes("CDS") ? "Rlzd" : "Short";
         position["_id"] = position["_id"];
         position["Duration(Mkt)"] = yearsUntil(position["Call Date"] ? position["Call Date"] : position["Maturity"], date);
@@ -84,6 +105,11 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         position["Issuer"] = position["Issuer"] == "0" ? "" : position["Issuer"];
         position["DV01"] = (position["DV01"] / 1000000) * position["Notional Total"] * usdRatio;
         position["DV01"] = Math.round(position["DV01"] * 1000000) / 1000000 || 0;
+        position["OAS"] = (position["OAS"] / 1000000) * position["Notional Total"] * usdRatio;
+        position["OAS"] = Math.round(position["OAS"] * 1000000) / 1000000 || 0;
+        position["OAS W Change"] = oasWithChange(position["OAS"]);
+        position["Z Spread"] = (position["Z Spread"] / 1000000) * position["Notional Total"] * usdRatio;
+        position["Z Spread"] = Math.round(position["Z Spread"] * 1000000) / 1000000 || 0;
         position["Long Security Name"] = position["Issue"];
         let latestDateKey;
         latestDateKey = Object.keys(position["Interest"]).sort((a, b) => {
@@ -199,6 +225,8 @@ function formatSummaryPosition(position, fundDetails, dates) {
         `${formatMarkDate(dates.yesterday)}`,
         `${formatMarkDate(dates.today)}`,
         "DV01",
+        "OAS",
+        "Z Spread",
         "YTM",
         "Bid",
         "Ask",
@@ -262,6 +290,8 @@ function formatSummaryPosition(position, fundDetails, dates) {
         "Duration(Mkt)": "Duration(Mkt)",
         "BBG Composite Rating": "BBG Composite Rating",
         "Moody's Bond Rating": "Moody's Bond Rating",
+        OAS: "OAS",
+        "Z Spread": "Z Spread",
     };
     titlesValues[formatMarkDate(dates.lastMonth)] = "MTD Mark";
     titlesValues[formatMarkDate(dates.yesterday)] = "Previous Mark";
@@ -371,12 +401,15 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 let dv01;
                 let dayPl;
                 let monthPl;
+                let usdMarketValue;
                 if (view == "frontOffice") {
+                    usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["USD Market Value"]) || 0;
                     dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
                     dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Day P&L (USD)"]);
                     monthPl = parseFloat(groupedByLocation[locationCode].data[index]["MTD P&L (USD)"]);
                 }
                 else {
+                    usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["Value (Base Currency)"]) || 0;
                     dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
                     dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf Day P&L (Base Currency)"]);
                     monthPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf MTD P&L (Base Currency)"]);
@@ -391,11 +424,13 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                     let duration = getDuration(groupedByLocation[locationCode].data[index]["Duration(Mkt)"]);
                     ustTable[duration].push(groupedByLocation[locationCode].data[index]);
                     ustTable[duration + " Aggregated"].DV01Sum += dv01;
+                    ustTable[duration + " Aggregated"].groupUSDMarketValue += usdMarketValue;
                     ustTable[duration + " Aggregated"].MTDPL += monthPl;
                     ustTable[duration + " Aggregated"].DayPL += dayPl;
                     ustTable["Total"].DV01Sum += dv01;
                     ustTable["Total"].MTDPL += monthPl;
                     ustTable["Total"].DayPL += dayPl;
+                    ustTable["Total"].groupUSDMarketValue += usdMarketValue;
                 }
                 let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
                 if (issuer) {
@@ -411,12 +446,15 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 let dv01;
                 let dayPl;
                 let monthPl;
+                let usdMarketValue;
                 if (view == "frontOffice") {
+                    usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["USD Market Value"]) || 0;
                     dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
                     dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Day P&L (USD)"]);
                     monthPl = parseFloat(groupedByLocation[locationCode].data[index]["MTD P&L (USD)"]);
                 }
                 else {
+                    usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["Value (Base Currency)"]) || 0;
                     dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
                     dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf Day P&L (Base Currency)"]);
                     monthPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf MTD P&L (Base Currency)"]);
@@ -425,10 +463,12 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 igTable[sectorIGAssetClass].push(groupedByLocation[locationCode].data[index]);
                 igTable[sectorIGAssetClass + " Aggregated"].DV01Sum += dv01;
                 igTable[sectorIGAssetClass + " Aggregated"].MTDPL += monthPl;
+                igTable[sectorIGAssetClass + " Aggregated"].groupUSDMarketValue += usdMarketValue;
                 igTable[sectorIGAssetClass + " Aggregated"].DayPL += dayPl;
                 igTable["Total"].DV01Sum += dv01;
                 igTable["Total"].MTDPL += monthPl;
                 igTable["Total"].DayPL += dayPl;
+                igTable["Total"].groupUSDMarketValue += usdMarketValue;
                 let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
                 if (issuer) {
                     issuerTable[issuer] = groupedByLocation[locationCode].data[index];
@@ -443,12 +483,15 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 let dv01;
                 let dayPl;
                 let monthPl;
+                let usdMarketValue;
                 if (view == "frontOffice") {
+                    usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["USD Market Value"]) || 0;
                     dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
                     dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Day P&L (USD)"]);
                     monthPl = parseFloat(groupedByLocation[locationCode].data[index]["MTD P&L (USD)"]);
                 }
                 else {
+                    usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["Value (Base Currency)"]) || 0;
                     dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
                     dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf Day P&L (Base Currency)"]);
                     monthPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf MTD P&L (Base Currency)"]);
@@ -457,10 +500,12 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 hyTable[sectorHYAssetClass].push(groupedByLocation[locationCode].data[index]);
                 hyTable[sectorHYAssetClass + " Aggregated"].DV01Sum += dv01;
                 hyTable[sectorHYAssetClass + " Aggregated"].MTDPL += monthPl;
+                hyTable[sectorHYAssetClass + " Aggregated"].groupUSDMarketValue += usdMarketValue;
                 hyTable[sectorHYAssetClass + " Aggregated"].DayPL += dayPl;
                 hyTable["Total"].DV01Sum += dv01;
                 hyTable["Total"].MTDPL += monthPl;
                 hyTable["Total"].DayPL += dayPl;
+                hyTable["Total"].groupUSDMarketValue += usdMarketValue;
                 let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
                 if (issuer) {
                     issuerTable[issuer] = groupedByLocation[locationCode].data[index];
@@ -475,12 +520,15 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 let dayPl;
                 let monthPl;
                 let notional;
+                let usdMarketValue;
                 if (view == "frontOffice") {
+                    usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["USD Market Value"]) || 0;
                     dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
                     dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Day P&L (USD)"]);
                     monthPl = parseFloat(groupedByLocation[locationCode].data[index]["MTD P&L (USD)"]);
                 }
                 else {
+                    usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["Value (Base Currency)"]) || 0;
                     dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
                     dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf Day P&L (Base Currency)"]);
                     monthPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf MTD P&L (Base Currency)"]);
@@ -496,6 +544,7 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                         DayPL: 0,
                         net: 0,
                         gross: 0,
+                        groupUSDMarketValue: 0,
                     };
                 currTable[issue].push(groupedByLocation[locationCode].data[index]);
                 currTable[issue + " Aggregated"].DV01Sum += dv01;
@@ -503,9 +552,11 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 currTable[issue + " Aggregated"].DayPL += dayPl;
                 currTable[issue + " Aggregated"].gross += notional < 0 ? notional : 0;
                 currTable[issue + " Aggregated"].net += notional;
+                currTable[issue + " Aggregated"].groupUSDMarketValue += usdMarketValue;
                 currTable["Total"].DV01Sum += dv01;
                 currTable["Total"].MTDPL += monthPl;
                 currTable["Total"].DayPL += dayPl;
+                currTable["Total"].groupUSDMarketValue += usdMarketValue;
                 let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
                 if (issuer) {
                     issuerTable[issuer] = groupedByLocation[locationCode].data[index];
@@ -520,12 +571,15 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 let dayPl;
                 let monthPl;
                 let notional;
+                let usdMarketValue;
                 if (view == "frontOffice") {
+                    usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["USD Market Value"]) || 0;
                     dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
                     dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Day P&L (USD)"]);
                     monthPl = parseFloat(groupedByLocation[locationCode].data[index]["MTD P&L (USD)"]);
                 }
                 else {
+                    usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["Value (Base Currency)"]) || 0;
                     dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
                     dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf Day P&L (Base Currency)"]);
                     monthPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf MTD P&L (Base Currency)"]);
@@ -541,6 +595,7 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                         DayPL: 0,
                         net: 0,
                         gross: 0,
+                        groupUSDMarketValue: 0,
                     };
                 currTable[issue].push(groupedByLocation[locationCode].data[index]);
                 currTable[issue + " Aggregated"].DV01Sum += dv01;
@@ -548,9 +603,11 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 currTable[issue + " Aggregated"].DayPL += dayPl;
                 currTable[issue + " Aggregated"].gross += notional < 0 ? notional : 0;
                 currTable[issue + " Aggregated"].net += notional;
+                currTable[issue + " Aggregated"].groupUSDMarketValue += usdMarketValue;
                 currTable["Total"].DV01Sum += dv01;
                 currTable["Total"].MTDPL += monthPl;
                 currTable["Total"].DayPL += dayPl;
+                currTable["Total"].groupUSDMarketValue += usdMarketValue;
                 let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
                 if (issuer) {
                     issuerTable[issuer] = groupedByLocation[locationCode].data[index];
@@ -565,12 +622,15 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 let dayPl;
                 let monthPl;
                 let notional;
+                let usdMarketValue;
                 if (view == "frontOffice") {
+                    usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["USD Market Value"]) || 0;
                     dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
                     dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Day P&L (USD)"]);
                     monthPl = parseFloat(groupedByLocation[locationCode].data[index]["MTD P&L (USD)"]);
                 }
                 else {
+                    usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["Value (Base Currency)"]) || 0;
                     dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
                     dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf Day P&L (Base Currency)"]);
                     monthPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf MTD P&L (Base Currency)"]);
@@ -586,6 +646,7 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                         DayPL: 0,
                         net: 0,
                         gross: 0,
+                        groupUSDMarketValue: 0,
                     };
                 currTable[issue].push(groupedByLocation[locationCode].data[index]);
                 currTable[issue + " Aggregated"].DV01Sum += dv01;
@@ -593,9 +654,11 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 currTable[issue + " Aggregated"].DayPL += dayPl;
                 currTable[issue + " Aggregated"].gross += notional < 0 ? notional : 0;
                 currTable[issue + " Aggregated"].net += notional;
+                currTable[issue + " Aggregated"].groupUSDMarketValue += usdMarketValue;
                 currTable["Total"].DV01Sum += dv01;
                 currTable["Total"].MTDPL += monthPl;
                 currTable["Total"].DayPL += dayPl;
+                currTable["Total"].groupUSDMarketValue += usdMarketValue;
                 let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
                 if (issuer) {
                     issuerTable[issuer] = groupedByLocation[locationCode].data[index];
@@ -618,12 +681,15 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 let dv01;
                 let dayPl;
                 let monthPl;
+                let usdMarketValue;
                 if (view == "frontOffice") {
+                    usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["USD Market Value"]) || 0;
                     dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
                     dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Day P&L (USD)"]);
                     monthPl = parseFloat(groupedByLocation[locationCode].data[index]["MTD P&L (USD)"]);
                 }
                 else {
+                    usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["Value (Base Currency)"]) || 0;
                     dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
                     dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf Day P&L (Base Currency)"]);
                     monthPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf MTD P&L (Base Currency)"]);
@@ -638,9 +704,11 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                     ustTable[duration + " Aggregated"].DV01Sum += dv01;
                     ustTable[duration + " Aggregated"].MTDPL += monthPl;
                     ustTable[duration + " Aggregated"].DayPL += dayPl;
+                    ustTable[duration + " Aggregated"].groupUSDMarketValue += usdMarketValue;
                     ustTable["Total"].DV01Sum += dv01;
                     ustTable["Total"].MTDPL += monthPl;
                     ustTable["Total"].DayPL += dayPl;
+                    ustTable["Total"].groupUSDMarketValue += usdMarketValue;
                 }
                 let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
                 if (issuer) {
@@ -690,10 +758,10 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf Day P&L (Base Currency)"]);
                 monthPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf MTD P&L (Base Currency)"]);
             }
+            strategyNAVPercentage[strategy] = strategyNAVPercentage[strategy] ? strategyNAVPercentage[strategy] + usdMarketValue : usdMarketValue;
             if (usdMarketValue > 0) {
                 countryNAVPercentage[country.toLowerCase()] = countryNAVPercentage[country.toLowerCase()] ? countryNAVPercentage[country.toLowerCase()] + usdMarketValue : usdMarketValue;
                 sectorNAVPercentage[sector.toLowerCase()] = sectorNAVPercentage[sector.toLowerCase()] ? sectorNAVPercentage[sector.toLowerCase()] + usdMarketValue : usdMarketValue;
-                strategyNAVPercentage[strategy] = strategyNAVPercentage[strategy] ? strategyNAVPercentage[strategy] + usdMarketValue : usdMarketValue;
                 longShortDV01Sum["Long"] += Math.round(parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0);
             }
             else if (usdMarketValue < 0) {
@@ -877,37 +945,37 @@ function groupAndSortByLocationAndType(formattedPortfolio, nav, sort, sign, view
     };
     let ustTable = {
         "0 To 2": [],
-        "0 To 2 Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
+        "0 To 2 Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
         "2 To 5": [],
-        "2 To 5 Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
+        "2 To 5 Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
         "5 To 10": [],
-        "5 To 10 Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
+        "5 To 10 Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
         "10 To 30": [],
-        "10 To 30 Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
+        "10 To 30 Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
         "> 30": [],
-        "> 30 Aggregated": { DayPl: 0, MTDPL: 0, DV01Sum: 0 },
-        Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
+        "> 30 Aggregated": { DayPl: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
+        Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
     };
     let igTable = {
         Bonds: [],
-        "Bonds Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
+        "Bonds Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
         "FINS Perps": [],
-        "FINS Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
+        "FINS Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
         "Corps Perps": [],
-        "Corps Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
-        Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
+        "Corps Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
+        Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
     };
     let hyTable = {
         Bonds: [],
-        "Bonds Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
+        "Bonds Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
         "FINS Perps": [],
-        "FINS Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
+        "FINS Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
         "Corps Perps": [],
-        "Corps Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
-        Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
+        "Corps Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
+        Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
     };
     let currTable = {
-        Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0 },
+        Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
     };
     let issuerTable = {};
     const groupedByLocation = formattedPortfolio.reduce((group, item) => {
@@ -967,7 +1035,22 @@ function groupAndSortByLocationAndType(formattedPortfolio, nav, sort, sign, view
     strategyNAVPercentage["Total"] = Math.round(sumStrategyLong * 10) / 10;
     durationSummary["Total"].dv01Sum = Math.round(durationSummary["0 To 2"].dv01Sum + durationSummary["2 To 5"].dv01Sum + durationSummary["5 To 10"].dv01Sum + durationSummary["10 To 30"].dv01Sum + durationSummary["> 30"].dv01Sum);
     longShortDV01Sum["Total"] = Math.round(longShortDV01Sum["Long"] + longShortDV01Sum["Short"]);
-    return { portfolio: updatedPortfolio, duration: durationSummary, countryNAVPercentage: sortObjectBasedOnKey(countryNAVPercentage), sectorNAVPercentage: sortObjectBasedOnKey(sectorNAVPercentage), strategyNAVPercentage: sortObjectBasedOnKey(strategyNAVPercentage), riskAssessment: riskAssessment, topWorstPerformaners: topWorstPerformaners, longShortDV01Sum: longShortDV01Sum, ustTable: ustTable, igTable: igTable, hyTable: hyTable, currTable: currTable, currencies: currencies, issuerTable: issuerTable };
+    return {
+        portfolio: updatedPortfolio,
+        duration: durationSummary,
+        countryNAVPercentage: sortObjectBasedOnKey(countryNAVPercentage),
+        sectorNAVPercentage: sortObjectBasedOnKey(sectorNAVPercentage),
+        strategyNAVPercentage: sortObjectBasedOnKey(strategyNAVPercentage),
+        riskAssessment: riskAssessment,
+        topWorstPerformaners: topWorstPerformaners,
+        longShortDV01Sum: longShortDV01Sum,
+        ustTable: ustTable,
+        igTable: igTable,
+        hyTable: hyTable,
+        currTable: currTable,
+        currencies: currencies,
+        issuerTable: issuerTable,
+    };
 }
 function sortSummary(locationCode, group) {
     let assetClassOrder = {
