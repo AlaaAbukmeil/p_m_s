@@ -1,33 +1,34 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.formatFrontEndSummaryTable = exports.formatSummaryPosition = exports.calculateRlzd = exports.formatFrontEndTable = exports.formatGeneralTable = void 0;
+exports.formatFrontEndRiskTable = exports.formatFrontEndSummaryTable = exports.formatSummaryPosition = exports.calculateRlzd = exports.formatFrontEndTable = exports.formatGeneralTable = void 0;
 const common_1 = require("./common");
 const portfolioFunctions_1 = require("./portfolioFunctions");
+const reports_1 = require("./reports");
 function oasWithChange(oas) {
-    if (oas > 0 && oas < 50) {
-        return 30;
+    if (oas < 50) {
+        return [30, 30];
     }
     else if (oas >= 50 && oas < 100) {
-        return 40;
+        return [40, 40];
     }
     else if (oas >= 100 && oas < 150) {
-        return 50;
+        return [50, 50];
     }
     else if (oas >= 150 && oas < 250) {
-        return 75;
+        return [75, 75];
     }
     else if (oas >= 250 && oas < 400) {
-        return 100;
+        return [100, 100];
     }
     else if (oas >= 400) {
-        return oas * 0.25;
+        return [parseFloat(oas) * 0.25, "25 % of spread"];
     }
 }
 function formatGeneralTable(portfolio, date, fund, dates) {
     let currencies = {};
     let formatted = [];
     let dv01Sum = 0;
-    let mtdpl = 0, mtdrlzd = 0, mtdurlzd = 0, mtdint = 0, dayint = 0, daypl = 0, dayfx = 0, mtdfx = 0, dayurlzd = 0, dayrlzd = 0;
+    let mtdpl = 0, mtdrlzd = 0, mtdurlzd = 0, mtdint = 0, dayint = 0, daypl = 0, dayfx = 0, mtdfx = 0, dayurlzd = 0, dayrlzd = 0, nmv = 0, lmv = 0, smv = 0;
     for (let index = 0; index < portfolio.length; index++) {
         let position = portfolio[index];
         let originalFace = position["Original Face"] || 1;
@@ -40,17 +41,26 @@ function formatGeneralTable(portfolio, date, fund, dates) {
             }
         }
         else {
-            currencies[currency] = usdRatio;
+            if (position["Quantity"] != 0) {
+                currencies[currency] = usdRatio;
+            }
         }
         position["FX Rate"] = usdRatio;
         position["Asset Class"] = position["Asset Class"] ? position["Asset Class"] : position["Rating Class"] ? position["Rating Class"] : "";
         if (!position["Asset Class"]) {
             position["Asset Class"] = isRatingHigherThanBBBMinus(position["Asset Class"]);
         }
-        position["Cost"] = position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") ? Math.round(position["Average Cost"] * position["Quantity"] * 10000) / (10000 * position["Original Face"]) : Math.round(position["Average Cost"] * position["Quantity"] * 1000000) / 1000000;
+        position["Cost (Base Currency)"] = position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") ? Math.round(position["Average Cost"] * position["Quantity"] * 10000 * usdRatio) / (10000 * position["Original Face"]) : Math.round(position["Average Cost"] * position["Quantity"] * 1000000 * usdRatio) / 1000000;
         position["FX Rate"] = Math.round((position["FX Rate"] || position["FX Rate"]) * 1000000) / 1000000;
         position["Value (Local Currency)"] = position["ISIN"].includes("CDS") || position["ISIN"].includes("ITRX") ? Math.round((position["Quantity"] * position["Mid"]) / originalFace) || 0 : Math.round(position["Quantity"] * position["Mid"]) || 0;
         position["Value (Base Currency)"] = position["ISIN"].includes("CDS") || position["ISIN"].includes("ITRX") ? Math.round((position["Quantity"] * position["Mid"] * usdRatio) / originalFace) || 0 : Math.round(position["Quantity"] * position["Mid"] * usdRatio) || 0;
+        if (position["Value (Base Currency)"] > 0) {
+            lmv += position["Value (Base Currency)"];
+        }
+        else {
+            smv += position["Value (Base Currency)"];
+        }
+        nmv += position["Value (Base Currency)"];
         position["Mid"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Mid"] * 1000000) / 1000000 : Math.round(position["Mid"] * 1000000) / 10000;
         position["Bid"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Bid"] * 1000000) / 1000000 : Math.round(position["Bid"] * 1000000) / 10000;
         position["Ask"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Ask"] * 1000000) / 1000000 : Math.round(position["Ask"] * 1000000) / 10000;
@@ -107,7 +117,31 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         position["DV01"] = Math.round(position["DV01"] * 1000000) / 1000000 || 0;
         position["OAS"] = (position["OAS"] / 1000000) * position["Notional Total"] * usdRatio;
         position["OAS"] = Math.round(position["OAS"] * 1000000) / 1000000 || 0;
-        position["OAS W Change"] = oasWithChange(position["OAS"]);
+        position["OAS W Change"] = oasWithChange(position["OAS"])[0];
+        position["Spread Change"] = oasWithChange(position["OAS"])[1];
+        position["DV01 Dollar Value Impact"] = Math.round(position["OAS W Change"] * position["DV01"]);
+        position["DV01 Dollar Value Impact % of Nav"] = Math.round(((position["DV01 Dollar Value Impact"] * position["OAS W Change"]) / fund.nav) * 10000) / 100;
+        position["DV01 Dollar Value Impact Limit % of Nav"] = position["Value (Base Currency)"] / fund.nav > 10 ? 2 : 1.5;
+        position["DV01 Dollar Value Impact Utilization % of Nav"] = Math.round((position["DV01 Dollar Value Impact % of Nav"] / position["DV01 Dollar Value Impact Limit % of Nav"]) * 10000) / 100;
+        position["DV01 Dollar Value Impact Test"] = Math.abs(position["DV01 Dollar Value Impact Utilization % of Nav"]) < 100 ? "Pass" : "Fail";
+        position["DV01 Dollar Value Impact Color Test"] = position["DV01 Dollar Value Impact Test"] == "Pass" ? "#C5E1A5" : "#FFAB91";
+        position["DV01 Dollar Value Impact Limit % of Nav"] += " %";
+        position["DV01 Dollar Value Impact Utilization % of Nav"] += " %";
+        position["DV01 Dollar Value Impact % of Nav"] += " %";
+        position["Value (Base Currency) % of Nav"] = Math.round((position["Value (Base Currency)"] / fund.nav) * 10000) / 100;
+        position["Value (Base Currency) Limit % of Nav"] = Math.abs(position["Value (Base Currency) % of Nav"]) > 10 ? 15 : 10;
+        position["Value (Base Currency) Utilization % of Nav"] = Math.round((position["Value (Base Currency) % of Nav"] / position["Value (Base Currency) Limit % of Nav"]) * 10000) / 100;
+        position["Value (Base Currency) Test"] = Math.abs(position["Value (Base Currency) Utilization % of Nav"]) < 100 ? "Pass" : "Fail";
+        position["Value (Base Currency) Color Test"] = position["Value (Base Currency) Test"] == "Pass" ? "#C5E1A5" : "#FFAB91";
+        position["Value (Base Currency) % of Nav"] += " %";
+        position["Value (Base Currency) Limit % of Nav"] += " %";
+        position["Value (Base Currency) Utilization % of Nav"] += " %";
+        position["Capital Gain/ Loss since Inception (Live Position)"] = position["Value (Base Currency)"] - position["Cost (Base Currency)"];
+        let shortLongType = position["Value (Base Currency)"] > 0 ? 1 : -1;
+        position["% of Capital Gain/ Loss since Inception (Live Position)"] = Math.round((position["Value (Base Currency)"] / position["Cost (Base Currency)"] - 1) * shortLongType * 10000) / 100 + " %";
+        position["Accrued Interest Since Inception"] = (0, reports_1.calculateAccruedSinceInception)(position["Interest"], position["Coupon Rate"] / 100, position["Coupon Duration"]);
+        position["Total Gain/ Loss (USD)"] = Math.round(position["Capital Gain/ Loss since Inception (Live Position)"] + position["Accrued Interest Since Inception"]);
+        position["% of Total Gain/ Loss since Inception (Live Position)"] = Math.round(((position["Total Gain/ Loss (USD)"] + position["Cost (Base Currency)"]) / position["Cost (Base Currency)"] - 1) * shortLongType * 10000) / 100 + " %";
         position["Z Spread"] = (position["Z Spread"] / 1000000) * position["Notional Total"] * usdRatio;
         position["Z Spread"] = Math.round(position["Z Spread"] * 1000000) / 1000000 || 0;
         position["Long Security Name"] = position["Issue"];
@@ -161,6 +195,14 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         dayurlzd: Math.round(dayurlzd * 1000) / 1000,
         dayrlzd: Math.round(dayrlzd * 1000) / 1000,
         dv01Sum: Math.round(dv01Sum * 1000) / 1000,
+        lmv: Math.round(lmv * 1000) / 1000,
+        smv: Math.round(smv * 1000) / 1000,
+        gmv: Math.round((lmv - smv) * 1000) / 1000,
+        nmv: Math.round(nmv * 1000) / 1000,
+        lmvOfNav: Math.round(lmv * 10000) / (100 * fund.nav),
+        smvOfNav: Math.round(smv * 10000) / (100 * fund.nav),
+        gmvOfNav: Math.round((lmv - smv) * 10000) / (100 * fund.nav),
+        nmvOfNav: Math.round(nmv * 10000) / (100 * fund.nav),
     };
     return { portfolio: portfolio, fundDetails: fundDetails, currencies: currencies };
 }
@@ -226,6 +268,7 @@ function formatSummaryPosition(position, fundDetails, dates) {
         `${formatMarkDate(dates.today)}`,
         "DV01",
         "OAS",
+        "OAS W Change",
         "Z Spread",
         "YTM",
         "Bid",
@@ -250,6 +293,24 @@ function formatSummaryPosition(position, fundDetails, dates) {
         "Duration(Mkt)",
         "BBG Composite Rating",
         "Moody's Bond Rating",
+        "DV01 Dollar Value Impact",
+        "DV01 Dollar Value Impact % of Nav",
+        "Spread Change",
+        "DV01 Dollar Value Impact % of Nav",
+        "DV01 Dollar Value Impact Limit % of Nav",
+        "DV01 Dollar Value Impact Utilization % of Nav",
+        "DV01 Dollar Value Impact Test",
+        "DV01 Dollar Value Impact Color Test",
+        "Value (Base Currency) % of Nav",
+        "Value (Base Currency) Limit % of Nav",
+        "Value (Base Currency) Utilization % of Nav",
+        "Value (Base Currency) Test",
+        "Value (Base Currency) Color Test",
+        "Capital Gain/ Loss since Inception (Live Position)",
+        "% of Capital Gain/ Loss since Inception (Live Position)",
+        "Accrued Interest Since Inception",
+        "Total Gain/ Loss (USD)",
+        "% of Total Gain/ Loss since Inception (Live Position)",
     ];
     let titlesValues = {
         Type: "Type",
@@ -292,6 +353,24 @@ function formatSummaryPosition(position, fundDetails, dates) {
         "Moody's Bond Rating": "Moody's Bond Rating",
         OAS: "OAS",
         "Z Spread": "Z Spread",
+        "OAS W Change": "OAS W Change",
+        "Spread Change": "Spread Change",
+        "DV01 Dollar Value Impact": "DV01 Dollar Value Impact",
+        "DV01 Dollar Value Impact % of Nav": "DV01 Dollar Value Impact % of Nav",
+        "DV01 Dollar Value Impact Limit % of Nav": "DV01 Dollar Value Impact Limit % of Nav",
+        "DV01 Dollar Value Impact Utilization % of Nav": "DV01 Dollar Value Impact Utilization % of Nav",
+        "DV01 Dollar Value Impact Test": "DV01 Dollar Value Impact Test",
+        "DV01 Dollar Value Impact Color Test": "DV01 Dollar Value Impact Color Test",
+        "Value (Base Currency) % of Nav": "Value (Base Currency) % of Nav",
+        "Value (Base Currency) Limit % of Nav": "Value (Base Currency) Limit % of Nav",
+        "Value (Base Currency) Utilization % of Nav": "Value (Base Currency) Utilization % of Nav",
+        "Accrued Interest Since Inception": "Accrued Interest Since Inception",
+        "Value (Base Currency) Test": "Value (Base Currency) Test",
+        "Value (Base Currency) Color Test": "Value (Base Currency) Color Test",
+        "Capital Gain/ Loss since Inception (Live Position)": "Capital Gain/ Loss since Inception (Live Position)",
+        "% of Capital Gain/ Loss since Inception (Live Position)": "% of Capital Gain/ Loss since Inception (Live Position)",
+        "Total Gain/ Loss (USD)": "Total Gain/ Loss (USD)",
+        "% of Total Gain/ Loss since Inception (Live Position)": "% of Total Gain/ Loss since Inception (Live Position)",
     };
     titlesValues[formatMarkDate(dates.lastMonth)] = "MTD Mark";
     titlesValues[formatMarkDate(dates.yesterday)] = "Previous Mark";
@@ -322,6 +401,7 @@ function formatSummaryPosition(position, fundDetails, dates) {
     object["Issuer"] = position["Issuer"];
     object["Last Price Update"] = position["Last Price Update"];
     object["Rating Score"] = position["BBG Composite Rating"] && position["BBG Composite Rating"] !== "NR" ? bbgRating(position["BBG Composite Rating"]) : position["Moody's Bond Rating"] ? moodyRating(position["Moody's Bond Rating"]) : -99;
+    object["Value (Base Currency) % of GMV"] = Math.abs(Math.round((position["Value (Base Currency)"] / fundDetails.gmv) * 10000) / 100) + " %";
     return object;
 }
 exports.formatSummaryPosition = formatSummaryPosition;
@@ -338,6 +418,19 @@ function formatFrontEndSummaryTable(portfolio, date, fund, dates, sort, sign) {
     return { portfolio: analyzedPortfolio.portfolio, fundDetails: formattedPortfolio.fundDetails, analysis: analyzedPortfolio };
 }
 exports.formatFrontEndSummaryTable = formatFrontEndSummaryTable;
+function formatFrontEndRiskTable(portfolio, date, fund, dates, sort, sign) {
+    let formattedPortfolio = formatGeneralTable(portfolio, date, fund, dates);
+    let formatted = [];
+    let test = 0;
+    for (let formattedPortfolioIndex = 0; formattedPortfolioIndex < formattedPortfolio.portfolio.length; formattedPortfolioIndex++) {
+        let unformattedPosition = formattedPortfolio.portfolio[formattedPortfolioIndex];
+        let formattedPosition = formatSummaryPosition(unformattedPosition, formattedPortfolio.fundDetails, dates);
+        formatted.push(formattedPosition);
+    }
+    let analyzedPortfolio = groupAndSortByLocationAndTypeRisk(formatted, formattedPortfolio.fundDetails.nav, sort, sign, "frontOffice", formattedPortfolio.currencies);
+    return { portfolio: analyzedPortfolio.portfolio, fundDetails: formattedPortfolio.fundDetails, analysis: analyzedPortfolio };
+}
+exports.formatFrontEndRiskTable = formatFrontEndRiskTable;
 function getDuration(duration) {
     duration = parseFloat(duration);
     if (duration < 2) {
@@ -402,6 +495,13 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 let dayPl;
                 let monthPl;
                 let usdMarketValue;
+                let oasSum = parseFloat(groupedByLocation[locationCode].data[index]["OAS"]);
+                let zSpreadSum = parseFloat(groupedByLocation[locationCode].data[index]["Z Spread"]);
+                let oasWChangeSum = parseFloat(groupedByLocation[locationCode].data[index]["OAS W Change"]);
+                let dv01DollarValueImpact = parseFloat(groupedByLocation[locationCode].data[index]["DV01 Dollar Value Impact"]);
+                let dv01DollarValueOfNav = parseFloat(groupedByLocation[locationCode].data[index]["DV01 Dollar Value Impact % of Nav"]);
+                let dv01DollarValueLimitOfNav = parseFloat(groupedByLocation[locationCode].data[index]["DV01 Dollar Value Impact Limit % of Nav"]);
+                let dv01DollarValueLimitUtilization = parseFloat(groupedByLocation[locationCode].data[index]["DV01 Dollar Value Impact Utilization % of Nav"]);
                 if (view == "frontOffice") {
                     usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["USD Market Value"]) || 0;
                     dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
@@ -427,10 +527,24 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                     ustTable[duration + " Aggregated"].groupUSDMarketValue += usdMarketValue;
                     ustTable[duration + " Aggregated"].MTDPL += monthPl;
                     ustTable[duration + " Aggregated"].DayPL += dayPl;
+                    ustTable[duration + " Aggregated"].oasSum += oasSum;
+                    ustTable[duration + " Aggregated"].zSpreadSum += zSpreadSum;
+                    ustTable[duration + " Aggregated"].oasWChangeSum += oasWChangeSum;
+                    ustTable[duration + " Aggregated"]["DV01 Dollar Value Impact"] += dv01DollarValueImpact;
+                    ustTable[duration + " Aggregated"]["DV01 Dollar Value Impact % of Nav"] += dv01DollarValueOfNav;
+                    ustTable[duration + " Aggregated"]["DV01 Dollar Value Impact Limit % of Nav"] += dv01DollarValueLimitOfNav;
+                    ustTable[duration + " Aggregated"]["DV01 Dollar Value Impact Utilization % of Nav"] += dv01DollarValueLimitUtilization;
                     ustTable["Total"].DV01Sum += dv01;
                     ustTable["Total"].MTDPL += monthPl;
                     ustTable["Total"].DayPL += dayPl;
                     ustTable["Total"].groupUSDMarketValue += usdMarketValue;
+                    ustTable["Total"].oasSum += oasSum;
+                    ustTable["Total"].zSpreadSum += zSpreadSum;
+                    ustTable["Total"].oasWChangeSum += oasWChangeSum;
+                    ustTable["Total"]["DV01 Dollar Value Impact"] += dv01DollarValueImpact;
+                    ustTable["Total"]["DV01 Dollar Value Impact % of Nav"] += dv01DollarValueOfNav;
+                    ustTable["Total"]["DV01 Dollar Value Impact Limit % of Nav"] += dv01DollarValueLimitOfNav;
+                    ustTable["Total"]["DV01 Dollar Value Impact Utilization % of Nav"] += dv01DollarValueLimitUtilization;
                 }
                 let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
                 if (issuer) {
@@ -447,6 +561,9 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 let dayPl;
                 let monthPl;
                 let usdMarketValue;
+                let oasSum = parseFloat(groupedByLocation[locationCode].data[index]["OAS"]);
+                let zSpreadSum = parseFloat(groupedByLocation[locationCode].data[index]["Z Spread"]);
+                let oasWChangeSum = parseFloat(groupedByLocation[locationCode].data[index]["OAS W Change"]);
                 if (view == "frontOffice") {
                     usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["USD Market Value"]) || 0;
                     dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
@@ -465,10 +582,16 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 igTable[sectorIGAssetClass + " Aggregated"].MTDPL += monthPl;
                 igTable[sectorIGAssetClass + " Aggregated"].groupUSDMarketValue += usdMarketValue;
                 igTable[sectorIGAssetClass + " Aggregated"].DayPL += dayPl;
+                igTable[sectorIGAssetClass + " Aggregated"].oasSum += oasSum;
+                igTable[sectorIGAssetClass + " Aggregated"].zSpreadSum += zSpreadSum;
+                igTable[sectorIGAssetClass + " Aggregated"].oasWChangeSum += oasWChangeSum;
                 igTable["Total"].DV01Sum += dv01;
                 igTable["Total"].MTDPL += monthPl;
                 igTable["Total"].DayPL += dayPl;
                 igTable["Total"].groupUSDMarketValue += usdMarketValue;
+                igTable["Total"].oasSum += oasSum;
+                igTable["Total"].zSpreadSum += zSpreadSum;
+                igTable["Total"].oasWChangeSum += oasWChangeSum;
                 let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
                 if (issuer) {
                     issuerTable[issuer] = groupedByLocation[locationCode].data[index];
@@ -480,19 +603,20 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
             for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
                 HYNotional += groupedByLocation[locationCode].data[index]["Notional Total"] || 0;
                 HYDV01Sum += groupedByLocation[locationCode].data[index]["DV01"] || 0;
-                let dv01;
                 let dayPl;
                 let monthPl;
                 let usdMarketValue;
+                let oasSum = parseFloat(groupedByLocation[locationCode].data[index]["OAS"]);
+                let zSpreadSum = parseFloat(groupedByLocation[locationCode].data[index]["Z Spread"]);
+                let oasWChangeSum = parseFloat(groupedByLocation[locationCode].data[index]["OAS W Change"]);
+                let dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
                 if (view == "frontOffice") {
                     usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["USD Market Value"]) || 0;
-                    dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
                     dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Day P&L (USD)"]);
                     monthPl = parseFloat(groupedByLocation[locationCode].data[index]["MTD P&L (USD)"]);
                 }
                 else {
                     usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["Value (Base Currency)"]) || 0;
-                    dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
                     dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf Day P&L (Base Currency)"]);
                     monthPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf MTD P&L (Base Currency)"]);
                 }
@@ -502,10 +626,16 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 hyTable[sectorHYAssetClass + " Aggregated"].MTDPL += monthPl;
                 hyTable[sectorHYAssetClass + " Aggregated"].groupUSDMarketValue += usdMarketValue;
                 hyTable[sectorHYAssetClass + " Aggregated"].DayPL += dayPl;
+                hyTable[sectorHYAssetClass + " Aggregated"].oasSum += oasSum;
+                hyTable[sectorHYAssetClass + " Aggregated"].zSpreadSum += zSpreadSum;
+                hyTable[sectorHYAssetClass + " Aggregated"].oasWChangeSum += oasWChangeSum;
                 hyTable["Total"].DV01Sum += dv01;
                 hyTable["Total"].MTDPL += monthPl;
                 hyTable["Total"].DayPL += dayPl;
                 hyTable["Total"].groupUSDMarketValue += usdMarketValue;
+                hyTable["Total"].oasSum += oasSum;
+                hyTable["Total"].zSpreadSum += zSpreadSum;
+                hyTable["Total"].oasWChangeSum += oasWChangeSum;
                 let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
                 if (issuer) {
                     issuerTable[issuer] = groupedByLocation[locationCode].data[index];
@@ -516,20 +646,21 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
             groupedByLocation[locationCode].color = "#FFF9C4";
             for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
                 hedgeCurrencyNotional += groupedByLocation[locationCode].data[index]["Notional Total"] || 0;
-                let dv01;
                 let dayPl;
                 let monthPl;
                 let notional;
                 let usdMarketValue;
+                let dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
+                let oasSum = parseFloat(groupedByLocation[locationCode].data[index]["OAS"]);
+                let zSpreadSum = parseFloat(groupedByLocation[locationCode].data[index]["Z Spread"]);
+                let oasWChangeSum = parseFloat(groupedByLocation[locationCode].data[index]["OAS W Change"]);
                 if (view == "frontOffice") {
                     usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["USD Market Value"]) || 0;
-                    dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
                     dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Day P&L (USD)"]);
                     monthPl = parseFloat(groupedByLocation[locationCode].data[index]["MTD P&L (USD)"]);
                 }
                 else {
                     usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["Value (Base Currency)"]) || 0;
-                    dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
                     dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf Day P&L (Base Currency)"]);
                     monthPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf MTD P&L (Base Currency)"]);
                 }
@@ -545,6 +676,9 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                         net: 0,
                         gross: 0,
                         groupUSDMarketValue: 0,
+                        oasSum: 0,
+                        zSpreadSum: 0,
+                        oasWChangeSum: 0,
                     };
                 currTable[issue].push(groupedByLocation[locationCode].data[index]);
                 currTable[issue + " Aggregated"].DV01Sum += dv01;
@@ -553,10 +687,16 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 currTable[issue + " Aggregated"].gross += notional < 0 ? notional : 0;
                 currTable[issue + " Aggregated"].net += notional;
                 currTable[issue + " Aggregated"].groupUSDMarketValue += usdMarketValue;
+                currTable[issue + " Aggregated"].oasSum += oasSum;
+                currTable[issue + " Aggregated"].zSpreadSum += zSpreadSum;
+                currTable[issue + " Aggregated"].oasWChangeSum += oasWChangeSum;
                 currTable["Total"].DV01Sum += dv01;
                 currTable["Total"].MTDPL += monthPl;
                 currTable["Total"].DayPL += dayPl;
                 currTable["Total"].groupUSDMarketValue += usdMarketValue;
+                currTable["Total"].oasSum += oasSum;
+                currTable["Total"].zSpreadSum += zSpreadSum;
+                currTable["Total"].oasWChangeSum += oasWChangeSum;
                 let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
                 if (issuer) {
                     issuerTable[issuer] = groupedByLocation[locationCode].data[index];
@@ -572,6 +712,9 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 let monthPl;
                 let notional;
                 let usdMarketValue;
+                let oasSum = parseFloat(groupedByLocation[locationCode].data[index]["OAS"]);
+                let zSpreadSum = parseFloat(groupedByLocation[locationCode].data[index]["Z Spread"]);
+                let oasWChangeSum = parseFloat(groupedByLocation[locationCode].data[index]["OAS W Change"]);
                 if (view == "frontOffice") {
                     usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["USD Market Value"]) || 0;
                     dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
@@ -596,6 +739,9 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                         net: 0,
                         gross: 0,
                         groupUSDMarketValue: 0,
+                        oasSum: 0,
+                        zSpreadSum: 0,
+                        oasWChangeSum: 0,
                     };
                 currTable[issue].push(groupedByLocation[locationCode].data[index]);
                 currTable[issue + " Aggregated"].DV01Sum += dv01;
@@ -604,10 +750,16 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 currTable[issue + " Aggregated"].gross += notional < 0 ? notional : 0;
                 currTable[issue + " Aggregated"].net += notional;
                 currTable[issue + " Aggregated"].groupUSDMarketValue += usdMarketValue;
+                currTable[issue + " Aggregated"].oasSum += oasSum;
+                currTable[issue + " Aggregated"].zSpreadSum += zSpreadSum;
+                currTable[issue + " Aggregated"].oasWChangeSum += oasWChangeSum;
                 currTable["Total"].DV01Sum += dv01;
                 currTable["Total"].MTDPL += monthPl;
                 currTable["Total"].DayPL += dayPl;
                 currTable["Total"].groupUSDMarketValue += usdMarketValue;
+                currTable["Total"].oasSum += oasSum;
+                currTable["Total"].zSpreadSum += zSpreadSum;
+                currTable["Total"].oasWChangeSum += oasWChangeSum;
                 let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
                 if (issuer) {
                     issuerTable[issuer] = groupedByLocation[locationCode].data[index];
@@ -623,6 +775,9 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 let monthPl;
                 let notional;
                 let usdMarketValue;
+                let oasSum = parseFloat(groupedByLocation[locationCode].data[index]["OAS"]);
+                let zSpreadSum = parseFloat(groupedByLocation[locationCode].data[index]["Z Spread"]);
+                let oasWChangeSum = parseFloat(groupedByLocation[locationCode].data[index]["OAS W Change"]);
                 if (view == "frontOffice") {
                     usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["USD Market Value"]) || 0;
                     dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
@@ -647,6 +802,9 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                         net: 0,
                         gross: 0,
                         groupUSDMarketValue: 0,
+                        oasSum: 0,
+                        zSpreadSum: 0,
+                        oasWChangeSum: 0,
                     };
                 currTable[issue].push(groupedByLocation[locationCode].data[index]);
                 currTable[issue + " Aggregated"].DV01Sum += dv01;
@@ -655,10 +813,16 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 currTable[issue + " Aggregated"].gross += notional < 0 ? notional : 0;
                 currTable[issue + " Aggregated"].net += notional;
                 currTable[issue + " Aggregated"].groupUSDMarketValue += usdMarketValue;
+                currTable[issue + " Aggregated"].oasSum += oasSum;
+                currTable[issue + " Aggregated"].zSpreadSum += zSpreadSum;
+                currTable[issue + " Aggregated"].oasWChangeSum += oasWChangeSum;
                 currTable["Total"].DV01Sum += dv01;
                 currTable["Total"].MTDPL += monthPl;
                 currTable["Total"].DayPL += dayPl;
                 currTable["Total"].groupUSDMarketValue += usdMarketValue;
+                currTable["Total"].oasSum += oasSum;
+                currTable["Total"].zSpreadSum += zSpreadSum;
+                currTable["Total"].oasWChangeSum += oasWChangeSum;
                 let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
                 if (issuer) {
                     issuerTable[issuer] = groupedByLocation[locationCode].data[index];
@@ -678,19 +842,24 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
         else if (groupedByLocation[locationCode].order == 8) {
             groupedByLocation[locationCode].color = "#E8F5E9";
             for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
-                let dv01;
                 let dayPl;
                 let monthPl;
                 let usdMarketValue;
+                let dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
+                let oasSum = parseFloat(groupedByLocation[locationCode].data[index]["OAS"]);
+                let zSpreadSum = parseFloat(groupedByLocation[locationCode].data[index]["Z Spread"]);
+                let oasWChangeSum = parseFloat(groupedByLocation[locationCode].data[index]["OAS W Change"]);
+                let dv01DollarValueImpact = parseFloat(groupedByLocation[locationCode].data[index]["DV01 Dollar Value Impact"]);
+                let dv01DollarValueOfNav = parseFloat(groupedByLocation[locationCode].data[index]["DV01 Dollar Value Impact % of Nav"]);
+                let dv01DollarValueLimitOfNav = parseFloat(groupedByLocation[locationCode].data[index]["DV01 Dollar Value Impact Limit % of Nav"]);
+                let dv01DollarValueLimitUtilization = parseFloat(groupedByLocation[locationCode].data[index]["DV01 Dollar Value Impact Utilization % of Nav"]);
                 if (view == "frontOffice") {
                     usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["USD Market Value"]) || 0;
-                    dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
                     dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Day P&L (USD)"]);
                     monthPl = parseFloat(groupedByLocation[locationCode].data[index]["MTD P&L (USD)"]);
                 }
                 else {
                     usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["Value (Base Currency)"]) || 0;
-                    dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
                     dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf Day P&L (Base Currency)"]);
                     monthPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf MTD P&L (Base Currency)"]);
                 }
@@ -705,10 +874,24 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                     ustTable[duration + " Aggregated"].MTDPL += monthPl;
                     ustTable[duration + " Aggregated"].DayPL += dayPl;
                     ustTable[duration + " Aggregated"].groupUSDMarketValue += usdMarketValue;
+                    ustTable[duration + " Aggregated"].oasSum += oasSum;
+                    ustTable[duration + " Aggregated"].zSpreadSum += zSpreadSum;
+                    ustTable[duration + " Aggregated"].oasWChangeSum += oasWChangeSum;
+                    ustTable[duration + " Aggregated"]["DV01 Dollar Value Impact"] += dv01DollarValueImpact;
+                    ustTable[duration + " Aggregated"]["DV01 Dollar Value Impact % of Nav"] += dv01DollarValueOfNav;
+                    ustTable[duration + " Aggregated"]["DV01 Dollar Value Impact Limit % of Nav"] += dv01DollarValueLimitOfNav;
+                    ustTable[duration + " Aggregated"]["DV01 Dollar Value Impact Utilization % of Nav"] += dv01DollarValueLimitUtilization;
                     ustTable["Total"].DV01Sum += dv01;
                     ustTable["Total"].MTDPL += monthPl;
                     ustTable["Total"].DayPL += dayPl;
                     ustTable["Total"].groupUSDMarketValue += usdMarketValue;
+                    ustTable["Total"].oasSum += oasSum;
+                    ustTable["Total"].zSpreadSum += zSpreadSum;
+                    ustTable["Total"].oasWChangeSum += oasWChangeSum;
+                    ustTable["Total"]["DV01 Dollar Value Impact"] += dv01DollarValueImpact;
+                    ustTable["Total"]["DV01 Dollar Value Impact % of Nav"] += dv01DollarValueOfNav;
+                    ustTable["Total"]["DV01 Dollar Value Impact Limit % of Nav"] += dv01DollarValueLimitOfNav;
+                    ustTable["Total"]["DV01 Dollar Value Impact Utilization % of Nav"] += dv01DollarValueLimitUtilization;
                 }
                 let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
                 if (issuer) {
@@ -737,7 +920,11 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
         else if (groupedByLocation[locationCode].order == 11) {
             groupedByLocation[locationCode].color = "#C5E1A5";
         }
-        let groupDayPl = 0, groupMonthlyPl = 0, groupDV01Sum = 0, groupUSDMarketValue = 0, groupDuration = 0, groupRating = -99;
+        let groupDayPl = 0, groupMonthlyPl = 0, groupDV01Sum = 0, groupUSDMarketValue = 0, groupDuration = 0, groupRating = -99, groupOAS = 0, groupOASWChange = 0, groupZSpread = 0;
+        groupedByLocation[locationCode]["DV01 Dollar Value Impact"] = 0;
+        groupedByLocation[locationCode]["DV01 Dollar Value Impact % of Nav"] = 0;
+        groupedByLocation[locationCode]["DV01 Dollar Value Impact Limit % of Nav"] = 0;
+        groupedByLocation[locationCode]["DV01 Dollar Value Impact Utilization % of Nav"] = 0;
         for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
             let country = groupedByLocation[locationCode].data[index]["Country"] ? groupedByLocation[locationCode].data[index]["Country"] : "Unspecified";
             let sector = groupedByLocation[locationCode].data[index]["Sector"] ? groupedByLocation[locationCode].data[index]["Sector"] : "Unspecified";
@@ -748,6 +935,13 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
             let usdMarketValue;
             let dayPl;
             let monthPl;
+            let oasSum = parseFloat(groupedByLocation[locationCode].data[index]["OAS"]);
+            let zSpreadSum = parseFloat(groupedByLocation[locationCode].data[index]["Z Spread"]);
+            let oasWChangeSum = parseFloat(groupedByLocation[locationCode].data[index]["OAS W Change"]);
+            let dv01DollarValueImpact = parseFloat(groupedByLocation[locationCode].data[index]["DV01 Dollar Value Impact"]);
+            let dv01DollarValueOfNav = parseFloat(groupedByLocation[locationCode].data[index]["DV01 Dollar Value Impact % of Nav"]);
+            let dv01DollarValueLimitOfNav = parseFloat(groupedByLocation[locationCode].data[index]["DV01 Dollar Value Impact Limit % of Nav"]);
+            let dv01DollarValueLimitUtilization = parseFloat(groupedByLocation[locationCode].data[index]["DV01 Dollar Value Impact Utilization % of Nav"]);
             if (view == "frontOffice") {
                 usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["USD Market Value"]) || 0;
                 dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Day P&L (USD)"]);
@@ -773,6 +967,13 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
             groupUSDMarketValue += usdMarketValue;
             groupDuration += duration;
             groupRating = groupRating < ratingScore ? ratingScore : groupRating;
+            groupOAS += oasSum;
+            groupOASWChange += oasWChangeSum;
+            groupZSpread += zSpreadSum;
+            groupedByLocation[locationCode]["DV01 Dollar Value Impact"] += dv01DollarValueImpact;
+            groupedByLocation[locationCode]["DV01 Dollar Value Impact % of Nav"] = dv01DollarValueOfNav;
+            groupedByLocation[locationCode]["DV01 Dollar Value Impact Limit % of Nav"] = dv01DollarValueLimitOfNav;
+            groupedByLocation[locationCode]["DV01 Dollar Value Impact Utilization % of Nav"] = dv01DollarValueLimitUtilization;
             if (duration < 2) {
                 durationSummary["0 To 2"].durationSum += duration;
                 durationSummary["0 To 2"].dv01Sum += dv01;
@@ -805,6 +1006,8 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
         groupedByLocation[locationCode].groupMonthlyPl = groupMonthlyPl;
         groupedByLocation[locationCode].groupDuration = groupDuration;
         groupedByLocation[locationCode].groupRating = groupRating;
+        groupedByLocation[locationCode].groupOAS = groupOAS;
+        groupedByLocation[locationCode].groupOASWChange = groupOASWChange;
     }
 }
 function getTopWorst(groupedByLocation) {
@@ -918,12 +1121,125 @@ function assignBorderAndCustomSort(portfolio, groupedByLocation, sort, sign) {
         }
         if (groupedByLocation[locationCode].data.length > 1 && locationCode != "Rlzd") {
             let portfolioViewType = groupedByLocation[locationCode].data[groupedByLocation[locationCode].data.length - 1]["Ptf MTD P&L (Base Currency)"] ? "backOffice" : "frontOffice";
+            let newObject = {};
             if (portfolioViewType == "frontOffice") {
-                groupedByLocation[locationCode].data[groupedByLocation[locationCode].data.length] = { "L/S": "Sum", Color: "white", "USD Market Value": groupedByLocation[locationCode].groupUSDMarketValue, DV01: groupedByLocation[locationCode].groupDV01Sum, "Day P&L (USD)": groupedByLocation[locationCode].groupDayPl, "MTD P&L (USD)": groupedByLocation[locationCode].groupMonthlyPl, "Duration(Mkt)": groupedByLocation[locationCode].groupDuration };
+                newObject = {
+                    "L/S": "Total",
+                    Color: "white",
+                    "USD Market Value": groupedByLocation[locationCode].groupUSDMarketValue,
+                    DV01: groupedByLocation[locationCode].groupDV01Sum,
+                    "Day P&L (USD)": groupedByLocation[locationCode].groupDayPl,
+                    "MTD P&L (USD)": groupedByLocation[locationCode].groupMonthlyPl,
+                    "Duration(Mkt)": groupedByLocation[locationCode].groupDuration,
+                    OAS: groupedByLocation[locationCode].groupOAS,
+                    "OAS W Change": groupedByLocation[locationCode].groupOASWChange,
+                    "Z Spread": groupedByLocation[locationCode].groupZSpread,
+                };
             }
             else {
-                groupedByLocation[locationCode].data[groupedByLocation[locationCode].data.length] = { Type: "Sum", Color: "white", Value: groupedByLocation[locationCode].groupUSDMarketValue, DV01: groupedByLocation[locationCode].groupDV01Sum, "Ptf Day P&L (Base Currency)": groupedByLocation[locationCode].groupDayPl, "Ptf MTD P&L (Base Currency)": groupedByLocation[locationCode].groupMonthlyPl, "Duration(Mkt)": groupedByLocation[locationCode].groupDuration };
+                newObject = {
+                    Type: "Total",
+                    Color: "white",
+                    Value: groupedByLocation[locationCode].groupUSDMarketValue,
+                    DV01: groupedByLocation[locationCode].groupDV01Sum,
+                    "Ptf Day P&L (Base Currency)": groupedByLocation[locationCode].groupDayPl,
+                    "Ptf MTD P&L (Base Currency)": groupedByLocation[locationCode].groupMonthlyPl,
+                    "Duration(Mkt)": groupedByLocation[locationCode].groupDuration,
+                    OAS: groupedByLocation[locationCode].groupOAS,
+                    "OAS W Change": groupedByLocation[locationCode].groupOASWChange,
+                    "Z Spread": groupedByLocation[locationCode].groupZSpread,
+                };
             }
+            groupedByLocation[locationCode].data.unshift(newObject);
+        }
+        portfolio.push(...groupedByLocation[locationCode].data);
+    }
+}
+function assignBorderAndCustomSortRisk(portfolio, groupedByLocation, sort, sign) {
+    sign = parseFloat(sign);
+    if (sort == "order") {
+        //because order should be descending
+        sign = -1 * sign;
+    }
+    const locationCodes = Object.entries(groupedByLocation)
+        .sort((a, b) => (sign == -1 ? a[1][`${sort}`] - b[1][`${sort}`] : b[1][`${sort}`] - a[1][`${sort}`]))
+        .map((entry) => entry[0]);
+    for (let index = 0; index < locationCodes.length; index++) {
+        let locationCode = locationCodes[index];
+        groupedByLocation[locationCode].data.sort((a, b) => {
+            // Assuming "L/S" is a number that can be directly compared
+            if (a["L/S"] < b["L/S"]) {
+                return -1; // a comes first
+            }
+            else if (a["L/S"] > b["L/S"]) {
+                return 1; // b comes first
+            }
+            return 0; // a and b are equal
+        });
+        for (let groupPositionIndex = 0; groupPositionIndex < groupedByLocation[locationCode].data.length; groupPositionIndex++) {
+            if (groupedByLocation[locationCode].data[groupPositionIndex]["Notional Total"] == 0) {
+                groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = "#C5E1A5";
+                //no need for borders when rlzd
+                continue;
+            }
+            else {
+                groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = groupedByLocation[locationCode].color;
+            }
+            if (groupPositionIndex == 0) {
+                groupedByLocation[locationCode].data[groupPositionIndex]["top"] = true;
+            }
+            if (groupPositionIndex == groupedByLocation[locationCode].data.length - 1) {
+                groupedByLocation[locationCode].data[groupPositionIndex]["bottom"] = true;
+            }
+            if (!groupedByLocation[locationCode].data[groupPositionIndex]["top"]) {
+                groupedByLocation[locationCode].data[groupPositionIndex]["bottom"] = false;
+            }
+            if (!groupedByLocation[locationCode].data[groupPositionIndex]["bottom"]) {
+                groupedByLocation[locationCode].data[groupPositionIndex]["bottom"] = false;
+            }
+        }
+        if (groupedByLocation[locationCode].data.length > 1 && locationCode != "Rlzd") {
+            let portfolioViewType = groupedByLocation[locationCode].data[groupedByLocation[locationCode].data.length - 1]["Ptf MTD P&L (Base Currency)"] ? "backOffice" : "frontOffice";
+            let newObject = {};
+            if (portfolioViewType == "frontOffice") {
+                newObject = {
+                    "L/S": "Total",
+                    "Long Security Name": "Total",
+                    Color: "white",
+                    "USD Market Value": groupedByLocation[locationCode].groupUSDMarketValue,
+                    DV01: groupedByLocation[locationCode].groupDV01Sum,
+                    "Day P&L (USD)": groupedByLocation[locationCode].groupDayPl,
+                    "MTD P&L (USD)": groupedByLocation[locationCode].groupMonthlyPl,
+                    "Duration(Mkt)": groupedByLocation[locationCode].groupDuration,
+                    OAS: groupedByLocation[locationCode].groupOAS,
+                    "OAS W Change": groupedByLocation[locationCode].groupOASWChange,
+                    "Z Spread": groupedByLocation[locationCode].groupZSpread,
+                    "DV01 Dollar Value Impact": parseFloat(groupedByLocation[locationCode]["DV01 Dollar Value Impact"]).toLocaleString(),
+                    "DV01 Dollar Value Impact % of Nav": parseFloat(groupedByLocation[locationCode]["DV01 Dollar Value Impact % of Nav"]).toLocaleString(),
+                    "DV01 Dollar Value Impact Limit % of Nav": parseFloat(groupedByLocation[locationCode]["DV01 Dollar Value Impact Limit % of Nav"]).toLocaleString(),
+                    "DV01 Dollar Value Impact Utilization % of Nav": parseFloat(groupedByLocation[locationCode]["DV01 Dollar Value Impact Utilization % of Nav"]).toLocaleString(),
+                };
+            }
+            else {
+                newObject = {
+                    Type: "Total",
+                    Color: "white",
+                    "Long Security Name": "Total",
+                    Value: groupedByLocation[locationCode].groupUSDMarketValue,
+                    DV01: groupedByLocation[locationCode].groupDV01Sum,
+                    "Ptf Day P&L (Base Currency)": groupedByLocation[locationCode].groupDayPl,
+                    "Ptf MTD P&L (Base Currency)": groupedByLocation[locationCode].groupMonthlyPl,
+                    "Duration(Mkt)": groupedByLocation[locationCode].groupDuration,
+                    OAS: groupedByLocation[locationCode].groupOAS,
+                    "OAS W Change": groupedByLocation[locationCode].groupOASWChange,
+                    "Z Spread": groupedByLocation[locationCode].groupZSpread,
+                    "DV01 Dollar Value Impact": parseFloat(groupedByLocation[locationCode]["DV01 Dollar Value Impact"]).toLocaleString(),
+                    "DV01 Dollar Value Impact % of Nav": parseFloat(groupedByLocation[locationCode]["DV01 Dollar Value Impact % of Nav"]).toLocaleString(),
+                    "DV01 Dollar Value Impact Limit % of Nav": parseFloat(groupedByLocation[locationCode]["DV01 Dollar Value Impact Limit % of Nav"]).toLocaleString(),
+                    "DV01 Dollar Value Impact Utilization % of Nav": parseFloat(groupedByLocation[locationCode]["DV01 Dollar Value Impact Utilization % of Nav"]).toLocaleString(),
+                };
+            }
+            groupedByLocation[locationCode].data.unshift(newObject);
         }
         portfolio.push(...groupedByLocation[locationCode].data);
     }
@@ -945,37 +1261,37 @@ function groupAndSortByLocationAndType(formattedPortfolio, nav, sort, sign, view
     };
     let ustTable = {
         "0 To 2": [],
-        "0 To 2 Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
+        "0 To 2 Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0 },
         "2 To 5": [],
-        "2 To 5 Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
+        "2 To 5 Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0 },
         "5 To 10": [],
-        "5 To 10 Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
+        "5 To 10 Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0 },
         "10 To 30": [],
-        "10 To 30 Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
+        "10 To 30 Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0 },
         "> 30": [],
-        "> 30 Aggregated": { DayPl: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
-        Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
+        "> 30 Aggregated": { DayPl: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0 },
+        Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0 },
     };
     let igTable = {
         Bonds: [],
-        "Bonds Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
+        "Bonds Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0 },
         "FINS Perps": [],
-        "FINS Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
+        "FINS Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0 },
         "Corps Perps": [],
-        "Corps Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
-        Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
+        "Corps Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0 },
+        Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0 },
     };
     let hyTable = {
         Bonds: [],
-        "Bonds Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
+        "Bonds Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0 },
         "FINS Perps": [],
-        "FINS Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
+        "FINS Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0 },
         "Corps Perps": [],
-        "Corps Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
-        Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
+        "Corps Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0 },
+        Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0 },
     };
     let currTable = {
-        Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0 },
+        Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0 },
     };
     let issuerTable = {};
     const groupedByLocation = formattedPortfolio.reduce((group, item) => {
@@ -1009,6 +1325,122 @@ function groupAndSortByLocationAndType(formattedPortfolio, nav, sort, sign, view
     });
     // Assuming the rest of the array should remain in its original order, recombine the arrays
     let updatedPortfolio = [...nonRlzdItems, ...rlzdItems];
+    let topWorstPerformaners = getTopWorst(groupedByLocation);
+    let riskAssessment = {
+        pairHedgeNotional: pairHedgeNotional,
+        pairIGNotional: pairIGNotional,
+        pairTradeNotionalSum: pairHedgeNotional + pairIGNotional,
+        pairHedgeDV01Sum: pairHedgeDV01Sum,
+        pairIGDV01Sum: pairIGDV01Sum,
+        pairTradeDV01Sum: pairHedgeDV01Sum + pairIGDV01Sum,
+        globalHedgeNotional: globalHedgeNotional,
+        singleIGNotional: singleIGNotional,
+        globalHedgeSingleIGNotionalSum: globalHedgeNotional + singleIGNotional,
+        globalHedgeDV01Sum: globalHedgeDV01Sum,
+        singleIGDV01Sum: singleIGDV01Sum,
+        globalHedgeSingleIGDV01Sum: globalHedgeDV01Sum + singleIGDV01Sum,
+        hedgeCurrencyNotional: hedgeCurrencyNotional,
+        HYNotional: HYNotional,
+        HYDV01Sum: HYDV01Sum,
+        cdsNotional: -1 * cdsNotional,
+    };
+    let params = getCountrySectorStrategySum(countryNAVPercentage, sectorNAVPercentage, strategyNAVPercentage, nav);
+    let sumCountryLong = params.sumCountryLong, sumStrategyLong = params.sumStrategyLong, sumSectorLong = params.sumSectorLong;
+    countryNAVPercentage["Total"] = Math.round(sumCountryLong * 10) / 10;
+    sectorNAVPercentage["Total"] = Math.round(sumSectorLong * 10) / 10;
+    strategyNAVPercentage["Total"] = Math.round(sumStrategyLong * 10) / 10;
+    durationSummary["Total"].dv01Sum = Math.round(durationSummary["0 To 2"].dv01Sum + durationSummary["2 To 5"].dv01Sum + durationSummary["5 To 10"].dv01Sum + durationSummary["10 To 30"].dv01Sum + durationSummary["> 30"].dv01Sum);
+    longShortDV01Sum["Total"] = Math.round(longShortDV01Sum["Long"] + longShortDV01Sum["Short"]);
+    return {
+        portfolio: updatedPortfolio,
+        duration: durationSummary,
+        countryNAVPercentage: sortObjectBasedOnKey(countryNAVPercentage),
+        sectorNAVPercentage: sortObjectBasedOnKey(sectorNAVPercentage),
+        strategyNAVPercentage: sortObjectBasedOnKey(strategyNAVPercentage),
+        riskAssessment: riskAssessment,
+        topWorstPerformaners: topWorstPerformaners,
+        longShortDV01Sum: longShortDV01Sum,
+        ustTable: ustTable,
+        igTable: igTable,
+        hyTable: hyTable,
+        currTable: currTable,
+        currencies: currencies,
+        issuerTable: issuerTable,
+    };
+}
+function groupAndSortByLocationAndTypeRisk(formattedPortfolio, nav, sort, sign, view, currencies) {
+    // Group objects by location
+    let pairHedgeNotional = 0, pairIGNotional = 0, pairHedgeDV01Sum = 0, pairIGDV01Sum = 0, globalHedgeNotional = 0, singleIGNotional = 0, globalHedgeDV01Sum = 0, singleIGDV01Sum = 0, hedgeCurrencyNotional = 0, HYNotional = 0, HYDV01Sum = 0, cdsNotional = 0;
+    let countryNAVPercentage = {};
+    let sectorNAVPercentage = {};
+    let strategyNAVPercentage = {};
+    let longShortDV01Sum = { Long: 0, Short: 0, Total: 0 };
+    let durationSummary = {
+        "0 To 2": { durationSum: 0, dv01Sum: 0 },
+        "2 To 5": { durationSum: 0, dv01Sum: 0 },
+        "5 To 10": { durationSum: 0, dv01Sum: 0 },
+        "10 To 30": { durationSum: 0, dv01Sum: 0 },
+        "> 30": { durationSum: 0, dv01Sum: 0 },
+        Total: { durationSum: 0, dv01Sum: 0 },
+    };
+    let ustTable = {
+        "0 To 2": [],
+        "0 To 2 Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0, "DV01 Dollar Value Impact": 0, "DV01 Dollar Value Impact % of Nav": 0, "DV01 Dollar Value Impact Limit % of Nav": 0, "DV01 Dollar Value Impact Utilization % of Nav": 0 },
+        "2 To 5": [],
+        "2 To 5 Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0, "DV01 Dollar Value Impact": 0, "DV01 Dollar Value Impact % of Nav": 0, "DV01 Dollar Value Impact Limit % of Nav": 0, "DV01 Dollar Value Impact Utilization % of Nav": 0 },
+        "5 To 10": [],
+        "5 To 10 Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0, "DV01 Dollar Value Impact": 0, "DV01 Dollar Value Impact % of Nav": 0, "DV01 Dollar Value Impact Limit % of Nav": 0, "DV01 Dollar Value Impact Utilization % of Nav": 0 },
+        "10 To 30": [],
+        "10 To 30 Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0, "DV01 Dollar Value Impact": 0, "DV01 Dollar Value Impact % of Nav": 0, "DV01 Dollar Value Impact Limit % of Nav": 0, "DV01 Dollar Value Impact Utilization % of Nav": 0 },
+        "> 30": [],
+        "> 30 Aggregated": { DayPl: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0, "DV01 Dollar Value Impact": 0, "DV01 Dollar Value Impact % of Nav": 0, "DV01 Dollar Value Impact Limit % of Nav": 0, "DV01 Dollar Value Impact Utilization % of Nav": 0 },
+        Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0, "DV01 Dollar Value Impact": 0, "DV01 Dollar Value Impact % of Nav": 0, "DV01 Dollar Value Impact Limit % of Nav": 0, "DV01 Dollar Value Impact Utilization % of Nav": 0 },
+    };
+    let igTable = {
+        Bonds: [],
+        "Bonds Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0, "DV01 Dollar Value Impact": 0, "DV01 Dollar Value Impact % of Nav": 0, "DV01 Dollar Value Impact Limit % of Nav": 0, "DV01 Dollar Value Impact Utilization % of Nav": 0 },
+        "FINS Perps": [],
+        "FINS Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0, "DV01 Dollar Value Impact": 0, "DV01 Dollar Value Impact % of Nav": 0, "DV01 Dollar Value Impact Limit % of Nav": 0, "DV01 Dollar Value Impact Utilization % of Nav": 0 },
+        "Corps Perps": [],
+        "Corps Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0, "DV01 Dollar Value Impact": 0, "DV01 Dollar Value Impact % of Nav": 0, "DV01 Dollar Value Impact Limit % of Nav": 0, "DV01 Dollar Value Impact Utilization % of Nav": 0 },
+        Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0, "DV01 Dollar Value Impact": 0, "DV01 Dollar Value Impact % of Nav": 0, "DV01 Dollar Value Impact Limit % of Nav": 0, "DV01 Dollar Value Impact Utilization % of Nav": 0 },
+    };
+    let hyTable = {
+        Bonds: [],
+        "Bonds Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0, "DV01 Dollar Value Impact": 0, "DV01 Dollar Value Impact % of Nav": 0, "DV01 Dollar Value Impact Limit % of Nav": 0, "DV01 Dollar Value Impact Utilization % of Nav": 0 },
+        "FINS Perps": [],
+        "FINS Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0, "DV01 Dollar Value Impact": 0, "DV01 Dollar Value Impact % of Nav": 0, "DV01 Dollar Value Impact Limit % of Nav": 0, "DV01 Dollar Value Impact Utilization % of Nav": 0 },
+        "Corps Perps": [],
+        "Corps Perps Aggregated": { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0, "DV01 Dollar Value Impact": 0, "DV01 Dollar Value Impact % of Nav": 0, "DV01 Dollar Value Impact Limit % of Nav": 0, "DV01 Dollar Value Impact Utilization % of Nav": 0 },
+        Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0, "DV01 Dollar Value Impact": 0, "DV01 Dollar Value Impact % of Nav": 0, "DV01 Dollar Value Impact Limit % of Nav": 0, "DV01 Dollar Value Impact Utilization % of Nav": 0 },
+    };
+    let currTable = {
+        Total: { DayPL: 0, MTDPL: 0, DV01Sum: 0, groupUSDMarketValue: 0, oasSum: 0, zSpreadSum: 0, oasWChangeSum: 0, "DV01 Dollar Value Impact": 0, "DV01 Dollar Value Impact % of Nav": 0, "DV01 Dollar Value Impact Limit % of Nav": 0, "DV01 Dollar Value Impact Utilization % of Nav": 0 },
+    };
+    let issuerTable = {};
+    const groupedByLocation = formattedPortfolio.reduce((group, item) => {
+        const { Location } = item;
+        let notional = item["Notional Total"];
+        if (notional != 0) {
+            group[Location] = group[Location] ? group[Location] : { data: [] };
+            group[Location].data.push(item);
+            return group;
+        }
+        else {
+            group["Rlzd"] = group["Rlzd"] ? group["Rlzd"] : { data: [] };
+            group["Rlzd"].data.push(item);
+            return group;
+        }
+    }, {});
+    assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNotional, pairHedgeDV01Sum, pairIGDV01Sum, globalHedgeNotional, singleIGNotional, globalHedgeDV01Sum, singleIGDV01Sum, hedgeCurrencyNotional, HYNotional, HYDV01Sum, cdsNotional, countryNAVPercentage, sectorNAVPercentage, strategyNAVPercentage, longShortDV01Sum, durationSummary, groupedByLocation, view, ustTable, igTable, hyTable, currTable, issuerTable);
+    let portfolio = [];
+    assignBorderAndCustomSortRisk(portfolio, groupedByLocation, sort, sign);
+    // This is your already sorted array of objects
+    // Filter out the items with L/S !== 'rlzd'
+    const nonRlzdItems = portfolio.filter((item) => item["L/S"] !== "Rlzd");
+    // Filter out the items with L/S === 'rlzd' and sort them by lastDate
+    // Assuming the rest of the array should remain in its original order, recombine the arrays
+    let updatedPortfolio = [...nonRlzdItems];
     let topWorstPerformaners = getTopWorst(groupedByLocation);
     let riskAssessment = {
         pairHedgeNotional: pairHedgeNotional,

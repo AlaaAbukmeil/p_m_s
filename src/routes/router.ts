@@ -3,13 +3,13 @@ import { image } from "../models/image";
 import { registerUser, checkIfUserExists, sendResetPasswordRequest, resetPassword } from "../controllers/auth";
 import { Request, Response } from "express";
 import { verifyToken, formatDateVconFile, generateRandomString, monthlyRlzdDate } from "../controllers/common";
-import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, getTrades, getPortfolio, editPosition, getHistoricalSummaryPortfolioWithAnalytics, getEarliestCollectionName } from "../controllers/reports";
-import { bloombergToTriada, getAllDatesSinceLastMonthLastDay, getDateTimeInMongoDBCollectionFormat, readIBRawExcel, readPricingSheet } from "../controllers/portfolioFunctions";
+import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, getTrades, getPortfolio, editPosition, getHistoricalSummaryPortfolioWithAnalytics, getRiskReportWithAnalytics } from "../controllers/reports";
+import { bloombergToTriada, getDateTimeInMongoDBCollectionFormat, readIBRawExcel, readPricingSheet } from "../controllers/portfolioFunctions";
 import { uploadArrayAndReturnFilePath, getTriadaTrades, formatCentralizedRawFiles, formatIbTrades, formatEmsxTrades, readEmsxRawExcel } from "../controllers/excelFormat";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/graphApiConnect";
-import { formatMufg, formatFxMufg, tradesTriada } from "../controllers/mufgOperations";
-import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, checkMUFGEndOfMonthWithPortfolio, getPortfolioOnSpecificDate, editPositionPortfolio, getFundDetails, getAllFundDetails, editFund, deleteFund, addFund, editTrade, deleteTrade, recalculateRlzd, deletePosition } from "../controllers/operations";
-import { editDayRlzd, editMTDRlzd } from "../controllers/oneTimeFunctions";
+import { formatMufg, formatFxMufg, tradesTriada, checkMUFGEndOfMonthWithPortfolio } from "../controllers/mufgOperations";
+import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, getPortfolioOnSpecificDate, editPositionPortfolio, getAllFundDetails, editFund, deleteFund, addFund, editTrade, deleteTrade, recalculateRlzd, deletePosition } from "../controllers/operations";
+
 require("dotenv").config();
 
 const readLastLines = require("read-last-lines");
@@ -64,6 +64,26 @@ router.get("/summary-portfolio", async (req: Request, res: Response, next: NextF
 
     date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
     let report = await getHistoricalSummaryPortfolioWithAnalytics(date, sort, sign);
+
+    res.send(report);
+  } catch (error: any) {
+    console.log(error);
+    res.send({ error: error.toString() });
+  }
+});
+
+router.get("/risk-report", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    let date: any = req.query.date;
+    let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMonthlyPl" | "groupDV01Sum" | "groupDuration" | any = req.query.sort || "order";
+    let sign: any = req.query.sign || 1;
+
+    if (date.includes("NaN")) {
+      date = getDateTimeInMongoDBCollectionFormat(new Date());
+    }
+
+    date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
+    let report = await getRiskReportWithAnalytics(date, sort, sign);
 
     res.send(report);
   } catch (error: any) {

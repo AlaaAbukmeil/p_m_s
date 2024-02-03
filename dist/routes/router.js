@@ -61,6 +61,23 @@ router.get("/summary-portfolio", async (req, res, next) => {
         res.send({ error: error.toString() });
     }
 });
+router.get("/risk-report", async (req, res, next) => {
+    try {
+        let date = req.query.date;
+        let sort = req.query.sort || "order";
+        let sign = req.query.sign || 1;
+        if (date.includes("NaN")) {
+            date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
+        }
+        date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date(date)).split(" ")[0] + " 23:59";
+        let report = await (0, reports_1.getRiskReportWithAnalytics)(date, sort, sign);
+        res.send(report);
+    }
+    catch (error) {
+        console.log(error);
+        res.send({ error: error.toString() });
+    }
+});
 router.get("/trades-logs", common_1.verifyToken, async (req, res) => {
     try {
         const filePath = path.resolve("trades-logs.txt");
@@ -457,7 +474,7 @@ router.post("/check-mufg", common_1.verifyToken, uploadBeforeExcel.any(), async 
             const path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + fileName;
             data = await (0, operations_1.readMUFGEndOfMonthFile)(path);
         }
-        let action = await (0, operations_1.checkMUFGEndOfMonthWithPortfolio)(data, portfolio[0]);
+        let action = await (0, mufgOperations_1.checkMUFGEndOfMonthWithPortfolio)(data, portfolio[0]);
         if (action === null || action === void 0 ? void 0 : action.error) {
             res.send({ error: action.error });
         }

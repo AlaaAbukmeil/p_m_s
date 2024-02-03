@@ -370,51 +370,7 @@ export async function readMUFGEndOfMonthFile(path: string) {
   }
 }
 
-export async function checkMUFGEndOfMonthWithPortfolio(MUFGData: any, portfolio: any) {
-  try {
-    //    "Location", "Issue", "Identifier", "Quantity (app)", "Quantity (mufg)", "difference quantity", "Average Cost (app)", "Average Cost(app)", "difference average cost", "price (app)", "price (mufg)", "difference price"
-    let formattedData: any = [];
-    if (MUFGData.error) {
-      return MUFGData;
-    }
-    for (let index = 0; index < portfolio.length; index++) {
-      let positionInPortfolio = portfolio[index];
-      let positionInMufg = MUFGData.filter((row: any, index: any) => row["Investment"].includes(positionInPortfolio["ISIN"]));
-      positionInMufg = positionInMufg ? positionInMufg[0] : null;
 
-      let portfolioPositionQuantity = positionInPortfolio["ISIN"].includes("IB") ? positionInPortfolio["Quantity"] / positionInPortfolio["Original Face"] : positionInPortfolio["Quantity"];
-      let mufgPositionQuantity = positionInMufg ? parseFloat(positionInMufg["Quantity"]) : 0;
-      let portfolioAverageCost = parseFloat(positionInPortfolio["Average Cost"]);
-      let mufgAverageCost = positionInMufg ? parseFloat(positionInMufg["LocalCost"]) / mufgPositionQuantity : 0;
-      let portfolioPrice = positionInPortfolio["ISIN"].includes("CXP") || positionInPortfolio["ISIN"].includes("CDX") || positionInPortfolio["ISIN"].includes("ITRX") || positionInPortfolio["ISIN"].includes("1393") || positionInPortfolio["ISIN"].includes("IB") ? Math.round(positionInPortfolio["Mid"] * 1000000) / 1000000 : Math.round(positionInPortfolio["Mid"] * 1000000) / 10000;
-      portfolioPrice = portfolioPrice ? portfolioPrice : 0;
-      let mufgPrice = positionInMufg ? parseFloat(positionInMufg["Price"]) : 0;
-
-      let formattedRow = {
-        Location: positionInPortfolio["Location"],
-        Issue: positionInPortfolio["Issue"],
-        ISIN: positionInPortfolio["ISIN"],
-
-        "Quantity (app)": portfolioPositionQuantity,
-        "Quantity (mufg)": mufgPositionQuantity,
-        "Difference Quantity": portfolioPositionQuantity - mufgPositionQuantity,
-
-        "Average Cost (app)": portfolioAverageCost,
-        "Average Cost (mufg)": mufgAverageCost,
-        "Difference Average Cost": portfolioAverageCost - mufgAverageCost,
-
-        "Price (app)": portfolioPrice,
-        "Price (mufg)": mufgPrice,
-        "Difference Price": portfolioPrice - mufgPrice,
-      };
-      formattedData.push(formattedRow);
-    }
-    return formattedData;
-  } catch (error) {
-    console.log(error);
-    return { error: "unexpected error" };
-  }
-}
 
 export async function editPositionPortfolio(path: string) {
   let data: any = await readEditInput(path);

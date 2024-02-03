@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deletePosition = exports.recalculateRlzd = exports.reformatCentralizedData = exports.deleteTrade = exports.editTrade = exports.getTrade = exports.addFund = exports.deleteFund = exports.editFund = exports.getAllFundDetails = exports.getEarliestCollectionNameFund = exports.getFundDetails = exports.getSecurityInPortfolioById = exports.editPositionPortfolio = exports.checkMUFGEndOfMonthWithPortfolio = exports.readMUFGEndOfMonthFile = exports.getEditLogs = exports.insertEditLogs = exports.updatePreviousPricesPortfolioBloomberg = exports.getSecurityInPortfolioWithoutLocation = exports.getPortfolioOnSpecificDate = exports.insertPreviousPricesUpdatesInPortfolio = exports.updatePreviousPricesPortfolioMUFG = exports.readMUFGPrices = exports.getCollectionDays = void 0;
+exports.deletePosition = exports.recalculateRlzd = exports.reformatCentralizedData = exports.deleteTrade = exports.editTrade = exports.getTrade = exports.addFund = exports.deleteFund = exports.editFund = exports.getAllFundDetails = exports.getEarliestCollectionNameFund = exports.getFundDetails = exports.getSecurityInPortfolioById = exports.editPositionPortfolio = exports.readMUFGEndOfMonthFile = exports.getEditLogs = exports.insertEditLogs = exports.updatePreviousPricesPortfolioBloomberg = exports.getSecurityInPortfolioWithoutLocation = exports.getPortfolioOnSpecificDate = exports.insertPreviousPricesUpdatesInPortfolio = exports.updatePreviousPricesPortfolioMUFG = exports.readMUFGPrices = exports.getCollectionDays = void 0;
 const axios = require("axios");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const mongoose = require("mongoose");
@@ -360,48 +360,6 @@ async function readMUFGEndOfMonthFile(path) {
     }
 }
 exports.readMUFGEndOfMonthFile = readMUFGEndOfMonthFile;
-async function checkMUFGEndOfMonthWithPortfolio(MUFGData, portfolio) {
-    try {
-        //    "Location", "Issue", "Identifier", "Quantity (app)", "Quantity (mufg)", "difference quantity", "Average Cost (app)", "Average Cost(app)", "difference average cost", "price (app)", "price (mufg)", "difference price"
-        let formattedData = [];
-        if (MUFGData.error) {
-            return MUFGData;
-        }
-        for (let index = 0; index < portfolio.length; index++) {
-            let positionInPortfolio = portfolio[index];
-            let positionInMufg = MUFGData.filter((row, index) => row["Investment"].includes(positionInPortfolio["ISIN"]));
-            positionInMufg = positionInMufg ? positionInMufg[0] : null;
-            let portfolioPositionQuantity = positionInPortfolio["ISIN"].includes("IB") ? positionInPortfolio["Quantity"] / positionInPortfolio["Original Face"] : positionInPortfolio["Quantity"];
-            let mufgPositionQuantity = positionInMufg ? parseFloat(positionInMufg["Quantity"]) : 0;
-            let portfolioAverageCost = parseFloat(positionInPortfolio["Average Cost"]);
-            let mufgAverageCost = positionInMufg ? parseFloat(positionInMufg["LocalCost"]) / mufgPositionQuantity : 0;
-            let portfolioPrice = positionInPortfolio["ISIN"].includes("CXP") || positionInPortfolio["ISIN"].includes("CDX") || positionInPortfolio["ISIN"].includes("ITRX") || positionInPortfolio["ISIN"].includes("1393") || positionInPortfolio["ISIN"].includes("IB") ? Math.round(positionInPortfolio["Mid"] * 1000000) / 1000000 : Math.round(positionInPortfolio["Mid"] * 1000000) / 10000;
-            portfolioPrice = portfolioPrice ? portfolioPrice : 0;
-            let mufgPrice = positionInMufg ? parseFloat(positionInMufg["Price"]) : 0;
-            let formattedRow = {
-                Location: positionInPortfolio["Location"],
-                Issue: positionInPortfolio["Issue"],
-                ISIN: positionInPortfolio["ISIN"],
-                "Quantity (app)": portfolioPositionQuantity,
-                "Quantity (mufg)": mufgPositionQuantity,
-                "Difference Quantity": portfolioPositionQuantity - mufgPositionQuantity,
-                "Average Cost (app)": portfolioAverageCost,
-                "Average Cost (mufg)": mufgAverageCost,
-                "Difference Average Cost": portfolioAverageCost - mufgAverageCost,
-                "Price (app)": portfolioPrice,
-                "Price (mufg)": mufgPrice,
-                "Difference Price": portfolioPrice - mufgPrice,
-            };
-            formattedData.push(formattedRow);
-        }
-        return formattedData;
-    }
-    catch (error) {
-        console.log(error);
-        return { error: "unexpected error" };
-    }
-}
-exports.checkMUFGEndOfMonthWithPortfolio = checkMUFGEndOfMonthWithPortfolio;
 async function editPositionPortfolio(path) {
     let data = await (0, portfolioFunctions_1.readEditInput)(path);
     if (data.error) {

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.tradesTriada = exports.createExcelAndReturnPath = exports.formatFxTradesToMufg = exports.formatFxMufg = exports.formatMufg = exports.readFxTrades = exports.readBBE = exports.readIB = exports.readBBGBlot = void 0;
+exports.updatePortfolioBasedOnIsin = exports.checkMUFGEndOfMonthWithPortfolio = exports.tradesTriada = exports.createExcelAndReturnPath = exports.formatFxTradesToMufg = exports.formatFxMufg = exports.formatMufg = exports.readFxTrades = exports.readBBE = exports.readIB = exports.readBBGBlot = void 0;
 const portfolioFunctions_1 = require("./portfolioFunctions");
 const auth_1 = require("./auth");
 const common_1 = require("./common");
@@ -318,3 +318,84 @@ async function tradesTriada() {
     }
 }
 exports.tradesTriada = tradesTriada;
+async function checkMUFGEndOfMonthWithPortfolio(MUFGData, portfolio) {
+    try {
+        //    "Location", "Issue", "Identifier", "Quantity (app)", "Quantity (mufg)", "difference quantity", "Average Cost (app)", "Average Cost(app)", "difference average cost", "price (app)", "price (mufg)", "difference price"
+        portfolio = updatePortfolioBasedOnIsin(portfolio);
+        let formattedData = [];
+        if (MUFGData.error) {
+            return MUFGData;
+        }
+        for (let index = 0; index < portfolio.length; index++) {
+            let positionInPortfolio = portfolio[index];
+            let positionInMufg = MUFGData.filter((row, index) => row["Investment"].includes(positionInPortfolio["ISIN"]) || (row["Investment"].includes(positionInPortfolio["BB Ticker"]) && positionInPortfolio["BB Ticker"] != ""));
+            positionInMufg = positionInMufg ? positionInMufg[0] : null;
+            let portfolioPositionQuantity = positionInPortfolio["ISIN"].includes("IB") ? positionInPortfolio["Quantity"] / positionInPortfolio["Original Face"] : positionInPortfolio["Quantity"];
+            let mufgPositionQuantity = positionInMufg ? parseFloat(positionInMufg["Quantity"]) : 0;
+            let portfolioAverageCost = parseFloat(positionInPortfolio["Average Cost"]);
+            let mufgAverageCost = positionInMufg ? parseFloat(positionInMufg["LocalCost"]) / mufgPositionQuantity : 0;
+            let portfolioPrice = positionInPortfolio["ISIN"].includes("CXP") || positionInPortfolio["ISIN"].includes("CDX") || positionInPortfolio["ISIN"].includes("ITRX") || positionInPortfolio["ISIN"].includes("1393") || positionInPortfolio["ISIN"].includes("IB") ? Math.round(positionInPortfolio["Mid"] * 1000000) / 1000000 : Math.round(positionInPortfolio["Mid"] * 1000000) / 10000;
+            portfolioPrice = portfolioPrice ? portfolioPrice : 0;
+            let mufgPrice = positionInMufg ? parseFloat(positionInMufg["Price"]) : 0;
+            let formattedRow = {
+                Issue: positionInPortfolio["Issue"],
+                ISIN: positionInPortfolio["ISIN"],
+                "Quantity (app)": portfolioPositionQuantity || 0,
+                "Quantity (mufg)": mufgPositionQuantity || 0,
+                "Difference Quantity": Math.round(portfolioPositionQuantity - mufgPositionQuantity) || 0,
+                "Average Cost (app)": portfolioAverageCost || 0,
+                "Average Cost (mufg)": mufgAverageCost || 0,
+                "Difference Average Cost": Math.round(portfolioAverageCost - mufgAverageCost) || 0,
+                "Price (app)": portfolioPrice || 0,
+                "Price (mufg)": mufgPrice || 0,
+                "Difference Price": portfolioPrice - mufgPrice || 0,
+            };
+            formattedData.push(formattedRow);
+        }
+        return formattedData;
+    }
+    catch (error) {
+        console.log(error);
+        return { error: "unexpected error" };
+    }
+}
+exports.checkMUFGEndOfMonthWithPortfolio = checkMUFGEndOfMonthWithPortfolio;
+function updatePortfolioBasedOnIsin(portfolio) {
+    let updatedPortfolio = {};
+    let aggregatedPortfolio = [];
+    for (let index = 0; index < portfolio.length; index++) {
+        let position = portfolio[index];
+        let isin = position["ISIN"];
+        if (updatedPortfolio[isin]) {
+            updatedPortfolio[isin].push(position);
+        }
+        else {
+            updatedPortfolio[isin] = [position];
+        }
+    }
+    let isins = Object.keys(updatedPortfolio);
+    for (let index = 0; index < isins.length; index++) {
+        let isin = isins[index];
+        let positions = updatedPortfolio[isin];
+        let updatedPosition = {
+            Quantity: 0,
+            "Average Cost": 0,
+            "Original Face": positions[0]["Original Face"],
+            Mid: positions[0]["Mid"],
+            ISIN: isin,
+            "BB Ticker": positions[0]["BB Ticker"],
+            Issue: positions[0]["Issue"],
+        };
+        for (let positionIndex = 0; positionIndex < positions.length; positionIndex++) {
+            let data = positions[positionIndex];
+            let quantity = data["Quantity"];
+            let averageCost = data["Average Cost"];
+            updatedPosition["Quantity"] += quantity;
+            updatedPosition["Average Cost"] += data["Quantity"] * data["Average Cost"];
+        }
+        updatedPosition["Average Cost"] /= updatedPosition["Quantity"];
+        aggregatedPortfolio.push(updatedPosition);
+    }
+    return aggregatedPortfolio;
+}
+exports.updatePortfolioBasedOnIsin = updatePortfolioBasedOnIsin;

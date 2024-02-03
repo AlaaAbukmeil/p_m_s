@@ -2,13 +2,14 @@ require("dotenv").config();
 
 import { getAverageCost, readPricingSheet, getAllDatesSinceLastMonthLastDay, parseBondIdentifier, getSettlementDateYear, readPortfolioFromImagine, formatUpdatedPositions, readMUFGEBlot, readPortfolioFromLivePorfolio, formatDateRlzdDaily, readEditInput, getDateTimeInMongoDBCollectionFormat, readCentralizedEBlot } from "./portfolioFunctions";
 import util from "util";
-import { getDate, monthlyRlzdDate, formatDateReadable } from "./common";
+import { getDate, monthlyRlzdDate, formatDateReadable, formatTradeDate } from "./common";
 import { getFundDetails, insertEditLogs } from "./operations";
-import { formatFrontEndTable, formatFrontEndSummaryTable } from "./tableFormatter";
+import { formatFrontEndTable, formatFrontEndSummaryTable, formatFrontEndRiskTable } from "./tableFormatter";
 import { calculateRlzd } from "./tableFormatter";
 import { uri } from "./common";
 import { appendLogs } from "./oneTimeFunctions";
 import { getSecurityInPortfolioWithoutLocation } from "./operations";
+import { getTradeDateYearTrades } from "./common";
 const fs = require("fs");
 const writeFile = util.promisify(fs.writeFile);
 const axios = require("axios");
@@ -195,6 +196,93 @@ export async function getHistoricalSummaryPortfolioWithAnalytics(date: string, s
   documents = calculateMTDPLDayPL(documents, date);
 
   let portfolioFormattedSorted = formatFrontEndSummaryTable(documents, date, fund, dates, sort, sign);
+  let fundDetails = portfolioFormattedSorted.fundDetails;
+  documents = portfolioFormattedSorted.portfolio;
+
+  return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: uploadTradesDate };
+}
+export async function getRiskReportWithAnalytics(date: string, sort: string, sign: number) {
+  const database = client.db("portfolios");
+  let earliestPortfolioName = await getEarliestCollectionName(date);
+  let sameDayCollectionsPublished = earliestPortfolioName[1];
+  let yesterdayPortfolioName = getDateTimeInMongoDBCollectionFormat(new Date(new Date(earliestPortfolioName[0]).getTime() - 1 * 24 * 60 * 60 * 1000)).split(" ")[0] + " 23:59";
+  let lastDayBeforeToday = await getEarliestCollectionName(yesterdayPortfolioName);
+
+  const reportCollection = database.collection(`portfolio-${earliestPortfolioName[0]}`);
+
+  let documents = await reportCollection
+    .aggregate([
+      {
+        $sort: {
+          "BB Ticker": 1, // replace 'BB Ticker' with the name of the field you want to sort alphabetically
+        },
+      },
+    ])
+    .toArray();
+
+  let now = new Date(date);
+  let uploadTradesDate: any = "";
+  let thisMonth = monthlyRlzdDate(date);
+
+  documents = documents.filter((position: any) => {
+    if (position["Quantity"] == 0) {
+      let monthsTrades = Object.keys(position["Monthly Capital Gains Rlzd"]);
+      if (monthsTrades.includes(thisMonth)) {
+        return position;
+      }
+    } else {
+      return position;
+    }
+  });
+
+  documents.sort((current: any, next: any) => {
+    if (current["Last Upload Trade"]) {
+      if (uploadTradesDate != "" && new Date(uploadTradesDate).getTime() < new Date(current["Last Upload Trade"]).getTime()) {
+        uploadTradesDate = current["Last Upload Trade"];
+      } else if (uploadTradesDate == "") {
+        uploadTradesDate = current["Last Upload Trade"];
+      }
+    }
+    if (current["Quantity"] === 0 && next["Quantity"] !== 0) {
+      return 1; // a should come after b
+    }
+    if (current["Quantity"] !== 0 && next["Quantity"] === 0) {
+      return -1; // a should come before b
+    }
+    // if both a and b have Quantity 0 or both have Quantity not 0, sort alphabetically by name
+    return current["Issue"].localeCompare(next["Issue"]);
+  });
+
+  let currentDayDate: any = new Date(date);
+  let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate);
+
+  //+ 23:59 to make sure getEarliestcollectionname get the lastest date on last day of the month
+  let lastMonthLastCollectionName = await getEarliestCollectionName(previousMonthDates[0] + " 23:59");
+  try {
+    let lastMonthPortfolio = await getHistoricalPortfolio(lastMonthLastCollectionName[0]);
+
+    let previousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeToday[0]);
+
+    documents = await getMTDParams(documents, lastMonthPortfolio, earliestPortfolioName[0]);
+    documents = await getPreviousMarkPreviousFX(documents, previousDayPortfolio, lastDayBeforeToday[0]);
+  } catch (error) {
+    console.log(error);
+  }
+
+  let dates = {
+    today: earliestPortfolioName[0],
+    yesterday: lastDayBeforeToday[0],
+    lastMonth: lastMonthLastCollectionName[0],
+  };
+  let fundDetailsInfo: any = await getFundDetails(thisMonth);
+  let fund = fundDetailsInfo[0];
+
+  documents = await calculateMTDInterest(documents, new Date(date));
+  documents = await calculateDailyIntURlzdDaily(documents, new Date(date));
+  documents = await calculateMTDURlzd(documents, new Date(date));
+  documents = calculateMTDPLDayPL(documents, date);
+
+  let portfolioFormattedSorted = formatFrontEndRiskTable(documents, date, fund, dates, sort, sign);
   let fundDetails = portfolioFormattedSorted.fundDetails;
   documents = portfolioFormattedSorted.portfolio;
 
@@ -491,7 +579,7 @@ export async function updatePositionPortfolio(path: string) {
         if (securityInPortfolio !== 404) {
           object = securityInPortfolio;
         }
-        let couponDaysYear = securityInPortfolio !== 404 ? securityInPortfolio["Coupon Duration"] : row["Issue"].split(" ")[0] == "T" ? 365.0 : 360.0;
+        let couponDaysYear = securityInPortfolio !== 404 ? securityInPortfolio["Coupon Duration"] : row["Issue"].split(" ")[0] == "T" || row["Issue"].includes("U.S") ? 365.0 : 360.0;
         let previousQuantity = securityInPortfolio["Quantity"];
         let previousAverageCost = securityInPortfolio["Average Cost"] ? securityInPortfolio["Average Cost"] : 0;
         let tradeType = row["B/S"];
@@ -504,8 +592,8 @@ export async function updatePositionPortfolio(path: string) {
 
         let currency = row["Currency"];
         let bondCouponMaturity: any = parseBondIdentifier(row["BB Ticker"]);
-
-        let tradeExistsAlready = triadaIds.includes(row["Triada Trade Id"]);
+        //change
+        let tradeExistsAlready = false//triadaIds.includes(row["Triada Trade Id"]);
         let updatingPosition = returnPositionProgress(positions, identifier, location);
         let tradeDate: any = new Date(row["Trade Date"]);
         let thisMonth = monthlyRlzdDate(tradeDate);
@@ -787,7 +875,7 @@ export async function updatePricesPortfolio(path: string) {
             object["BBG Composite Rating"] = row["BBG Composite Rating"].toString().includes("N/A") ? "" : row["BBG Composite Rating"];
             object["BB Ticker"] = row["BB Ticker"].toString().includes("N/A") ? "" : row["BB Ticker"];
             object["Issuer"] = row["Issuer Name"].toString().includes("N/A") ? "" : row["Issuer Name"];
-           
+
             // object["Issuer"] = row["Issuer Name"].includes("#") ? "0" : row["Issuer Name"];
             if (row["ModDurPerp"]) {
               object["Modified Duration"] = row["ModDurPerp"].toString().includes("#") ? (row["ModDur"].toString().includes("N/A") ? 0 : row["ModDur"]) : row["ModDurPerp"];
@@ -932,16 +1020,49 @@ function calculateDailyIntURlzdDaily(portfolio: any, date: any) {
   return portfolio;
 }
 
+function getDaysBetween(startDate: any, endDate: any) {
+  // Parse the start and end dates into Date objects
+  const start = new Date(startDate).getTime();
+  const end = new Date(endDate).getTime();
+
+  // Calculate the difference in milliseconds
+  const diffInMs = end - start;
+
+  // Convert milliseconds to days (1 day = 24 hours * 60 minutes * 60 seconds * 1000 milliseconds)
+  const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+
+  // Return the absolute value of the difference in days
+  return Math.abs(Math.round(diffInDays)) || 0;
+}
+
+export function calculateAccruedSinceInception(interestInfo: any, couponRate: any, numOfYears: any) {
+  let quantityDates = Object.keys(interestInfo).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  quantityDates.push(formatTradeDate(new Date()));
+  couponRate = couponRate ? couponRate : 0;
+  let quantity = interestInfo[quantityDates[0]];
+  let interest = 0;
+  for (let index = 0; index < quantityDates.length; index++) {
+    if (quantityDates[index + 1]) {
+      let numOfDays = getDaysBetween(quantityDates[index], quantityDates[index + 1]);
+      interest += (couponRate / numOfYears) * numOfDays * quantity;
+
+    }
+    quantity += interestInfo[quantityDates[index + 1]] ? interestInfo[quantityDates[index + 1]] : 0;
+  }
+  return interest;
+}
+
 function calculateMTDInterest(portfolio: any, date: any) {
   let currentDayDate = new Date(date).toISOString().slice(0, 10);
   let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate);
   let monthlyInterest: any = {};
-
+ 
   for (let index = 0; index < portfolio.length; index++) {
     let position = portfolio[index];
     let quantityGeneratingInterest = position["Quantity"];
     let interestInfo = position["Interest"];
     portfolio[index]["Monthly Interest Income"] = 0;
+
     let settlementDates = Object.keys(interestInfo);
 
     monthlyInterest[position["Issue"]] = {};
