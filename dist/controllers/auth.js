@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resetPassword = exports.generateRandomIntegers = exports.sendResetPasswordRequest = exports.checkIfUserExists = exports.registerUser = void 0;
+exports.resetPassword = exports.generateRandomIntegers = exports.sendResetPasswordRequest = exports.checkIfUserExists = exports.registerUser = exports.client = void 0;
 require("dotenv").config();
 const common_1 = require("./common");
 const mongoose = require("mongoose");
@@ -9,7 +9,7 @@ const jwtSecret = process.env.SECRET;
 const bcrypt = require("bcrypt");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const saltRounds = process.env.SALT_ROUNDS;
-const client = new MongoClient(common_1.uri, {
+exports.client = new MongoClient(common_1.uri, {
     serverApi: {
         version: ServerApiVersion.v1,
         strict: true,
@@ -23,7 +23,7 @@ const SibApiV3Sdk = require("sib-api-v3-sdk");
 SibApiV3Sdk.ApiClient.instance.authentications["api-key"].apiKey = process.env.SEND_IN_BLUE_API_KEY;
 async function registerUser(email, password, verificationCode) {
     try {
-        const database = client.db("auth");
+        const database = exports.client.db("auth");
         const usersCollection = database.collection("users");
         const secretCollection = database.collection("secrets");
         const verificationCodeDB = await secretCollection.findOne({
@@ -55,7 +55,7 @@ async function registerUser(email, password, verificationCode) {
 exports.registerUser = registerUser;
 async function checkIfUserExists(email, password) {
     try {
-        const database = client.db("auth");
+        const database = exports.client.db("auth");
         const usersCollection = database.collection("users");
         const user = await usersCollection.findOne({ email: email });
         if (user) {
@@ -90,7 +90,7 @@ async function checkIfUserExists(email, password) {
 }
 exports.checkIfUserExists = checkIfUserExists;
 async function sendResetPasswordRequest(userEmail) {
-    const database = client.db("auth");
+    const database = exports.client.db("auth");
     const usersCollection = database.collection("users");
     const user = await usersCollection.findOne({ email: userEmail });
     if (user) {
@@ -156,7 +156,7 @@ function sendEmailToResetPassword(userEmail, verificationCode) {
     }
 }
 async function resetPassword(userEmail, resetCode, enteredPassword) {
-    const database = client.db("auth");
+    const database = exports.client.db("auth");
     const usersCollection = database.collection("users");
     const user = await usersCollection.findOne({ email: userEmail });
     if (user) {

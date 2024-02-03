@@ -9,6 +9,7 @@ import { uploadArrayAndReturnFilePath, getTriadaTrades, formatCentralizedRawFile
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/graphApiConnect";
 import { formatMufg, formatFxMufg, tradesTriada, checkMUFGEndOfMonthWithPortfolio } from "../controllers/mufgOperations";
 import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, getPortfolioOnSpecificDate, editPositionPortfolio, getAllFundDetails, editFund, deleteFund, addFund, editTrade, deleteTrade, recalculateRlzd, deletePosition } from "../controllers/operations";
+import { getAllTrades } from "../controllers/eblot";
 
 require("dotenv").config();
 
@@ -118,6 +119,27 @@ router.get("/trades", verifyToken, async (req, res) => {
 
     let trades = await getTrades(`${tradeType}`);
     res.send(trades);
+  } catch (error) {
+    res.status(500).send("An error occurred while reading the file.");
+  }
+});
+
+router.get("/all-trades", verifyToken, async (req, res) => {
+  try {
+    let from: any = req.query.from;
+    let to: any = req.query.to;
+    let token = await getGraphToken();
+    let trades = await getAllTrades(new Date(from).getTime(), new Date(to).getTime());
+
+    let start = new Date(from).getTime() - 2 * 24 * 60 * 60 * 1000;
+    let end = new Date(to).getTime() + 2 * 24 * 60 * 60 * 1000;
+    let vconTrades = await getTriadaTrades("vcons", start, end);
+
+    let vcons: any = await getVcons(token, from, to, vconTrades[0], vconTrades[1]);
+    
+    let action: any = await formatCentralizedRawFiles({}, vcons, vconTrades[0], [], []);
+    action.filter((trade:any, index:any) => trade["Trade App Status"] == "new")
+    res.send({trades:action.concat(trades)});
   } catch (error) {
     res.status(500).send("An error occurred while reading the file.");
   }

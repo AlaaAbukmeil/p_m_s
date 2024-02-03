@@ -9,7 +9,7 @@ const bcrypt = require("bcrypt");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const saltRounds: any = process.env.SALT_ROUNDS;
 
-const client = new MongoClient(uri, {
+export const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
     strict: true,
