@@ -115,13 +115,15 @@ router.get("/all-trades", common_1.verifyToken, async (req, res) => {
         let to = req.query.to;
         let token = await (0, graphApiConnect_1.getGraphToken)();
         let trades = await (0, eblot_1.getAllTrades)(new Date(from).getTime(), new Date(to).getTime());
+        trades.filter((trade, index) => new Date(trade["Trade Date"]).getTime() > new Date(from).getTime() && new Date(trade["Trade Date"]).getTime() < new Date(to).getTime());
         let start = new Date(from).getTime() - 2 * 24 * 60 * 60 * 1000;
         let end = new Date(to).getTime() + 2 * 24 * 60 * 60 * 1000;
         let vconTrades = await (0, excelFormat_1.getTriadaTrades)("vcons", start, end);
         let vcons = await (0, graphApiConnect_1.getVcons)(token, from, to, vconTrades[0], vconTrades[1]);
         let action = await (0, excelFormat_1.formatCentralizedRawFiles)({}, vcons, vconTrades[0], [], []);
-        action.filter((trade, index) => trade["Trade App Status"] == "new");
-        res.send({ trades: action.concat(trades) });
+        action.filter((trade, index) => trade["Trade App Status"] == "new" && new Date(trade["Trade Date"]).getTime() > new Date(from).getTime() && new Date(trade["Trade Date"]).getTime() < new Date(to).getTime());
+        let allTrades = action.concat(trades).sort((a, b) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
+        res.send({ trades: trades });
     }
     catch (error) {
         res.status(500).send("An error occurred while reading the file.");

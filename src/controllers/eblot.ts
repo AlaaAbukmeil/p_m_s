@@ -17,7 +17,7 @@ export async function getAllTrades(from: number, to: number) {
 
     // Loop through each collection and retrieve the documents
     for (const collection of collections) {
-      const documents = await collection.find(query).sort({ "Trade Date": -1 }).toArray();
+      const documents = await collection.find(query).toArray();
       allDocuments = allDocuments.concat(documents);
     }
 
