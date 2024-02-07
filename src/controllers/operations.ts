@@ -94,18 +94,14 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
 
       try {
         let updatedPortfolio: any = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
+        let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+        await insertEditLogs(["prices update"], "Update Previous Prices based on mufg", dateTime, "mufg Previous Pricing Sheet on " + collectionDate, "Link: " + path);
         let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio[0], collectionDate);
         console.log(updatedPricePortfolio.length, "number of positions prices updated");
-        console.log(updatedPortfolio[1], "positions that did not update");
-        // console.log(updatedPortfolio[2], "positions that did update");
-        console.log(insertion);
-        let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-        await insertEditLogs(["prices update"], "Update Previous Prices based on MUFG", dateTime, "MUFG Previous Pricing Sheet on" + collectionDate, "Link: " + path);
-
-        if (!updatedPortfolio[1].length) {
+        if (!Object.keys(updatedPortfolio[1]).length) {
           return updatedPortfolio[1];
         } else {
-          return { error: `positions that did not update ${updatedPortfolio[1]}` };
+          return { error: updatedPortfolio[1] };
         }
       } catch (error) {
         console.log(error);
@@ -369,8 +365,6 @@ export async function readMUFGEndOfMonthFile(path: string) {
     return data;
   }
 }
-
-
 
 export async function editPositionPortfolio(path: string) {
   let data: any = await readEditInput(path);
@@ -956,7 +950,7 @@ export async function deletePosition(data: any): Promise<any> {
     const reportCollection = database.collection(`portfolio-${earliestPortfolioName[0]}`);
 
     const id = new ObjectId(data["_id"]);
-    console.log(id, `portfolio-${earliestPortfolioName[0]}`)
+    console.log(id, `portfolio-${earliestPortfolioName[0]}`);
     // Update the document with the built updates object
     const updateResult = await reportCollection.deleteOne({ _id: id });
 
