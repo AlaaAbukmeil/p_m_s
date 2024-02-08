@@ -592,8 +592,8 @@ export async function updatePositionPortfolio(path: string) {
 
         let currency = row["Currency"];
         let bondCouponMaturity: any = parseBondIdentifier(row["BB Ticker"]);
-        //change
-        let tradeExistsAlready = false//triadaIds.includes(row["Triada Trade Id"]);
+      
+        let tradeExistsAlready = triadaIds.includes(row["Triada Trade Id"]);
         let updatingPosition = returnPositionProgress(positions, identifier, location);
         let tradeDate: any = new Date(row["Trade Date"]);
         let thisMonth = monthlyRlzdDate(tradeDate);
@@ -764,9 +764,10 @@ export async function updatePositionPortfolio(path: string) {
         let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
         let action3 = await insertTrade(allTrades[2], "emsx");
         let action2 = await insertTrade(allTrades[1], "ib");
+     
         let action1 = await insertTrade(allTrades[0], "vcons");
 
-        return insertion;
+        return insertion
       } catch (error) {
         return { error: error };
       }
@@ -1233,7 +1234,7 @@ export async function editPosition(editedPosition: any, date: string) {
       "Moddy's Outlook",
       "Fitch Bond Rating",
       "Fitch Outlook",
-      "BBG Composite Rating",
+      // "BBG Composite Rating",
       "Day P&L FX",
       "MTD P&L FX",
       "S&P Bond Rating",

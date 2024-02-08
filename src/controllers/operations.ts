@@ -946,17 +946,17 @@ export async function deletePosition(data: any): Promise<any> {
     const database = client.db("portfolios");
     let date = getDateTimeInMongoDBCollectionFormat(new Date()).split(" ")[0] + " 23:59";
     let earliestPortfolioName = await getEarliestCollectionName(date);
-
+ 
     const reportCollection = database.collection(`portfolio-${earliestPortfolioName[0]}`);
 
     const id = new ObjectId(data["_id"]);
-    console.log(id, `portfolio-${earliestPortfolioName[0]}`);
+   
     // Update the document with the built updates object
     const updateResult = await reportCollection.deleteOne({ _id: id });
-
-    if (updateResult.matchedCount === 0) {
+    console.log(updateResult, id);
+    if (updateResult.deletedCount === 0) {
       return { error: "Document does not exist" };
-    } else if (updateResult.modifiedCount === 0) {
+    } else if (updateResult.deletedCount === 0) {
       return { error: "Document not updated. It may already have the same values" };
     }
 

@@ -133,16 +133,16 @@ router.get("/all-trades", verifyToken, async (req, res) => {
     let trades = await getAllTrades(new Date(from).getTime(), new Date(to).getTime());
     trades.filter((trade:any, index:any) => new Date(trade["Trade Date"]).getTime() > new Date(from).getTime() && new Date(trade["Trade Date"]).getTime() < new Date(to).getTime())
 
-    let start = new Date(from).getTime() - 2 * 24 * 60 * 60 * 1000;
-    let end = new Date(to).getTime() + 2 * 24 * 60 * 60 * 1000;
+    let start = new Date(from).getTime() - 4 * 24 * 60 * 60 * 1000;
+    let end = new Date(to).getTime() + 4 * 24 * 60 * 60 * 1000;
     let vconTrades = await getTriadaTrades("vcons", start, end);
 
     let vcons: any = await getVcons(token, from, to, vconTrades[0], vconTrades[1]);
     
     let action: any = await formatCentralizedRawFiles({}, vcons, vconTrades[0], [], []);
-    action.filter((trade:any, index:any) => trade["Trade App Status"] == "new" &&  new Date(trade["Trade Date"]).getTime() > new Date(from).getTime() && new Date(trade["Trade Date"]).getTime() < new Date(to).getTime())
-    let allTrades = action.concat(trades).sort((a:any,b:any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime())
-    res.send({trades:trades});
+    action.filter((trade:any, index:any) => trade["Trade App Status"] != "uploaded_to_app")
+    let allTrades = action.concat(trades).sort((a:any,b:any) => new Date(b["Trade Date"]).getTime() - new Date(a["Trade Date"]).getTime())
+    res.send({trades:allTrades});
   } catch (error) {
     res.status(500).send("An error occurred while reading the file.");
   }
@@ -312,8 +312,8 @@ router.post("/centralized-blotter", verifyToken, uploadBeforeExcel.any(), async 
     let data = req.body;
     let token = await getGraphToken();
     // to be modified
-    let start = new Date(data.timestamp_start).getTime() - 2 * 24 * 60 * 60 * 1000;
-    let end = new Date(data.timestamp_end).getTime() + 2 * 24 * 60 * 60 * 1000;
+    let start = new Date(data.timestamp_start).getTime() - 5 * 24 * 60 * 60 * 1000;
+    let end = new Date(data.timestamp_end).getTime() + 5 * 24 * 60 * 60 * 1000;
     let vconTrades = await getTriadaTrades("vcons", start, end);
 
     let vcons: any = await getVcons(token, data.timestamp_start, data.timestamp_end, vconTrades[0], vconTrades[1]);
@@ -446,10 +446,12 @@ router.post("/delete-trade", verifyToken, uploadBeforeExcel.any(), async (req: R
 
 router.post("/delete-position", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
-    let data = req.body;
+    let data = JSON.parse(req.body.data);
     let tradeType = req.body.tradeType;
-
-    let action: any = await deletePosition(data["_id"]);
+    console.log(data["_id"])
+    
+    let action: any = await deletePosition(data);
+    console.log(action)
     if (action.error) {
       res.send({ error: action.error, status: 404 });
     } else {

@@ -57,7 +57,6 @@ async function getVcons(token, start_time, end_time, trades, tradesCount) {
         });
         let vcons = action.data.value;
         let object = [];
-        let count = tradesCount + 1;
         let id;
         for (let index = 0; index < vcons.length; index++) {
             let vcon = vcons[index].body.content;
@@ -67,7 +66,7 @@ async function getVcons(token, start_time, end_time, trades, tradesCount) {
             let location = securityInPortfolioLocation.trim();
             let trade_status = "new";
             let triadaId = trades.find(function (trade) {
-                return trade["Seq No"] === vcon["Seq No"];
+                return trade["Seq No"].trim() == vcon["Seq No"].trim();
             });
             if (triadaId) {
                 continue;
@@ -82,7 +81,6 @@ async function getVcons(token, start_time, end_time, trades, tradesCount) {
             if (!trade["Triada Trade Id"]) {
                 id = uuidv4();
                 trade["Triada Trade Id"] = id;
-                count++;
             }
         }
         return object;

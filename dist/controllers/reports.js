@@ -557,8 +557,7 @@ async function updatePositionPortfolio(path) {
                 let currentPrincipal = parseFloat(row["Principal"].toString().replace(/,/g, ""));
                 let currency = row["Currency"];
                 let bondCouponMaturity = (0, portfolioFunctions_1.parseBondIdentifier)(row["BB Ticker"]);
-                //change
-                let tradeExistsAlready = false; //triadaIds.includes(row["Triada Trade Id"]);
+                let tradeExistsAlready = triadaIds.includes(row["Triada Trade Id"]);
                 let updatingPosition = returnPositionProgress(positions, identifier, location);
                 let tradeDate = new Date(row["Trade Date"]);
                 let thisMonth = (0, common_1.monthlyRlzdDate)(tradeDate);
@@ -1141,7 +1140,7 @@ async function editPosition(editedPosition, date) {
             "Moddy's Outlook",
             "Fitch Bond Rating",
             "Fitch Outlook",
-            "BBG Composite Rating",
+            // "BBG Composite Rating",
             "Day P&L FX",
             "MTD P&L FX",
             "S&P Bond Rating",
