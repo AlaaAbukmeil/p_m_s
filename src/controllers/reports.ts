@@ -758,14 +758,14 @@ export async function updatePositionPortfolio(path: string) {
         let logs = JSON.stringify(positions, null, 2);
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
         // await appendLogs(positions);
-        await insertEditLogs(["trades upload"], "Upload Trades", dateTime, "Centarlized Blotter", "Link: " + path);
-
+        
         let updatedPortfolio: any = formatUpdatedPositions(positions, portfolio, "Last Upload Trade");
         let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
         let action3 = await insertTrade(allTrades[2], "emsx");
         let action2 = await insertTrade(allTrades[1], "ib");
-     
+        
         let action1 = await insertTrade(allTrades[0], "vcons");
+        await insertEditLogs(["trades upload"], "Upload Trades", dateTime, "Centarlized Blotter", "Link: " + path);
 
         return insertion
       } catch (error) {

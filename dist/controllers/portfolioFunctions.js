@@ -446,18 +446,37 @@ async function readCentralizedEBlot(path) {
             vconTrades[rowIndex]["BB Ticker"] = bbTickers[vconTrades[rowIndex]["ISIN"]];
             vconTrades[rowIndex]["Quantity"] = vconTrades[rowIndex]["Notional Amount"];
             vconTrades[rowIndex]["Triada Trade Id"] = vconTrades[rowIndex]["Triada Trade Id"];
+            if (!vconTrades[rowIndex]["Trade Date"].includes("/")) {
+                vconTrades[rowIndex]["Trade Date"] = (0, common_1.getTradeDateYearTrades)((0, common_1.convertExcelDateToJSDate)(vconTrades[rowIndex]["Trade Date"]));
+            }
+            if (!vconTrades[rowIndex]["Settle Date"].includes("/")) {
+                vconTrades[rowIndex]["Settle Date"] = (0, common_1.getTradeDateYearTrades)((0, common_1.convertExcelDateToJSDate)(vconTrades[rowIndex]["Settle Date"]));
+            }
             vconTrades[rowIndex]["timestamp"] = new Date(vconTrades[rowIndex]["Trade Date"]).getTime();
+            vconTrades[rowIndex]["Trade Date"] = new Date(vconTrades[rowIndex]["Trade Date"]).getTime();
             vconTrades[rowIndex]["Trade App Status"] = "uploaded_to_app";
         }
         for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
             ibTrades[ibTradesIndex]["Quantity"] = Math.abs(ibTrades[ibTradesIndex]["Notional Amount"]);
             ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["Issue"];
+            if (!ibTrades[ibTradesIndex]["Trade Date"].includes("/")) {
+                ibTrades[ibTradesIndex]["Trade Date"] = (0, common_1.getTradeDateYearTrades)((0, common_1.convertExcelDateToJSDate)(ibTrades[ibTradesIndex]["Trade Date"]));
+            }
+            if (!ibTrades[ibTradesIndex]["Settle Date"].includes("/")) {
+                ibTrades[ibTradesIndex]["Settle Date"] = (0, common_1.getTradeDateYearTrades)((0, common_1.convertExcelDateToJSDate)(ibTrades[ibTradesIndex]["Settle Date"]));
+            }
             ibTrades[ibTradesIndex]["timestamp"] = new Date(ibTrades[ibTradesIndex]["Trade Date"]).getTime();
             ibTrades[ibTradesIndex]["Trade App Status"] = "uploaded_to_app";
         }
         for (let emsxTradesIndex = 0; emsxTradesIndex < emsxTrades.length; emsxTradesIndex++) {
             emsxTrades[emsxTradesIndex]["Quantity"] = emsxTrades[emsxTradesIndex]["Settlement Amount"];
             emsxTrades[emsxTradesIndex]["ISIN"] = emsxTrades[emsxTradesIndex]["Issue"];
+            if (!emsxTrades[emsxTradesIndex]["Trade Date"].includes("/")) {
+                emsxTrades[emsxTradesIndex]["Trade Date"] = (0, common_1.getTradeDateYearTrades)((0, common_1.convertExcelDateToJSDate)(emsxTrades[emsxTradesIndex]["Trade Date"]));
+            }
+            if (!emsxTrades[emsxTradesIndex]["Settle Date"].includes("/")) {
+                emsxTrades[emsxTradesIndex]["Settle Date"] = (0, common_1.getTradeDateYearTrades)((0, common_1.convertExcelDateToJSDate)(emsxTrades[emsxTradesIndex]["Settle Date"]));
+            }
             emsxTrades[emsxTradesIndex]["timestamp"] = new Date(emsxTrades[emsxTradesIndex]["Trade Date"]).getTime();
             emsxTrades[emsxTradesIndex]["Trade App Status"] = "uploaded_to_app";
         }

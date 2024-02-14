@@ -3,7 +3,10 @@ require("dotenv").config();
 
 const jwt = require("jsonwebtoken");
 
-export const uri = "mongodb+srv://alaa:" + process.env.MONGODBPASSWORD + "@atlascluster.zpfpywq.mongodb.net/?retryWrites=true&w=majority";
+export const uri = "mongodb+srv://developertriada:"+process.env.NEWMONGODBPASSWORD+"@app.ywfxr8w.mongodb.net/?retryWrites=true&w=majority"
+
+
+//"mongodb+srv://alaa:" + process.env.MONGODBPASSWORD + "@atlascluster.zpfpywq.mongodb.net/?retryWrites=true&w=majority";
 
 export function getCurrentMonthDateRange(): string {
   const now = new Date();

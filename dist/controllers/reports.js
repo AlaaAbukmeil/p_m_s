@@ -698,12 +698,12 @@ async function updatePositionPortfolio(path) {
                 let logs = JSON.stringify(positions, null, 2);
                 let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
                 // await appendLogs(positions);
-                await (0, operations_1.insertEditLogs)(["trades upload"], "Upload Trades", dateTime, "Centarlized Blotter", "Link: " + path);
                 let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(positions, portfolio, "Last Upload Trade");
                 let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
                 let action3 = await insertTrade(allTrades[2], "emsx");
                 let action2 = await insertTrade(allTrades[1], "ib");
                 let action1 = await insertTrade(allTrades[0], "vcons");
+                await (0, operations_1.insertEditLogs)(["trades upload"], "Upload Trades", dateTime, "Centarlized Blotter", "Link: " + path);
                 return insertion;
             }
             catch (error) {

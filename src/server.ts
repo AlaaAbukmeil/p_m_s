@@ -16,7 +16,7 @@ const apiLimiter = rateLimit({
 const cors = require("cors");
 
 const corsOptions = {
-  origin: ["http://localhost:3000", "http://localhost:3001", "https://capital-trade-web.de.r.appspot.com"],
+  origin: ["http://localhost:3000", "http://localhost:3001", "https://admin.triadacapital.com"],
   credentials:true,            //access-control-allow-credentials:true
   optionSuccessStatus: 200,
 };

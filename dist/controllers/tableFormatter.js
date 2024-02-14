@@ -49,7 +49,6 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         position["Asset Class"] = position["Asset Class"] ? position["Asset Class"] : position["Rating Class"] ? position["Rating Class"] : "";
         if ((!position["Asset Class"] || position["Asset Class"] == "") && position["BBG Composite Rating"]) {
             position["Asset Class"] = isRatingHigherThanBBBMinus(position["BBG Composite Rating"]);
-            console.log(position["Issue"], position["Asset Class"]);
         }
         position["Cost (Base Currency)"] = position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") ? Math.round(position["Average Cost"] * position["Quantity"] * 10000 * usdRatio) / (10000 * position["Original Face"]) : Math.round(position["Average Cost"] * position["Quantity"] * 1000000 * usdRatio) / 1000000;
         position["FX Rate"] = Math.round((position["FX Rate"] || position["FX Rate"]) * 1000000) / 1000000;
