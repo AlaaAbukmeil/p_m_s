@@ -57,7 +57,6 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     position["Asset Class"] = position["Asset Class"] ? position["Asset Class"] : position["Rating Class"] ? position["Rating Class"] : "";
     if ((!position["Asset Class"] || position["Asset Class"] == "") && position["BBG Composite Rating"]) {
       position["Asset Class"] = isRatingHigherThanBBBMinus(position["BBG Composite Rating"]);
-     
     }
     position["Cost (Base Currency)"] = position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") ? Math.round(position["Average Cost"] * position["Quantity"] * 10000 * usdRatio) / (10000 * position["Original Face"]) : Math.round(position["Average Cost"] * position["Quantity"] * 1000000 * usdRatio) / 1000000;
     position["FX Rate"] = Math.round((position["FX Rate"] || position["FX Rate"]) * 1000000) / 1000000;
@@ -126,7 +125,6 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
 
     position["Previous FX Rate"] = Math.round(position["Previous FX Rate"] * 1000000) / 1000000;
     position["Maturity"] = position["BB Ticker"] ? getMaturity(position["BB Ticker"]) : 0;
-    // console.log(position["Maturity"], position["Issue"], position["BB Ticker"])
 
     position["Call Date"] = position["Call Date"] ? swapMonthDay(position["Call Date"]) : 0;
 
@@ -168,11 +166,11 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
 
     position["Capital Gain/ Loss since Inception (Live Position)"] = position["Value (Base Currency)"] - position["Cost (Base Currency)"];
     let shortLongType = position["Value (Base Currency)"] > 0 ? 1 : -1;
-    position["% of Capital Gain/ Loss since Inception (Live Position)"] = Math.round((position["Value (Base Currency)"] / position["Cost (Base Currency)"] - 1) * shortLongType * 100) / 100 + " %";
+    position["% of Capital Gain/ Loss since Inception (Live Position)"] = Math.round((position["Value (Base Currency)"] / position["Cost (Base Currency)"] - 1) * shortLongType * 100) / 100 ;
     position["Accrued Interest Since Inception"] = calculateAccruedSinceInception(position["Interest"], position["Coupon Rate"] / 100, position["Coupon Duration"]);
 
     position["Total Gain/ Loss (USD)"] = Math.round(position["Capital Gain/ Loss since Inception (Live Position)"] + position["Accrued Interest Since Inception"]);
-    position["% of Total Gain/ Loss since Inception (Live Position)"] = Math.round(((position["Total Gain/ Loss (USD)"] + position["Cost (Base Currency)"]) / position["Cost (Base Currency)"] - 1) * shortLongType * 100) / 100 + " %";
+    position["% of Total Gain/ Loss since Inception (Live Position)"] = Math.round(((position["Total Gain/ Loss (USD)"] + position["Cost (Base Currency)"]) / position["Cost (Base Currency)"] - 1) * shortLongType * 100) / 100 ;
 
     position["Z Spread"] = (position["Z Spread"] / 1000000) * position["Notional Total"] * usdRatio;
     position["Z Spread"] = Math.round(position["Z Spread"] * 1000000) / 1000000 || 0;
@@ -465,7 +463,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
   object["Issuer"] = position["Issuer"];
   object["Last Price Update"] = position["Last Price Update"];
   object["Rating Score"] = position["BBG Composite Rating"] && position["BBG Composite Rating"] !== "NR" ? bbgRating(position["BBG Composite Rating"]) : position["Moody's Bond Rating"] ? moodyRating(position["Moody's Bond Rating"]) : -99;
-  object["Value (Base Currency) % of GMV"] = Math.abs(Math.round((position["Value (Base Currency)"] / fundDetails.gmv) * 10000) / 100) + " %";
+  object["Value (Base Currency) % of GMV"] = Math.abs(Math.round((position["Value (Base Currency)"] / fundDetails.gmv) * 10000) / 100);
   return object;
 }
 
@@ -530,23 +528,7 @@ function getSectorAssetClass(issue: string, sector: string) {
   }
 }
 
-function getSectorHYAssetClass(issue: string, sector: string) {
-  if (issue.toLocaleLowerCase().includes("perp")) {
-    if (sector) {
-      if (sector.toLocaleLowerCase().includes("bank")) {
-        return "FINS Perps";
-      } else {
-        return "Corps Perps";
-      }
-    } else {
-      return "Corps Perps";
-    }
-  } else {
-    return "Bonds";
-  }
-}
-
-function sumTable(table: any, data: any, view: any, param: any) {
+function sumTable(table: any, data: any, view: any, param: any, subtotal = false, subtotalParam = "") {
   let dv01DollarValueImpact = parseFloat(data["DV01 Dollar Value Impact"]);
 
   let dv01DollarValueOfNav = parseFloat(data["DV01 Dollar Value Impact % of Nav"]);
@@ -577,6 +559,7 @@ function sumTable(table: any, data: any, view: any, param: any) {
   let oasWChangeSum = parseFloat(data["OAS W Change"]);
   let dv01 = parseFloat(data["DV01"]) || 0;
   let notional = parseFloat(data["Notional Total"]);
+  let isin = data["ISIN"];
 
   if (view == "frontOffice") {
     usdMarketValue = parseFloat(data["USD Market Value"]) || 0;
@@ -620,8 +603,7 @@ function sumTable(table: any, data: any, view: any, param: any) {
         "Value (Base Currency) Color Test": 0,
         "Notional Total": 0,
       };
-  table[param] = table[param] ? table[param] : [];
-  table[param].push(data);
+
   table[param + " Aggregated"].DV01Sum += dv01;
   table[param + " Aggregated"].MTDPL += monthPl;
   table[param + " Aggregated"].groupUSDMarketValue += usdMarketValue;
@@ -722,6 +704,117 @@ function sumTable(table: any, data: any, view: any, param: any) {
   table["Total"].oasSum += oasSum;
   table["Total"].zSpreadSum += zSpreadSum;
   table["Total"].oasWChangeSum += oasWChangeSum;
+
+  if (subtotal) {
+    table[subtotalParam] = table[subtotalParam]
+      ? table[subtotalParam]
+      : {
+          DV01Sum: 0,
+          MTDPL: 0,
+          DayPL: 0,
+          net: 0,
+          gross: 0,
+          groupUSDMarketValue: 0,
+          oasSum: 0,
+          zSpreadSum: 0,
+          oasWChangeSum: 0,
+          "DV01 Dollar Value Impact": 0,
+          "DV01 Dollar Value Impact % of Nav": 0,
+          "DV01 Dollar Value Impact Limit % of Nav": 0,
+          "DV01 Dollar Value Impact Utilization % of Nav": 0,
+
+          "Value (Base Currency) % of Nav": 0,
+          "Value (Base Currency) % of GMV": 0,
+          "Value (Base Currency) Limit % of Nav": 0,
+          "Value (Base Currency) Utilization % of Nav": 0,
+          "Capital Gain/ Loss since Inception (Live Position)": 0,
+          "% of Capital Gain/ Loss since Inception (Live Position)": 0,
+          "Accrued Interest Since Inception": 0,
+          "Total Gain/ Loss (USD)": 0,
+          "% of Total Gain/ Loss since Inception (Live Position)": 0,
+          "DV01 Dollar Value Impact Test": 0,
+          "Value (Base Currency) Test": 0,
+          "DV01 Dollar Value Impact Color Test": 0,
+
+          "Value (Base Currency) Color Test": 0,
+          "Notional Total": 0,
+        };
+
+    table[subtotalParam] = table[subtotalParam]
+      ? table[subtotalParam]
+      : {
+          DV01Sum: 0,
+          MTDPL: 0,
+          DayPL: 0,
+          net: 0,
+          gross: 0,
+          groupUSDMarketValue: 0,
+          oasSum: 0,
+          zSpreadSum: 0,
+          oasWChangeSum: 0,
+          "DV01 Dollar Value Impact": 0,
+          "DV01 Dollar Value Impact % of Nav": 0,
+          "DV01 Dollar Value Impact Limit % of Nav": 0,
+          "DV01 Dollar Value Impact Utilization % of Nav": 0,
+
+          "Value (Base Currency) % of Nav": 0,
+          "Value (Base Currency) % of GMV": 0,
+          "Value (Base Currency) Limit % of Nav": 0,
+          "Value (Base Currency) Utilization % of Nav": 0,
+          "Capital Gain/ Loss since Inception (Live Position)": 0,
+          "% of Capital Gain/ Loss since Inception (Live Position)": 0,
+          "Accrued Interest Since Inception": 0,
+          "Total Gain/ Loss (USD)": 0,
+          "% of Total Gain/ Loss since Inception (Live Position)": 0,
+          "DV01 Dollar Value Impact Test": 0,
+          "Value (Base Currency) Test": 0,
+          "DV01 Dollar Value Impact Color Test": 0,
+          "Notional Total": 0,
+          "Value (Base Currency) Color Test": 0,
+        };
+    table[subtotalParam]["DV01 Dollar Value Impact"] += dv01DollarValueImpact;
+    table[subtotalParam]["DV01 Dollar Value Impact % of Nav"] += dv01DollarValueOfNav;
+    table[subtotalParam]["DV01 Dollar Value Impact Limit % of Nav"] += dv01DollarValueLimitOfNav;
+    table[subtotalParam]["DV01 Dollar Value Impact Utilization % of Nav"] += dv01DollarValueLimitUtilization;
+
+    if (dv01DollarValueImpactTest == "Fail") {
+      table[subtotalParam]["DV01 Dollar Value Impact Test"] = "Fail";
+      table[subtotalParam]["DV01 Dollar Value Impact Color Test"] = "#FFAB91"; // : "#FFAB91";
+    }
+
+    table[subtotalParam]["Value (Base Currency) % of Nav"] += valueUSDOfNav;
+    table[subtotalParam]["Value (Base Currency) % of GMV"] += valueUSDOfGmv;
+    table[subtotalParam]["Value (Base Currency) Limit % of Nav"] += valueUSDLimitOfNav;
+
+    table[subtotalParam]["Value (Base Currency) Utilization % of Nav"] += valueUSDUtilizationOfNav;
+    if (valueUSDOfNavTest == "Fail") {
+      table[subtotalParam]["Value (Base Currency) Test"] = "Fail";
+      table[subtotalParam]["Value (Base Currency) Color Test"] = "#FFAB91";
+    }
+    table[subtotalParam]["Capital Gain/ Loss since Inception (Live Position)"] += capitalGains;
+    table[subtotalParam]["% of Capital Gain/ Loss since Inception (Live Position)"] += capitalGainsPercentage;
+
+    table[subtotalParam]["Accrued Interest Since Inception"] += accruedInterestSinceInception;
+    table[subtotalParam]["Total Gain/ Loss (USD)"] += totalCaptialGains;
+    table[subtotalParam]["% of Total Gain/ Loss since Inception (Live Position)"] += totalCaptialGainsPercentage;
+    table[subtotalParam]["Notional Total"] += notional;
+
+    table[subtotalParam].DV01Sum += dv01;
+    table[subtotalParam].MTDPL += monthPl;
+    table[subtotalParam].DayPL += dayPl;
+    table[subtotalParam].groupUSDMarketValue += usdMarketValue;
+    table[subtotalParam].oasSum += oasSum;
+    table[subtotalParam].zSpreadSum += zSpreadSum;
+    table[subtotalParam].oasWChangeSum += oasWChangeSum;
+    table[subtotalParam]["L/S"] = subtotalParam;
+    table[param] = table[param] ? table[param] : {};
+    table[param][subtotalParam] = table[param][subtotalParam] ?  table[param][subtotalParam] : []
+ 
+    table[param][subtotalParam].push(data)
+  } else {
+    table[param] = table[param] ? table[param] : [];
+    table[param].push(data);
+  }
 }
 
 function assignColorAndSortParamsBasedOnAssetClass(
@@ -761,11 +854,12 @@ function assignColorAndSortParamsBasedOnAssetClass(
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
         let duration: any = getDuration(groupedByLocation[locationCode].data[index]["Duration(Mkt)"]);
         let couponRate: any = groupedByLocation[locationCode].data[index]["Coupon Rate"];
-        sumTable(rvPairTable, groupedByLocation[locationCode].data[index], view, locationCode);
         let notional = groupedByLocation[locationCode].data[index]["Notional Total"];
+        let isin: any = groupedByLocation[locationCode].data[index]["ISIN"];
+        sumTable(rvPairTable, groupedByLocation[locationCode].data[index], view, locationCode);
         if (notional < 0) {
           sumTable(ustTableByCoupon, groupedByLocation[locationCode].data[index], view, couponRate);
-          sumTable(ustTable, groupedByLocation[locationCode].data[index], view, duration);
+          sumTable(ustTable, groupedByLocation[locationCode].data[index], view, duration, true, isin);
         }
       }
     } else if (groupedByLocation[locationCode].order == 2) {
@@ -815,9 +909,10 @@ function assignColorAndSortParamsBasedOnAssetClass(
         let duration: any = getDuration(groupedByLocation[locationCode].data[index]["Duration(Mkt)"]);
         let couponRate: any = groupedByLocation[locationCode].data[index]["Coupon Rate"];
         let notional = groupedByLocation[locationCode].data[index]["Notional Total"];
+        let isin: any = groupedByLocation[locationCode].data[index]["ISIN"];
         if (notional < 0) {
           sumTable(ustTableByCoupon, groupedByLocation[locationCode].data[index], view, couponRate);
-          sumTable(ustTable, groupedByLocation[locationCode].data[index], view, duration);
+          sumTable(ustTable, groupedByLocation[locationCode].data[index], view, duration, true, isin);
         }
       }
     } else if (groupedByLocation[locationCode].order == 9) {
@@ -1151,7 +1246,7 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio: any, nav:
   };
 
   let ustTable: any = {
-    "0 To 2": [],
+    "0 To 2": {},
     "0 To 2 Aggregated": {
       DayPL: 0,
       MTDPL: 0,
@@ -1180,7 +1275,7 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio: any, nav:
       "% of Total Gain/ Loss since Inception (Live Position)": 0,
       "Notional Total": 0,
     },
-    "2 To 5": [],
+    "2 To 5": {},
     "2 To 5 Aggregated": {
       DayPL: 0,
       MTDPL: 0,
@@ -1209,7 +1304,7 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio: any, nav:
 
       "Notional Total": 0,
     },
-    "5 To 10": [],
+    "5 To 10": {},
     "5 To 10 Aggregated": {
       DayPL: 0,
       MTDPL: 0,
@@ -1237,7 +1332,7 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio: any, nav:
       "% of Total Gain/ Loss since Inception (Live Position)": 0,
       "Notional Total": 0,
     },
-    "10 To 30": [],
+    "10 To 30": {},
     "10 To 30 Aggregated": {
       DayPL: 0,
       MTDPL: 0,
@@ -1265,7 +1360,7 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio: any, nav:
       "% of Total Gain/ Loss since Inception (Live Position)": 0,
       "Notional Total": 0,
     },
-    "> 30": [],
+    "> 30": {},
     "> 30 Aggregated": {
       DayPl: 0,
       MTDPL: 0,
@@ -1783,7 +1878,7 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio: any, nav:
     currencies: currencies,
     issuerTable: issuerTable,
     ustTableByCoupon: ustTableByCoupon,
-    rvPairTable:rvPairTable
+    rvPairTable: rvPairTable,
   };
 }
 
@@ -1910,10 +2005,10 @@ function isRatingHigherThanBBBMinus(rating: string) {
     // Add more if there are other ratings
   ];
 
-  rating = rating.toUpperCase().trim()
+  rating = rating.toUpperCase().trim();
 
-  const ratingIndex = ratingsOrder.indexOf(rating.toUpperCase().trim())
- 
+  const ratingIndex = ratingsOrder.indexOf(rating.toUpperCase().trim());
+
   const benchmarkIndex = ratingsOrder.indexOf("BBB-");
 
   // Check if the rating is valid
