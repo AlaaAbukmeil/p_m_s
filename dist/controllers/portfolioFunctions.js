@@ -193,7 +193,7 @@ function getMaturity(identifier) {
             const components = identifier.split(" ");
             try {
                 let index = getDateIndex(identifier);
-                if (!index) {
+                if (!index || identifier.toString().toLowerCase().includes("perp")) {
                     return 0;
                 }
                 let dateComponents = components[index].split("/");

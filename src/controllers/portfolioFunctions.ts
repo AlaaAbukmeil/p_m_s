@@ -203,7 +203,7 @@ export function getMaturity(identifier: any) {
 
       try {
         let index = getDateIndex(identifier)
-        if(!index){
+        if(!index || identifier.toString().toLowerCase().includes("perp")){
           return 0
         }
         let dateComponents = components[index].split("/");
