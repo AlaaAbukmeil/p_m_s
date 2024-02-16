@@ -314,7 +314,7 @@ export async function insertEditLogs(changes: string[], type: string, dateTime: 
   const reportCollection = database.collection(`${type}`);
   try {
     const result = await reportCollection.insertOne(object);
- 
+
     return result;
   } catch (err) {
     console.error(`Failed to insert item: ${err}`);
@@ -426,11 +426,27 @@ export async function getFundDetails(date: string) {
     let test = await getEarliestCollectionNameFund(date);
 
     let documents = await reportCollection.find({ month: test }).toArray();
-    return documents;
+    return documents
   } catch (error) {
     return error;
   }
 }
+
+function compareMonths(a: any, b: any) {
+  // Reformat the month string to 'MM/01/YYYY' for comparison
+  let reformattedMonthA = a.month.substring(5) + "/01/" + a.month.substring(0, 4);
+  let reformattedMonthB = b.month.substring(5) + "/01/" + b.month.substring(0, 4);
+  console.log(reformattedMonthA, reformattedMonthB)
+  // Convert the reformatted strings to date objects
+  let dateA = new Date(reformattedMonthA).getTime();
+  let dateB = new Date(reformattedMonthB).getTime();
+
+  // Compare the date objects
+  return dateA - dateB;
+}
+
+// Sort the array without modifying the original objects
+
 export async function getEarliestCollectionNameFund(originalDate: string) {
   const database = client.db("fund");
   let details = await database.collection("details").find().toArray();
@@ -475,7 +491,7 @@ export async function getAllFundDetails(date: string) {
     const database = client.db("fund");
     const reportCollection = database.collection("details");
     let documents = await reportCollection.find().toArray();
-    return documents;
+    return documents.sort(compareMonths);
   } catch (error) {
     return { error: error };
   }
@@ -567,8 +583,6 @@ export async function addFund(data: any): Promise<any> {
     return { success: true, insertedId: insertResult.insertedId };
   } catch (error: any) {
     return { error: error.message }; // Return the error message
-  } finally {
-    await client.close(); // Ensure to close the MongoDB client
   }
 }
 
@@ -673,7 +687,7 @@ export async function deleteTrade(tradeType: string, tradeId: string, tradeIssue
     } else {
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
       await insertEditLogs(["deleted"], "Update Trade", dateTime, "deleted", tradeIssue);
-      console.log("deleted")
+      console.log("deleted");
       return { error: null };
     }
   } catch (error) {
@@ -946,11 +960,11 @@ export async function deletePosition(data: any): Promise<any> {
     const database = client.db("portfolios");
     let date = getDateTimeInMongoDBCollectionFormat(new Date()).split(" ")[0] + " 23:59";
     let earliestPortfolioName = await getEarliestCollectionName(date);
- 
+
     const reportCollection = database.collection(`portfolio-${earliestPortfolioName[0]}`);
 
     const id = new ObjectId(data["_id"]);
-   
+
     // Update the document with the built updates object
     const updateResult = await reportCollection.deleteOne({ _id: id });
     console.log(updateResult, id);

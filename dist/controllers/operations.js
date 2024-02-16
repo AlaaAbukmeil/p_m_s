@@ -422,6 +422,18 @@ async function getFundDetails(date) {
     }
 }
 exports.getFundDetails = getFundDetails;
+function compareMonths(a, b) {
+    // Reformat the month string to 'MM/01/YYYY' for comparison
+    let reformattedMonthA = a.month.substring(5) + "/01/" + a.month.substring(0, 4);
+    let reformattedMonthB = b.month.substring(5) + "/01/" + b.month.substring(0, 4);
+    console.log(reformattedMonthA, reformattedMonthB);
+    // Convert the reformatted strings to date objects
+    let dateA = new Date(reformattedMonthA).getTime();
+    let dateB = new Date(reformattedMonthB).getTime();
+    // Compare the date objects
+    return dateA - dateB;
+}
+// Sort the array without modifying the original objects
 async function getEarliestCollectionNameFund(originalDate) {
     const database = client.db("fund");
     let details = await database.collection("details").find().toArray();
@@ -460,7 +472,7 @@ async function getAllFundDetails(date) {
         const database = client.db("fund");
         const reportCollection = database.collection("details");
         let documents = await reportCollection.find().toArray();
-        return documents;
+        return documents.sort(compareMonths);
     }
     catch (error) {
         return { error: error };
@@ -547,9 +559,6 @@ async function addFund(data) {
     }
     catch (error) {
         return { error: error.message }; // Return the error message
-    }
-    finally {
-        await client.close(); // Ensure to close the MongoDB client
     }
 }
 exports.addFund = addFund;
