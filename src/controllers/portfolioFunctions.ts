@@ -434,6 +434,7 @@ export async function readVconEBlot(path: string) {
 
 export async function readCentralizedEBlot(path: string) {
   const response = await axios.get(path, { responseType: "arraybuffer" });
+  
 
   /* Parse the data */
   const workbook = xlsx.read(response.data, { type: "buffer" });
@@ -487,15 +488,14 @@ export async function readCentralizedEBlot(path: string) {
       vconTrades[rowIndex]["BB Ticker"] = bbTickers[vconTrades[rowIndex]["ISIN"]];
       vconTrades[rowIndex]["Quantity"] = vconTrades[rowIndex]["Notional Amount"];
       vconTrades[rowIndex]["Triada Trade Id"] = vconTrades[rowIndex]["Triada Trade Id"];
-      
+     
       if(!vconTrades[rowIndex]["Trade Date"].includes("/")){
-        vconTrades[rowIndex]["Trade Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(vconTrades[rowIndex]["Trade Date"]))
+       vconTrades[rowIndex]["Trade Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(vconTrades[rowIndex]["Trade Date"]))
       }
       if(!vconTrades[rowIndex]["Settle Date"].includes("/")){
         vconTrades[rowIndex]["Settle Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(vconTrades[rowIndex]["Settle Date"]))
       }
       vconTrades[rowIndex]["timestamp"] = new Date(vconTrades[rowIndex]["Trade Date"]).getTime();
-      vconTrades[rowIndex]["Trade Date"] = new Date(vconTrades[rowIndex]["Trade Date"]).getTime();
       vconTrades[rowIndex]["Trade App Status"] = "uploaded_to_app";
     }
 
@@ -524,7 +524,7 @@ export async function readCentralizedEBlot(path: string) {
       emsxTrades[emsxTradesIndex]["timestamp"] = new Date(emsxTrades[emsxTradesIndex]["Trade Date"]).getTime();
       emsxTrades[emsxTradesIndex]["Trade App Status"] = "uploaded_to_app";
     }
-
+   
     return [vconTrades, ibTrades, emsxTrades, [...vconTrades, ...ibTrades, ...emsxTrades]];
   }
 }

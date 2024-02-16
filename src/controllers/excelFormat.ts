@@ -2,16 +2,15 @@ require("dotenv").config();
 
 import { uploadToGCloudBucket } from "./portfolioFunctions";
 import { readBBGBlot } from "./mufgOperations";
-import { getTradeDateYearTrades, formatDateReadable, convertExcelDateToJSDate, convertExcelDateToJSDateTime, generateRandomString } from "./common";
+import { getTradeDateYearTrades, formatDateReadable, convertExcelDateToJSDate, convertExcelDateToJSDateTime, generateRandomString, bucket } from "./common";
 import { getSettlementDateYear, readIBEblot, readEmsxEBlot } from "./portfolioFunctions";
 import { getSecurityInPortfolioWithoutLocation } from "./graphApiConnect";
 import { formatTradeDate } from "./common";
-
+import { uri } from "./common";
 const xlsx = require("xlsx");
 const { PassThrough } = require("stream");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const { v4: uuidv4 } = require("uuid");
-const uri = "mongodb+srv://alaa:" + process.env.MONGODBPASSWORD + "@atlascluster.zpfpywq.mongodb.net/?retryWrites=true&w=majority";
 const axios = require("axios");
 const client = new MongoClient(uri, {
   serverApi: {
@@ -133,7 +132,7 @@ export function renderVcon(emailContent: string) {
   return vcon;
 }
 
-export async function uploadArrayAndReturnFilePath(data: any, pathName: string) {
+export async function uploadArrayAndReturnFilePath(data: any, pathName: string, folderName:string) {
   // Create a new Workbook
   var wb = xlsx.utils.book_new();
 
@@ -144,37 +143,45 @@ export async function uploadArrayAndReturnFilePath(data: any, pathName: string) 
   const stream = new PassThrough();
   const buffer = xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
   let randomString = generateRandomString(6);
-  let fileName = `after-excel/${pathName.replace(/[!@#$%^&*(),.?":{}|<>\/\[\]\\;'\-=+`~]/g, "_")}_${randomString}.xlsx`;
+  let fileName = `${folderName}/${pathName.replace(/[!@#$%^&*(),.?":{}|<>\/\[\]\\;'\-=+`~]/g, "_")}_${randomString}.xlsx`;
 
   uploadToGCloudBucket(buffer, process.env.BUCKET, fileName).then().catch(console.error);
 
-  return fileName;
+  return "/" + fileName;
 }
 
 export async function getTriadaTrades(tradeType: any, fromTimestamp: number | null = 0, toTimestamp: number | null = 0) {
   const database = client.db("trades_v_2");
 
-  let options: any = [
-    { timestamp: { $exists: false } }, // includes trades without the timestamp property
-    // includes trades within the timestamp range
-  ];
-  if (fromTimestamp != 0 && toTimestamp != 0) {
+  let options: any = [];
+  
+  // If both timestamps are provided, use them to filter the results
+  if (fromTimestamp !== null && toTimestamp !== null) {
     options.push({ timestamp: { $gte: fromTimestamp, $lte: toTimestamp } });
-  } else {
-    options.push({ timestamp: { $exists: true } });
+  // If only fromTimestamp is provided
+  } else if (fromTimestamp !== null) {
+    options.push({ timestamp: { $gte: fromTimestamp } });
+  // If only toTimestamp is provided
+  } else if (toTimestamp !== null) {
+    options.push({ timestamp: { $lte: toTimestamp } });
   }
-  const query = {
-    $or: options,
-  };
-
-  let reportCollectionSize = await database.collection(`${tradeType}`).countDocuments();
+  
+  let query: any = {};
+  
+  // If there are any timestamp options, use them in the query
+  if (options.length > 0) {
+    query.$and = options;
+  }
+  
+ 
   let reportCollection = await database.collection(`${tradeType}`).find(query).toArray();
   if (fromTimestamp && toTimestamp) {
-    reportCollection = reportCollection.filter((trade: any) => {
+    reportCollection = reportCollection.filter((trade: any, index:any) => {
       // Include trade if tradeDate property does not exist
-
+      
       // Convert tradeDate to a timestamp if necessary
       const tradeDateTimestamp = new Date(trade["Trade Date"]).getTime();
+      
 
       // Check if tradeDate falls within the specified range
       return tradeDateTimestamp >= fromTimestamp && tradeDateTimestamp <= toTimestamp;
@@ -188,7 +195,7 @@ export async function getTriadaTrades(tradeType: any, fromTimestamp: number | nu
     delete trade["BB Ticker"];
     delete trade["timestamp"];
   }
-  return [reportCollection, reportCollectionSize];
+  return reportCollection;
 }
 
 export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTrades: any, ibTrades: any, emsxTrades: any) {
@@ -202,13 +209,13 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
         return bbbData;
       }
     } else if (file["fieldname"] == "IB") {
-      let url = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + file["filename"];
+      let url = bucket + file["filename"];
       ibData = await readIBEblot(url);
       if (ibData.error) {
         return ibData;
       }
     } else if (file["fieldname"] == "BBE") {
-      let url = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + file["filename"];
+      let url = bucket + file["filename"];
       bbeData = await readEmsxEBlot(url);
       if (bbeData.error) {
         return bbeData;
@@ -359,7 +366,7 @@ function extractValuesFx(text: any) {
   output = formatFxTrades(output);
   return output;
 }
-export function formatIbTrades(data: any, ibTrades: any, portfolio: any, tradesCount: number) {
+export function formatIbTrades(data: any, ibTrades: any, portfolio: any) {
   if (data.error) {
     return data;
   }
@@ -464,14 +471,13 @@ export function renderFx(emailContent: string) {
   return fxTrade;
 }
 
-export function formatEmsxTrades(data: any, emsxTrades: any, portfolio: any, tradesCount: number) {
+export function formatEmsxTrades(data: any, emsxTrades: any, portfolio: any) {
   if (data.error) {
     return data;
   }
   let trades = [];
   try {
-    let count = tradesCount + 1;
-
+   
     for (let index = 0; index < data.length; index++) {
       let trade = data[index];
       let id;
@@ -500,7 +506,7 @@ export function formatEmsxTrades(data: any, emsxTrades: any, portfolio: any, tra
         trade_status = "uploaded_to_app";
       } else {
         id = uuidv4();
-        count++;
+  
       }
       object["Status"] = trade["Status"];
       object["Buy/Sell"] = trade["Side"];

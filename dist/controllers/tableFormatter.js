@@ -676,7 +676,7 @@ function sumTable(table, data, view, param, subtotal = false, subtotalParam = ""
                 "Duration(Mkt)": 0,
             };
         table[subtotalParam]["DV01 Dollar Value Impact"] += dv01DollarValueImpact;
-        table[subtotalParam]["DV01 Dollar Value Impact % of Nav"] += (Math.round(dv01DollarValueOfNav * 100) / 100 || 0);
+        table[subtotalParam]["DV01 Dollar Value Impact % of Nav"] += Math.round(dv01DollarValueOfNav * 100) / 100 || 0;
         table[subtotalParam]["DV01 Dollar Value Impact Limit % of Nav"] += dv01DollarValueLimitOfNav;
         table[subtotalParam]["DV01 Dollar Value Impact Utilization % of Nav"] += dv01DollarValueLimitUtilization;
         table[subtotalParam]["Value (Base Currency) % of Nav"] += Math.round(valueUSDOfNav * 100) / 100 || 0;
@@ -687,7 +687,7 @@ function sumTable(table, data, view, param, subtotal = false, subtotalParam = ""
         table[subtotalParam]["% of Capital Gain/ Loss since Inception (Live Position)"] += Math.round(capitalGainsPercentage * 100) / 100 || 0;
         table[subtotalParam]["Accrued Interest Since Inception"] += accruedInterestSinceInception;
         table[subtotalParam]["Total Gain/ Loss (USD)"] += totalCaptialGains;
-        table[subtotalParam]["% of Total Gain/ Loss since Inception (Live Position)"] += (Math.round(totalCaptialGainsPercentage * 100) / 100 || 0);
+        table[subtotalParam]["% of Total Gain/ Loss since Inception (Live Position)"] += Math.round(totalCaptialGainsPercentage * 100) / 100 || 0;
         table[subtotalParam]["Notional Total"] += notional;
         table[subtotalParam]["DV01 Dollar Value Impact"] += dv01DollarValueImpact;
         table[subtotalParam]["USD Market Value"] += usdMarketValue;
@@ -705,15 +705,15 @@ function sumTable(table, data, view, param, subtotal = false, subtotalParam = ""
         table[subtotalParam][strategy]["DV01 Dollar Value Impact % of Nav"] += dv01DollarValueOfNav;
         table[subtotalParam][strategy]["DV01 Dollar Value Impact Limit % of Nav"] += dv01DollarValueLimitOfNav;
         table[subtotalParam][strategy]["DV01 Dollar Value Impact Utilization % of Nav"] += dv01DollarValueLimitUtilization;
-        table[subtotalParam][strategy]["Value (Base Currency) % of Nav"] += (Math.round(valueUSDOfNav * 100) / 100 || 0);
-        table[subtotalParam][strategy]["Value (Base Currency) % of GMV"] += (Math.round(valueUSDOfGmv * 100) / 100 || 0);
+        table[subtotalParam][strategy]["Value (Base Currency) % of Nav"] += Math.round(valueUSDOfNav * 100) / 100 || 0;
+        table[subtotalParam][strategy]["Value (Base Currency) % of GMV"] += Math.round(valueUSDOfGmv * 100) / 100 || 0;
         table[subtotalParam][strategy]["Value (Base Currency) Limit % of Nav"] += valueUSDLimitOfNav;
         table[subtotalParam][strategy]["Value (Base Currency) Utilization % of Nav"] += valueUSDUtilizationOfNav;
         table[subtotalParam][strategy]["Capital Gain/ Loss since Inception (Live Position)"] += capitalGains;
-        table[subtotalParam][strategy]["% of Capital Gain/ Loss since Inception (Live Position)"] += (Math.round(capitalGainsPercentage * 100) / 100 || 0);
+        table[subtotalParam][strategy]["% of Capital Gain/ Loss since Inception (Live Position)"] += Math.round(capitalGainsPercentage * 100) / 100 || 0;
         table[subtotalParam][strategy]["Accrued Interest Since Inception"] += accruedInterestSinceInception;
         table[subtotalParam][strategy]["Total Gain/ Loss (USD)"] += totalCaptialGains;
-        table[subtotalParam][strategy]["% of Total Gain/ Loss since Inception (Live Position)"] += (Math.round(totalCaptialGainsPercentage * 100) / 100 || 0);
+        table[subtotalParam][strategy]["% of Total Gain/ Loss since Inception (Live Position)"] += Math.round(totalCaptialGainsPercentage * 100) / 100 || 0;
         table[subtotalParam][strategy]["Notional Total"] += notional;
         table[subtotalParam][strategy]["DV01 Dollar Value Impact"] += dv01DollarValueImpact;
         table[subtotalParam][strategy]["USD Market Value"] += usdMarketValue;
@@ -736,7 +736,7 @@ function sumTable(table, data, view, param, subtotal = false, subtotalParam = ""
         table[param].push(data);
     }
 }
-function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNotional, pairHedgeDV01Sum, pairIGDV01Sum, globalHedgeNotional, singleIGNotional, globalHedgeDV01Sum, singleIGDV01Sum, hedgeCurrencyNotional, HYNotional, HYDV01Sum, cdsNotional, countryNAVPercentage, sectorNAVPercentage, strategyNAVPercentage, longShortDV01Sum, durationSummary, groupedByLocation, view, ustTable, igTable, hyTable, currTable, issuerTable, ustTableByCoupon, issuerNAVPercentage, rvPairTable) {
+function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNotional, pairHedgeDV01Sum, pairIGDV01Sum, globalHedgeNotional, singleIGNotional, globalHedgeDV01Sum, singleIGDV01Sum, hedgeCurrencyNotional, HYNotional, HYDV01Sum, cdsNotional, countryNAVPercentage, sectorNAVPercentage, strategyNAVPercentage, longShortDV01Sum, durationSummary, groupedByLocation, view, ustTable, igTable, hyTable, currTable, issuerTable, ustTableByCoupon, issuerNAVPercentage, rvPairTable, tickerTable) {
     for (let locationCode in groupedByLocation) {
         groupedByLocation[locationCode].order = sortSummary(locationCode, groupedByLocation[locationCode].data);
         if (groupedByLocation[locationCode].order == 1) {
@@ -745,11 +745,11 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 let duration = getDuration(groupedByLocation[locationCode].data[index]["Duration(Mkt)"]);
                 let couponRate = groupedByLocation[locationCode].data[index]["Coupon Rate"] + " %";
                 let notional = groupedByLocation[locationCode].data[index]["Notional Total"];
-                let isin = groupedByLocation[locationCode].data[index]["ISIN"];
+                let issue = groupedByLocation[locationCode].data[index]["Long Security Name"];
                 sumTable(rvPairTable, groupedByLocation[locationCode].data[index], view, locationCode);
                 if (notional < 0) {
                     sumTable(ustTableByCoupon, groupedByLocation[locationCode].data[index], view, couponRate);
-                    sumTable(ustTable, groupedByLocation[locationCode].data[index], view, duration, true, isin);
+                    sumTable(ustTable, groupedByLocation[locationCode].data[index], view, duration, true, issue);
                 }
             }
         }
@@ -805,10 +805,10 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 let duration = getDuration(groupedByLocation[locationCode].data[index]["Duration(Mkt)"]);
                 let couponRate = groupedByLocation[locationCode].data[index]["Coupon Rate"] + " %";
                 let notional = groupedByLocation[locationCode].data[index]["Notional Total"];
-                let isin = groupedByLocation[locationCode].data[index]["ISIN"];
+                let issue = groupedByLocation[locationCode].data[index]["Long Security Name"];
                 if (notional < 0) {
                     sumTable(ustTableByCoupon, groupedByLocation[locationCode].data[index], view, couponRate);
-                    sumTable(ustTable, groupedByLocation[locationCode].data[index], view, duration, true, isin);
+                    sumTable(ustTable, groupedByLocation[locationCode].data[index], view, duration, true, issue);
                 }
             }
         }
@@ -818,9 +818,7 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
         }
         else if (groupedByLocation[locationCode].order == 10) {
             groupedByLocation[locationCode].color = "#E5D1B4";
-            for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
-                let issuer = groupedByLocation[locationCode].data[index]["Issuer"];
-            }
+            for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) { }
         }
         else if (groupedByLocation[locationCode].order == 11) {
             groupedByLocation[locationCode].color = "#C5E1A5";
@@ -832,7 +830,8 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
         groupedByLocation[locationCode]["DV01 Dollar Value Impact Utilization % of Nav"] = 0;
         for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
             let country = groupedByLocation[locationCode].data[index]["Country"] ? groupedByLocation[locationCode].data[index]["Country"] : "Unspecified";
-            let issuer = groupedByLocation[locationCode].data[index]["Issuer"] ? groupedByLocation[locationCode].data[index]["Issuer"].split(" ")[0] : "Unspecified";
+            let issuer = groupedByLocation[locationCode].data[index]["Issuer"] ? groupedByLocation[locationCode].data[index]["Issuer"].split(" ")[0].toString().toLowerCase() + " " + groupedByLocation[locationCode].data[index]["Issuer"].split(" ")[1].toString().toLowerCase() : "Unspecified";
+            let bbTicker = groupedByLocation[locationCode].data[index]["BB Ticker"] ? groupedByLocation[locationCode].data[index]["BB Ticker"] : "Unspecified";
             let sector = groupedByLocation[locationCode].data[index]["Sector"] ? groupedByLocation[locationCode].data[index]["Sector"] : "Unspecified";
             let duration = parseFloat(groupedByLocation[locationCode].data[index]["Duration(Mkt)"]) || 0;
             let dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
@@ -861,6 +860,7 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
             }
             strategyNAVPercentage[strategy] = strategyNAVPercentage[strategy] ? strategyNAVPercentage[strategy] + usdMarketValue : usdMarketValue;
             issuerNAVPercentage[issuer] = issuerNAVPercentage[issuer] ? issuerNAVPercentage[issuer] + usdMarketValue : usdMarketValue;
+            tickerTable[bbTicker] = "";
             if (usdMarketValue > 0) {
                 countryNAVPercentage[country.toLowerCase()] = countryNAVPercentage[country.toLowerCase()] ? countryNAVPercentage[country.toLowerCase()] + usdMarketValue : usdMarketValue;
                 sectorNAVPercentage[sector.toLowerCase()] = sectorNAVPercentage[sector.toLowerCase()] ? sectorNAVPercentage[sector.toLowerCase()] + usdMarketValue : usdMarketValue;
@@ -1600,6 +1600,7 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
             "Notional Total": 0,
         },
     };
+    let tickerTable = {};
     const groupedByLocation = formattedPortfolio.reduce((group, item) => {
         const { Location } = item;
         let notional = item["Notional Total"];
@@ -1614,7 +1615,7 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
             return group;
         }
     }, {});
-    assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNotional, pairHedgeDV01Sum, pairIGDV01Sum, globalHedgeNotional, singleIGNotional, globalHedgeDV01Sum, singleIGDV01Sum, hedgeCurrencyNotional, HYNotional, HYDV01Sum, cdsNotional, countryNAVPercentage, sectorNAVPercentage, strategyNAVPercentage, longShortDV01Sum, durationSummary, groupedByLocation, view, ustTable, igTable, hyTable, currTable, issuerTable, ustTableByCoupon, issuerNAVPercentage, rvPairTable);
+    assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNotional, pairHedgeDV01Sum, pairIGDV01Sum, globalHedgeNotional, singleIGNotional, globalHedgeDV01Sum, singleIGDV01Sum, hedgeCurrencyNotional, HYNotional, HYDV01Sum, cdsNotional, countryNAVPercentage, sectorNAVPercentage, strategyNAVPercentage, longShortDV01Sum, durationSummary, groupedByLocation, view, ustTable, igTable, hyTable, currTable, issuerTable, ustTableByCoupon, issuerNAVPercentage, rvPairTable, tickerTable);
     let portfolio = [];
     assignBorderAndCustomSortAggregateGroup(portfolio, groupedByLocation, sort, sign);
     // This is your already sorted array of objects
@@ -1682,6 +1683,7 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
         issuerTable: issuerTable,
         ustTableByCoupon: ustTableByCoupon,
         rvPairTable: rvPairTable,
+        tickerTable: tickerTable
     };
 }
 function sortSummary(locationCode, group) {

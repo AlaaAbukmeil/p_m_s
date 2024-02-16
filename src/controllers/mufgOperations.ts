@@ -1,4 +1,4 @@
-import { getDateMufg, convertExcelDateToJSDate, convertBBGEmexDate } from "./common";
+import { getDateMufg, convertExcelDateToJSDate, convertBBGEmexDate, bucket } from "./common";
 import { settlementDatePassed, uploadToGCloudBucket, readIBEblot } from "./portfolioFunctions";
 import { getTradeDateYearTrades } from "./common";
 import { getSettlementDateYear, readEmsxEBlot } from "./portfolioFunctions";
@@ -27,7 +27,7 @@ mongoose.connect(uri, {
   useNewUrlParser: true,
 });
 export async function readBBGBlot(path: string) {
-  path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + path;
+  path = bucket + path;
   const response = await axios.get(path, { responseType: "arraybuffer" });
 
   /* Parse the data */
@@ -51,7 +51,7 @@ export async function readBBGBlot(path: string) {
 
 export async function readIB(path: string) {
   try {
-    path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + path;
+    path = bucket + path;
     const response = await axios.get(path, { responseType: "arraybuffer" });
 
     /* Parse the data */
@@ -92,7 +92,7 @@ export async function readIB(path: string) {
 }
 
 export async function readBBE(path: string) {
-  path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + path;
+  path = bucket + path;
   const response = await axios.get(path, { responseType: "arraybuffer" });
 
   /* Parse the data */
@@ -111,7 +111,7 @@ export async function readBBE(path: string) {
 }
 
 export async function readFxTrades(path: string) {
-  path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + path;
+  path = bucket + path;
   const response = await axios.get(path, { responseType: "arraybuffer" });
 
   /* Parse the data */

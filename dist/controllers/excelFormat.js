@@ -8,13 +8,13 @@ const common_1 = require("./common");
 const portfolioFunctions_2 = require("./portfolioFunctions");
 const graphApiConnect_1 = require("./graphApiConnect");
 const common_2 = require("./common");
+const common_3 = require("./common");
 const xlsx = require("xlsx");
 const { PassThrough } = require("stream");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const { v4: uuidv4 } = require("uuid");
-const uri = "mongodb+srv://alaa:" + process.env.MONGODBPASSWORD + "@atlascluster.zpfpywq.mongodb.net/?retryWrites=true&w=majority";
 const axios = require("axios");
-const client = new MongoClient(uri, {
+const client = new MongoClient(common_3.uri, {
     serverApi: {
         version: ServerApiVersion.v1,
         strict: false,
@@ -122,7 +122,7 @@ function renderVcon(emailContent) {
     return vcon;
 }
 exports.renderVcon = renderVcon;
-async function uploadArrayAndReturnFilePath(data, pathName) {
+async function uploadArrayAndReturnFilePath(data, pathName, folderName) {
     // Create a new Workbook
     var wb = xlsx.utils.book_new();
     let binaryWS = xlsx.utils.json_to_sheet(data);
@@ -132,30 +132,34 @@ async function uploadArrayAndReturnFilePath(data, pathName) {
     const stream = new PassThrough();
     const buffer = xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
     let randomString = (0, common_1.generateRandomString)(6);
-    let fileName = `after-excel/${pathName.replace(/[!@#$%^&*(),.?":{}|<>\/\[\]\\;'\-=+`~]/g, "_")}_${randomString}.xlsx`;
+    let fileName = `${folderName}/${pathName.replace(/[!@#$%^&*(),.?":{}|<>\/\[\]\\;'\-=+`~]/g, "_")}_${randomString}.xlsx`;
     (0, portfolioFunctions_1.uploadToGCloudBucket)(buffer, process.env.BUCKET, fileName).then().catch(console.error);
-    return fileName;
+    return "/" + fileName;
 }
 exports.uploadArrayAndReturnFilePath = uploadArrayAndReturnFilePath;
 async function getTriadaTrades(tradeType, fromTimestamp = 0, toTimestamp = 0) {
     const database = client.db("trades_v_2");
-    let options = [
-        { timestamp: { $exists: false } }, // includes trades without the timestamp property
-        // includes trades within the timestamp range
-    ];
-    if (fromTimestamp != 0 && toTimestamp != 0) {
+    let options = [];
+    // If both timestamps are provided, use them to filter the results
+    if (fromTimestamp !== null && toTimestamp !== null) {
         options.push({ timestamp: { $gte: fromTimestamp, $lte: toTimestamp } });
+        // If only fromTimestamp is provided
     }
-    else {
-        options.push({ timestamp: { $exists: true } });
+    else if (fromTimestamp !== null) {
+        options.push({ timestamp: { $gte: fromTimestamp } });
+        // If only toTimestamp is provided
     }
-    const query = {
-        $or: options,
-    };
-    let reportCollectionSize = await database.collection(`${tradeType}`).countDocuments();
+    else if (toTimestamp !== null) {
+        options.push({ timestamp: { $lte: toTimestamp } });
+    }
+    let query = {};
+    // If there are any timestamp options, use them in the query
+    if (options.length > 0) {
+        query.$and = options;
+    }
     let reportCollection = await database.collection(`${tradeType}`).find(query).toArray();
     if (fromTimestamp && toTimestamp) {
-        reportCollection = reportCollection.filter((trade) => {
+        reportCollection = reportCollection.filter((trade, index) => {
             // Include trade if tradeDate property does not exist
             // Convert tradeDate to a timestamp if necessary
             const tradeDateTimestamp = new Date(trade["Trade Date"]).getTime();
@@ -171,7 +175,7 @@ async function getTriadaTrades(tradeType, fromTimestamp = 0, toTimestamp = 0) {
         delete trade["BB Ticker"];
         delete trade["timestamp"];
     }
-    return [reportCollection, reportCollectionSize];
+    return reportCollection;
 }
 exports.getTriadaTrades = getTriadaTrades;
 async function formatCentralizedRawFiles(files, bbbData, vconTrades, ibTrades, emsxTrades) {
@@ -185,14 +189,14 @@ async function formatCentralizedRawFiles(files, bbbData, vconTrades, ibTrades, e
             }
         }
         else if (file["fieldname"] == "IB") {
-            let url = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + file["filename"];
+            let url = common_1.bucket + file["filename"];
             ibData = await (0, portfolioFunctions_2.readIBEblot)(url);
             if (ibData.error) {
                 return ibData;
             }
         }
         else if (file["fieldname"] == "BBE") {
-            let url = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + file["filename"];
+            let url = common_1.bucket + file["filename"];
             bbeData = await (0, portfolioFunctions_2.readEmsxEBlot)(url);
             if (bbeData.error) {
                 return bbeData;
@@ -340,7 +344,7 @@ function extractValuesFx(text) {
     output = formatFxTrades(output);
     return output;
 }
-function formatIbTrades(data, ibTrades, portfolio, tradesCount) {
+function formatIbTrades(data, ibTrades, portfolio) {
     if (data.error) {
         return data;
     }
@@ -443,13 +447,12 @@ function renderFx(emailContent) {
     return fxTrade;
 }
 exports.renderFx = renderFx;
-function formatEmsxTrades(data, emsxTrades, portfolio, tradesCount) {
+function formatEmsxTrades(data, emsxTrades, portfolio) {
     if (data.error) {
         return data;
     }
     let trades = [];
     try {
-        let count = tradesCount + 1;
         for (let index = 0; index < data.length; index++) {
             let trade = data[index];
             let id;
@@ -475,7 +478,6 @@ function formatEmsxTrades(data, emsxTrades, portfolio, tradesCount) {
             }
             else {
                 id = uuidv4();
-                count++;
             }
             object["Status"] = trade["Status"];
             object["Buy/Sell"] = trade["Side"];

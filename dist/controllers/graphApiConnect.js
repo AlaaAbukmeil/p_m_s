@@ -46,7 +46,7 @@ exports.getSecurityInPortfolioWithoutLocation = getSecurityInPortfolioWithoutLoc
 function format_date_ISO(date) {
     return new Date(date).toISOString();
 }
-async function getVcons(token, start_time, end_time, trades, tradesCount) {
+async function getVcons(token, start_time, end_time, trades) {
     let portfolio = await (0, reports_1.getPortfolio)();
     try {
         let url = `https://graph.microsoft.com/v1.0/users/vcons@triadacapital.com/messages?$filter=contains(subject,'New BB') and receivedDateTime ge ${format_date_ISO(start_time)} and receivedDateTime le ${format_date_ISO(end_time)}&$top=1000000`;
@@ -58,6 +58,7 @@ async function getVcons(token, start_time, end_time, trades, tradesCount) {
         let vcons = action.data.value;
         let object = [];
         let id;
+        // console.log(trades)
         for (let index = 0; index < vcons.length; index++) {
             let vcon = vcons[index].body.content;
             vcon = (0, excelFormat_1.renderVcon)(vcon);
@@ -66,8 +67,9 @@ async function getVcons(token, start_time, end_time, trades, tradesCount) {
             let location = securityInPortfolioLocation.trim();
             let trade_status = "new";
             let triadaId = trades.find(function (trade) {
-                return trade["Seq No"].trim() == vcon["Seq No"].trim();
+                return trade["Seq No"] == vcon["Seq No"];
             });
+            // console.log(vcon["Issue"], vcon["Seq No"],triadaId)
             if (triadaId) {
                 continue;
             }

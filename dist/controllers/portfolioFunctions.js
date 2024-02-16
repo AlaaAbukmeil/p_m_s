@@ -453,7 +453,6 @@ async function readCentralizedEBlot(path) {
                 vconTrades[rowIndex]["Settle Date"] = (0, common_1.getTradeDateYearTrades)((0, common_1.convertExcelDateToJSDate)(vconTrades[rowIndex]["Settle Date"]));
             }
             vconTrades[rowIndex]["timestamp"] = new Date(vconTrades[rowIndex]["Trade Date"]).getTime();
-            vconTrades[rowIndex]["Trade Date"] = new Date(vconTrades[rowIndex]["Trade Date"]).getTime();
             vconTrades[rowIndex]["Trade App Status"] = "uploaded_to_app";
         }
         for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {

@@ -1,9 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updatePortfolioBasedOnIsin = exports.checkMUFGEndOfMonthWithPortfolio = exports.tradesTriada = exports.createExcelAndReturnPath = exports.formatFxTradesToMufg = exports.formatFxMufg = exports.formatMufg = exports.readFxTrades = exports.readBBE = exports.readIB = exports.readBBGBlot = void 0;
+const common_1 = require("./common");
 const portfolioFunctions_1 = require("./portfolioFunctions");
 const auth_1 = require("./auth");
-const common_1 = require("./common");
+const common_2 = require("./common");
 const xlsx = require("xlsx");
 const axios = require("axios");
 const { Storage } = require("@google-cloud/storage");
@@ -12,18 +13,18 @@ const { PassThrough } = require("stream");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const mongoose = require("mongoose");
 const ObjectId = require("mongodb").ObjectId;
-const client = new MongoClient(common_1.uri, {
+const client = new MongoClient(common_2.uri, {
     serverApi: {
         version: ServerApiVersion.v1,
         strict: true,
         deprecationErrors: true,
     },
 });
-mongoose.connect(common_1.uri, {
+mongoose.connect(common_2.uri, {
     useNewUrlParser: true,
 });
 async function readBBGBlot(path) {
-    path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + path;
+    path = common_1.bucket + path;
     const response = await axios.get(path, { responseType: "arraybuffer" });
     /* Parse the data */
     const workbook = xlsx.read(response.data, { type: "buffer" });
@@ -41,7 +42,7 @@ async function readBBGBlot(path) {
 exports.readBBGBlot = readBBGBlot;
 async function readIB(path) {
     try {
-        path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + path;
+        path = common_1.bucket + path;
         const response = await axios.get(path, { responseType: "arraybuffer" });
         /* Parse the data */
         const workbook = xlsx.read(response.data, { type: "buffer" });
@@ -81,7 +82,7 @@ async function readIB(path) {
 }
 exports.readIB = readIB;
 async function readBBE(path) {
-    path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + path;
+    path = common_1.bucket + path;
     const response = await axios.get(path, { responseType: "arraybuffer" });
     /* Parse the data */
     const workbook = xlsx.read(response.data, { type: "buffer" });
@@ -96,7 +97,7 @@ async function readBBE(path) {
 }
 exports.readBBE = readBBE;
 async function readFxTrades(path) {
-    path = "https://storage.googleapis.com/capital-trade-396911.appspot.com" + path;
+    path = common_1.bucket + path;
     const response = await axios.get(path, { responseType: "arraybuffer" });
     /* Parse the data */
     const workbook = xlsx.read(response.data, { type: "buffer" });

@@ -7,7 +7,7 @@ export const uri = "mongodb+srv://developertriada:"+process.env.NEWMONGODBPASSWO
 
 
 //"mongodb+srv://alaa:" + process.env.MONGODBPASSWORD + "@atlascluster.zpfpywq.mongodb.net/?retryWrites=true&w=majority";
-
+export const bucket = "https://storage.googleapis.com/app-backend-414212.appspot.com"
 export function getCurrentMonthDateRange(): string {
   const now = new Date();
   const currentMonth = now.getMonth();

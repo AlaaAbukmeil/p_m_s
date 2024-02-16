@@ -499,6 +499,28 @@ export async function tradesTriadaIds() {
     return error;
   }
 }
+export async function findTrade(tradeType: string, tradeTriadaId: string, seqNo = null) {
+  try {
+    const database = client.db("trades_v_2");
+    const reportCollection = database.collection(tradeType);
+    let query;
+    if (seqNo != null) {
+      query = { $or: [{ tradeTriadaId: tradeTriadaId }, { seqNo: seqNo }] };
+    } else {
+      query = { tradeTriadaId: tradeTriadaId };
+    }
+
+    const documents = await reportCollection.find(query).toArray();
+
+    if (documents) {
+      return documents[0];
+    } else {
+      return [];
+    }
+  } catch (error) {
+    return error;
+  }
+}
 
 export async function getBBTicker(obj: any) {
   let index = 0;
@@ -558,6 +580,7 @@ export function updateExisitingPosition(positions: any, identifier: any, locatio
 export async function updatePositionPortfolio(path: string) {
   let allTrades: any = await readCentralizedEBlot(path);
 
+
   if (allTrades.error) {
     return { error: allTrades.error };
   } else {
@@ -575,6 +598,7 @@ export async function updatePositionPortfolio(path: string) {
         let object: any = {};
         let location = row["Location"].trim();
         let securityInPortfolio: any = getSecurityInPortfolio(portfolio, identifier, location);
+        let type = row["Trade Type"];
 
         if (securityInPortfolio !== 404) {
           object = securityInPortfolio;
@@ -592,7 +616,7 @@ export async function updatePositionPortfolio(path: string) {
 
         let currency = row["Currency"];
         let bondCouponMaturity: any = parseBondIdentifier(row["BB Ticker"]);
-      
+
         let tradeExistsAlready = triadaIds.includes(row["Triada Trade Id"]);
         let updatingPosition = returnPositionProgress(positions, identifier, location);
         let tradeDate: any = new Date(row["Trade Date"]);
@@ -758,16 +782,16 @@ export async function updatePositionPortfolio(path: string) {
         let logs = JSON.stringify(positions, null, 2);
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
         // await appendLogs(positions);
-        
+
         let updatedPortfolio: any = formatUpdatedPositions(positions, portfolio, "Last Upload Trade");
         let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
         let action3 = await insertTrade(allTrades[2], "emsx");
         let action2 = await insertTrade(allTrades[1], "ib");
-        
+
         let action1 = await insertTrade(allTrades[0], "vcons");
         await insertEditLogs(["trades upload"], "Upload Trades", dateTime, "Centarlized Blotter", "Link: " + path);
 
-        return insertion
+        return insertion;
       } catch (error) {
         return { error: error };
       }
@@ -1046,7 +1070,6 @@ export function calculateAccruedSinceInception(interestInfo: any, couponRate: an
     if (quantityDates[index + 1]) {
       let numOfDays = getDaysBetween(quantityDates[index], quantityDates[index + 1]);
       interest += (couponRate / numOfYears) * numOfDays * quantity;
-
     }
     quantity += interestInfo[quantityDates[index + 1]] ? interestInfo[quantityDates[index + 1]] : 0;
   }
@@ -1057,7 +1080,7 @@ function calculateMTDInterest(portfolio: any, date: any) {
   let currentDayDate = new Date(date).toISOString().slice(0, 10);
   let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate);
   let monthlyInterest: any = {};
- 
+
   for (let index = 0; index < portfolio.length; index++) {
     let position = portfolio[index];
     let quantityGeneratingInterest = position["Quantity"];

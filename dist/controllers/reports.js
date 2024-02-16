@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.insertTradesInPortfolioAtASpecificDate = exports.editPosition = exports.calculateAccruedSinceInception = exports.insertPricesUpdatesInPortfolio = exports.updatePricesPortfolio = exports.insertTradesInPortfolio = exports.updatePositionPortfolio = exports.updateExisitingPosition = exports.returnPositionProgress = exports.getBBTicker = exports.tradesTriadaIds = exports.insertTrade = exports.getDailyEarnedInterestRlzPtf = exports.getSecurityInPortfolio = exports.getTrades = exports.getHistoricalPortfolio = exports.getPortfolio = exports.getAllCollectionDatesSinceStartMonth = exports.getEarliestCollectionName = exports.getRiskReportWithAnalytics = exports.getHistoricalSummaryPortfolioWithAnalytics = exports.getHistoricalPortfolioWithAnalytics = void 0;
+exports.insertTradesInPortfolioAtASpecificDate = exports.editPosition = exports.calculateAccruedSinceInception = exports.insertPricesUpdatesInPortfolio = exports.updatePricesPortfolio = exports.insertTradesInPortfolio = exports.updatePositionPortfolio = exports.updateExisitingPosition = exports.returnPositionProgress = exports.getBBTicker = exports.findTrade = exports.tradesTriadaIds = exports.insertTrade = exports.getDailyEarnedInterestRlzPtf = exports.getSecurityInPortfolio = exports.getTrades = exports.getHistoricalPortfolio = exports.getPortfolio = exports.getAllCollectionDatesSinceStartMonth = exports.getEarliestCollectionName = exports.getRiskReportWithAnalytics = exports.getHistoricalSummaryPortfolioWithAnalytics = exports.getHistoricalPortfolioWithAnalytics = void 0;
 require("dotenv").config();
 const portfolioFunctions_1 = require("./portfolioFunctions");
 const util_1 = __importDefault(require("util"));
@@ -473,6 +473,30 @@ async function tradesTriadaIds() {
     }
 }
 exports.tradesTriadaIds = tradesTriadaIds;
+async function findTrade(tradeType, tradeTriadaId, seqNo = null) {
+    try {
+        const database = client.db("trades_v_2");
+        const reportCollection = database.collection(tradeType);
+        let query;
+        if (seqNo != null) {
+            query = { $or: [{ tradeTriadaId: tradeTriadaId }, { seqNo: seqNo }] };
+        }
+        else {
+            query = { tradeTriadaId: tradeTriadaId };
+        }
+        const documents = await reportCollection.find(query).toArray();
+        if (documents) {
+            return documents[0];
+        }
+        else {
+            return [];
+        }
+    }
+    catch (error) {
+        return error;
+    }
+}
+exports.findTrade = findTrade;
 async function getBBTicker(obj) {
     let index = 0;
     let bbTicker = {};
@@ -543,6 +567,7 @@ async function updatePositionPortfolio(path) {
                 let object = {};
                 let location = row["Location"].trim();
                 let securityInPortfolio = getSecurityInPortfolio(portfolio, identifier, location);
+                let type = row["Trade Type"];
                 if (securityInPortfolio !== 404) {
                     object = securityInPortfolio;
                 }
