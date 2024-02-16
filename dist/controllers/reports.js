@@ -479,10 +479,10 @@ async function findTrade(tradeType, tradeTriadaId, seqNo = null) {
         const reportCollection = database.collection(tradeType);
         let query;
         if (seqNo != null) {
-            query = { $or: [{ tradeTriadaId: tradeTriadaId }, { seqNo: seqNo }] };
+            query = { $or: [{ "Triada Trade Id": tradeTriadaId }, { "Seq No": seqNo }] };
         }
         else {
-            query = { tradeTriadaId: tradeTriadaId };
+            query = { "Triada Trade Id": tradeTriadaId };
         }
         const documents = await reportCollection.find(query).toArray();
         if (documents) {
@@ -559,7 +559,7 @@ async function updatePositionPortfolio(path) {
             let data = allTrades[3];
             let positions = [];
             let portfolio = await getPortfolio();
-            let triadaIds = await tradesTriadaIds();
+            let triadaIds = [];
             for (let index = 0; index < data.length; index++) {
                 let row = data[index];
                 let originalFace = parseFloat(row["Original Face"]);
@@ -567,7 +567,7 @@ async function updatePositionPortfolio(path) {
                 let object = {};
                 let location = row["Location"].trim();
                 let securityInPortfolio = getSecurityInPortfolio(portfolio, identifier, location);
-                let type = row["Trade Type"];
+                let type = row["Trade Type"] == "vcon" ? "vcons" : row["Trade Type"];
                 if (securityInPortfolio !== 404) {
                     object = securityInPortfolio;
                 }
@@ -582,7 +582,8 @@ async function updatePositionPortfolio(path) {
                 let currentPrincipal = parseFloat(row["Principal"].toString().replace(/,/g, ""));
                 let currency = row["Currency"];
                 let bondCouponMaturity = (0, portfolioFunctions_1.parseBondIdentifier)(row["BB Ticker"]);
-                let tradeExistsAlready = triadaIds.includes(row["Triada Trade Id"]);
+                let tradeDB = await findTrade(type, row["Triada Trade Id"], row["Seq No"]);
+                let tradeExistsAlready = tradeDB || triadaIds.includes(row["Triada Trade Id"]);
                 let updatingPosition = returnPositionProgress(positions, identifier, location);
                 let tradeDate = new Date(row["Trade Date"]);
                 let thisMonth = (0, common_1.monthlyRlzdDate)(tradeDate);
@@ -729,7 +730,7 @@ async function updatePositionPortfolio(path) {
                 let action2 = await insertTrade(allTrades[1], "ib");
                 let action1 = await insertTrade(allTrades[0], "vcons");
                 await (0, operations_1.insertEditLogs)(["trades upload"], "Upload Trades", dateTime, "Centarlized Blotter", "Link: " + path);
-                return insertion;
+                return "insertion";
             }
             catch (error) {
                 return { error: error };

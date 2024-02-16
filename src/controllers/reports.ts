@@ -505,9 +505,9 @@ export async function findTrade(tradeType: string, tradeTriadaId: string, seqNo 
     const reportCollection = database.collection(tradeType);
     let query;
     if (seqNo != null) {
-      query = { $or: [{ tradeTriadaId: tradeTriadaId }, { seqNo: seqNo }] };
+      query = { $or: [{ "Triada Trade Id": tradeTriadaId }, { "Seq No": seqNo }] };
     } else {
-      query = { tradeTriadaId: tradeTriadaId };
+      query = { "Triada Trade Id": tradeTriadaId };
     }
 
     const documents = await reportCollection.find(query).toArray();
@@ -589,7 +589,7 @@ export async function updatePositionPortfolio(path: string) {
 
       let positions: any = [];
       let portfolio = await getPortfolio();
-      let triadaIds: any = await tradesTriadaIds();
+      let triadaIds: any = []
 
       for (let index = 0; index < data.length; index++) {
         let row = data[index];
@@ -598,7 +598,7 @@ export async function updatePositionPortfolio(path: string) {
         let object: any = {};
         let location = row["Location"].trim();
         let securityInPortfolio: any = getSecurityInPortfolio(portfolio, identifier, location);
-        let type = row["Trade Type"];
+        let type = row["Trade Type"] == "vcon" ? "vcons" : row["Trade Type"]
 
         if (securityInPortfolio !== 404) {
           object = securityInPortfolio;
@@ -616,8 +616,9 @@ export async function updatePositionPortfolio(path: string) {
 
         let currency = row["Currency"];
         let bondCouponMaturity: any = parseBondIdentifier(row["BB Ticker"]);
-
-        let tradeExistsAlready = triadaIds.includes(row["Triada Trade Id"]);
+        let tradeDB = await findTrade(type, row["Triada Trade Id"], row["Seq No"])
+       
+        let tradeExistsAlready =  tradeDB || triadaIds.includes(row["Triada Trade Id"])
         let updatingPosition = returnPositionProgress(positions, identifier, location);
         let tradeDate: any = new Date(row["Trade Date"]);
         let thisMonth = monthlyRlzdDate(tradeDate);
@@ -791,7 +792,7 @@ export async function updatePositionPortfolio(path: string) {
         let action1 = await insertTrade(allTrades[0], "vcons");
         await insertEditLogs(["trades upload"], "Upload Trades", dateTime, "Centarlized Blotter", "Link: " + path);
 
-        return insertion;
+        return "insertion";
       } catch (error) {
         return { error: error };
       }
