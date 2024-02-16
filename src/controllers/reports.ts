@@ -1248,7 +1248,7 @@ export async function editPosition(editedPosition: any, date: string) {
       "Cost (Local Currency)",
       "Daily Accrual",
       "_id",
-      "FX Rate",
+  
       "Daily Accrual (Local Currency)",
       "Cost MTD Ptf (Local Currency)",
       "Quantity",
