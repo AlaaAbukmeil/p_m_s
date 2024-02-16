@@ -189,28 +189,14 @@ router.post("/reset-password", async (req, res, next) => {
     let result = await (0, auth_1.resetPassword)(data.email, data.code, data.password);
     res.send(result);
 });
-router.post("/vcon-excel", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
-    let data = req.body;
-    let pathName = "vcon_" + (0, common_1.formatDateVconFile)(data.timestamp_start) + "_" + (0, common_1.formatDateVconFile)(data.timestamp_end) + "_";
-    let token = await (0, graphApiConnect_1.getGraphToken)();
-    let trades = await (0, excelFormat_1.getTriadaTrades)("vcons");
-    let array = await (0, graphApiConnect_1.getVcons)(token, data.timestamp_start, data.timestamp_end, trades);
-    if (array.length == 0) {
-        res.send({ error: "No Trades" });
-    }
-    else {
-        let vcons = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(array, pathName, "vcons");
-        let downloadEBlotName = common_1.bucket + vcons;
-        res.send(downloadEBlotName);
-    }
-});
 router.post("/ib-excel", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
     try {
-        let files = req.files;
         const fileName = req.files[0].filename;
         const path = common_1.bucket + fileName;
         // to be modified
-        let trades = await (0, excelFormat_1.getTriadaTrades)("ib");
+        let beforeMonth = new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
+        let now = new Date().getTime() + 5 * 24 * 60 * 60 * 1000;
+        let trades = await (0, excelFormat_1.getTriadaTrades)("ib", beforeMonth, now);
         let data = await (0, portfolioFunctions_1.readIBRawExcel)(path);
         let portfolio = await (0, reports_1.getPortfolio)();
         let action = (0, excelFormat_1.formatIbTrades)(data, trades, portfolio);
@@ -287,7 +273,9 @@ router.post("/emsx-excel", common_1.verifyToken, uploadBeforeExcel.any(), async 
         const fileName = req.files[0].filename;
         const path = common_1.bucket + fileName;
         //to be modified
-        let trades = await (0, excelFormat_1.getTriadaTrades)("emsx");
+        let beforeMonth = new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
+        let now = new Date().getTime() + 5 * 24 * 60 * 60 * 1000;
+        let trades = await (0, excelFormat_1.getTriadaTrades)("emsx", beforeMonth, now);
         let data = await (0, excelFormat_1.readEmsxRawExcel)(path);
         let portfolio = await (0, reports_1.getPortfolio)();
         let action = (0, excelFormat_1.formatEmsxTrades)(data, trades, portfolio);
@@ -367,7 +355,7 @@ router.post("/delete-trade", common_1.verifyToken, uploadBeforeExcel.any(), asyn
     try {
         let data = req.body;
         let tradeType = req.body.tradeType;
-        console.log(data);
+        console.log(data, "test delete");
         let action = await (0, operations_1.deleteTrade)(tradeType, data["_id"], data["Issue"]);
         if (action.error) {
             res.send({ error: action.error, status: 404 });

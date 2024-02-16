@@ -580,7 +580,6 @@ export function updateExisitingPosition(positions: any, identifier: any, locatio
 export async function updatePositionPortfolio(path: string) {
   let allTrades: any = await readCentralizedEBlot(path);
 
-
   if (allTrades.error) {
     return { error: allTrades.error };
   } else {
@@ -589,7 +588,7 @@ export async function updatePositionPortfolio(path: string) {
 
       let positions: any = [];
       let portfolio = await getPortfolio();
-      let triadaIds: any = []
+      let triadaIds: any = [];
 
       for (let index = 0; index < data.length; index++) {
         let row = data[index];
@@ -598,7 +597,7 @@ export async function updatePositionPortfolio(path: string) {
         let object: any = {};
         let location = row["Location"].trim();
         let securityInPortfolio: any = getSecurityInPortfolio(portfolio, identifier, location);
-        let type = row["Trade Type"] == "vcon" ? "vcons" : row["Trade Type"]
+        let type = row["Trade Type"] == "vcon" ? "vcons" : row["Trade Type"];
 
         if (securityInPortfolio !== 404) {
           object = securityInPortfolio;
@@ -616,9 +615,10 @@ export async function updatePositionPortfolio(path: string) {
 
         let currency = row["Currency"];
         let bondCouponMaturity: any = parseBondIdentifier(row["BB Ticker"]);
-        let tradeDB = await findTrade(type, row["Triada Trade Id"], row["Seq No"])
-       
-        let tradeExistsAlready =  tradeDB || triadaIds.includes(row["Triada Trade Id"])
+        let tradeDB = await findTrade(type, row["Triada Trade Id"], row["Seq No"] && (row["Seq No"] != "") ? row["Seq No"] : null);
+
+        let tradeExistsAlready = tradeDB || triadaIds.includes(row["Triada Trade Id"]);
+
         let updatingPosition = returnPositionProgress(positions, identifier, location);
         let tradeDate: any = new Date(row["Trade Date"]);
         let thisMonth = monthlyRlzdDate(tradeDate);
@@ -638,7 +638,7 @@ export async function updatePositionPortfolio(path: string) {
         }
 
         if (tradeExistsAlready) {
-          console.log(row["Triada Trade Id"], " already exists");
+          console.log(row["Issue"], row["Trade Date"],row["Triada Trade Id"], " already exists");
         }
         if (!tradeExistsAlready && identifier !== "") {
           triadaIds.push(row["Triada Trade Id"]);
@@ -782,7 +782,7 @@ export async function updatePositionPortfolio(path: string) {
       try {
         let logs = JSON.stringify(positions, null, 2);
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-        // await appendLogs(positions);
+        await appendLogs(positions);
 
         let updatedPortfolio: any = formatUpdatedPositions(positions, portfolio, "Last Upload Trade");
         let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
@@ -792,7 +792,7 @@ export async function updatePositionPortfolio(path: string) {
         let action1 = await insertTrade(allTrades[0], "vcons");
         await insertEditLogs(["trades upload"], "Upload Trades", dateTime, "Centarlized Blotter", "Link: " + path);
 
-        return "insertion";
+        return "insertion"
       } catch (error) {
         return { error: error };
       }
@@ -1248,7 +1248,7 @@ export async function editPosition(editedPosition: any, date: string) {
       "Cost (Local Currency)",
       "Daily Accrual",
       "_id",
-  
+
       "Daily Accrual (Local Currency)",
       "Cost MTD Ptf (Local Currency)",
       "Quantity",

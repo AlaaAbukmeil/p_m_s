@@ -12,6 +12,7 @@ const operations_1 = require("./operations");
 const tableFormatter_1 = require("./tableFormatter");
 const tableFormatter_2 = require("./tableFormatter");
 const common_2 = require("./common");
+const oneTimeFunctions_1 = require("./oneTimeFunctions");
 const operations_2 = require("./operations");
 const fs = require("fs");
 const writeFile = util_1.default.promisify(fs.writeFile);
@@ -582,7 +583,7 @@ async function updatePositionPortfolio(path) {
                 let currentPrincipal = parseFloat(row["Principal"].toString().replace(/,/g, ""));
                 let currency = row["Currency"];
                 let bondCouponMaturity = (0, portfolioFunctions_1.parseBondIdentifier)(row["BB Ticker"]);
-                let tradeDB = await findTrade(type, row["Triada Trade Id"], row["Seq No"]);
+                let tradeDB = await findTrade(type, row["Triada Trade Id"], row["Seq No"] && (row["Seq No"] != "") ? row["Seq No"] : null);
                 let tradeExistsAlready = tradeDB || triadaIds.includes(row["Triada Trade Id"]);
                 let updatingPosition = returnPositionProgress(positions, identifier, location);
                 let tradeDate = new Date(row["Trade Date"]);
@@ -602,7 +603,7 @@ async function updatePositionPortfolio(path) {
                     }
                 }
                 if (tradeExistsAlready) {
-                    console.log(row["Triada Trade Id"], " already exists");
+                    console.log(row["Issue"], row["Trade Date"], row["Triada Trade Id"], " already exists");
                 }
                 if (!tradeExistsAlready && identifier !== "") {
                     triadaIds.push(row["Triada Trade Id"]);
@@ -723,7 +724,7 @@ async function updatePositionPortfolio(path) {
             try {
                 let logs = JSON.stringify(positions, null, 2);
                 let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
-                // await appendLogs(positions);
+                await (0, oneTimeFunctions_1.appendLogs)(positions);
                 let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(positions, portfolio, "Last Upload Trade");
                 let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
                 let action3 = await insertTrade(allTrades[2], "emsx");
@@ -1156,7 +1157,6 @@ async function editPosition(editedPosition, date) {
             "Cost (Local Currency)",
             "Daily Accrual",
             "_id",
-            "FX Rate",
             "Daily Accrual (Local Currency)",
             "Cost MTD Ptf (Local Currency)",
             "Quantity",

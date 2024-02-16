@@ -213,30 +213,14 @@ router.post("/reset-password", async (req: Request, res: Response, next: NextFun
 
 
 
-
-
-router.post("/vcon-excel", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  let data = req.body;
-  let pathName = "vcon_" + formatDateVconFile(data.timestamp_start) + "_" + formatDateVconFile(data.timestamp_end) + "_";
-  let token = await getGraphToken();
-  let trades = await getTriadaTrades("vcons");
-  let array: any = await getVcons(token, data.timestamp_start, data.timestamp_end, trades);
-  if (array.length == 0) {
-    res.send({ error: "No Trades" });
-  } else {
-    let vcons = await uploadArrayAndReturnFilePath(array, pathName, "vcons");
-    let downloadEBlotName = bucket + vcons;
-    res.send(downloadEBlotName);
-  }
-});
-
 router.post("/ib-excel", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
-    let files = req.files;
     const fileName = req.files[0].filename;
     const path = bucket + fileName;
     // to be modified
-    let trades = await getTriadaTrades("ib");
+    let beforeMonth = new Date().getTime() - 30 * 24 * 60 *60 * 1000
+    let now = new Date().getTime()+ 5 * 24 * 60 *60 * 1000
+    let trades = await getTriadaTrades("ib", beforeMonth, now);
     let data = await readIBRawExcel(path);
     let portfolio = await getPortfolio();
     let action = formatIbTrades(data, trades, portfolio);
@@ -318,7 +302,9 @@ router.post("/emsx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Req
     const fileName = req.files[0].filename;
     const path = bucket + fileName;
     //to be modified
-    let trades = await getTriadaTrades("emsx");
+    let beforeMonth = new Date().getTime() - 30 * 24 * 60 *60 * 1000
+    let now = new Date().getTime()+ 5 * 24 * 60 *60 * 1000
+    let trades = await getTriadaTrades("emsx", beforeMonth, now);
 
     let data = await readEmsxRawExcel(path);
 
@@ -404,7 +390,7 @@ router.post("/delete-trade", verifyToken, uploadBeforeExcel.any(), async (req: R
   try {
     let data = req.body;
     let tradeType = req.body.tradeType;
-    console.log(data);
+    console.log(data, "test delete");
     let action: any = await deleteTrade(tradeType, data["_id"], data["Issue"]);
     if (action.error) {
       res.send({ error: action.error, status: 404 });

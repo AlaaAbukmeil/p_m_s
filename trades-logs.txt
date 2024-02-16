@@ -110,4 +110,6 @@
 
 ,{"_id":"65647960d76b3f9988ec67db","Day Rlzd":{"02/01/2024":[{"price":0.143,"quantity":200000},{"price":0.143,"quantity":200000}],"03/01/2024":[{"price":0.136,"quantity":196000},{"price":0.136,"quantity":196000}],"04/01/2024":[{"price":0.138,"quantity":200000},{"price":0.138,"quantity":200000}],"05/01/2024":[{"price":0.132,"quantity":10000},{"price":0.132,"quantity":10000}],"08/01/2024":[{"price":0.142,"quantity":200000},{"price":0.135,"quantity":200000},{"price":0.135,"quantity":200000},{"price":0.142,"quantity":200000}],"12/01/2024":[{"price":0.11,"quantity":200000},{"price":0.118,"quantity":0},{"price":0.11,"quantity":200000},{"price":0.118,"quantity":0}],"17/01/2024":[{"price":0.101,"quantity":200000},{"price":0.101,"quantity":200000}]}}
 
+,{"Day Rlzd":{"01/02/2024":[],"05/02/2024":[{"price":4962.75,"quantity":-50}],"13/02/2024":[{"price":4971,"quantity":-100}]}}
+
 ,

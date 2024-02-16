@@ -314,7 +314,7 @@ export async function insertEditLogs(changes: string[], type: string, dateTime: 
   const reportCollection = database.collection(`${type}`);
   try {
     const result = await reportCollection.insertOne(object);
-    console.log(`Successfully inserted item with _id: ${result.insertedId}`);
+ 
     return result;
   } catch (err) {
     console.error(`Failed to insert item: ${err}`);
@@ -673,7 +673,7 @@ export async function deleteTrade(tradeType: string, tradeId: string, tradeIssue
     } else {
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
       await insertEditLogs(["deleted"], "Update Trade", dateTime, "deleted", tradeIssue);
-
+      console.log("deleted")
       return { error: null };
     }
   } catch (error) {
