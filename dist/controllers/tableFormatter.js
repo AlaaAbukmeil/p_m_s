@@ -773,24 +773,33 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
             groupedByLocation[locationCode].color = "#FFF9C4";
             for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
                 hedgeCurrencyNotional += groupedByLocation[locationCode].data[index]["Notional Total"] || 0;
-                let issue = groupedByLocation[locationCode].data[index]["Long Security Name"].includes("IB") ? groupedByLocation[locationCode].data[index]["Security Description"] : groupedByLocation[locationCode].data[index]["Currency"];
-                sumTable(currTable, groupedByLocation[locationCode].data[index], view, issue);
+                let currency = groupedByLocation[locationCode].data[index]["Long Security Name"].includes("IB") ? groupedByLocation[locationCode].data[index]["Security Description"] : groupedByLocation[locationCode].data[index]["Currency"];
+                if (!currency) {
+                    currency = "Bonds";
+                }
+                sumTable(currTable, groupedByLocation[locationCode].data[index], view, currency);
             }
         }
         else if (groupedByLocation[locationCode].order == 5) {
             groupedByLocation[locationCode].color = "#FFF9C4";
             for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
                 hedgeCurrencyNotional += groupedByLocation[locationCode].data[index]["Notional Total"] || 0;
-                let issue = groupedByLocation[locationCode].data[index]["Long Security Name"].includes("IB") ? groupedByLocation[locationCode].data[index]["Security Description"] : groupedByLocation[locationCode].data[index]["Currency"];
-                sumTable(currTable, groupedByLocation[locationCode].data[index], view, issue);
+                let currency = groupedByLocation[locationCode].data[index]["Long Security Name"].includes("IB") ? groupedByLocation[locationCode].data[index]["Security Description"] : groupedByLocation[locationCode].data[index]["Currency"];
+                if (!currency) {
+                    currency = "Bonds";
+                }
+                sumTable(currTable, groupedByLocation[locationCode].data[index], view, currency);
             }
         }
         else if (groupedByLocation[locationCode].order == 6) {
             groupedByLocation[locationCode].color = "#FFF9C4";
             for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
                 hedgeCurrencyNotional += groupedByLocation[locationCode].data[index]["Notional Total"] || 0;
-                let issue = groupedByLocation[locationCode].data[index]["Long Security Name"].includes("IB") ? groupedByLocation[locationCode].data[index]["Security Description"] : groupedByLocation[locationCode].data[index]["Currency"];
-                sumTable(currTable, groupedByLocation[locationCode].data[index], view, issue);
+                let currency = groupedByLocation[locationCode].data[index]["Long Security Name"].includes("IB") ? groupedByLocation[locationCode].data[index]["Security Description"] : groupedByLocation[locationCode].data[index]["Currency"];
+                if (!currency) {
+                    currency = "Bonds";
+                }
+                sumTable(currTable, groupedByLocation[locationCode].data[index], view, currency);
             }
         }
         else if (groupedByLocation[locationCode].order == 7) {
