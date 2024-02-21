@@ -128,19 +128,20 @@ router.get("/all-trades", verifyToken, async (req, res) => {
   try {
     let from: any = req.query.from;
     let to: any = req.query.to;
+    let start: any = new Date(from).getTime() - 2 * 24 * 60 * 60 * 1000;
+    let end: any = new Date(to).getTime() + 2 * 24 * 60 * 60 * 1000;
 
     let token = await getGraphToken();
-    let trades = await getAllTrades(new Date(from).getTime(), new Date(to).getTime());
-    trades.filter((trade: any, index: any) => new Date(trade["Trade Date"]).getTime() > new Date(from).getTime() && new Date(trade["Trade Date"]).getTime() < new Date(to).getTime());
+    let trades = await getAllTrades(start, end);
+    trades.filter((trade: any, index: any) => new Date(trade["Trade Date"]).getTime() > start && new Date(trade["Trade Date"]).getTime() < end);
 
-    let start: any = new Date(from).getTime() - 4 * 24 * 60 * 60 * 1000;
-    let end: any = new Date(to).getTime() + 4 * 24 * 60 * 60 * 1000;
+
     let vconTrades: [any[], number] | any = await getTriadaTrades("vcons", start, end);
 
-    let vcons: any = await getVcons(token, start, end, vconTrades);
-    vcons.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app");
+    let vcons: any = await getVcons(token, (start + 2 * 24 * 60 * 60 * 1000), (end - 2 * 24 * 60 * 60 * 1000), vconTrades);
+    vcons = vcons.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app");
     let action: any = await formatCentralizedRawFiles({}, vcons, [], [], []);
-    action.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app");
+    // action = action.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app");
     let allTrades = action.concat(trades).sort((a: any, b: any) => new Date(b["Trade Date"]).getTime() - new Date(a["Trade Date"]).getTime());
     res.send({ trades: allTrades });
   } catch (error) {
@@ -171,7 +172,7 @@ router.get("/fund-details", verifyToken, async (req, res) => {
     const date: any = req.query.date;
     let thisMonth = monthlyRlzdDate(date);
     let fundDetails = await getAllFundDetails(thisMonth);
-    console.log(fundDetails);
+   
     res.send(fundDetails);
   } catch (error) {
     res.status(500).send("An error occurred while reading the file.");
@@ -211,15 +212,13 @@ router.post("/reset-password", async (req: Request, res: Response, next: NextFun
   res.send(result);
 });
 
-
-
 router.post("/ib-excel", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     const fileName = req.files[0].filename;
     const path = bucket + fileName;
     // to be modified
-    let beforeMonth = new Date().getTime() - 30 * 24 * 60 *60 * 1000
-    let now = new Date().getTime()+ 5 * 24 * 60 *60 * 1000
+    let beforeMonth = new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
+    let now = new Date().getTime() + 5 * 24 * 60 * 60 * 1000;
     let trades = await getTriadaTrades("ib", beforeMonth, now);
     let data = await readIBRawExcel(path);
     let portfolio = await getPortfolio();
@@ -302,8 +301,8 @@ router.post("/emsx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Req
     const fileName = req.files[0].filename;
     const path = bucket + fileName;
     //to be modified
-    let beforeMonth = new Date().getTime() - 30 * 24 * 60 *60 * 1000
-    let now = new Date().getTime()+ 5 * 24 * 60 *60 * 1000
+    let beforeMonth = new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
+    let now = new Date().getTime() + 5 * 24 * 60 * 60 * 1000;
     let trades = await getTriadaTrades("emsx", beforeMonth, now);
 
     let data = await readEmsxRawExcel(path);
@@ -344,11 +343,10 @@ router.post("/upload-trades", verifyToken, uploadBeforeExcel.any(), async (req: 
     let files = req.files;
     const fileName = files[0].filename;
     const path = bucket + fileName;
-   
 
     let action: any = await updatePositionPortfolio(path);
-   
-    console.log(action)
+
+    console.log(action);
     if (action?.error) {
       res.send({ error: action.error });
     } else {
@@ -484,7 +482,7 @@ router.post("/check-mufg", verifyToken, uploadBeforeExcel.any(), async (req: Req
     let data: any = [];
     if (files) {
       const fileName = req.files[0].filename;
-      const path =bucket + fileName;
+      const path = bucket + fileName;
       data = await readMUFGEndOfMonthFile(path);
     }
 

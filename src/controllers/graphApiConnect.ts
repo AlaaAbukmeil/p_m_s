@@ -45,7 +45,7 @@ function format_date_ISO(date: string) {
   return new Date(date).toISOString();
 }
 
-export async function getVcons(token: string, start_time: string, end_time: string, trades: any) {
+export async function getVcons(token: string, start_time: any, end_time: any, trades: any) {
   let portfolio = await getPortfolio();
   try {
     let url = `https://graph.microsoft.com/v1.0/users/vcons@triadacapital.com/messages?$filter=contains(subject,'New BB') and receivedDateTime ge ${format_date_ISO(start_time)} and receivedDateTime le ${format_date_ISO(end_time)}&$top=1000000`;

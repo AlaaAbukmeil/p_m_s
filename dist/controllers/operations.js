@@ -431,7 +431,7 @@ function compareMonths(a, b) {
     let dateA = new Date(reformattedMonthA).getTime();
     let dateB = new Date(reformattedMonthB).getTime();
     // Compare the date objects
-    return dateA - dateB;
+    return dateB - dateA;
 }
 // Sort the array without modifying the original objects
 async function getEarliestCollectionNameFund(originalDate) {

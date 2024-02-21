@@ -442,7 +442,7 @@ function compareMonths(a: any, b: any) {
   let dateB = new Date(reformattedMonthB).getTime();
 
   // Compare the date objects
-  return dateA - dateB;
+  return dateB - dateA;
 }
 
 // Sort the array without modifying the original objects

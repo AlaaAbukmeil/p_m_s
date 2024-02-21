@@ -480,7 +480,7 @@ async function findTrade(tradeType, tradeTriadaId, seqNo = null) {
         const reportCollection = database.collection(tradeType);
         let query;
         if (seqNo != null) {
-            query = { $or: [{ "Triada Trade Id": tradeTriadaId }, { "Seq No": seqNo }] };
+            query = { $and: [{ "Triada Trade Id": tradeTriadaId }, { "Seq No": seqNo }] };
         }
         else {
             query = { "Triada Trade Id": tradeTriadaId };
@@ -583,12 +583,13 @@ async function updatePositionPortfolio(path) {
                 let currentPrincipal = parseFloat(row["Principal"].toString().replace(/,/g, ""));
                 let currency = row["Currency"];
                 let bondCouponMaturity = (0, portfolioFunctions_1.parseBondIdentifier)(row["BB Ticker"]);
-                let tradeDB = await findTrade(type, row["Triada Trade Id"], row["Seq No"] && (row["Seq No"] != "") ? row["Seq No"] : null);
+                let tradeDB = await findTrade(type, row["Triada Trade Id"], row["Seq No"] && row["Seq No"] != "" ? row["Seq No"] : null);
                 let tradeExistsAlready = tradeDB || triadaIds.includes(row["Triada Trade Id"]);
                 let updatingPosition = returnPositionProgress(positions, identifier, location);
                 let tradeDate = new Date(row["Trade Date"]);
                 let thisMonth = (0, common_1.monthlyRlzdDate)(tradeDate);
                 let thisDay = (0, common_1.getDate)(tradeDate);
+                let thisYear = (0, common_1.getYear)(tradeDate);
                 let rlzdOperation = -1;
                 if (updatingPosition) {
                     let accumlatedQuantityState = updatingPosition["Quantity"] > 0 ? 1 : -1;
@@ -603,7 +604,17 @@ async function updatePositionPortfolio(path) {
                     }
                 }
                 if (tradeExistsAlready) {
-                    console.log(row["Issue"], row["Trade Date"], row["Triada Trade Id"], " already exists");
+                    console.log(row["Issue"], row["Trade Date"], row["Triada Trade Id"], " already exists", tradeDB, triadaIds.includes(row["Triada Trade Id"]));
+                    if (allTrades[0]) {
+                        allTrades[0] = allTrades[0].filter((trade, index) => trade["Triada Trade Id"] != row["Triada Trade Id"]);
+                    }
+                    if (allTrades[1]) {
+                        allTrades[1] = allTrades[1].filter((trade, index) => trade["Triada Trade Id"] != row["Triada Trade Id"]);
+                    }
+                    if (allTrades[2]) {
+                        allTrades[2] = allTrades[2].filter((trade, index) => trade["Triada Trade Id"] != row["Triada Trade Id"]);
+                    }
+                    return { error: "Trade: " + row["Issue"] + " on date: " + row["Trade Date"] + " with id: " + row["Triada Trade Id"] + " already exists" };
                 }
                 if (!tradeExistsAlready && identifier !== "") {
                     triadaIds.push(row["Triada Trade Id"]);
@@ -612,6 +623,9 @@ async function updatePositionPortfolio(path) {
                         let settlementDate = row["Settle Date"];
                         object["Location"] = row["Location"].trim();
                         object["Last Modified Date"] = new Date();
+                        if (securityInPortfolio == 404) {
+                            object["Entry Yield"] = row["Yield"] || 0;
+                        }
                         object["BB Ticker"] = row["BB Ticker"];
                         if (!object["Issue"]) {
                             object["Issue"] = row["Issue"];
@@ -731,7 +745,7 @@ async function updatePositionPortfolio(path) {
                 let action2 = await insertTrade(allTrades[1], "ib");
                 let action1 = await insertTrade(allTrades[0], "vcons");
                 await (0, operations_1.insertEditLogs)(["trades upload"], "Upload Trades", dateTime, "Centarlized Blotter", "Link: " + path);
-                return "insertion";
+                return insertion;
             }
             catch (error) {
                 return { error: error };

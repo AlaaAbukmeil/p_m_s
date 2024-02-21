@@ -113,16 +113,16 @@ router.get("/all-trades", common_1.verifyToken, async (req, res) => {
     try {
         let from = req.query.from;
         let to = req.query.to;
+        let start = new Date(from).getTime() - 2 * 24 * 60 * 60 * 1000;
+        let end = new Date(to).getTime() + 2 * 24 * 60 * 60 * 1000;
         let token = await (0, graphApiConnect_1.getGraphToken)();
-        let trades = await (0, eblot_1.getAllTrades)(new Date(from).getTime(), new Date(to).getTime());
-        trades.filter((trade, index) => new Date(trade["Trade Date"]).getTime() > new Date(from).getTime() && new Date(trade["Trade Date"]).getTime() < new Date(to).getTime());
-        let start = new Date(from).getTime() - 4 * 24 * 60 * 60 * 1000;
-        let end = new Date(to).getTime() + 4 * 24 * 60 * 60 * 1000;
+        let trades = await (0, eblot_1.getAllTrades)(start, end);
+        trades.filter((trade, index) => new Date(trade["Trade Date"]).getTime() > start && new Date(trade["Trade Date"]).getTime() < end);
         let vconTrades = await (0, excelFormat_1.getTriadaTrades)("vcons", start, end);
-        let vcons = await (0, graphApiConnect_1.getVcons)(token, start, end, vconTrades);
-        vcons.filter((trade, index) => trade["Trade App Status"] != "uploaded_to_app");
+        let vcons = await (0, graphApiConnect_1.getVcons)(token, (start + 2 * 24 * 60 * 60 * 1000), (end - 2 * 24 * 60 * 60 * 1000), vconTrades);
+        vcons = vcons.filter((trade, index) => trade["Trade App Status"] != "uploaded_to_app");
         let action = await (0, excelFormat_1.formatCentralizedRawFiles)({}, vcons, [], [], []);
-        action.filter((trade, index) => trade["Trade App Status"] != "uploaded_to_app");
+        // action = action.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app");
         let allTrades = action.concat(trades).sort((a, b) => new Date(b["Trade Date"]).getTime() - new Date(a["Trade Date"]).getTime());
         res.send({ trades: allTrades });
     }
@@ -154,7 +154,6 @@ router.get("/fund-details", common_1.verifyToken, async (req, res) => {
         const date = req.query.date;
         let thisMonth = (0, common_1.monthlyRlzdDate)(date);
         let fundDetails = await (0, operations_1.getAllFundDetails)(thisMonth);
-        console.log(fundDetails);
         res.send(fundDetails);
     }
     catch (error) {

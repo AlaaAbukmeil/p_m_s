@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCurrentDateTime = exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDateTime = exports.convertExcelDateToJSDate = exports.swapMonthDay = exports.getDateMufg = exports.monthlyRlzdDate = exports.getTradeDateYearTradesWithoutTheCentury = exports.getTradeDateYearTrades = exports.getSettlementDateYearTrades = exports.formatSettleDateVcon = exports.formatTradeDate = exports.getCurrentDateVconFormat = exports.verifyToken = exports.getTime = exports.formatDateReadable = exports.formatDateVconFile = exports.formatDate = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = exports.bucket = exports.uri = void 0;
+exports.getCurrentDateTime = exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDateTime = exports.convertExcelDateToJSDate = exports.swapMonthDay = exports.getDateMufg = exports.getYear = exports.monthlyRlzdDate = exports.getTradeDateYearTradesWithoutTheCentury = exports.getTradeDateYearTrades = exports.getSettlementDateYearTrades = exports.formatSettleDateVcon = exports.formatTradeDate = exports.getCurrentDateVconFormat = exports.verifyToken = exports.getTime = exports.formatDateReadable = exports.formatDateVconFile = exports.formatDate = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = exports.bucket = exports.uri = void 0;
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 exports.uri = "mongodb+srv://developertriada:" + process.env.NEWMONGODBPASSWORD + "@app.ywfxr8w.mongodb.net/?retryWrites=true&w=majority";
@@ -175,6 +175,12 @@ function monthlyRlzdDate(dateInput) {
     return `${year}/${month}`;
 }
 exports.monthlyRlzdDate = monthlyRlzdDate;
+function getYear(dateInput) {
+    let date = new Date(dateInput);
+    const year = date.getFullYear();
+    return `${year}`;
+}
+exports.getYear = getYear;
 function getDateMufg(inputDate) {
     let date = new Date(inputDate);
     let day = `${date.getDate()}`.padStart(2, "0"); // get the day

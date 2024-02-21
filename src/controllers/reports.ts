@@ -2,7 +2,7 @@ require("dotenv").config();
 
 import { getAverageCost, readPricingSheet, getAllDatesSinceLastMonthLastDay, parseBondIdentifier, getSettlementDateYear, readPortfolioFromImagine, formatUpdatedPositions, readMUFGEBlot, readPortfolioFromLivePorfolio, formatDateRlzdDaily, readEditInput, getDateTimeInMongoDBCollectionFormat, readCentralizedEBlot } from "./portfolioFunctions";
 import util from "util";
-import { getDate, monthlyRlzdDate, formatDateReadable, formatTradeDate } from "./common";
+import { getDate, monthlyRlzdDate, formatDateReadable, formatTradeDate, getYear } from "./common";
 import { getFundDetails, insertEditLogs } from "./operations";
 import { formatFrontEndTable, formatFrontEndSummaryTable, formatFrontEndRiskTable } from "./tableFormatter";
 import { calculateRlzd } from "./tableFormatter";
@@ -505,7 +505,7 @@ export async function findTrade(tradeType: string, tradeTriadaId: string, seqNo 
     const reportCollection = database.collection(tradeType);
     let query;
     if (seqNo != null) {
-      query = { $or: [{ "Triada Trade Id": tradeTriadaId }, { "Seq No": seqNo }] };
+      query = { $and: [{ "Triada Trade Id": tradeTriadaId }, { "Seq No": seqNo }] };
     } else {
       query = { "Triada Trade Id": tradeTriadaId };
     }
@@ -615,7 +615,7 @@ export async function updatePositionPortfolio(path: string) {
 
         let currency = row["Currency"];
         let bondCouponMaturity: any = parseBondIdentifier(row["BB Ticker"]);
-        let tradeDB = await findTrade(type, row["Triada Trade Id"], row["Seq No"] && (row["Seq No"] != "") ? row["Seq No"] : null);
+        let tradeDB = await findTrade(type, row["Triada Trade Id"], row["Seq No"] && row["Seq No"] != "" ? row["Seq No"] : null);
 
         let tradeExistsAlready = tradeDB || triadaIds.includes(row["Triada Trade Id"]);
 
@@ -623,6 +623,7 @@ export async function updatePositionPortfolio(path: string) {
         let tradeDate: any = new Date(row["Trade Date"]);
         let thisMonth = monthlyRlzdDate(tradeDate);
         let thisDay = getDate(tradeDate);
+        let thisYear = getYear(tradeDate)
         let rlzdOperation = -1;
         if (updatingPosition) {
           let accumlatedQuantityState = updatingPosition["Quantity"] > 0 ? 1 : -1;
@@ -638,7 +639,17 @@ export async function updatePositionPortfolio(path: string) {
         }
 
         if (tradeExistsAlready) {
-          console.log(row["Issue"], row["Trade Date"],row["Triada Trade Id"], " already exists");
+          console.log(row["Issue"], row["Trade Date"], row["Triada Trade Id"], " already exists", tradeDB, triadaIds.includes(row["Triada Trade Id"]));
+          if (allTrades[0]) {
+            allTrades[0] = allTrades[0].filter((trade: any, index: any) => trade["Triada Trade Id"] != row["Triada Trade Id"]);
+          }
+          if (allTrades[1]) {
+            allTrades[1] = allTrades[1].filter((trade: any, index: any) => trade["Triada Trade Id"] != row["Triada Trade Id"]);
+          }
+          if (allTrades[2]) {
+            allTrades[2] = allTrades[2].filter((trade: any, index: any) => trade["Triada Trade Id"] != row["Triada Trade Id"]);
+          }
+          return { error: "Trade: " + row["Issue"] + " on date: " + row["Trade Date"] + " with id: " + row["Triada Trade Id"] + " already exists" };
         }
         if (!tradeExistsAlready && identifier !== "") {
           triadaIds.push(row["Triada Trade Id"]);
@@ -649,6 +660,9 @@ export async function updatePositionPortfolio(path: string) {
 
             object["Location"] = row["Location"].trim();
             object["Last Modified Date"] = new Date();
+            if (securityInPortfolio == 404) {
+              object["Entry Yield"] = row["Yield"] || 0;
+            }
             object["BB Ticker"] = row["BB Ticker"];
             if (!object["Issue"]) {
               object["Issue"] = row["Issue"];
@@ -792,7 +806,7 @@ export async function updatePositionPortfolio(path: string) {
         let action1 = await insertTrade(allTrades[0], "vcons");
         await insertEditLogs(["trades upload"], "Upload Trades", dateTime, "Centarlized Blotter", "Link: " + path);
 
-        return "insertion"
+        return insertion;
       } catch (error) {
         return { error: error };
       }

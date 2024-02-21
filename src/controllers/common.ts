@@ -3,11 +3,10 @@ require("dotenv").config();
 
 const jwt = require("jsonwebtoken");
 
-export const uri = "mongodb+srv://developertriada:"+process.env.NEWMONGODBPASSWORD+"@app.ywfxr8w.mongodb.net/?retryWrites=true&w=majority"
-
+export const uri = "mongodb+srv://developertriada:" + process.env.NEWMONGODBPASSWORD + "@app.ywfxr8w.mongodb.net/?retryWrites=true&w=majority";
 
 //"mongodb+srv://alaa:" + process.env.MONGODBPASSWORD + "@atlascluster.zpfpywq.mongodb.net/?retryWrites=true&w=majority";
-export const bucket = "https://storage.googleapis.com/app-backend-414212.appspot.com"
+export const bucket = "https://storage.googleapis.com/app-backend-414212.appspot.com";
 export function getCurrentMonthDateRange(): string {
   const now = new Date();
   const currentMonth = now.getMonth();
@@ -199,6 +198,12 @@ export function monthlyRlzdDate(dateInput: string) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   return `${year}/${month}`;
+}
+
+export function getYear(dateInput: string) {
+  let date = new Date(dateInput);
+  const year = date.getFullYear();
+  return `${year}`;
 }
 
 export function getDateMufg(inputDate: any) {
