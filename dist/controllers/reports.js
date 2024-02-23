@@ -12,7 +12,6 @@ const operations_1 = require("./operations");
 const tableFormatter_1 = require("./tableFormatter");
 const tableFormatter_2 = require("./tableFormatter");
 const common_2 = require("./common");
-const oneTimeFunctions_1 = require("./oneTimeFunctions");
 const operations_2 = require("./operations");
 const fs = require("fs");
 const writeFile = util_1.default.promisify(fs.writeFile);
@@ -636,7 +635,7 @@ async function updatePositionPortfolio(path) {
                         object["Currency"] = currency;
                         object["Average Cost"] = rlzdOperation == -1 ? (securityInPortfolio !== 404 ? (0, portfolioFunctions_1.getAverageCost)(currentQuantity, previousQuantity, currentPrice, previousAverageCost) : currentPrice) : securityInPortfolio["Average Cost"];
                         object["Coupon Rate"] = bondCouponMaturity[0] == "" ? 0 : bondCouponMaturity[0];
-                        object["Maturity"] = bondCouponMaturity[1] == "Invalid Date" ? "0" : bondCouponMaturity[1];
+                        object["Maturity"] = bondCouponMaturity[1] == "Invalid Date" || bondCouponMaturity[1].includes("Na") ? "0" : bondCouponMaturity[1];
                         object["Interest"] = securityInPortfolio !== 404 ? (securityInPortfolio["Interest"] ? securityInPortfolio["Interest"] : {}) : {};
                         object["Interest"][settlementDate] = object["Interest"][settlementDate] ? object["Interest"][settlementDate] + currentQuantity : currentQuantity;
                         if (previousAverageCost != 0) {
@@ -736,9 +735,9 @@ async function updatePositionPortfolio(path) {
                 }
             }
             try {
-                let logs = JSON.stringify(positions, null, 2);
+                // let logs = JSON.stringify(positions, null, 2);
+                // await appendLogs(positions);
                 let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
-                await (0, oneTimeFunctions_1.appendLogs)(positions);
                 let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(positions, portfolio, "Last Upload Trade");
                 let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
                 let action3 = await insertTrade(allTrades[2], "emsx");
@@ -841,6 +840,7 @@ async function updatePricesPortfolio(path) {
                         object["Bid"] = parseFloat(row["Override Bid"]) > 0 ? (parseFloat(row["Override Bid"]) / 100.0) * faceValue : (parseFloat(row["Today's Bid"]) / 100.0) * faceValue;
                         object["YTM"] = row["Mid  Yield call"].toString().includes("N/A") ? 0 : row["Mid  Yield call"];
                         object["DV01"] = row["DV01"].toString().includes("N/A") ? 0 : row["DV01"];
+                        object["YTW"] = row["Mid  Yield Worst"].toString().includes("N/A") ? 0 : row["Mid  Yield Worst"];
                         object["OAS"] = row["OAS Spread"].toString().includes("N/A") ? 0 : row["OAS Spread"];
                         object["Z Spread"] = row["Z Spread"].toString().includes("N/A") ? 0 : row["Z Spread"];
                         object["S&P Bond Rating"] = row["S&P Bond Rating"].toString().includes("N/A") ? "" : row["S&P Bond Rating"];
@@ -1160,7 +1160,7 @@ async function editPosition(editedPosition, date) {
         let id = editedPosition["_id"];
         let unEditableParams = [
             "Value",
-            "Duration(Mkt)",
+            "Duration",
             "MTD Mark",
             "Previous Mark",
             "Ptf Day P&L (Base Currency)",
@@ -1192,6 +1192,15 @@ async function editPosition(editedPosition, date) {
             "Ptf MTD URlzd (Local Currency)",
             "Ptf MTD Int.Income (Local Currency)",
             "Ptf MTD P&L (Local Currency)",
+            "Previous FX Rate",
+            "Day Rlzd",
+            "Spread Change",
+            "OAS W Change",
+            "Last Day Since Realizd",
+            "Ptf Day Rlzd (Local Currency)",
+            "Ptf Day URlzd (Local Currency)",
+            "Monthly Interest Income (Local Currency)",
+            "Currency)	Daily Interest Income (Local Currency)"
         ];
         // these keys are made up by the function frontend table, it reverts keys to original keys
         let positionIndex = null;

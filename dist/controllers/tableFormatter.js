@@ -105,7 +105,7 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         position["Ptf Day Rlzd (Local Currency)"] = Math.round((position["Day Rlzd"] / usdRatio) * holdBackRatio * 1000000) / 1000000;
         position["Previous FX Rate"] = Math.round(position["Previous FX Rate"] * 1000000) / 1000000;
         position["Maturity"] = position["Maturity"] ? position["Maturity"] : position["BB Ticker"] ? (0, portfolioFunctions_1.getMaturity)(position["BB Ticker"]) : 0;
-        position["Call Date"] = position["Call Date"] ? (0, common_1.swapMonthDay)(position["Call Date"]) : 0;
+        position["Call Date"] = position["Call Date"] ? position["Call Date"] : 0;
         position["L/S"] = position["Quantity"] > 0 && !position["Issue"].includes("CDS") ? "Long" : position["Notional Total"] == 0 && !position["Issue"].includes("CDS") ? "Rlzd" : "Short";
         position["_id"] = position["_id"];
         position["Duration"] = yearsUntil(position["Call Date"] ? position["Call Date"] : position["Maturity"], date);
@@ -256,7 +256,7 @@ function formatSummaryPosition(position, fundDetails, dates) {
         "Location",
         "Issuer",
         "BB Ticker",
-        "Notional",
+        "Notional Total",
         "USD Market Value",
         "% of NAV",
         "Bid",
@@ -311,7 +311,7 @@ function formatSummaryPosition(position, fundDetails, dates) {
         "Total Gain/ Loss (USD)",
         "% of Total Gain/ Loss since Inception (Live Position)",
         "Coupon Rate",
-        "Notional Total",
+        // "Notional Total",
     ];
     let titlesValues = {
         Type: "Type",
@@ -757,7 +757,7 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 let duration = getDuration(groupedByLocation[locationCode].data[index]["Duration"]);
                 let couponRate = groupedByLocation[locationCode].data[index]["Coupon Rate"] + " %";
                 let notional = groupedByLocation[locationCode].data[index]["Notional Total"];
-                let issue = groupedByLocation[locationCode].data[index]["Long Security Name"];
+                let issue = groupedByLocation[locationCode].data[index]["BB Ticker"];
                 sumTable(rvPairTable, groupedByLocation[locationCode].data[index], view, locationCode);
                 if (notional < 0) {
                     sumTable(ustTableByCoupon, groupedByLocation[locationCode].data[index], view, couponRate);
@@ -826,7 +826,7 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 let duration = getDuration(groupedByLocation[locationCode].data[index]["Duration"]);
                 let couponRate = groupedByLocation[locationCode].data[index]["Coupon Rate"] + " %";
                 let notional = groupedByLocation[locationCode].data[index]["Notional Total"];
-                let issue = groupedByLocation[locationCode].data[index]["Long Security Name"];
+                let issue = groupedByLocation[locationCode].data[index]["BB Ticker"];
                 if (notional < 0) {
                     sumTable(ustTableByCoupon, groupedByLocation[locationCode].data[index], view, couponRate);
                     sumTable(ustTable, groupedByLocation[locationCode].data[index], view, duration, true, issue);
@@ -1049,17 +1049,9 @@ function assignBorderAndCustomSortAggregateGroup(portfolio, groupedByLocation, s
             else {
                 groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = groupedByLocation[locationCode].color;
             }
-            if (groupPositionIndex == 0) {
-                groupedByLocation[locationCode].data[groupPositionIndex]["top"] = true;
-            }
-            if (groupPositionIndex == groupedByLocation[locationCode].data.length - 1) {
-                groupedByLocation[locationCode].data[groupPositionIndex]["bottom"] = true;
-            }
-            if (!groupedByLocation[locationCode].data[groupPositionIndex]["top"]) {
-                groupedByLocation[locationCode].data[groupPositionIndex]["bottom"] = false;
-            }
-            if (!groupedByLocation[locationCode].data[groupPositionIndex]["bottom"]) {
-                groupedByLocation[locationCode].data[groupPositionIndex]["bottom"] = false;
+            if (groupedByLocation[locationCode].data.length > 1) {
+                let length = groupedByLocation[locationCode].data.length;
+                groupedByLocation[locationCode].data[length - 1]["bottom"] = true;
             }
         }
         if (groupedByLocation[locationCode].data.length > 1 && locationCode != "Rlzd") {

@@ -126,7 +126,7 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     position["Previous FX Rate"] = Math.round(position["Previous FX Rate"] * 1000000) / 1000000;
     position["Maturity"] = position["Maturity"] ? position["Maturity"] : position["BB Ticker"] ? getMaturity(position["BB Ticker"]) : 0;
 
-    position["Call Date"] = position["Call Date"] ? swapMonthDay(position["Call Date"]) : 0;
+    position["Call Date"] = position["Call Date"] ? position["Call Date"] : 0;
 
     position["L/S"] = position["Quantity"] > 0 && !position["Issue"].includes("CDS") ? "Long" : position["Notional Total"] == 0 && !position["Issue"].includes("CDS") ? "Rlzd" : "Short";
     position["_id"] = position["_id"];
@@ -309,7 +309,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Location",
     "Issuer",
     "BB Ticker",
-    "Notional",
+    "Notional Total",
     
     "USD Market Value",
     "% of NAV",
@@ -371,7 +371,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Total Gain/ Loss (USD)",
     "% of Total Gain/ Loss since Inception (Live Position)",
     "Coupon Rate",
-    "Notional Total",
+    // "Notional Total",
   ];
 
   let titlesValues: any = {
@@ -892,7 +892,7 @@ function assignColorAndSortParamsBasedOnAssetClass(
         let duration: any = getDuration(groupedByLocation[locationCode].data[index]["Duration"]);
         let couponRate: any = groupedByLocation[locationCode].data[index]["Coupon Rate"] + " %";
         let notional = groupedByLocation[locationCode].data[index]["Notional Total"];
-        let issue: any = groupedByLocation[locationCode].data[index]["Long Security Name"];
+        let issue: any = groupedByLocation[locationCode].data[index]["BB Ticker"];
         sumTable(rvPairTable, groupedByLocation[locationCode].data[index], view, locationCode);
         if (notional < 0) {
           sumTable(ustTableByCoupon, groupedByLocation[locationCode].data[index], view, couponRate);
@@ -955,7 +955,7 @@ function assignColorAndSortParamsBasedOnAssetClass(
         let duration: any = getDuration(groupedByLocation[locationCode].data[index]["Duration"]);
         let couponRate: any = groupedByLocation[locationCode].data[index]["Coupon Rate"] + " %";
         let notional = groupedByLocation[locationCode].data[index]["Notional Total"];
-        let issue: any = groupedByLocation[locationCode].data[index]["Long Security Name"];
+        let issue: any = groupedByLocation[locationCode].data[index]["BB Ticker"];
         if (notional < 0) {
           sumTable(ustTableByCoupon, groupedByLocation[locationCode].data[index], view, couponRate);
           sumTable(ustTable, groupedByLocation[locationCode].data[index], view, duration, true, issue);
@@ -1199,18 +1199,12 @@ function assignBorderAndCustomSortAggregateGroup(portfolio: any, groupedByLocati
       } else {
         groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = groupedByLocation[locationCode].color;
       }
-      if (groupPositionIndex == 0) {
-        groupedByLocation[locationCode].data[groupPositionIndex]["top"] = true;
+     
+      if ( groupedByLocation[locationCode].data.length > 1) {
+        let length = groupedByLocation[locationCode].data.length
+        groupedByLocation[locationCode].data[length - 1]["bottom"] = true;
       }
-      if (groupPositionIndex == groupedByLocation[locationCode].data.length - 1) {
-        groupedByLocation[locationCode].data[groupPositionIndex]["bottom"] = true;
-      }
-      if (!groupedByLocation[locationCode].data[groupPositionIndex]["top"]) {
-        groupedByLocation[locationCode].data[groupPositionIndex]["bottom"] = false;
-      }
-      if (!groupedByLocation[locationCode].data[groupPositionIndex]["bottom"]) {
-        groupedByLocation[locationCode].data[groupPositionIndex]["bottom"] = false;
-      }
+      
     }
 
     if (groupedByLocation[locationCode].data.length > 1 && locationCode != "Rlzd") {

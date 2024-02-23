@@ -674,7 +674,7 @@ export async function updatePositionPortfolio(path: string) {
             object["Average Cost"] = rlzdOperation == -1 ? (securityInPortfolio !== 404 ? getAverageCost(currentQuantity, previousQuantity, currentPrice, previousAverageCost) : currentPrice) : securityInPortfolio["Average Cost"];
 
             object["Coupon Rate"] = bondCouponMaturity[0] == "" ? 0 : bondCouponMaturity[0];
-            object["Maturity"] = bondCouponMaturity[1] == "Invalid Date" ? "0" : bondCouponMaturity[1];
+            object["Maturity"] = bondCouponMaturity[1] == "Invalid Date" ||  bondCouponMaturity[1].includes("Na") ? "0" : bondCouponMaturity[1];
             object["Interest"] = securityInPortfolio !== 404 ? (securityInPortfolio["Interest"] ? securityInPortfolio["Interest"] : {}) : {};
             object["Interest"][settlementDate] = object["Interest"][settlementDate] ? object["Interest"][settlementDate] + currentQuantity : currentQuantity;
 
@@ -794,9 +794,9 @@ export async function updatePositionPortfolio(path: string) {
       }
 
       try {
-        let logs = JSON.stringify(positions, null, 2);
+        // let logs = JSON.stringify(positions, null, 2);
+        // await appendLogs(positions);
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-        await appendLogs(positions);
 
         let updatedPortfolio: any = formatUpdatedPositions(positions, portfolio, "Last Upload Trade");
         let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
@@ -904,6 +904,7 @@ export async function updatePricesPortfolio(path: string) {
             object["Bid"] = parseFloat(row["Override Bid"]) > 0 ? (parseFloat(row["Override Bid"]) / 100.0) * faceValue : (parseFloat(row["Today's Bid"]) / 100.0) * faceValue;
             object["YTM"] = row["Mid  Yield call"].toString().includes("N/A") ? 0 : row["Mid  Yield call"];
             object["DV01"] = row["DV01"].toString().includes("N/A") ? 0 : row["DV01"];
+            object["YTW"] = row["Mid  Yield Worst"].toString().includes("N/A") ? 0 : row["Mid  Yield Worst"];
             object["OAS"] = row["OAS Spread"].toString().includes("N/A") ? 0 : row["OAS Spread"];
             object["Z Spread"] = row["Z Spread"].toString().includes("N/A") ? 0 : row["Z Spread"];
             object["S&P Bond Rating"] = row["S&P Bond Rating"].toString().includes("N/A") ? "" : row["S&P Bond Rating"];
@@ -1251,7 +1252,7 @@ export async function editPosition(editedPosition: any, date: string) {
     let id = editedPosition["_id"];
     let unEditableParams: any = [
       "Value",
-      "Duration(Mkt)",
+      "Duration",
       "MTD Mark",
       "Previous Mark",
       "Ptf Day P&L (Base Currency)",
@@ -1262,7 +1263,7 @@ export async function editPosition(editedPosition: any, date: string) {
       "Cost (Local Currency)",
       "Daily Accrual",
       "_id",
-
+    
       "Daily Accrual (Local Currency)",
       "Cost MTD Ptf (Local Currency)",
       "Quantity",
@@ -1284,6 +1285,15 @@ export async function editPosition(editedPosition: any, date: string) {
       "Ptf MTD URlzd (Local Currency)",
       "Ptf MTD Int.Income (Local Currency)",
       "Ptf MTD P&L (Local Currency)",
+      "Previous FX Rate",
+      "Day Rlzd",
+      "Spread Change",
+      "OAS W Change",
+      "Last Day Since Realizd",
+      "Ptf Day Rlzd (Local Currency)",
+      "Ptf Day URlzd (Local Currency)",
+      "Monthly Interest Income (Local Currency)",
+      "Currency)	Daily Interest Income (Local Currency)"
     ];
     // these keys are made up by the function frontend table, it reverts keys to original keys
 
