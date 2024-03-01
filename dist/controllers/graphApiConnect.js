@@ -63,11 +63,12 @@ async function getVcons(token, start_time, end_time, trades) {
             let vcon = vcons[index].body.content;
             vcon = (0, excelFormat_1.renderVcon)(vcon);
             let identifier = vcon["ISIN"];
+            vcon["BB Ticker"] = vcon["Issue"];
             let securityInPortfolioLocation = getSecurityInPortfolioWithoutLocation(portfolio, identifier);
             let location = securityInPortfolioLocation.trim();
             let trade_status = "new";
             let triadaId = trades.find(function (trade) {
-                return trade["Seq No"] == vcon["Seq No"];
+                return (trade["Seq No"] == vcon["Seq No"] && trade["ISIN"] == vcon["ISIN"]);
             });
             // console.log(vcon["Issue"], vcon["Seq No"],triadaId)
             if (triadaId) {

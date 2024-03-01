@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const ObjectId = require("mongodb").ObjectId;
 
 import { formatDateReadable, getDate, monthlyRlzdDate, uri } from "./common";
-import { getEarliestCollectionName, getSecurityInPortfolio, getPortfolio, insertTradesInPortfolio, tradesTriadaIds, returnPositionProgress, updateExisitingPosition, getHistoricalPortfolio, getBBTicker } from "./reports";
+import { getEarliestCollectionName, getSecurityInPortfolio, getPortfolio, insertTradesInPortfolio, tradesTriadaIds, returnPositionProgress, updateExisitingPosition, getHistoricalPortfolio } from "./reports";
 import { formatUpdatedPositions, getAllDatesSinceLastMonthLastDay, getAverageCost, getDateTimeInMongoDBCollectionFormat, parseBondIdentifier, readEditInput } from "./portfolioFunctions";
 const client = new MongoClient(uri, {
   serverApi: {
@@ -84,10 +84,8 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
 
         for (let index = 0; index < object.length; index++) {
           let position = object[index];
-          let faceValue = position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? 100 : 1;
-          position["Mid"] = (parseFloat(row["Price"]) / 100.0) * faceValue;
+          position["Mid"] = parseFloat(row["Price"]);
           position["Last Price Update"] = new Date();
-
           updatedPricePortfolio.push(position);
         }
       }
@@ -95,7 +93,7 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
       try {
         let updatedPortfolio: any = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-        await insertEditLogs(["prices update"], "Update Previous Prices based on mufg", dateTime, "mufg Previous Pricing Sheet on " + collectionDate, "Link: " + path);
+        await insertEditLogs(["prices update"], "Update Previous Prices based on MUFG", dateTime, "mufg Previous Pricing Sheet on " + collectionDate, "Link: " + path);
         let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio[0], collectionDate);
         console.log(updatedPricePortfolio.length, "number of positions prices updated");
         if (!Object.keys(updatedPortfolio[1]).length) {
@@ -133,15 +131,15 @@ export async function insertPreviousPricesUpdatesInPortfolio(updatedPortfolio: a
           Location: position["Location"],
           _id: new ObjectId(position["_id"]),
         });
-      } else if (position["Issue"]) {
-        filters.push({
-          Issue: position["Issue"],
-          Location: position["Location"],
-          _id: new ObjectId(position["_id"]),
-        });
       } else if (position["BB Ticker"]) {
         filters.push({
           "BB Ticker": position["BB Ticker"],
+          Location: position["Location"],
+          _id: new ObjectId(position["_id"]),
+        });
+      }else if (position["CUSIP"]) {
+        filters.push({
+          "CUSIP": position["CUSIP"],
           Location: position["Location"],
           _id: new ObjectId(position["_id"]),
         });
@@ -185,12 +183,16 @@ export function getSecurityInPortfolioWithoutLocation(portfolio: any, identifier
   }
   for (let index = 0; index < portfolio.length; index++) {
     let issue = portfolio[index];
-    if (identifier.includes(issue["ISIN"]) || identifier.includes(issue["Issue"])) {
+    if (identifier.includes(issue["ISIN"]) ) {
       if (issue["ISIN"] != "") {
         document.push(issue);
       }
     } else if (identifier.includes(issue["BB Ticker"])) {
       if (issue["BB Ticker"] != "") {
+        document.push(issue);
+      }
+    }else if (identifier.includes(issue["CUSIP"])) {
+      if (issue["CUSIP"] != "") {
         document.push(issue);
       }
     }
@@ -210,28 +212,42 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
       collectionDate = action[1];
       let currencyInUSD: any = {};
       currencyInUSD["USD"] = 1;
+      let divider = 1;
       for (let index = 0; index < data.length; index++) {
         let row = data[index];
-        if (!row["Long Security Name"].includes("Spot") && !row["Long Security Name"].includes("ignore")) {
+        if (row["BB Ticker"] == "Bonds") {
+          divider = 100;
+        } else if (row["BB Ticker"] == "CDS") {
+          divider = 1;
+        } else if (row["BB Ticker"] == "Futures") {
+          divider = 1;
+        }
+        let currencyLength = row["BB Ticker"].split(" ")[0].split("");
+        if (!row["BB Ticker"].includes("Curncy") && currencyLength != 3 && index > 20) {
           let positions: any = getSecurityInPortfolioWithoutLocation(portfolio, row["ISIN"]);
 
           if (positions == 404) {
             positions = getSecurityInPortfolioWithoutLocation(portfolio, row["BB Ticker"]);
           }
           if (positions == 404) {
-            positions = getSecurityInPortfolioWithoutLocation(portfolio, row["Long Security Name"]);
+            positions = getSecurityInPortfolioWithoutLocation(portfolio, row["CUSIP"]);
+          }
+          if (positions == 404) {
+            positions = getSecurityInPortfolioWithoutLocation(portfolio, row["Bloomberg ID"]);
           }
           if (positions == 404) {
             continue;
           }
           for (let index = 0; index < positions.length; index++) {
             let object = positions[index];
-            let faceValue = object["ISIN"].includes("CDX") || object["ISIN"].includes("ITRX") || object["ISIN"].includes("1393") || object["ISIN"].includes("IB") ? 100 : 1;
-            object["Mid"] = (parseFloat(row["Today's Mid"]) / 100.0) * faceValue;
-            object["Ask"] = parseFloat(row["Override Ask"]) > 0 ? (parseFloat(row["Override Ask"]) / 100.0) * faceValue : (parseFloat(row["Today's Ask"]) / 100.0) * faceValue;
-            object["Bid"] = parseFloat(row["Override Bid"]) > 0 ? (parseFloat(row["Override Bid"]) / 100.0) * faceValue : (parseFloat(row["Today's Bid"]) / 100.0) * faceValue;
-            object["YTM"] = row["Mid  Yield call"].toString().includes("N/A") ? 0 : row["Mid  Yield call"];
+            object["Mid"] = parseFloat(row["Today's Mid"]) / divider;
+            object["Ask"] = parseFloat(row["Override Ask"]) > 0 ? parseFloat(row["Override Ask"]) / divider : parseFloat(row["Today's Ask (Broker)"]) > 0 ? parseFloat(row["Today's Ask (Broker)"]) / divider : parseFloat(row["Today's Ask"]) / divider;
+            object["Bid"] = parseFloat(row["Override Bid"]) > 0 ? parseFloat(row["Override Bid"]) / divider : parseFloat(row["Today's Bid (Broker)"]) > 0 ? parseFloat(row["Today's Bid (Broker)"]) / divider : parseFloat(row["Today's Bid"]) / divider;
+            object["YTM"] = row["Mid Yield call"].toString().includes("N/A") ? 0 : row["Mid Yield call"];
+            object["Broker"] = row["Broker"].toString().includes("N/A") ? "" : row["Broker"];
+
             object["DV01"] = row["DV01"].toString().includes("N/A") ? 0 : row["DV01"];
+            object["YTW"] = row["Mid Yield Worst"].toString().includes("N/A") ? 0 : row["Mid Yield Worst"];
             object["OAS"] = row["OAS Spread"].toString().includes("N/A") ? 0 : row["OAS Spread"];
             object["Z Spread"] = row["Z Spread"].toString().includes("N/A") ? 0 : row["Z Spread"];
             object["S&P Bond Rating"] = row["S&P Bond Rating"].toString().includes("N/A") ? "" : row["S&P Bond Rating"];
@@ -243,11 +259,12 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
             object["BBG Composite Rating"] = row["BBG Composite Rating"].toString().includes("N/A") ? "" : row["BBG Composite Rating"];
             object["BB Ticker"] = row["BB Ticker"].toString().includes("N/A") ? "" : row["BB Ticker"];
             object["Issuer"] = row["Issuer Name"].toString().includes("N/A") ? "" : row["Issuer Name"];
+            object["Bloomberg ID"] = row["Bloomberg ID"];
             // object["Issuer"] = row["Issuer Name"].includes("#") ? "0" : row["Issuer Name"];
             if (row["ModDurPerp"]) {
               object["Modified Duration"] = row["ModDurPerp"].toString().includes("#") ? (row["ModDur"].toString().includes("N/A") ? 0 : row["ModDur"]) : row["ModDurPerp"];
             }
-            if (!row["Call Date"].includes("N/A") || !row["Call Date"].includes("#")) {
+            if (!row["Call Date"].includes("N/A") && !row["Call Date"].includes("#")) {
               object["Call Date"] = row["Call Date"];
             }
             if (currencyInUSD[object["Currency"]]) {
@@ -255,26 +272,19 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
             } else {
               object["FX Rate"] = 1;
             }
-            object["Last Price Update"] = new Date();
 
-            if (!object["Country"] && row["Country"] && !row["Country"].includes("#N/A")) {
+            if (row["Country"] && !row["Country"].includes("N/A")) {
               object["Country"] = row["Country"];
             }
-            if (!object["Sector"] && row["Industry Sector"]) {
-              object["Sector"] = row["Industry Sector"];
+            if (row["Sector"] && !row["Sector"].includes("N/A")) {
+              object["Sector"] = row["Sector"];
             }
             updatedPricePortfolio.push(object);
           }
-        } else if (row["Long Security Name"].includes("Spot") && !row["Long Security Name"].includes("ignore")) {
-          let firstCurrency = row["Long Security Name"].split(" ")[0];
-          let secondCurrency = row["Long Security Name"].split(" ")[1];
+        } else if (row["BB Ticker"].includes("Curncy") && currencyLength == 3 && index < 20) {
           let rate = row["Today's Mid"];
-          if (firstCurrency !== "USD") {
-            currencyInUSD[firstCurrency] = rate;
-          } else {
-            rate = 1 / rate;
-            currencyInUSD[secondCurrency] = rate;
-          }
+          let currency = row["BB Ticker"].split(" ")[0];
+          currencyInUSD[currency] = rate;
         }
       }
       console.log(currencyInUSD, "currency prices");
@@ -375,7 +385,7 @@ export async function editPositionPortfolio(path: string) {
     try {
       let positions: any = [];
       let portfolio = await getPortfolio();
-      let titles = ["Type", "Group", "Country", "Asset Class", "Sector"];
+      let titles = ["Type", "Strategy", "Country", "Asset Class", "Sector"];
       for (let index = 0; index < data.length; index++) {
         let row = data[index];
         let identifier = row["_id"];
@@ -386,15 +396,16 @@ export async function editPositionPortfolio(path: string) {
             let title = titles[titleIndex];
             securityInPortfolio[title] = row[title];
           }
-          console.log(securityInPortfolio["Country"]);
           positions.push(securityInPortfolio);
         }
       }
       try {
         let updatedPortfolio: any = formatUpdatedPositions(positions, portfolio, "Last edit operation");
         let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
+        let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+        await insertEditLogs(["bulk edit"], "Bulk Edit", dateTime, "Bulk Edit E-blot", "Link: " + path);
 
-        return "insertion";
+        return insertion;
       } catch (error) {
         return { error: error };
       }
@@ -426,7 +437,7 @@ export async function getFundDetails(date: string) {
     let test = await getEarliestCollectionNameFund(date);
 
     let documents = await reportCollection.find({ month: test }).toArray();
-    return documents
+    return documents;
   } catch (error) {
     return error;
   }
@@ -436,7 +447,7 @@ function compareMonths(a: any, b: any) {
   // Reformat the month string to 'MM/01/YYYY' for comparison
   let reformattedMonthA = a.month.substring(5) + "/01/" + a.month.substring(0, 4);
   let reformattedMonthB = b.month.substring(5) + "/01/" + b.month.substring(0, 4);
-  console.log(reformattedMonthA, reformattedMonthB)
+  console.log(reformattedMonthA, reformattedMonthB);
   // Convert the reformatted strings to date objects
   let dateA = new Date(reformattedMonthA).getTime();
   let dateB = new Date(reformattedMonthB).getTime();
@@ -719,9 +730,8 @@ export async function reformatCentralizedData(data: any) {
     let isinObjReq = { idType: "ID_ISIN", idValue: trade["ISIN"] };
     isinRequest.push(isinObjReq);
   }
-  let bbTickers = await getBBTicker(isinRequest);
+
   for (let rowIndex = 0; rowIndex < vconTrades.length; rowIndex++) {
-    vconTrades[rowIndex]["BB Ticker"] = bbTickers[vconTrades[rowIndex]["ISIN"]];
     vconTrades[rowIndex]["Quantity"] = vconTrades[rowIndex]["Notional Amount"];
     vconTrades[rowIndex]["Triada Trade Id"] = vconTrades[rowIndex]["Triada Trade Id"];
     vconTrades[rowIndex]["timestamp"] = new Date(vconTrades[rowIndex]["Trade Date"]).getTime();
@@ -754,8 +764,7 @@ export async function recalculateRlzd(data: any, date: any) {
     let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate);
     let lastMonthLastCollectionName = await getEarliestCollectionName(previousMonthDates[0] + " 23:59");
     let portfolio = await getHistoricalPortfolio(lastMonthLastCollectionName[0]);
-    let upToDatePortfolio = await getPortfolio();
-
+   
     let triadaIds: any = await tradesTriadaIds();
 
     for (let index = 0; index < data.length; index++) {
@@ -866,11 +875,11 @@ export async function recalculateRlzd(data: any, date: any) {
           }
 
           if (securityInPortfolio !== 404) {
-            securityInPortfolio["Cost MTD Ptf"] = {};
+            securityInPortfolio["Cost MTD"] = {};
           }
-          object["Cost MTD Ptf"] = securityInPortfolio !== 404 ? securityInPortfolio["Cost MTD Ptf"] : {};
-          let curentMonthCost = securityInPortfolio !== 404 ? (parseFloat(securityInPortfolio["Cost MTD Ptf"][thisMonth]) ? parseFloat(securityInPortfolio["Cost MTD Ptf"][thisMonth]) : 0) : 0;
-          object["Cost MTD Ptf"][thisMonth] = operation == 1 ? (securityInPortfolio !== 404 ? curentMonthCost + parseFloat(currentPrincipal) : parseFloat(currentPrincipal)) : 0;
+          object["Cost MTD"] = securityInPortfolio !== 404 ? securityInPortfolio["Cost MTD"] : {};
+          let curentMonthCost = securityInPortfolio !== 404 ? (parseFloat(securityInPortfolio["Cost MTD"][thisMonth]) ? parseFloat(securityInPortfolio["Cost MTD"][thisMonth]) : 0) : 0;
+          object["Cost MTD"][thisMonth] = operation == 1 ? (securityInPortfolio !== 404 ? curentMonthCost + parseFloat(currentPrincipal) : parseFloat(currentPrincipal)) : 0;
           object["Original Face"] = originalFace;
 
           if (!object["Entry Price"]) {
@@ -908,8 +917,8 @@ export async function recalculateRlzd(data: any, date: any) {
           object["Monthly Capital Gains Rlzd"] = updatingPosition["Monthly Capital Gains Rlzd"];
           object["Monthly Capital Gains Rlzd"][thisMonth] += rlzdOperation == 1 ? currentDailyProfitLoss : 0;
 
-          object["Cost MTD Ptf"] = updatingPosition["Cost MTD Ptf"];
-          object["Cost MTD Ptf"][thisMonth] += operation == 1 ? currentPrincipal : 0;
+          object["Cost MTD"] = updatingPosition["Cost MTD"];
+          object["Cost MTD"][thisMonth] += operation == 1 ? currentPrincipal : 0;
 
           object["Coupon Rate"] = bondCouponMaturity[0] == "" ? 0 : bondCouponMaturity[0];
           object["Maturity"] = bondCouponMaturity[1] == "Invalid Date" ? "0" : bondCouponMaturity[1];

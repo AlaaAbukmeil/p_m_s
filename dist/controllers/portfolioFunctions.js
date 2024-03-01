@@ -1,8 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mapDatetimeToSameDay = exports.getDateTimeInMongoDBCollectionFormat = exports.formatDateRlzdDaily = exports.formatUpdatedPositions = exports.sortVconTrades = exports.getAllDatesSinceLastMonthLastDay = exports.uploadTriadaAndReturnFilePath = exports.calculateMonthlyProfitLoss = exports.calculateDailyProfitLoss = exports.readPricingSheet = exports.readBloombergTriadaEBlot = exports.readPortfolioFromLivePorfolio = exports.readPortfolioFromImagine = exports.readEditInput = exports.readMUFGEBlot = exports.readEmsxEBlot = exports.readIBRawExcel = exports.readIBEblot = exports.formatEmsxTradesToVcon = exports.formatIbTradesToVcon = exports.readCentralizedEBlot = exports.readVconEBlot = exports.mergeSort = exports.uploadToGCloudBucket = exports.getSettlementDateYear = exports.bloombergToTriada = exports.getMaturity = exports.parseBondIdentifier = exports.formatTradesObj = exports.settlementDatePassed = exports.getAverageCost = exports.formatExcelDate = void 0;
+exports.mapDatetimeToSameDay = exports.getDateTimeInMongoDBCollectionFormat = exports.formatDateRlzdDaily = exports.formatUpdatedPositions = exports.sortVconTrades = exports.getAllDatesSinceLastMonthLastDay = exports.uploadTriadaAndReturnFilePath = exports.calculateDailyProfitLoss = exports.readPricingSheet = exports.readBloombergTriadaEBlot = exports.readPortfolioFromLivePorfolio = exports.readPortfolioFromImagine = exports.readEditInput = exports.readMUFGEBlot = exports.readEmsxEBlot = exports.readIBRawExcel = exports.readIBEblot = exports.formatEmsxTradesToVcon = exports.formatIbTradesToVcon = exports.readCentralizedEBlot = exports.readVconEBlot = exports.mergeSort = exports.uploadToGCloudBucket = exports.getSettlementDateYear = exports.bloombergToTriada = exports.getMaturity = exports.parseBondIdentifier = exports.settlementDatePassed = exports.getAverageCost = exports.formatExcelDate = void 0;
 const common_1 = require("./common");
-const reports_1 = require("./reports");
 const xlsx = require("xlsx");
 const axios = require("axios");
 const { Storage } = require("@google-cloud/storage");
@@ -104,30 +103,6 @@ function settlementDatePassed(settlementDate, ticker) {
     return today >= inputDate;
 }
 exports.settlementDatePassed = settlementDatePassed;
-function formatTradesObj(data) {
-    let object = {};
-    object["isin"] = [];
-    object["bb ticker"] = [];
-    object["country"] = [];
-    object["currency"] = [];
-    object["average cost"] = [];
-    object["accrued interest"] = [];
-    object["strategy"] = [];
-    object["date"] = [];
-    for (let index = 0; index < data.length; index++) {
-        const row = data[index];
-        object["isin"].push(row["isin"]);
-        object["bb ticker"].push(row["bb ticker"]);
-        object["country"].push(row["country"]);
-        object["currency"].push(row["currency"]);
-        object["average cost"].push(row["average cost"]);
-        object["accrued interest"].push(row["accrued interest"]);
-        object["strategy"].push(row["strategy"]);
-        object["date"].push(row["date"]);
-    }
-    return object;
-}
-exports.formatTradesObj = formatTradesObj;
 function parseBondIdentifier(identifier) {
     // Split the identifier into components
     try {
@@ -157,6 +132,9 @@ function parseBondIdentifier(identifier) {
                 }
                 let dateComponents = components[2].split("/");
                 let date = new Date(`${dateComponents[0]}/${dateComponents[1]}/${"20" + dateComponents[2]}`);
+                if (identifier.toString().toLowerCase().includes("perp")) {
+                    date = null;
+                }
                 // let date: any = new Date(components[2])
                 if (date) {
                     date = (0, common_1.getDateMufg)(date);
@@ -381,17 +359,10 @@ async function readVconEBlot(path) {
             defval: "",
             range: "A1:CZ300",
         });
-        let isinRequest = [];
         for (let index = 0; index < data.length; index++) {
-            let trade = data[index];
-            let isinObjReq = { idType: "ID_ISIN", idValue: trade["ISIN"] };
-            isinRequest.push(isinObjReq);
+            data[index]["Price"] = data[index]["Price (Decimal)"];
         }
-        let bbTickers = await (0, reports_1.getBBTicker)(isinRequest);
-        for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
-            data[rowIndex]["BB Ticker"] = bbTickers[data[rowIndex]["ISIN"]];
-            data[rowIndex]["Price"] = data[rowIndex]["Price (Decimal)"];
-        }
+        for (let rowIndex = 0; rowIndex < data.length; rowIndex++) { }
         // other trades type are sorted by default
         data = mergeSort(data);
         return data;
@@ -441,9 +412,7 @@ async function readCentralizedEBlot(path) {
             let isinObjReq = { idType: "ID_ISIN", idValue: trade["ISIN"] };
             isinRequest.push(isinObjReq);
         }
-        let bbTickers = await (0, reports_1.getBBTicker)(isinRequest);
         for (let rowIndex = 0; rowIndex < vconTrades.length; rowIndex++) {
-            vconTrades[rowIndex]["BB Ticker"] = bbTickers[vconTrades[rowIndex]["ISIN"]];
             vconTrades[rowIndex]["Quantity"] = vconTrades[rowIndex]["Notional Amount"];
             vconTrades[rowIndex]["Triada Trade Id"] = vconTrades[rowIndex]["Triada Trade Id"];
             if (!vconTrades[rowIndex]["Trade Date"].includes("/")) {
@@ -688,10 +657,6 @@ async function readMUFGEBlot(path) {
             };
             isinRequest.push(isinObjReq);
         }
-        let bbTickers = await (0, reports_1.getBBTicker)(isinRequest);
-        for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
-            data[rowIndex]["BB Ticker"] = bbTickers[data[rowIndex]["Investment"]];
-        }
         let portfolio = [];
         for (let index = 0; index < data.length; index++) {
             let object = {};
@@ -749,7 +714,7 @@ async function readEditInput(path) {
     else {
         let data = xlsx.utils.sheet_to_json(worksheet, {
             defval: "",
-            range: "A1:BD300",
+            range: "A1:BZ300",
         });
         return data;
     }
@@ -888,18 +853,56 @@ async function readPricingSheet(path) {
     /* Convert worksheet to JSON */
     // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
     // Read data
+    let wrongHeaders = null;
     const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-    const headersFormat = ["#", "Trade Idea Code", "Long Security Name", "BB Ticker", "Column1", "Bid", "Ask", "Mid", "Broker", "Override Bid", "Override Ask", "Today's Bid", "Today's Ask", "Today's Mid"];
-    const arraysAreEqual = headersFormat.every((value, index) => value === headers[2][index]); //headersFormat.length === headers[2].length && headersFormat.every((value, index) => value === headers[2][index]);
+    const headersFormat = [
+        "BB Ticker",
+        "Bloomberg ID",
+        "Broker",
+        "Override Bid",
+        "Override Ask",
+        "Notes",
+        "Today's Bid (Broker)",
+        "Today's Ask (Broker)",
+        "Today's Bid (BB)",
+        "Today's Ask (BB)",
+        "Today's Mid",
+        "ISIN",
+        "CUSIP",
+        "DV01",
+        "Mid Yield Maturity",
+        "Mid Yield Worst",
+        "Mid Yield call",
+        "Spread to benchmark",
+        "Country",
+        "Sector",
+        "Call Date",
+        "S&P Bond Rating",
+        "S&P Outlook",
+        "Moody's Bond Rating",
+        "Moody's Outlook",
+        "Fitch Bond Rating",
+        "Fitch Outlook",
+        "BBG Composite Rating",
+        "Issuer Name",
+        "OAS Spread",
+        "Z Spread",
+    ];
+    const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : (wrongHeaders = `app expected ${headers[0][index]} and got ${value}`))); //headersFormat.length === headers[2].length && headersFormat.every((value, index) => value === headers[2][index]);
     if (!arraysAreEqual) {
         return {
             error: "Incompatible format, please upload pricing sheet xlsx/csv file",
         };
     }
+    else if (wrongHeaders) {
+        return {
+            error: wrongHeaders,
+        };
+    }
     else {
         const data = xlsx.utils.sheet_to_json(worksheet, {
             defval: "",
-            range: "A3:BA300",
+            range: "A1:AE300",
         });
         let keys = Object.keys(data[0]);
         let reformedData = [];
@@ -919,34 +922,18 @@ exports.readPricingSheet = readPricingSheet;
 function calculateDailyProfitLoss(documents, previousDayPortfolio) {
     let position = documents;
     let couponRate = position["Coupon Rate"];
-    position["Daily P&L Interest"] = ((couponRate / 100) * position["Quantity"]) / 360;
+    position["Day P&L Int."] = ((couponRate / 100) * position["Quantity"]) / 360;
     for (let y = 0; y < previousDayPortfolio.length; y++) {
         let previousDayPortfolioObj = previousDayPortfolio[y];
         if (previousDayPortfolioObj["Issue"] == position["BB Ticker"]) {
             position["Previous Mark"] = previousDayPortfolioObj["Mid"];
-            position["Daily P&L Urlzd"] = ((position["Mid"] - previousDayPortfolioObj["Mid"]) * position["Quantity"]) / 100;
+            position["Day P&L Urlzd"] = ((position["Mid"] - previousDayPortfolioObj["Mid"]) * position["Quantity"]) / 100;
             documents = position;
         }
     }
     return documents;
 }
 exports.calculateDailyProfitLoss = calculateDailyProfitLoss;
-function calculateMonthlyProfitLoss(documents, previousMonthPortfolio) {
-    for (let index = 0; index < documents.length; index++) {
-        const currentPortfolioObj = documents[index];
-        for (let y = 0; y < previousMonthPortfolio.length; y++) {
-            const previousMonthPortfolioObj = previousMonthPortfolio[y];
-            if (previousMonthPortfolioObj["bb ticker"] == currentPortfolioObj["bb ticker"]) {
-                currentPortfolioObj["mtd mark"] = previousMonthPortfolioObj["mid"];
-                currentPortfolioObj["ptf mtd unrlzd"] = (currentPortfolioObj["mid"] - previousMonthPortfolioObj["mid"]) * currentPortfolioObj["notional amount"];
-                // currentPortfolioObj["monthly P&L interest"] = ((interestRate / 100) *  currentPortfolioObj["notional amount"]) / 12
-                documents[index] = currentPortfolioObj;
-            }
-        }
-    }
-    return documents;
-}
-exports.calculateMonthlyProfitLoss = calculateMonthlyProfitLoss;
 async function uploadTriadaAndReturnFilePath(arr) {
     let binaryWS = xlsx.utils.json_to_sheet(arr);
     // Create a new Workbook

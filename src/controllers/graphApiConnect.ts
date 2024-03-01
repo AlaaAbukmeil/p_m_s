@@ -64,11 +64,12 @@ export async function getVcons(token: string, start_time: any, end_time: any, tr
       let vcon = vcons[index].body.content;
       vcon = renderVcon(vcon);
       let identifier = vcon["ISIN"];
+      vcon["BB Ticker"] = vcon["Issue"]
       let securityInPortfolioLocation = getSecurityInPortfolioWithoutLocation(portfolio, identifier);
       let location = securityInPortfolioLocation.trim();
       let trade_status = "new";
       let triadaId = trades.find(function (trade: any) {
-        return trade["Seq No"] == vcon["Seq No"]
+        return (trade["Seq No"] == vcon["Seq No"] && trade["ISIN"] == vcon["ISIN"])
       });
       
       

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.formatFrontEndRiskTable = exports.formatFrontEndSummaryTable = exports.formatSummaryPosition = exports.calculateRlzd = exports.formatFrontEndTable = exports.formatGeneralTable = void 0;
+exports.formatFrontEndRiskTable = exports.formatFrontEndSummaryTable = exports.formatSummaryPosition = exports.calculateMTDCost = exports.calculateRlzd = exports.formatFrontEndTable = exports.formatGeneralTable = void 0;
 const common_1 = require("./common");
 const portfolioFunctions_1 = require("./portfolioFunctions");
 const reports_1 = require("./reports");
@@ -34,6 +34,16 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         let originalFace = position["Original Face"] || 1;
         let usdRatio = parseFloat(position["FX Rate"] || position["holdPortfXrate"]) || 1;
         let holdBackRatio = (position["Asset Class"] || position["Rating Class"]) == "Illiquid" ? parseFloat(fund.holdBackRatio) : 1;
+        position["Notional Total"] = position["Quantity"];
+        position["Quantity"] = position["Quantity"] / originalFace;
+        position["Coupon Rate"] = position["Coupon Rate"] ? position["Coupon Rate"] : (0, portfolioFunctions_1.parseBondIdentifier)(position["BB Ticker"])[0] || 0;
+        let bondDivider = position["Type"] == "BND" || position["Type"] == "UST" ? 100 : 1;
+        if (!position["BB Ticker"]) {
+            position["BB Ticker"] = position["Issue"];
+        }
+        if (!position["Type"]) {
+            position["Type"] = position["BB Ticker"].split(" ")[0] == "T" || position["Issuer"] == "US TREASURY N/B" ? "UST" : "BND";
+        }
         let currency = position["Currency"];
         if (!position["FX Rate"]) {
             if (currencies[currency]) {
@@ -50,94 +60,96 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         if ((!position["Asset Class"] || position["Asset Class"] == "") && position["BBG Composite Rating"]) {
             position["Asset Class"] = isRatingHigherThanBBBMinus(position["BBG Composite Rating"]);
         }
-        position["Cost (Base Currency)"] = position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") ? Math.round(position["Average Cost"] * position["Quantity"] * 10000 * usdRatio) / (10000 * position["Original Face"]) : Math.round(position["Average Cost"] * position["Quantity"] * 1000000 * usdRatio) / 1000000;
-        position["FX Rate"] = Math.round((position["FX Rate"] || position["FX Rate"]) * 1000000) / 1000000;
-        position["Value (Local Currency)"] = position["ISIN"].includes("CDS") || position["ISIN"].includes("ITRX") ? Math.round((position["Quantity"] * position["Mid"]) / originalFace) || 0 : Math.round(position["Quantity"] * position["Mid"]) || 0;
-        position["Value (Base Currency)"] = position["ISIN"].includes("CDS") || position["ISIN"].includes("ITRX") ? Math.round((position["Quantity"] * position["Mid"] * usdRatio) / originalFace) || 0 : Math.round(position["Quantity"] * position["Mid"] * usdRatio) || 0;
-        if (position["Value (Base Currency)"] > 0) {
-            lmv += position["Value (Base Currency)"];
+        position["Cost (BC)"] = position["Type"] == "CDS" ? Math.round((position["Average Cost"] * position["Notional Total"] * usdRatio) / position["Original Face"]) : Math.round(position["Average Cost"] * position["Notional Total"] * usdRatio);
+        position["FX Rate"] = Math.round(position["FX Rate"] * 1000) / 1000;
+        position["Value (LC)"] = position["Type"] == "CDS" ? Math.round((position["Notional Total"] * position["Mid"]) / originalFace) || 0 : Math.round(position["Notional Total"] * position["Mid"]) || 0;
+        position["Value (BC)"] = position["Type"] == "CDS" ? Math.round((position["Notional Total"] * position["Mid"] * usdRatio) / originalFace) || 0 : Math.round(position["Notional Total"] * position["Mid"] * usdRatio) || 0;
+        if (position["Value (BC)"] > 0) {
+            lmv += position["Value (BC)"];
         }
         else {
-            smv += position["Value (Base Currency)"];
+            smv += position["Value (BC)"];
         }
-        nmv += position["Value (Base Currency)"];
-        position["Mid"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Mid"] * 1000000) / 1000000 : Math.round(position["Mid"] * 1000000) / 10000;
-        position["Bid"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Bid"] * 1000000) / 1000000 : Math.round(position["Bid"] * 1000000) / 10000;
-        position["Ask"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Ask"] * 1000000) / 1000000 : Math.round(position["Ask"] * 1000000) / 10000;
-        position["Average Cost"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Average Cost"] * 1000000) / 1000000 : Math.round(position["Average Cost"] * 1000000) / 10000;
-        position["YTM"] = Math.round(position["YTM"] * 1000000) / 1000000 || 0;
+        nmv += position["Value (BC)"];
+        position["Mid"] = Math.round(position["Mid"] * 1000 * bondDivider) / 1000;
+        position["Bid"] = Math.round(position["Bid"] * 1000 * bondDivider) / 1000;
+        position["Ask"] = Math.round(position["Ask"] * 1000 * bondDivider) / 1000;
+        position["Average Cost"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Average Cost"] * 100) / 100 : Math.round(position["Average Cost"] * 100);
+        position["YTM"] = (Math.round(position["YTM"] * 100) / 100 || 0) + " %" || "0 %";
         position["CR01"] = "0";
         position["MTD Rlzd"] = position["MTD Rlzd"] ? position["MTD Rlzd"] : 0;
-        position["MTD Mark"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["MTD Mark"] * 1000000) / 1000000 : Math.round(position["MTD Mark"] * 1000000) / 10000;
+        position["MTD Mark"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["MTD Mark"] * 1000) / 1000 : Math.round(position["MTD Mark"] * 1000) / 10;
         position["Day Rlzd"] = position["Day Rlzd"] ? position["Day Rlzd"] : 0;
-        position["Previous Mark"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Previous Mark"] * 1000000) / 1000000 : Math.round(position["Previous Mark"] * 1000000) / 10000;
-        position["Monthly Interest Income (Local Currency)"] = Math.round(position["Monthly Interest Income"] * 1000000 * holdBackRatio) / 1000000;
-        position["Ptf MTD Rlzd (Local Currency)"] = Math.round(position["MTD Rlzd"] * 1000000 * holdBackRatio) / 1000000;
-        position["Ptf MTD URlzd (Local Currency)"] = Math.round(position["MTD URlzd"] * 1000000 * holdBackRatio) / 1000000;
-        position["Monthly Interest Income (Base Currency)"] = Math.round(position["Monthly Interest Income"] * 1000000 * usdRatio * holdBackRatio) / 1000000;
-        position["Ptf MTD Rlzd (Base Currency)"] = Math.round(position["MTD Rlzd"] * 1000000 * usdRatio * holdBackRatio) / 1000000;
-        position["Ptf MTD URlzd (Base Currency)"] = Math.round(position["MTD URlzd"] * 1000000 * usdRatio * holdBackRatio) / 1000000;
-        position["Cost MTD Ptf (Local Currency)"] = Math.round(position["Cost MTD Ptf"] * holdBackRatio * 1000000) / 1000000;
-        position["Cost (Local Currency)"] = Math.round(position["Cost"] * holdBackRatio * 1000000) / 1000000;
-        position["Average Cost"] = Math.round(position["Average Cost"] * 1000000) / 1000000;
-        if (!position["Previous FX Rate"]) {
-            position["Previous FX Rate"] = position["FX Rate"];
+        position["Previous Mark"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Previous Mark"] * 1000) / 1000 : Math.round(position["Previous Mark"] * 1000) / 10;
+        if (!position["Previous FX"]) {
+            position["Previous FX"] = position["FX Rate"];
         }
-        position["MTD FX"] = position["MTD FX"] ? Math.round(position["MTD FX"] * 1000000) / 1000000 : Math.round(position["Previous FX Rate"] * 1000000) / 1000000;
-        position["Daily Interest FX P&L"] = Math.round((position["FX Rate"] - position["Previous FX Rate"]) * 1000000 * position["Daily Interest Income"]) / 1000000;
-        position["Daily Interest Income (Local Currency)"] = Math.round(position["Daily Interest Income"] * 1000000 * holdBackRatio) / 1000000;
-        position["Daily Interest Income (Base Currency)"] = position["Daily Interest Income"] * usdRatio * holdBackRatio;
-        position["Notional Total"] = position["Quantity"];
-        position["Quantity"] = position["Quantity"] / originalFace;
+        if (position["Issue"].includes("CDS")) {
+            position["Day P&L FX"] = Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["Previous FX"])) / parseFloat(position["Previous FX"])) * position["Quantity"] * holdBackRatio * 1000000) / 1000000 || 0;
+            position["MTD P&L FX"] = Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["MTD FX"] || position["FX Rate"])) / parseFloat(position["MTD FX"] || position["FX Rate"])) * position["Quantity"] * holdBackRatio * 1000000) / 1000000 || 0;
+        }
+        else {
+            position["Day P&L FX"] = Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["Previous FX"])) / parseFloat(position["Previous FX"])) * position["Notional Total"] * holdBackRatio * 1000000) / 1000000;
+            position["MTD P&L FX"] = (Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["MTD FX"] || position["FX Rate"])) / parseFloat(position["MTD FX"] || position["FX Rate"])) * position["Notional Total"] * holdBackRatio) * 1000000) / 1000000 || 0;
+        }
+        if (!position["Day P&L FX"]) {
+            position["Day P&L FX"] = 0;
+        }
+        if (!position["MTD P&L FX"]) {
+            position["MTD P&L FX"] = 0;
+        }
+        position["MTD FX"] = position["MTD FX"] ? Math.round(position["MTD FX"] * 1000) / 1000 : Math.round(position["Previous FX"] * 1000) / 1000;
+        position["MTD Int. (LC)"] = Math.round(position["MTD Int."] * holdBackRatio);
+        position["MTD Rlzd (LC)"] = Math.round(position["MTD Rlzd"] * holdBackRatio);
+        position["MTD URlzd (LC)"] = Math.round(position["MTD URlzd"] * holdBackRatio);
+        position["MTD P&L (LC)"] = Math.round(position["MTD P&L"] * holdBackRatio);
+        position["MTD Int. (BC)"] = Math.round(position["MTD Int."] * usdRatio * holdBackRatio);
+        position["MTD Rlzd (BC)"] = Math.round(position["MTD Rlzd"] * usdRatio * holdBackRatio);
+        position["MTD URlzd (BC)"] = Math.round(position["MTD URlzd"] * usdRatio * holdBackRatio);
+        position["MTD P&L (BC)"] = Math.round(position["MTD P&L"] * usdRatio * holdBackRatio + position["MTD P&L FX"]);
+        // position["MTD Cost (LC)"] = Math.round(position["MTD Cost"] * holdBackRatio * 1000000) / 1000000;
+        position["Cost (LC)"] = Math.round(position["Average Cost"] * position["Notional Total"] * holdBackRatio);
+        position["Average Cost"] = Math.round(position["Average Cost"]);
+        position["Day Int. (LC)"] = Math.round(position["Day Int."] * holdBackRatio);
+        position["Day Rlzd (LC)"] = Math.round(position["Day Rlzd"] * holdBackRatio);
+        position["Day URlzd (LC)"] = Math.round(position["Day URlzd"] * holdBackRatio);
+        position["Day P&L (LC)"] = Math.round(position["Day P&L"] * holdBackRatio);
+        position["Day Int. (BC)"] = Math.round(position["Day Int."] * usdRatio * holdBackRatio);
+        position["Day Rlzd (BC)"] = Math.round(position["Day Rlzd"] * usdRatio * holdBackRatio);
+        position["Day URlzd (BC)"] = Math.round(position["Day URlzd"] * usdRatio * holdBackRatio);
+        position["Day P&L (BC)"] = Math.round(position["Day P&L"] * usdRatio * holdBackRatio + position["Day P&L FX"]);
         position["ISIN"] = position["ISIN"].length != 12 ? "" : position["ISIN"];
-        position["Ptf Day P&L (Local Currency)"] = Math.round(position["Ptf Day P&L"] * holdBackRatio * 1000000) / 1000000;
-        // multiply mtd pl with usd since all components are not  multiplied by usd when they are summed
-        position["Ptf MTD P&L (Local Currency)"] = Math.round(position["Ptf MTD P&L"] * holdBackRatio * 1000000) / 1000000;
-        position["Ptf Day P&L (Base Currency)"] = Math.round(position["Ptf Day P&L"] * usdRatio * holdBackRatio * 1000000) / 1000000;
-        position["Ptf MTD P&L (Base Currency)"] = Math.round(position["Ptf MTD P&L"] * usdRatio * holdBackRatio * 1000000) / 1000000;
-        position["Day Rlzd K G/L"] = Math.round(position["Day Rlzd K G/L"] * usdRatio * holdBackRatio * 1000000) / 1000000;
-        position["Day URlzd"] = Math.round(position["Day URlzd"] * usdRatio * holdBackRatio * 1000000) / 1000000;
-        position["Ptf Day URlzd (Base Currency)"] = position["Day URlzd"];
-        position["Ptf Day URlzd (Local Currency)"] = Math.round((position["Day URlzd"] / usdRatio) * holdBackRatio * 1000000) / 1000000;
-        position["MTD Rlzd"] = Math.round(position["MTD Rlzd"] * usdRatio * holdBackRatio * 1000000) / 1000000;
-        position["Day Rlzd"] = Math.round(position["Day Rlzd"] * usdRatio * holdBackRatio * 1000000) / 1000000;
-        position["Ptf Day Rlzd (Base Currency)"] = position["Day Rlzd"];
-        position["Ptf Day Rlzd (Local Currency)"] = Math.round((position["Day Rlzd"] / usdRatio) * holdBackRatio * 1000000) / 1000000;
-        position["Previous FX Rate"] = Math.round(position["Previous FX Rate"] * 1000000) / 1000000;
-        position["Maturity"] = position["Maturity"] ? position["Maturity"] : position["BB Ticker"] ? (0, portfolioFunctions_1.getMaturity)(position["BB Ticker"]) : 0;
+        position["Maturity"] = (0, portfolioFunctions_1.getMaturity)(position["BB Ticker"]) || 0;
         position["Call Date"] = position["Call Date"] ? position["Call Date"] : 0;
-        position["L/S"] = position["Quantity"] > 0 && !position["Issue"].includes("CDS") ? "Long" : position["Notional Total"] == 0 && !position["Issue"].includes("CDS") ? "Rlzd" : "Short";
-        position["_id"] = position["_id"];
+        position["L/S"] = position["Notional Total"] > 0 && position["Type"] != "CDS" ? "Long" : position["Notional Total"] == 0 && position["Type"] != "CDS" ? "Rlzd" : "Short";
         position["Duration"] = yearsUntil(position["Call Date"] ? position["Call Date"] : position["Maturity"], date);
-        position["Coupon Duration"] = position["Coupon Duration"] ? position["Coupon Duration"] : position["Issue"].split(" ")[0] == "T" || position["Issue"].includes("GOVT") ? 365.0 : 360.0;
-        position["Coupon Rate"] = position["Coupon Rate"] ? position["Coupon Rate"] : 0;
+        position["Coupon Duration"] = position["Coupon Duration"] ? position["Coupon Duration"] : position["Type"] == "UST" ? 365.0 : 360.0;
         position["Issuer"] = position["Issuer"] == "0" ? "" : position["Issuer"];
         position["DV01"] = (position["DV01"] / 1000000) * position["Notional Total"] * usdRatio;
-        position["DV01"] = Math.round(position["DV01"] * 1000000) / 1000000 || 0;
+        position["DV01"] = Math.round(position["DV01"] * 100) / 100 || 0;
         position["OAS"] = (position["OAS"] / 1000000) * position["Notional Total"] * usdRatio;
-        position["OAS"] = Math.round(position["OAS"] * 1000000) / 1000000 || 0;
+        position["OAS"] = Math.round(position["OAS"] * 100) / 100 || 0;
         position["OAS W Change"] = oasWithChange(position["OAS"])[0];
         position["Spread Change"] = oasWithChange(position["OAS"])[1];
         position["DV01 Dollar Value Impact"] = Math.round(position["OAS W Change"] * position["DV01"]);
         position["DV01 Dollar Value Impact % of Nav"] = Math.round(((position["DV01 Dollar Value Impact"] * position["OAS W Change"]) / fund.nav) * 10000) / 100;
-        position["DV01 Dollar Value Impact Limit % of Nav"] = position["Value (Base Currency)"] / fund.nav > 10 ? 2 : 1.5;
+        position["DV01 Dollar Value Impact Limit % of Nav"] = position["Value (BC)"] / fund.nav > 10 ? 2 : 1.5;
         position["DV01 Dollar Value Impact Utilization % of Nav"] = Math.round((position["DV01 Dollar Value Impact % of Nav"] / position["DV01 Dollar Value Impact Limit % of Nav"]) * 10000) / 100;
         position["DV01 Dollar Value Impact Test"] = Math.abs(position["DV01 Dollar Value Impact Utilization % of Nav"]) < 100 ? "Pass" : "Fail";
         position["DV01 Dollar Value Impact Color Test"] = position["DV01 Dollar Value Impact Test"] == "Pass" ? "#C5E1A5" : "#FFAB91";
-        position["Value (Base Currency) % of Nav"] = Math.round((position["Value (Base Currency)"] / fund.nav) * 10000) / 100;
-        position["Value (Base Currency) Limit % of Nav"] = Math.abs(position["Value (Base Currency) % of Nav"]) > 10 ? 15 : 10;
-        position["Value (Base Currency) Utilization % of Nav"] = Math.round((position["Value (Base Currency) % of Nav"] / position["Value (Base Currency) Limit % of Nav"]) * 10000) / 100;
-        position["Value (Base Currency) Test"] = Math.abs(position["Value (Base Currency) Utilization % of Nav"]) < 100 ? "Pass" : "Fail";
-        position["Value (Base Currency) Color Test"] = position["Value (Base Currency) Test"] == "Pass" ? "#C5E1A5" : "#FFAB91";
-        position["Capital Gain/ Loss since Inception (Live Position)"] = position["Value (Base Currency)"] - position["Cost (Base Currency)"];
-        let shortLongType = position["Value (Base Currency)"] > 0 ? 1 : -1;
-        position["% of Capital Gain/ Loss since Inception (Live Position)"] = Math.round((position["Value (Base Currency)"] / position["Cost (Base Currency)"] - 1) * shortLongType * 100) / 100;
-        position["Accrued Interest Since Inception"] = (0, reports_1.calculateAccruedSinceInception)(position["Interest"], position["Coupon Rate"] / 100, position["Coupon Duration"]);
-        position["Total Gain/ Loss (USD)"] = Math.round(position["Capital Gain/ Loss since Inception (Live Position)"] + position["Accrued Interest Since Inception"]);
-        position["% of Total Gain/ Loss since Inception (Live Position)"] = Math.round(((position["Total Gain/ Loss (USD)"] + position["Cost (Base Currency)"]) / position["Cost (Base Currency)"] - 1) * shortLongType * 100) / 100;
+        position["Value (BC) % of Nav"] = Math.round((position["Value (BC)"] / fund.nav) * 10000) / 100;
+        position["Value (BC) Limit % of Nav"] = Math.abs(position["Value (BC) % of Nav"]) > 10 ? 15 : 10;
+        position["Value (BC) Utilization % of Nav"] = Math.round((position["Value (BC) % of Nav"] / position["Value (BC) Limit % of Nav"]) * 10000) / 100;
+        position["Value (BC) Test"] = Math.abs(position["Value (BC) Utilization % of Nav"]) < 100 ? "Pass" : "Fail";
+        position["Value (BC) Color Test"] = position["Value (BC) Test"] == "Pass" ? "#C5E1A5" : "#FFAB91";
+        position["Capital Gain/ Loss since Inception (Live Position)"] = position["Value (BC)"] - position["Cost (BC)"];
+        let shortLongType = position["Value (BC)"] > 0 ? 1 : -1;
+        position["% of Capital Gain/ Loss since Inception (Live Position)"] = Math.round((position["Value (BC)"] / position["Cost (BC)"] - 1) * shortLongType * 100) / 100;
+        position["Accrued Int. Since Inception"] = (0, reports_1.calculateAccruedSinceInception)(position["Interest"], position["Coupon Rate"] / 100, position["Coupon Duration"]);
+        position["Total Gain/ Loss (USD)"] = Math.round(position["Capital Gain/ Loss since Inception (Live Position)"] + position["Accrued Int. Since Inception"]);
+        position["% of Total Gain/ Loss since Inception (Live Position)"] = Math.round(((position["Total Gain/ Loss (USD)"] + position["Cost (BC)"]) / position["Cost (BC)"] - 1) * shortLongType * 100) / 100;
         position["Z Spread"] = (position["Z Spread"] / 1000000) * position["Notional Total"] * usdRatio;
         position["Z Spread"] = Math.round(position["Z Spread"] * 1000000) / 1000000 || 0;
-        position["Long Security Name"] = position["Issue"];
         let latestDateKey;
         latestDateKey = Object.keys(position["Interest"]).sort((a, b) => {
             // Parse the date strings into actual date objects
@@ -148,33 +160,30 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         })[0]; // Take the first item after sorting
         const latestDate = latestDateKey ? new Date(latestDateKey) : null;
         position["Last Day Since Realizd"] = position["Notional Total"] == 0 ? (0, common_1.getDateMufg)(latestDate) : null;
-        if (position["Issue"].includes("CDS")) {
-            position["Day P&L FX"] = Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["Previous FX Rate"])) / parseFloat(position["Previous FX Rate"])) * position["Quantity"] * 1000000) / 1000000 || 0;
-            position["MTD P&L FX"] = Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["MTD FX"] || position["FX Rate"])) / parseFloat(position["MTD FX"] || position["FX Rate"])) * position["Quantity"] * 1000000) / 1000000 || 0;
-        }
-        else {
-            position["Day P&L FX"] = Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["Previous FX Rate"])) / parseFloat(position["Previous FX Rate"])) * position["Notional Total"] * 1000000) / 1000000;
-            position["MTD P&L FX"] = (Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["MTD FX"] || position["FX Rate"])) / parseFloat(position["MTD FX"] || position["FX Rate"])) * position["Notional Total"]) * 1000000) / 1000000 || 0;
-        }
-        mtdpl += position["Ptf MTD P&L (Base Currency)"];
-        mtdrlzd += position["Ptf MTD Rlzd (Base Currency)"];
-        mtdurlzd += position["Ptf MTD URlzd (Base Currency)"];
-        mtdint += position["Monthly Interest Income (Base Currency)"];
-        dayint += position["Daily Interest Income (Base Currency)"];
-        daypl += position["Ptf Day P&L (Base Currency)"];
+        mtdpl += position["MTD P&L (BC)"];
+        mtdrlzd += position["MTD Rlzd (BC)"];
+        mtdurlzd += position["MTD URlzd (BC)"];
+        mtdint += position["MTD Int. (BC)"];
+        dayint += position["Day Int. (BC)"];
+        daypl += position["Day P&L (BC)"];
         dayfx += position["Day P&L FX"];
         mtdfx += position["MTD P&L FX"];
-        dayurlzd += position["Day URlzd"];
-        dayrlzd += position["Day Rlzd"];
+        dayurlzd += position["Day URlzd (BC)"];
+        dayrlzd += position["Day Rlzd (BC)"];
         dv01Sum += position["DV01"];
     }
+    // console.log(daypl)
     let monthGross = Math.round((mtdpl / parseFloat(fund.nav)) * 100000) / 1000;
     let dayGross = Math.round((daypl / parseFloat(fund.nav)) * 100000) / 1000;
+    let dayFXGross = Math.round((dayfx / parseFloat(fund.nav)) * 100000) / 1000;
+    let mtdFXGross = Math.round((mtdfx / parseFloat(fund.nav)) * 100000) / 1000;
     let fundDetails = {
         nav: parseFloat(fund.nav),
         holdbackRatio: parseFloat(fund.holdBackRatio),
         mtdGross: monthGross,
         dayGross: dayGross,
+        dayFXGross: dayFXGross,
+        mtdFXGross: mtdFXGross,
         mtdpl: Math.round(mtdpl * 1000) / 1000,
         mtdrlzd: Math.round(mtdrlzd * 1000) / 1000,
         mtdurlzd: Math.round(mtdurlzd * 1000) / 1000,
@@ -208,10 +217,15 @@ function formatFrontEndTable(portfolio, date, fund, dates, sort, sign) {
 exports.formatFrontEndTable = formatFrontEndTable;
 function yearsUntil(dateString, dateInput) {
     // Parse the date string and create a new Date object
-    // if(dateString == 0 || "0"){
-    //   return dateString
-    // }
-    const date = new Date(dateString).getTime();
+    if (dateString == 0 || dateString == "0") {
+        return 0;
+    }
+    let date = new Date(dateString).getTime();
+    if (!date) {
+        let dateComponents = dateString.split("/");
+        dateString = dateComponents[1] + "/" + dateComponents[0] + '/' + dateComponents[2];
+        date = new Date(dateString).getTime();
+    }
     // Get the current date
     const now = new Date(dateInput).getTime();
     // Calculate the difference in milliseconds
@@ -237,6 +251,18 @@ function calculateRlzd(trades, mark, issue) {
     return total;
 }
 exports.calculateRlzd = calculateRlzd;
+function calculateMTDCost(trades, mark, issue) {
+    let total = 0;
+    for (let index = 0; index < trades.length; index++) {
+        let trade = trades[index];
+        let price = trade.price;
+        let quantity = trade.quantity;
+        let rlzdTrade = (price - mark) * quantity;
+        total += rlzdTrade;
+    }
+    return total;
+}
+exports.calculateMTDCost = calculateMTDCost;
 function formatMarkDate(date) {
     date = new Date(date);
     let day = date.getDate().toString();
@@ -299,15 +325,14 @@ function formatSummaryPosition(position, fundDetails, dates) {
         "DV01 Dollar Value Impact Utilization % of Nav",
         "DV01 Dollar Value Impact Test",
         "DV01 Dollar Value Impact Color Test",
-        "Long Security Name",
-        "Value (Base Currency) % of Nav",
-        "Value (Base Currency) Limit % of Nav",
-        "Value (Base Currency) Utilization % of Nav",
-        "Value (Base Currency) Test",
-        "Value (Base Currency) Color Test",
+        "Value (BC) % of Nav",
+        "Value (BC) Limit % of Nav",
+        "Value (BC) Utilization % of Nav",
+        "Value (BC) Test",
+        "Value (BC) Color Test",
         "Capital Gain/ Loss since Inception (Live Position)",
         "% of Capital Gain/ Loss since Inception (Live Position)",
-        "Accrued Interest Since Inception",
+        "Accrued Int. Since Inception",
         "Total Gain/ Loss (USD)",
         "% of Total Gain/ Loss since Inception (Live Position)",
         "Coupon Rate",
@@ -316,15 +341,14 @@ function formatSummaryPosition(position, fundDetails, dates) {
     let titlesValues = {
         Type: "Type",
         "L/S": "L/S",
-        Strategy: "Group",
+        Strategy: "Strategy",
         "Asset Class": "Asset Class",
         "Call Date": "Call Date",
         Location: "Location",
-        "Long Security Name": "Issue",
         "BB Ticker": "BB Ticker",
         "Notional Total": "Notional Total",
         Notional: "Notional Total",
-        "USD Market Value": "Value (Base Currency)",
+        "USD Market Value": "Value (BC)",
         Maturity: "Maturity",
         "% of NAV": "% of NAV",
         YTM: "YTM",
@@ -334,18 +358,18 @@ function formatSummaryPosition(position, fundDetails, dates) {
         "Average Cost": "Average Cost",
         Cost: "Cost",
         "Day P&L FX (USD)": "Day P&L FX",
-        "Day P&L (USD)": "Ptf Day P&L (Base Currency)",
+        "Day P&L (USD)": "Day P&L (BC)",
         "MTD FX P&L (USD)": "MTD P&L FX",
-        "Realizd MTD P&L (USD)": "Ptf MTD Rlzd (Base Currency)",
-        "Unrealizd MTD P&L (USD)": "Ptf MTD URlzd (Base Currency)",
-        "MTD Interest Income (USD)": "Monthly Interest Income (Base Currency)",
-        "MTD P&L (USD)": "Ptf MTD P&L (Base Currency)",
-        "Daily P&L Attribution %": "Daily Attribution %",
+        "Realizd MTD P&L (USD)": "MTD Rlzd (BC)",
+        "Unrealizd MTD P&L (USD)": "MTD URlzd (BC)",
+        "MTD Int. (USD)": "MTD Int. (BC)",
+        "MTD P&L (USD)": "MTD P&L (BC)",
+        "Day P&L Attribution %": "Day Attribution %",
         "MTD P&L Attribution %": "MTD Attribution %",
         "Realised MTD P&L (USD) %": "Realised MTD P&L (USD) %",
         "Unrealised MTD P&L (USD) %": "Unrealised MTD P&L (USD) %",
-        "MTD Interest Income (USD) %": "MTD Interest Income (USD) %",
-        "Daily Interest Income (USD)": "Daily Interest Income (Base Currency)",
+        "MTD Int. (USD) %": "MTD Int. (USD) %",
+        "Day Int. (USD)": "Day Int. (BC)",
         Sector: "Sector",
         Country: "Country",
         "Last Day Since Realizd": "Last Day Since Realizd",
@@ -362,12 +386,12 @@ function formatSummaryPosition(position, fundDetails, dates) {
         "DV01 Dollar Value Impact Utilization % of Nav": "DV01 Dollar Value Impact Utilization % of Nav",
         "DV01 Dollar Value Impact Test": "DV01 Dollar Value Impact Test",
         "DV01 Dollar Value Impact Color Test": "DV01 Dollar Value Impact Color Test",
-        "Value (Base Currency) % of Nav": "Value (Base Currency) % of Nav",
-        "Value (Base Currency) Limit % of Nav": "Value (Base Currency) Limit % of Nav",
-        "Value (Base Currency) Utilization % of Nav": "Value (Base Currency) Utilization % of Nav",
-        "Accrued Interest Since Inception": "Accrued Interest Since Inception",
-        "Value (Base Currency) Test": "Value (Base Currency) Test",
-        "Value (Base Currency) Color Test": "Value (Base Currency) Color Test",
+        "Value (BC) % of Nav": "Value (BC) % of Nav",
+        "Value (BC) Limit % of Nav": "Value (BC) Limit % of Nav",
+        "Value (BC) Utilization % of Nav": "Value (BC) Utilization % of Nav",
+        "Accrued Int. Since Inception": "Accrued Int. Since Inception",
+        "Value (BC) Test": "Value (BC) Test",
+        "Value (BC) Color Test": "Value (BC) Color Test",
         "Capital Gain/ Loss since Inception (Live Position)": "Capital Gain/ Loss since Inception (Live Position)",
         "% of Capital Gain/ Loss since Inception (Live Position)": "% of Capital Gain/ Loss since Inception (Live Position)",
         "Total Gain/ Loss (USD)": "Total Gain/ Loss (USD)",
@@ -395,18 +419,18 @@ function formatSummaryPosition(position, fundDetails, dates) {
     }
     object["Day P&L %"] = ((object["Day P&L (USD)"] / fundDetails.nav) * 100).toFixed(2) + " %";
     object["MTD P&L %"] = ((object["MTD P&L (USD)"] / fundDetails.nav) * 100).toFixed(2) + " %";
-    object["Rlzd MTD (USD) %"] = ((position["Ptf MTD Rlzd (Base Currency)"] / fundDetails.nav) * 100).toFixed(2) + " %";
-    object["Rlzd MTD (USD)"] = Math.round(position["Ptf MTD Rlzd (Base Currency)"]);
-    object["URlzd MTD (USD) %"] = ((position["Ptf MTD URlzd (Base Currency)"] / fundDetails.nav) * 100).toFixed(2) + " %";
-    object["URlzd MTD (USD)"] = Math.round(position["Ptf MTD URlzd (Base Currency)"]);
-    object["MTD Int. (USD) %"] = ((position["Monthly Interest Income (Base Currency)"] / fundDetails.nav) * 100).toFixed(2) + " %";
+    object["Rlzd MTD (USD) %"] = ((position["MTD Rlzd (BC)"] / fundDetails.nav) * 100).toFixed(2) + " %";
+    object["Rlzd MTD (USD)"] = Math.round(position["MTD Rlzd (BC)"]);
+    object["URlzd MTD (USD) %"] = ((position["MTD URlzd (BC)"] / fundDetails.nav) * 100).toFixed(2) + " %";
+    object["URlzd MTD (USD)"] = Math.round(position["MTD URlzd (BC)"]);
+    object["MTD Int. (USD) %"] = ((position["MTD Int. (BC)"] / fundDetails.nav) * 100).toFixed(2) + " %";
     object["% of NAV"] = ((object["USD Market Value"] / fundDetails.nav) * 100).toFixed(2) + " %";
     object["Color"] = object["Notional Total"] == 0 ? "#E6F2FD" : "";
     object["ISIN"] = position["ISIN"];
     object["Issuer"] = position["Issuer"];
     object["Last Price Update"] = position["Last Price Update"];
     object["Rating Score"] = position["BBG Composite Rating"] && position["BBG Composite Rating"] !== "NR" ? bbgRating(position["BBG Composite Rating"]) : position["Moody's Bond Rating"] ? moodyRating(position["Moody's Bond Rating"]) : -99;
-    object["Value (Base Currency) % of GMV"] = Math.abs(Math.round((position["Value (Base Currency)"] / fundDetails.gmv) * 10000) / 100);
+    object["Value (BC) % of GMV"] = Math.abs(Math.round((position["Value (BC)"] / fundDetails.gmv) * 10000) / 100);
     object[`BBG / S&P / Moody / Fitch Rating`] = (position["BBG Composite Rating"] || "NR") + " " + (position["S&P Bond Rating"] || "NR") + " " + (position["Moody's Bond Rating"] || "NR") + " " + (position["Fitch Bond Rating"] || "NR") + " ";
     object["Spread (Z/T)"] = position["Z Spread"].toFixed(0);
     return object;
@@ -480,18 +504,17 @@ function sumTable(table, data, view, param, subtotal = false, subtotalParam = ""
     let dv01DollarValueLimitOfNav = parseFloat(data["DV01 Dollar Value Impact Limit % of Nav"]);
     let dv01DollarValueLimitUtilization = parseFloat(data["DV01 Dollar Value Impact Utilization % of Nav"]);
     let dv01DollarValueImpactTest = data["DV01 Dollar Value Impact Test"];
-    let valueUSDOfNav = parseFloat(data["Value (Base Currency) % of Nav"]);
-    let valueUSDOfGmv = data["Value (Base Currency) % of GMV"];
-    let valueUSDLimitOfNav = parseFloat(data["Value (Base Currency) Limit % of Nav"]);
-    let valueUSDUtilizationOfNav = parseFloat(data["Value (Base Currency) Utilization % of Nav"]);
-    let valueUSDOfNavTest = data["Value (Base Currency) Test"];
+    let valueUSDOfNav = parseFloat(data["Value (BC) % of Nav"]);
+    let valueUSDOfGmv = data["Value (BC) % of GMV"];
+    let valueUSDLimitOfNav = parseFloat(data["Value (BC) Limit % of Nav"]);
+    let valueUSDUtilizationOfNav = parseFloat(data["Value (BC) Utilization % of Nav"]);
+    let valueUSDOfNavTest = data["Value (BC) Test"];
     let capitalGains = parseFloat(data["Capital Gain/ Loss since Inception (Live Position)"]);
     let capitalGainsPercentage = parseFloat(data["% of Capital Gain/ Loss since Inception (Live Position)"]);
-    let accruedInterestSinceInception = parseFloat(data["Accrued Interest Since Inception"]);
+    let accruedInterestSinceInception = parseFloat(data["Accrued Int. Since Inception"]);
     let totalCaptialGains = parseFloat(data["Total Gain/ Loss (USD)"]);
     let totalCaptialGainsPercentage = parseFloat(data["% of Total Gain/ Loss since Inception (Live Position)"]);
-    let strategy;
-    param = param ? param : getSectorAssetClass(data["Long Security Name"], data["Sector"]);
+    param = param ? param : getSectorAssetClass(data["BB Ticker"], data["Sector"]);
     let dayPl;
     let monthPl;
     let usdMarketValue;
@@ -502,17 +525,16 @@ function sumTable(table, data, view, param, subtotal = false, subtotalParam = ""
     let dv01 = parseFloat(data["DV01"]) || 0;
     let notional = parseFloat(data["Notional Total"]);
     let isin = data["ISIN"];
+    let strategy = data["Strategy"];
     if (view == "frontOffice") {
         usdMarketValue = parseFloat(data["USD Market Value"]) || 0;
         dayPl = parseFloat(data["Day P&L (USD)"]);
         monthPl = parseFloat(data["MTD P&L (USD)"]);
-        strategy = data["Strategy"];
     }
     else {
-        usdMarketValue = parseFloat(data["Value (Base Currency)"]) || 0;
-        dayPl = parseFloat(data["Ptf Day P&L (Base Currency)"]);
-        monthPl = parseFloat(data["Ptf MTD P&L (Base Currency)"]);
-        strategy = data["Group"];
+        usdMarketValue = parseFloat(data["Value (BC)"]) || 0;
+        dayPl = parseFloat(data["Day P&L (BC)"]);
+        monthPl = parseFloat(data["MTD P&L (BC)"]);
     }
     table[param + " Aggregated"] = table[param + " Aggregated"]
         ? table[param + " Aggregated"]
@@ -530,19 +552,19 @@ function sumTable(table, data, view, param, subtotal = false, subtotalParam = ""
             "DV01 Dollar Value Impact % of Nav": 0,
             "DV01 Dollar Value Impact Limit % of Nav": 0,
             "DV01 Dollar Value Impact Utilization % of Nav": 0,
-            "Value (Base Currency) % of Nav": 0,
-            "Value (Base Currency) % of GMV": 0,
-            "Value (Base Currency) Limit % of Nav": 0,
-            "Value (Base Currency) Utilization % of Nav": 0,
+            "Value (BC) % of Nav": 0,
+            "Value (BC) % of GMV": 0,
+            "Value (BC) Limit % of Nav": 0,
+            "Value (BC) Utilization % of Nav": 0,
             "Capital Gain/ Loss since Inception (Live Position)": 0,
             "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-            "Accrued Interest Since Inception": 0,
+            "Accrued Int. Since Inception": 0,
             "Total Gain/ Loss (USD)": 0,
             "% of Total Gain/ Loss since Inception (Live Position)": 0,
             "DV01 Dollar Value Impact Test": 0,
-            "Value (Base Currency) Test": 0,
+            "Value (BC) Test": 0,
             "DV01 Dollar Value Impact Color Test": 0,
-            "Value (Base Currency) Color Test": 0,
+            "Value (BC) Color Test": 0,
             "Notional Total": 0,
         };
     table[param + " Aggregated"].DV01Sum += dv01;
@@ -560,17 +582,17 @@ function sumTable(table, data, view, param, subtotal = false, subtotalParam = ""
         table[param + " Aggregated"]["DV01 Dollar Value Impact Test"] = "Fail";
         table[param + " Aggregated"]["DV01 Dollar Value Impact Color Test"] = "#FFAB91"; // : "#FFAB91";
     }
-    table[param + " Aggregated"]["Value (Base Currency) % of Nav"] += Math.round(valueUSDOfNav * 100) / 100;
-    table[param + " Aggregated"]["Value (Base Currency) % of GMV"] += Math.round(valueUSDOfGmv * 100) / 100;
-    table[param + " Aggregated"]["Value (Base Currency) Limit % of Nav"] += valueUSDLimitOfNav;
-    table[param + " Aggregated"]["Value (Base Currency) Utilization % of Nav"] += valueUSDUtilizationOfNav;
+    table[param + " Aggregated"]["Value (BC) % of Nav"] += Math.round(valueUSDOfNav * 100) / 100;
+    table[param + " Aggregated"]["Value (BC) % of GMV"] += Math.round(valueUSDOfGmv * 100) / 100;
+    table[param + " Aggregated"]["Value (BC) Limit % of Nav"] += valueUSDLimitOfNav;
+    table[param + " Aggregated"]["Value (BC) Utilization % of Nav"] += valueUSDUtilizationOfNav;
     if (valueUSDOfNavTest == "Fail") {
-        table[param + " Aggregated"]["Value (Base Currency) Test"] = "Fail";
-        table[param + " Aggregated"]["Value (Base Currency) Color Test"] = "#FFAB91";
+        table[param + " Aggregated"]["Value (BC) Test"] = "Fail";
+        table[param + " Aggregated"]["Value (BC) Color Test"] = "#FFAB91";
     }
     table[param + " Aggregated"]["Capital Gain/ Loss since Inception (Live Position)"] += capitalGains;
     table[param + " Aggregated"]["% of Capital Gain/ Loss since Inception (Live Position)"] += capitalGainsPercentage;
-    table[param + " Aggregated"]["Accrued Interest Since Inception"] += accruedInterestSinceInception;
+    table[param + " Aggregated"]["Accrued Int. Since Inception"] += accruedInterestSinceInception;
     table[param + " Aggregated"]["Total Gain/ Loss (USD)"] += totalCaptialGains;
     table[param + " Aggregated"]["% of Total Gain/ Loss since Inception (Live Position)"] += totalCaptialGainsPercentage;
     table[param + " Aggregated"]["Notional Total"] += notional;
@@ -590,20 +612,20 @@ function sumTable(table, data, view, param, subtotal = false, subtotalParam = ""
             "DV01 Dollar Value Impact % of Nav": 0,
             "DV01 Dollar Value Impact Limit % of Nav": 0,
             "DV01 Dollar Value Impact Utilization % of Nav": 0,
-            "Value (Base Currency) % of Nav": 0,
-            "Value (Base Currency) % of GMV": 0,
-            "Value (Base Currency) Limit % of Nav": 0,
-            "Value (Base Currency) Utilization % of Nav": 0,
+            "Value (BC) % of Nav": 0,
+            "Value (BC) % of GMV": 0,
+            "Value (BC) Limit % of Nav": 0,
+            "Value (BC) Utilization % of Nav": 0,
             "Capital Gain/ Loss since Inception (Live Position)": 0,
             "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-            "Accrued Interest Since Inception": 0,
+            "Accrued Int. Since Inception": 0,
             "Total Gain/ Loss (USD)": 0,
             "% of Total Gain/ Loss since Inception (Live Position)": 0,
             "DV01 Dollar Value Impact Test": 0,
-            "Value (Base Currency) Test": 0,
+            "Value (BC) Test": 0,
             "DV01 Dollar Value Impact Color Test": 0,
             "Notional Total": 0,
-            "Value (Base Currency) Color Test": 0,
+            "Value (BC) Color Test": 0,
         };
     table["Total"]["DV01 Dollar Value Impact"] += dv01DollarValueImpact;
     table["Total"]["DV01 Dollar Value Impact % of Nav"] += dv01DollarValueOfNav;
@@ -613,17 +635,17 @@ function sumTable(table, data, view, param, subtotal = false, subtotalParam = ""
         table["Total"]["DV01 Dollar Value Impact Test"] = "Fail";
         table["Total"]["DV01 Dollar Value Impact Color Test"] = "#FFAB91"; // : "#FFAB91";
     }
-    table["Total"]["Value (Base Currency) % of Nav"] += valueUSDOfNav;
-    table["Total"]["Value (Base Currency) % of GMV"] += valueUSDOfGmv;
-    table["Total"]["Value (Base Currency) Limit % of Nav"] += valueUSDLimitOfNav;
-    table["Total"]["Value (Base Currency) Utilization % of Nav"] += valueUSDUtilizationOfNav;
+    table["Total"]["Value (BC) % of Nav"] += valueUSDOfNav;
+    table["Total"]["Value (BC) % of GMV"] += valueUSDOfGmv;
+    table["Total"]["Value (BC) Limit % of Nav"] += valueUSDLimitOfNav;
+    table["Total"]["Value (BC) Utilization % of Nav"] += valueUSDUtilizationOfNav;
     if (valueUSDOfNavTest == "Fail") {
-        table["Total"]["Value (Base Currency) Test"] = "Fail";
-        table["Total"]["Value (Base Currency) Color Test"] = "#FFAB91";
+        table["Total"]["Value (BC) Test"] = "Fail";
+        table["Total"]["Value (BC) Color Test"] = "#FFAB91";
     }
     table["Total"]["Capital Gain/ Loss since Inception (Live Position)"] += capitalGains;
     table["Total"]["% of Capital Gain/ Loss since Inception (Live Position)"] += capitalGainsPercentage;
-    table["Total"]["Accrued Interest Since Inception"] += accruedInterestSinceInception;
+    table["Total"]["Accrued Int. Since Inception"] += accruedInterestSinceInception;
     table["Total"]["Total Gain/ Loss (USD)"] += totalCaptialGains;
     table["Total"]["% of Total Gain/ Loss since Inception (Live Position)"] += totalCaptialGainsPercentage;
     table["Total"]["Notional Total"] += notional;
@@ -648,13 +670,13 @@ function sumTable(table, data, view, param, subtotal = false, subtotalParam = ""
                 "DV01 Dollar Value Impact % of Nav": 0,
                 "DV01 Dollar Value Impact Limit % of Nav": 0,
                 "DV01 Dollar Value Impact Utilization % of Nav": 0,
-                "Value (Base Currency) % of Nav": 0,
-                "Value (Base Currency) % of GMV": 0,
-                "Value (Base Currency) Limit % of Nav": 0,
-                "Value (Base Currency) Utilization % of Nav": 0,
+                "Value (BC) % of Nav": 0,
+                "Value (BC) % of GMV": 0,
+                "Value (BC) Limit % of Nav": 0,
+                "Value (BC) Utilization % of Nav": 0,
                 "Capital Gain/ Loss since Inception (Live Position)": 0,
                 "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-                "Accrued Interest Since Inception": 0,
+                "Accrued Int. Since Inception": 0,
                 "Total Gain/ Loss (USD)": 0,
                 "% of Total Gain/ Loss since Inception (Live Position)": 0,
                 "Notional Total": 0,
@@ -674,13 +696,13 @@ function sumTable(table, data, view, param, subtotal = false, subtotalParam = ""
                 "DV01 Dollar Value Impact % of Nav": 0,
                 "DV01 Dollar Value Impact Limit % of Nav": 0,
                 "DV01 Dollar Value Impact Utilization % of Nav": 0,
-                "Value (Base Currency) % of Nav": 0,
-                "Value (Base Currency) % of GMV": 0,
-                "Value (Base Currency) Limit % of Nav": 0,
-                "Value (Base Currency) Utilization % of Nav": 0,
+                "Value (BC) % of Nav": 0,
+                "Value (BC) % of GMV": 0,
+                "Value (BC) Limit % of Nav": 0,
+                "Value (BC) Utilization % of Nav": 0,
                 "Capital Gain/ Loss since Inception (Live Position)": 0,
                 "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-                "Accrued Interest Since Inception": 0,
+                "Accrued Int. Since Inception": 0,
                 "Total Gain/ Loss (USD)": 0,
                 "% of Total Gain/ Loss since Inception (Live Position)": 0,
                 "Notional Total": 0,
@@ -691,13 +713,13 @@ function sumTable(table, data, view, param, subtotal = false, subtotalParam = ""
         table[subtotalParam]["DV01 Dollar Value Impact % of Nav"] += Math.round(dv01DollarValueOfNav * 100) / 100 || 0;
         table[subtotalParam]["DV01 Dollar Value Impact Limit % of Nav"] += dv01DollarValueLimitOfNav;
         table[subtotalParam]["DV01 Dollar Value Impact Utilization % of Nav"] += dv01DollarValueLimitUtilization;
-        table[subtotalParam]["Value (Base Currency) % of Nav"] += Math.round(valueUSDOfNav * 100) / 100 || 0;
-        table[subtotalParam]["Value (Base Currency) % of GMV"] += Math.round(valueUSDOfGmv * 100) / 100 || 0;
-        table[subtotalParam]["Value (Base Currency) Limit % of Nav"] += valueUSDLimitOfNav;
-        table[subtotalParam]["Value (Base Currency) Utilization % of Nav"] += valueUSDUtilizationOfNav;
+        table[subtotalParam]["Value (BC) % of Nav"] += Math.round(valueUSDOfNav * 100) / 100 || 0;
+        table[subtotalParam]["Value (BC) % of GMV"] += Math.round(valueUSDOfGmv * 100) / 100 || 0;
+        table[subtotalParam]["Value (BC) Limit % of Nav"] += valueUSDLimitOfNav;
+        table[subtotalParam]["Value (BC) Utilization % of Nav"] += valueUSDUtilizationOfNav;
         table[subtotalParam]["Capital Gain/ Loss since Inception (Live Position)"] += capitalGains;
         table[subtotalParam]["% of Capital Gain/ Loss since Inception (Live Position)"] += Math.round(capitalGainsPercentage * 100) / 100 || 0;
-        table[subtotalParam]["Accrued Interest Since Inception"] += accruedInterestSinceInception;
+        table[subtotalParam]["Accrued Int. Since Inception"] += accruedInterestSinceInception;
         table[subtotalParam]["Total Gain/ Loss (USD)"] += totalCaptialGains;
         table[subtotalParam]["% of Total Gain/ Loss since Inception (Live Position)"] += Math.round(totalCaptialGainsPercentage * 100) / 100 || 0;
         table[subtotalParam]["Notional Total"] += notional;
@@ -717,13 +739,13 @@ function sumTable(table, data, view, param, subtotal = false, subtotalParam = ""
         table[subtotalParam][strategy]["DV01 Dollar Value Impact % of Nav"] += dv01DollarValueOfNav;
         table[subtotalParam][strategy]["DV01 Dollar Value Impact Limit % of Nav"] += dv01DollarValueLimitOfNav;
         table[subtotalParam][strategy]["DV01 Dollar Value Impact Utilization % of Nav"] += dv01DollarValueLimitUtilization;
-        table[subtotalParam][strategy]["Value (Base Currency) % of Nav"] += Math.round(valueUSDOfNav * 100) / 100 || 0;
-        table[subtotalParam][strategy]["Value (Base Currency) % of GMV"] += Math.round(valueUSDOfGmv * 100) / 100 || 0;
-        table[subtotalParam][strategy]["Value (Base Currency) Limit % of Nav"] += valueUSDLimitOfNav;
-        table[subtotalParam][strategy]["Value (Base Currency) Utilization % of Nav"] += valueUSDUtilizationOfNav;
+        table[subtotalParam][strategy]["Value (BC) % of Nav"] += Math.round(valueUSDOfNav * 100) / 100 || 0;
+        table[subtotalParam][strategy]["Value (BC) % of GMV"] += Math.round(valueUSDOfGmv * 100) / 100 || 0;
+        table[subtotalParam][strategy]["Value (BC) Limit % of Nav"] += valueUSDLimitOfNav;
+        table[subtotalParam][strategy]["Value (BC) Utilization % of Nav"] += valueUSDUtilizationOfNav;
         table[subtotalParam][strategy]["Capital Gain/ Loss since Inception (Live Position)"] += capitalGains;
         table[subtotalParam][strategy]["% of Capital Gain/ Loss since Inception (Live Position)"] += Math.round(capitalGainsPercentage * 100) / 100 || 0;
-        table[subtotalParam][strategy]["Accrued Interest Since Inception"] += accruedInterestSinceInception;
+        table[subtotalParam][strategy]["Accrued Int. Since Inception"] += accruedInterestSinceInception;
         table[subtotalParam][strategy]["Total Gain/ Loss (USD)"] += totalCaptialGains;
         table[subtotalParam][strategy]["% of Total Gain/ Loss since Inception (Live Position)"] += Math.round(totalCaptialGainsPercentage * 100) / 100 || 0;
         table[subtotalParam][strategy]["Notional Total"] += notional;
@@ -785,7 +807,7 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
             groupedByLocation[locationCode].color = "#FFF9C4";
             for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
                 hedgeCurrencyNotional += groupedByLocation[locationCode].data[index]["Notional Total"] || 0;
-                let currency = groupedByLocation[locationCode].data[index]["Long Security Name"].includes("IB") ? groupedByLocation[locationCode].data[index]["Security Description"] : groupedByLocation[locationCode].data[index]["Currency"];
+                let currency = groupedByLocation[locationCode].data[index]["ISIN"].includes("IB") ? groupedByLocation[locationCode].data[index]["Security Description"] : groupedByLocation[locationCode].data[index]["Currency"];
                 if (!currency) {
                     currency = "Bonds";
                 }
@@ -796,7 +818,7 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
             groupedByLocation[locationCode].color = "#FFF9C4";
             for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
                 hedgeCurrencyNotional += groupedByLocation[locationCode].data[index]["Notional Total"] || 0;
-                let currency = groupedByLocation[locationCode].data[index]["Long Security Name"].includes("IB") ? groupedByLocation[locationCode].data[index]["Security Description"] : groupedByLocation[locationCode].data[index]["Currency"];
+                let currency = groupedByLocation[locationCode].data[index]["ISIN"].includes("IB") ? groupedByLocation[locationCode].data[index]["Security Description"] : groupedByLocation[locationCode].data[index]["Currency"];
                 if (!currency) {
                     currency = "Bonds";
                 }
@@ -807,7 +829,7 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
             groupedByLocation[locationCode].color = "#FFF9C4";
             for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
                 hedgeCurrencyNotional += groupedByLocation[locationCode].data[index]["Notional Total"] || 0;
-                let currency = groupedByLocation[locationCode].data[index]["Long Security Name"].includes("IB") ? groupedByLocation[locationCode].data[index]["Security Description"] : groupedByLocation[locationCode].data[index]["Currency"];
+                let currency = groupedByLocation[locationCode].data[index]["ISIN"].includes("IB") ? groupedByLocation[locationCode].data[index]["Security Description"] : groupedByLocation[locationCode].data[index]["Currency"];
                 if (!currency) {
                     currency = "Bonds";
                 }
@@ -857,7 +879,7 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
             let duration = parseFloat(groupedByLocation[locationCode].data[index]["Duration"]) || 0;
             let dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
             let notional = parseFloat(groupedByLocation[locationCode].data[index]["Notional Total"]) || 0;
-            let strategy = view == "frontOffice" ? (groupedByLocation[locationCode].data[index]["Strategy"] ? groupedByLocation[locationCode].data[index]["Strategy"] : "Unspecified") : groupedByLocation[locationCode].data[index]["Group"] ? groupedByLocation[locationCode].data[index]["Group"] : "Unspecified";
+            let strategy = groupedByLocation[locationCode].data[index]["Strategy"];
             let ratingScore = groupedByLocation[locationCode].data[index]["Rating Score"];
             let usdMarketValue;
             let dayPl;
@@ -875,9 +897,9 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
                 monthPl = parseFloat(groupedByLocation[locationCode].data[index]["MTD P&L (USD)"]);
             }
             else {
-                usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["Value (Base Currency)"]) || 0;
-                dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf Day P&L (Base Currency)"]);
-                monthPl = parseFloat(groupedByLocation[locationCode].data[index]["Ptf MTD P&L (Base Currency)"]);
+                usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["Value (BC)"]) || 0;
+                dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Day P&L (BC)"]);
+                monthPl = parseFloat(groupedByLocation[locationCode].data[index]["MTD P&L (BC)"]);
             }
             strategyNAVPercentage[strategy] = strategyNAVPercentage[strategy] ? strategyNAVPercentage[strategy] + usdMarketValue : usdMarketValue;
             issuerNAVPercentage[issuer] = issuerNAVPercentage[issuer] ? issuerNAVPercentage[issuer] + usdMarketValue : usdMarketValue;
@@ -953,16 +975,16 @@ function getTopWorst(groupedByLocation) {
     entries = entries.filter((object, index) => object["key"] != "Rlzd");
     entries.sort((a, b) => b.groupDayPl - a.groupDayPl);
     // Step 3: Select the top 5 and worst 5 entries
-    const top5Daily = entries.slice(0, 5);
-    let worst5Daily = entries.slice(-5).sort((a, b) => a.groupDayPl - b.groupDayPl);
+    const top5Day = entries.slice(0, 5);
+    let worst5Day = entries.slice(-5).sort((a, b) => a.groupDayPl - b.groupDayPl);
     entries.sort((a, b) => b.groupMonthlyPl - a.groupMonthlyPl);
     // Step 4: Map the selected entries to retrieve their `data` values
     const top5Monthly = entries.slice(0, 5);
     let worst5Monthly = entries.slice(-5);
     worst5Monthly = worst5Monthly.sort((a, b) => a.groupMonthlyPl - b.groupMonthlyPl);
     let topWorstPerformaners = {
-        top5Daily: top5Daily,
-        worst5Daily: worst5Daily,
+        top5Day: top5Day,
+        worst5Day: worst5Day,
         top5Monthly: top5Monthly,
         worst5Monthly: worst5Monthly,
     };
@@ -1055,7 +1077,7 @@ function assignBorderAndCustomSortAggregateGroup(portfolio, groupedByLocation, s
             }
         }
         if (groupedByLocation[locationCode].data.length > 1 && locationCode != "Rlzd") {
-            let portfolioViewType = groupedByLocation[locationCode].data[groupedByLocation[locationCode].data.length - 1]["Value (Base Currency)"] ? "backOffice" : "frontOffice";
+            let portfolioViewType = groupedByLocation[locationCode].data[groupedByLocation[locationCode].data.length - 1]["Value (BC)"] ? "backOffice" : "frontOffice";
             let newObject = {};
             if (portfolioViewType == "frontOffice") {
                 newObject = {
@@ -1079,10 +1101,10 @@ function assignBorderAndCustomSortAggregateGroup(portfolio, groupedByLocation, s
                     Type: "Total",
                     Color: "white",
                     Location: locationCode,
-                    "Value (Base Currency)": groupedByLocation[locationCode].groupUSDMarketValue,
+                    "Value (BC)": groupedByLocation[locationCode].groupUSDMarketValue,
                     DV01: groupedByLocation[locationCode].groupDV01Sum,
-                    "Ptf Day P&L (Base Currency)": groupedByLocation[locationCode].groupDayPl,
-                    "Ptf MTD P&L (Base Currency)": groupedByLocation[locationCode].groupMonthlyPl,
+                    "Day P&L (BC)": groupedByLocation[locationCode].groupDayPl,
+                    "MTD P&L (BC)": groupedByLocation[locationCode].groupMonthlyPl,
                     Duration: groupedByLocation[locationCode].groupDuration,
                     OAS: groupedByLocation[locationCode].groupOAS,
                     "OAS W Change": groupedByLocation[locationCode].groupOASWChange,
@@ -1127,14 +1149,14 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
             "DV01 Dollar Value Impact Limit % of Nav": 0,
             "DV01 Dollar Value Impact Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Test": "Pass",
-            "Value (Base Currency) % of Nav": 0,
-            "Value (Base Currency) % of GMV": 0,
-            "Value (Base Currency) Limit % of Nav": 0,
-            "Value (Base Currency) Utilization % of Nav": 0,
-            "Value (Base Currency) Test": "Pass",
+            "Value (BC) % of Nav": 0,
+            "Value (BC) % of GMV": 0,
+            "Value (BC) Limit % of Nav": 0,
+            "Value (BC) Utilization % of Nav": 0,
+            "Value (BC) Test": "Pass",
             "Capital Gain/ Loss since Inception (Live Position)": 0,
             "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-            "Accrued Interest Since Inception": 0,
+            "Accrued Int. Since Inception": 0,
             "Total Gain/ Loss (USD)": 0,
             "% of Total Gain/ Loss since Inception (Live Position)": 0,
             "Notional Total": 0,
@@ -1153,14 +1175,14 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
             "DV01 Dollar Value Impact Limit % of Nav": 0,
             "DV01 Dollar Value Impact Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Test": "Pass",
-            "Value (Base Currency) % of Nav": 0,
-            "Value (Base Currency) % of GMV": 0,
-            "Value (Base Currency) Limit % of Nav": 0,
-            "Value (Base Currency) Utilization % of Nav": 0,
-            "Value (Base Currency) Test": "Pass",
+            "Value (BC) % of Nav": 0,
+            "Value (BC) % of GMV": 0,
+            "Value (BC) Limit % of Nav": 0,
+            "Value (BC) Utilization % of Nav": 0,
+            "Value (BC) Test": "Pass",
             "Capital Gain/ Loss since Inception (Live Position)": 0,
             "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-            "Accrued Interest Since Inception": 0,
+            "Accrued Int. Since Inception": 0,
             "Total Gain/ Loss (USD)": 0,
             "% of Total Gain/ Loss since Inception (Live Position)": 0,
             "Notional Total": 0,
@@ -1179,14 +1201,14 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
             "DV01 Dollar Value Impact Limit % of Nav": 0,
             "DV01 Dollar Value Impact Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Test": "Pass",
-            "Value (Base Currency) % of Nav": 0,
-            "Value (Base Currency) % of GMV": 0,
-            "Value (Base Currency) Limit % of Nav": 0,
-            "Value (Base Currency) Utilization % of Nav": 0,
-            "Value (Base Currency) Test": "Pass",
+            "Value (BC) % of Nav": 0,
+            "Value (BC) % of GMV": 0,
+            "Value (BC) Limit % of Nav": 0,
+            "Value (BC) Utilization % of Nav": 0,
+            "Value (BC) Test": "Pass",
             "Capital Gain/ Loss since Inception (Live Position)": 0,
             "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-            "Accrued Interest Since Inception": 0,
+            "Accrued Int. Since Inception": 0,
             "Total Gain/ Loss (USD)": 0,
             "% of Total Gain/ Loss since Inception (Live Position)": 0,
             "Notional Total": 0,
@@ -1205,14 +1227,14 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
             "DV01 Dollar Value Impact Limit % of Nav": 0,
             "DV01 Dollar Value Impact Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Test": "Pass",
-            "Value (Base Currency) % of Nav": 0,
-            "Value (Base Currency) % of GMV": 0,
-            "Value (Base Currency) Limit % of Nav": 0,
-            "Value (Base Currency) Utilization % of Nav": 0,
-            "Value (Base Currency) Test": "Pass",
+            "Value (BC) % of Nav": 0,
+            "Value (BC) % of GMV": 0,
+            "Value (BC) Limit % of Nav": 0,
+            "Value (BC) Utilization % of Nav": 0,
+            "Value (BC) Test": "Pass",
             "Capital Gain/ Loss since Inception (Live Position)": 0,
             "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-            "Accrued Interest Since Inception": 0,
+            "Accrued Int. Since Inception": 0,
             "Total Gain/ Loss (USD)": 0,
             "% of Total Gain/ Loss since Inception (Live Position)": 0,
             "Notional Total": 0,
@@ -1231,14 +1253,14 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
             "DV01 Dollar Value Impact Limit % of Nav": 0,
             "DV01 Dollar Value Impact Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Test": "Pass",
-            "Value (Base Currency) % of Nav": 0,
-            "Value (Base Currency) % of GMV": 0,
-            "Value (Base Currency) Limit % of Nav": 0,
-            "Value (Base Currency) Utilization % of Nav": 0,
-            "Value (Base Currency) Test": "Pass",
+            "Value (BC) % of Nav": 0,
+            "Value (BC) % of GMV": 0,
+            "Value (BC) Limit % of Nav": 0,
+            "Value (BC) Utilization % of Nav": 0,
+            "Value (BC) Test": "Pass",
             "Capital Gain/ Loss since Inception (Live Position)": 0,
             "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-            "Accrued Interest Since Inception": 0,
+            "Accrued Int. Since Inception": 0,
             "Total Gain/ Loss (USD)": 0,
             "% of Total Gain/ Loss since Inception (Live Position)": 0,
             "Notional Total": 0,
@@ -1256,16 +1278,16 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
             "DV01 Dollar Value Impact Limit % of Nav": 0,
             "DV01 Dollar Value Impact Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Test": "Pass",
-            "Value (Base Currency) % of Nav": 0,
-            "Value (Base Currency) % of GMV": 0,
-            "Value (Base Currency) Limit % of Nav": 0,
-            "Value (Base Currency) Utilization % of Nav": 0,
+            "Value (BC) % of Nav": 0,
+            "Value (BC) % of GMV": 0,
+            "Value (BC) Limit % of Nav": 0,
+            "Value (BC) Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-            "Value (Base Currency) Color Test": "#C5E1A5",
-            "Value (Base Currency) Test": "Pass",
+            "Value (BC) Color Test": "#C5E1A5",
+            "Value (BC) Test": "Pass",
             "Capital Gain/ Loss since Inception (Live Position)": 0,
             "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-            "Accrued Interest Since Inception": 0,
+            "Accrued Int. Since Inception": 0,
             "Total Gain/ Loss (USD)": 0,
             "% of Total Gain/ Loss since Inception (Live Position)": 0,
             "Notional Total": 0,
@@ -1285,16 +1307,16 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
             "DV01 Dollar Value Impact Limit % of Nav": 0,
             "DV01 Dollar Value Impact Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Test": "Pass",
-            "Value (Base Currency) % of Nav": 0,
-            "Value (Base Currency) % of GMV": 0,
-            "Value (Base Currency) Limit % of Nav": 0,
-            "Value (Base Currency) Utilization % of Nav": 0,
+            "Value (BC) % of Nav": 0,
+            "Value (BC) % of GMV": 0,
+            "Value (BC) Limit % of Nav": 0,
+            "Value (BC) Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-            "Value (Base Currency) Color Test": "#C5E1A5",
-            "Value (Base Currency) Test": "Pass",
+            "Value (BC) Color Test": "#C5E1A5",
+            "Value (BC) Test": "Pass",
             "Capital Gain/ Loss since Inception (Live Position)": 0,
             "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-            "Accrued Interest Since Inception": 0,
+            "Accrued Int. Since Inception": 0,
             "Total Gain/ Loss (USD)": 0,
             "% of Total Gain/ Loss since Inception (Live Position)": 0,
             "Notional Total": 0,
@@ -1315,16 +1337,16 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
             "DV01 Dollar Value Impact Limit % of Nav": 0,
             "DV01 Dollar Value Impact Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Test": "Pass",
-            "Value (Base Currency) % of Nav": 0,
-            "Value (Base Currency) % of GMV": 0,
-            "Value (Base Currency) Limit % of Nav": 0,
-            "Value (Base Currency) Utilization % of Nav": 0,
+            "Value (BC) % of Nav": 0,
+            "Value (BC) % of GMV": 0,
+            "Value (BC) Limit % of Nav": 0,
+            "Value (BC) Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-            "Value (Base Currency) Color Test": "#C5E1A5",
-            "Value (Base Currency) Test": "Pass",
+            "Value (BC) Color Test": "#C5E1A5",
+            "Value (BC) Test": "Pass",
             "Capital Gain/ Loss since Inception (Live Position)": 0,
             "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-            "Accrued Interest Since Inception": 0,
+            "Accrued Int. Since Inception": 0,
             "Total Gain/ Loss (USD)": 0,
             "% of Total Gain/ Loss since Inception (Live Position)": 0,
             "Notional Total": 0,
@@ -1343,16 +1365,16 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
             "DV01 Dollar Value Impact Limit % of Nav": 0,
             "DV01 Dollar Value Impact Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Test": "Pass",
-            "Value (Base Currency) % of Nav": 0,
-            "Value (Base Currency) % of GMV": 0,
-            "Value (Base Currency) Limit % of Nav": 0,
-            "Value (Base Currency) Utilization % of Nav": 0,
+            "Value (BC) % of Nav": 0,
+            "Value (BC) % of GMV": 0,
+            "Value (BC) Limit % of Nav": 0,
+            "Value (BC) Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-            "Value (Base Currency) Test": "Pass",
-            "Value (Base Currency) Color Test": "#C5E1A5",
+            "Value (BC) Test": "Pass",
+            "Value (BC) Color Test": "#C5E1A5",
             "Capital Gain/ Loss since Inception (Live Position)": 0,
             "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-            "Accrued Interest Since Inception": 0,
+            "Accrued Int. Since Inception": 0,
             "Total Gain/ Loss (USD)": 0,
             "% of Total Gain/ Loss since Inception (Live Position)": 0,
             "Notional Total": 0,
@@ -1371,16 +1393,16 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
             "DV01 Dollar Value Impact Limit % of Nav": 0,
             "DV01 Dollar Value Impact Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Test": "Pass",
-            "Value (Base Currency) % of Nav": 0,
-            "Value (Base Currency) % of GMV": 0,
-            "Value (Base Currency) Limit % of Nav": 0,
+            "Value (BC) % of Nav": 0,
+            "Value (BC) % of GMV": 0,
+            "Value (BC) Limit % of Nav": 0,
             "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-            "Value (Base Currency) Utilization % of Nav": 0,
-            "Value (Base Currency) Color Test": "#C5E1A5",
-            "Value (Base Currency) Test": "Pass",
+            "Value (BC) Utilization % of Nav": 0,
+            "Value (BC) Color Test": "#C5E1A5",
+            "Value (BC) Test": "Pass",
             "Capital Gain/ Loss since Inception (Live Position)": 0,
             "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-            "Accrued Interest Since Inception": 0,
+            "Accrued Int. Since Inception": 0,
             "Total Gain/ Loss (USD)": 0,
             "% of Total Gain/ Loss since Inception (Live Position)": 0,
             "Notional Total": 0,
@@ -1398,16 +1420,16 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
             "DV01 Dollar Value Impact Limit % of Nav": 0,
             "DV01 Dollar Value Impact Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Test": "Pass",
-            "Value (Base Currency) % of Nav": 0,
-            "Value (Base Currency) % of GMV": 0,
-            "Value (Base Currency) Limit % of Nav": 0,
-            "Value (Base Currency) Utilization % of Nav": 0,
+            "Value (BC) % of Nav": 0,
+            "Value (BC) % of GMV": 0,
+            "Value (BC) Limit % of Nav": 0,
+            "Value (BC) Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-            "Value (Base Currency) Color Test": "#C5E1A5",
-            "Value (Base Currency) Test": "Pass",
+            "Value (BC) Color Test": "#C5E1A5",
+            "Value (BC) Test": "Pass",
             "Capital Gain/ Loss since Inception (Live Position)": 0,
             "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-            "Accrued Interest Since Inception": 0,
+            "Accrued Int. Since Inception": 0,
             "Total Gain/ Loss (USD)": 0,
             "% of Total Gain/ Loss since Inception (Live Position)": 0,
             "Notional Total": 0,
@@ -1428,16 +1450,16 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
             "DV01 Dollar Value Impact Limit % of Nav": 0,
             "DV01 Dollar Value Impact Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Test": "Pass",
-            "Value (Base Currency) % of Nav": 0,
-            "Value (Base Currency) % of GMV": 0,
-            "Value (Base Currency) Limit % of Nav": 0,
-            "Value (Base Currency) Utilization % of Nav": 0,
-            "Value (Base Currency) Test": "Pass",
+            "Value (BC) % of Nav": 0,
+            "Value (BC) % of GMV": 0,
+            "Value (BC) Limit % of Nav": 0,
+            "Value (BC) Utilization % of Nav": 0,
+            "Value (BC) Test": "Pass",
             "Capital Gain/ Loss since Inception (Live Position)": 0,
             "% of Capital Gain/ Loss since Inception (Live Position)": 0,
             "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-            "Value (Base Currency) Color Test": "#C5E1A5",
-            "Accrued Interest Since Inception": 0,
+            "Value (BC) Color Test": "#C5E1A5",
+            "Accrued Int. Since Inception": 0,
             "Total Gain/ Loss (USD)": 0,
             "% of Total Gain/ Loss since Inception (Live Position)": 0,
             "Notional Total": 0,
@@ -1456,16 +1478,16 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
             "DV01 Dollar Value Impact Limit % of Nav": 0,
             "DV01 Dollar Value Impact Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Test": "Pass",
-            "Value (Base Currency) % of Nav": 0,
+            "Value (BC) % of Nav": 0,
             "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-            "Value (Base Currency) Color Test": "#C5E1A5",
-            "Value (Base Currency) % of GMV": 0,
-            "Value (Base Currency) Limit % of Nav": 0,
-            "Value (Base Currency) Utilization % of Nav": 0,
-            "Value (Base Currency) Test": "Pass",
+            "Value (BC) Color Test": "#C5E1A5",
+            "Value (BC) % of GMV": 0,
+            "Value (BC) Limit % of Nav": 0,
+            "Value (BC) Utilization % of Nav": 0,
+            "Value (BC) Test": "Pass",
             "Capital Gain/ Loss since Inception (Live Position)": 0,
             "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-            "Accrued Interest Since Inception": 0,
+            "Accrued Int. Since Inception": 0,
             "Total Gain/ Loss (USD)": 0,
             "% of Total Gain/ Loss since Inception (Live Position)": 0,
             "Notional Total": 0,
@@ -1484,16 +1506,16 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
             "DV01 Dollar Value Impact Limit % of Nav": 0,
             "DV01 Dollar Value Impact Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Test": "Pass",
-            "Value (Base Currency) % of Nav": 0,
-            "Value (Base Currency) % of GMV": 0,
-            "Value (Base Currency) Limit % of Nav": 0,
-            "Value (Base Currency) Utilization % of Nav": 0,
+            "Value (BC) % of Nav": 0,
+            "Value (BC) % of GMV": 0,
+            "Value (BC) Limit % of Nav": 0,
+            "Value (BC) Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-            "Value (Base Currency) Color Test": "#C5E1A5",
-            "Value (Base Currency) Test": "Pass",
+            "Value (BC) Color Test": "#C5E1A5",
+            "Value (BC) Test": "Pass",
             "Capital Gain/ Loss since Inception (Live Position)": 0,
             "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-            "Accrued Interest Since Inception": 0,
+            "Accrued Int. Since Inception": 0,
             "Total Gain/ Loss (USD)": 0,
             "% of Total Gain/ Loss since Inception (Live Position)": 0,
             "Notional Total": 0,
@@ -1511,16 +1533,16 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
             "DV01 Dollar Value Impact Limit % of Nav": 0,
             "DV01 Dollar Value Impact Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Test": "Pass",
-            "Value (Base Currency) % of Nav": 0,
-            "Value (Base Currency) % of GMV": 0,
-            "Value (Base Currency) Limit % of Nav": 0,
-            "Value (Base Currency) Utilization % of Nav": 0,
+            "Value (BC) % of Nav": 0,
+            "Value (BC) % of GMV": 0,
+            "Value (BC) Limit % of Nav": 0,
+            "Value (BC) Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-            "Value (Base Currency) Color Test": "#C5E1A5",
-            "Value (Base Currency) Test": "Pass",
+            "Value (BC) Color Test": "#C5E1A5",
+            "Value (BC) Test": "Pass",
             "Capital Gain/ Loss since Inception (Live Position)": 0,
             "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-            "Accrued Interest Since Inception": 0,
+            "Accrued Int. Since Inception": 0,
             "Total Gain/ Loss (USD)": 0,
             "% of Total Gain/ Loss since Inception (Live Position)": 0,
             "Notional Total": 0,
@@ -1540,18 +1562,18 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
             "DV01 Dollar Value Impact Limit % of Nav": 0,
             "DV01 Dollar Value Impact Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Test": "Pass",
-            "Value (Base Currency) % of Nav": 0,
-            "Value (Base Currency) % of GMV": 0,
-            "Value (Base Currency) Limit % of Nav": 0,
-            "Value (Base Currency) Utilization % of Nav": 0,
-            "Value (Base Currency) Test": "Pass",
+            "Value (BC) % of Nav": 0,
+            "Value (BC) % of GMV": 0,
+            "Value (BC) Limit % of Nav": 0,
+            "Value (BC) Utilization % of Nav": 0,
+            "Value (BC) Test": "Pass",
             "Capital Gain/ Loss since Inception (Live Position)": 0,
             "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-            "Accrued Interest Since Inception": 0,
+            "Accrued Int. Since Inception": 0,
             "Total Gain/ Loss (USD)": 0,
             "% of Total Gain/ Loss since Inception (Live Position)": 0,
             "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-            "Value (Base Currency) Color Test": "#C5E1A5",
+            "Value (BC) Color Test": "#C5E1A5",
             "Notional Total": 0,
         },
     };
@@ -1569,16 +1591,16 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
             "DV01 Dollar Value Impact Limit % of Nav": 0,
             "DV01 Dollar Value Impact Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Test": "Pass",
-            "Value (Base Currency) % of Nav": 0,
-            "Value (Base Currency) % of GMV": 0,
-            "Value (Base Currency) Limit % of Nav": 0,
-            "Value (Base Currency) Utilization % of Nav": 0,
+            "Value (BC) % of Nav": 0,
+            "Value (BC) % of GMV": 0,
+            "Value (BC) Limit % of Nav": 0,
+            "Value (BC) Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-            "Value (Base Currency) Color Test": "#C5E1A5",
-            "Value (Base Currency) Test": "Pass",
+            "Value (BC) Color Test": "#C5E1A5",
+            "Value (BC) Test": "Pass",
             "Capital Gain/ Loss since Inception (Live Position)": 0,
             "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-            "Accrued Interest Since Inception": 0,
+            "Accrued Int. Since Inception": 0,
             "Total Gain/ Loss (USD)": 0,
             "% of Total Gain/ Loss since Inception (Live Position)": 0,
             "Notional Total": 0,
@@ -1598,16 +1620,16 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
             "DV01 Dollar Value Impact Limit % of Nav": 0,
             "DV01 Dollar Value Impact Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Test": "Pass",
-            "Value (Base Currency) % of Nav": 0,
-            "Value (Base Currency) % of GMV": 0,
-            "Value (Base Currency) Limit % of Nav": 0,
-            "Value (Base Currency) Utilization % of Nav": 0,
+            "Value (BC) % of Nav": 0,
+            "Value (BC) % of GMV": 0,
+            "Value (BC) Limit % of Nav": 0,
+            "Value (BC) Utilization % of Nav": 0,
             "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-            "Value (Base Currency) Color Test": "#C5E1A5",
-            "Value (Base Currency) Test": "Pass",
+            "Value (BC) Color Test": "#C5E1A5",
+            "Value (BC) Test": "Pass",
             "Capital Gain/ Loss since Inception (Live Position)": 0,
             "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-            "Accrued Interest Since Inception": 0,
+            "Accrued Int. Since Inception": 0,
             "Total Gain/ Loss (USD)": 0,
             "% of Total Gain/ Loss since Inception (Live Position)": 0,
             "Notional Total": 0,
@@ -1723,7 +1745,7 @@ function sortSummary(locationCode, group) {
                 if (!position["Type"]) {
                     return assetClassOrder.undefined;
                 }
-                if (position["Type"].includes("UST") && position["Notional Total"] <= 0 && unrlzdPositionsNum > 1) {
+                if ((position["Type"].includes("UST") || position["Strategy"] == "RV") && position["Notional Total"] <= 0 && unrlzdPositionsNum > 1) {
                     return assetClassOrder.UST_HEDGE;
                 }
                 if (position["Type"].includes("FUT") && position["Notional Total"] <= 0 && unrlzdPositionsNum > 1) {

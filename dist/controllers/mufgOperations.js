@@ -127,10 +127,10 @@ async function formatMufg(trades, start, end) {
         obj["Security_ID_ISIN"] = trade["Trade Type"] == "vcon" ? trade["ISIN"] : "";
         obj["Security_ID_CUSIP"] = trade["Trade Type"] == "vcon" ? trade["Cusip"] : "";
         obj["Security_ID_SEDOL"] = "";
-        obj["Security_ID_Bloomberg"] = trade["Trade Type"] == "ib" ? (trade["BB Ticker"] ? trade["BB Ticker"] : trade["Issue"]) : trade["Issue"];
+        obj["Security_ID_Bloomberg"] = trade["BB Ticker"];
         obj["Security_ID_Reuters"] = "";
         obj["Security_ID_UGC"] = "";
-        obj["Security_Description"] = trade["Trade Type"] == "ib" ? (trade["BB Ticker"] ? trade["BB Ticker"] : trade["Issue"]) : trade["Issue"];
+        obj["Security_Description"] = trade["BB Ticker"];
         obj["Trade_ID_Client"] = trade["Triada Trade Id"];
         obj["Quantity"] = trade["Trade Type"] == "emsx" ? trade["Settlement Amount"] : trade["Trade Type"] == "ib" ? Math.abs(trade["Notional Amount"]) / originalFace : Math.abs(trade["Notional Amount"]);
         obj["Original_Face"] = trade["Trade Type"] == "ib" ? originalFace : "100";
@@ -339,7 +339,7 @@ async function checkMUFGEndOfMonthWithPortfolio(MUFGData, portfolio) {
             portfolioPrice = portfolioPrice ? portfolioPrice : 0;
             let mufgPrice = positionInMufg ? parseFloat(positionInMufg["Price"]) : 0;
             let formattedRow = {
-                Issue: positionInPortfolio["Issue"],
+                "BB Ticker": positionInPortfolio["BB Ticker"],
                 ISIN: positionInPortfolio["ISIN"],
                 "Quantity (app)": portfolioPositionQuantity || 0,
                 "Quantity (mufg)": mufgPositionQuantity || 0,
@@ -385,7 +385,6 @@ function updatePortfolioBasedOnIsin(portfolio) {
             Mid: positions[0]["Mid"],
             ISIN: isin,
             "BB Ticker": positions[0]["BB Ticker"],
-            Issue: positions[0]["Issue"],
         };
         for (let positionIndex = 0; positionIndex < positions.length; positionIndex++) {
             let data = positions[positionIndex];

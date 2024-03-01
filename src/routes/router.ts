@@ -10,6 +10,9 @@ import { getFxTrades, getGraphToken, getVcons } from "../controllers/graphApiCon
 import { formatMufg, formatFxMufg, tradesTriada, checkMUFGEndOfMonthWithPortfolio } from "../controllers/mufgOperations";
 import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, getPortfolioOnSpecificDate, editPositionPortfolio, getAllFundDetails, editFund, deleteFund, addFund, editTrade, deleteTrade, recalculateRlzd, deletePosition } from "../controllers/operations";
 import { getAllTrades } from "../controllers/eblot";
+import util from "util";
+const fs = require("fs");
+const writeFile = util.promisify(fs.writeFile);
 
 require("dotenv").config();
 
@@ -46,10 +49,15 @@ router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: 
     let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMonthlyPl" | "groupDV01Sum" | any = req.query.sort || "order";
     let sign: any = req.query.sign || 1;
 
-    let report = await getHistoricalPortfolioWithAnalytics(date, sort, sign);
-
-    res.send(report);
+    let report: any = await getHistoricalPortfolioWithAnalytics(date, sort, sign);
+   
+    if (report.error) {
+      res.send({ error: report.error });
+    } else {
+      res.send(report);
+    }
   } catch (error: any) {
+    console.log(error);
     res.send({ error: error.toString() });
   }
 });
@@ -65,8 +73,11 @@ router.get("/summary-portfolio", async (req: Request, res: Response, next: NextF
 
     date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
     let report = await getHistoricalSummaryPortfolioWithAnalytics(date, sort, sign);
-
-    res.send(report);
+    if (report.error) {
+      res.send({ error: report.error });
+    } else {
+      res.send(report);
+    }
   } catch (error: any) {
     console.log(error);
     res.send({ error: error.toString() });
@@ -135,10 +146,9 @@ router.get("/all-trades", verifyToken, async (req, res) => {
     let trades = await getAllTrades(start, end);
     trades.filter((trade: any, index: any) => new Date(trade["Trade Date"]).getTime() > start && new Date(trade["Trade Date"]).getTime() < end);
 
-
     let vconTrades: [any[], number] | any = await getTriadaTrades("vcons", start, end);
 
-    let vcons: any = await getVcons(token, (start + 2 * 24 * 60 * 60 * 1000), (end - 2 * 24 * 60 * 60 * 1000), vconTrades);
+    let vcons: any = await getVcons(token, start + 2 * 24 * 60 * 60 * 1000, end - 2 * 24 * 60 * 60 * 1000, vconTrades);
     vcons = vcons.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app");
     let action: any = await formatCentralizedRawFiles({}, vcons, [], [], []);
     // action = action.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app");
@@ -172,7 +182,7 @@ router.get("/fund-details", verifyToken, async (req, res) => {
     const date: any = req.query.date;
     let thisMonth = monthlyRlzdDate(date);
     let fundDetails = await getAllFundDetails(thisMonth);
-   
+
     res.send(fundDetails);
   } catch (error) {
     res.status(500).send("An error occurred while reading the file.");
@@ -425,7 +435,7 @@ router.post("/update-prices", verifyToken, uploadBeforeExcel.any(), async (req: 
     const fileName = req.files[0].filename;
     const path = bucket + fileName;
     let action: any = await updatePricesPortfolio(path);
-    console.log(action);
+  
     if (action?.error) {
       res.send({ error: action.error });
     } else {
@@ -538,6 +548,26 @@ router.post("/add-fund", verifyToken, uploadBeforeExcel.any(), async (req: Reque
   }
 });
 
-router.post("/one-time", uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {});
+router.post("/one-time", uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  // Online Javascript Editor for free
+  // Write, Edit and Run your Javascript code using JS Online Compiler
+  let text = `2.23 0.24	-0.17	0.94	0.14	0.66 1.41	-0.77	0.07	-1.07	3.31	2.06
+-0.49	-7.18	0.27	-4.40	-0.88	-3.28	-1.17	2.93	0.19	-3.84	1.20	1.52
+-5.12	0.12	0.01	1.58	1.29	-2.41	-6.46	-0.51	-4.63	-11.85	-2.15	-0.09`;
+
+  let array = text.split(" ");
+
+  let updatedText = "";
+
+  for (let index = 0; index < array.length; index++) {
+    const element = array[index];
+    updatedText += element + " , ";
+  }
+
+  // Convert the log entry to a string
+
+  // Append the log entry to the file
+  await writeFile("trades-logs.txt", updatedText, { flag: "a" });
+});
 
 export default router;

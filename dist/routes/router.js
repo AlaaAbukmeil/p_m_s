@@ -1,4 +1,7 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../controllers/auth");
@@ -10,6 +13,9 @@ const graphApiConnect_1 = require("../controllers/graphApiConnect");
 const mufgOperations_1 = require("../controllers/mufgOperations");
 const operations_1 = require("../controllers/operations");
 const eblot_1 = require("../controllers/eblot");
+const util_1 = __importDefault(require("util"));
+const fs = require("fs");
+const writeFile = util_1.default.promisify(fs.writeFile);
 require("dotenv").config();
 const readLastLines = require("read-last-lines");
 const path = require("path");
@@ -39,9 +45,15 @@ router.get("/portfolio", common_1.verifyToken, async (req, res, next) => {
         let sort = req.query.sort || "order";
         let sign = req.query.sign || 1;
         let report = await (0, reports_1.getHistoricalPortfolioWithAnalytics)(date, sort, sign);
-        res.send(report);
+        if (report.error) {
+            res.send({ error: report.error });
+        }
+        else {
+            res.send(report);
+        }
     }
     catch (error) {
+        console.log(error);
         res.send({ error: error.toString() });
     }
 });
@@ -55,7 +67,12 @@ router.get("/summary-portfolio", async (req, res, next) => {
         }
         date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date(date)).split(" ")[0] + " 23:59";
         let report = await (0, reports_1.getHistoricalSummaryPortfolioWithAnalytics)(date, sort, sign);
-        res.send(report);
+        if (report.error) {
+            res.send({ error: report.error });
+        }
+        else {
+            res.send(report);
+        }
     }
     catch (error) {
         console.log(error);
@@ -119,7 +136,7 @@ router.get("/all-trades", common_1.verifyToken, async (req, res) => {
         let trades = await (0, eblot_1.getAllTrades)(start, end);
         trades.filter((trade, index) => new Date(trade["Trade Date"]).getTime() > start && new Date(trade["Trade Date"]).getTime() < end);
         let vconTrades = await (0, excelFormat_1.getTriadaTrades)("vcons", start, end);
-        let vcons = await (0, graphApiConnect_1.getVcons)(token, (start + 2 * 24 * 60 * 60 * 1000), (end - 2 * 24 * 60 * 60 * 1000), vconTrades);
+        let vcons = await (0, graphApiConnect_1.getVcons)(token, start + 2 * 24 * 60 * 60 * 1000, end - 2 * 24 * 60 * 60 * 1000, vconTrades);
         vcons = vcons.filter((trade, index) => trade["Trade App Status"] != "uploaded_to_app");
         let action = await (0, excelFormat_1.formatCentralizedRawFiles)({}, vcons, [], [], []);
         // action = action.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app");
@@ -392,7 +409,6 @@ router.post("/update-prices", common_1.verifyToken, uploadBeforeExcel.any(), asy
         const fileName = req.files[0].filename;
         const path = common_1.bucket + fileName;
         let action = await (0, reports_1.updatePricesPortfolio)(path);
-        console.log(action);
         if (action === null || action === void 0 ? void 0 : action.error) {
             res.send({ error: action.error });
         }
@@ -506,5 +522,20 @@ router.post("/add-fund", common_1.verifyToken, uploadBeforeExcel.any(), async (r
         res.send({ error: "Template is not correct" });
     }
 });
-router.post("/one-time", uploadBeforeExcel.any(), async (req, res, next) => { });
+router.post("/one-time", uploadBeforeExcel.any(), async (req, res, next) => {
+    // Online Javascript Editor for free
+    // Write, Edit and Run your Javascript code using JS Online Compiler
+    let text = `2.23 0.24	-0.17	0.94	0.14	0.66 1.41	-0.77	0.07	-1.07	3.31	2.06
+-0.49	-7.18	0.27	-4.40	-0.88	-3.28	-1.17	2.93	0.19	-3.84	1.20	1.52
+-5.12	0.12	0.01	1.58	1.29	-2.41	-6.46	-0.51	-4.63	-11.85	-2.15	-0.09`;
+    let array = text.split(" ");
+    let updatedText = "";
+    for (let index = 0; index < array.length; index++) {
+        const element = array[index];
+        updatedText += element + " , ";
+    }
+    // Convert the log entry to a string
+    // Append the log entry to the file
+    await writeFile("trades-logs.txt", updatedText, { flag: "a" });
+});
 exports.default = router;
