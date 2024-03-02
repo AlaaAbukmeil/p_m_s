@@ -36,11 +36,8 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         let holdBackRatio = (position["Asset Class"] || position["Rating Class"]) == "Illiquid" ? parseFloat(fund.holdBackRatio) : 1;
         position["Notional Total"] = position["Quantity"];
         position["Quantity"] = position["Quantity"] / originalFace;
-        position["Coupon Rate"] = position["Coupon Rate"] ? position["Coupon Rate"] : (0, portfolioFunctions_1.parseBondIdentifier)(position["BB Ticker"])[0] || 0;
+        position["Coupon Rate"] = position["Coupon Rate"] ? position["Coupon Rate"] : (0, portfolioFunctions_1.parseBondIdentifier)(position["BB Ticker"])[0];
         let bondDivider = position["Type"] == "BND" || position["Type"] == "UST" ? 100 : 1;
-        if (!position["BB Ticker"]) {
-            position["BB Ticker"] = position["Issue"];
-        }
         if (!position["Type"]) {
             position["Type"] = position["BB Ticker"].split(" ")[0] == "T" || position["Issuer"] == "US TREASURY N/B" ? "UST" : "BND";
         }
@@ -74,17 +71,17 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         position["Mid"] = Math.round(position["Mid"] * 1000 * bondDivider) / 1000;
         position["Bid"] = Math.round(position["Bid"] * 1000 * bondDivider) / 1000;
         position["Ask"] = Math.round(position["Ask"] * 1000 * bondDivider) / 1000;
-        position["Average Cost"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Average Cost"] * 100) / 100 : Math.round(position["Average Cost"] * 100);
+        position["Average Cost"] = position["Type"] == "UST" || position["Type"] == "BND" ? Math.round(position["Average Cost"] * 100) : Math.round(position["Average Cost"] * 100) / 100;
         position["YTM"] = (Math.round(position["YTM"] * 100) / 100 || 0) + " %" || "0 %";
         position["CR01"] = "0";
         position["MTD Rlzd"] = position["MTD Rlzd"] ? position["MTD Rlzd"] : 0;
-        position["MTD Mark"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["MTD Mark"] * 1000) / 1000 : Math.round(position["MTD Mark"] * 1000) / 10;
+        position["MTD Mark"] = position["Type"] == "UST" || position["Type"] == "BND" ? Math.round(position["MTD Mark"] * 1000) / 10 : Math.round(position["MTD Mark"] * 1000) / 1000;
         position["Day Rlzd"] = position["Day Rlzd"] ? position["Day Rlzd"] : 0;
-        position["Previous Mark"] = position["ISIN"].includes("CXP") || position["ISIN"].includes("CDX") || position["ISIN"].includes("ITRX") || position["ISIN"].includes("1393") || position["ISIN"].includes("IB") ? Math.round(position["Previous Mark"] * 1000) / 1000 : Math.round(position["Previous Mark"] * 1000) / 10;
+        position["Previous Mark"] = position["Type"] == "UST" || position["Type"] == "BND" ? Math.round(position["Previous Mark"] * 1000) / 10 : Math.round(position["Previous Mark"] * 1000) / 1000;
         if (!position["Previous FX"]) {
             position["Previous FX"] = position["FX Rate"];
         }
-        if (position["Issue"].includes("CDS")) {
+        if (position["BB Ticker"].includes("CDS")) {
             position["Day P&L FX"] = Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["Previous FX"])) / parseFloat(position["Previous FX"])) * position["Quantity"] * holdBackRatio * 1000000) / 1000000 || 0;
             position["MTD P&L FX"] = Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["MTD FX"] || position["FX Rate"])) / parseFloat(position["MTD FX"] || position["FX Rate"])) * position["Quantity"] * holdBackRatio * 1000000) / 1000000 || 0;
         }
@@ -118,8 +115,8 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         position["Day Rlzd (BC)"] = Math.round(position["Day Rlzd"] * usdRatio * holdBackRatio);
         position["Day URlzd (BC)"] = Math.round(position["Day URlzd"] * usdRatio * holdBackRatio);
         position["Day P&L (BC)"] = Math.round(position["Day P&L"] * usdRatio * holdBackRatio + position["Day P&L FX"]);
-        position["ISIN"] = position["ISIN"].length != 12 ? "" : position["ISIN"];
-        position["Maturity"] = (0, portfolioFunctions_1.getMaturity)(position["BB Ticker"]) || 0;
+        position["ISIN"] = position["ISIN"];
+        position["Maturity"] = position["Maturity"] ? position["Maturity"] : (0, portfolioFunctions_1.getMaturity)(position["BB Ticker"]) || 0;
         position["Call Date"] = position["Call Date"] ? position["Call Date"] : 0;
         position["L/S"] = position["Notional Total"] > 0 && position["Type"] != "CDS" ? "Long" : position["Notional Total"] == 0 && position["Type"] != "CDS" ? "Rlzd" : "Short";
         position["Duration"] = yearsUntil(position["Call Date"] ? position["Call Date"] : position["Maturity"], date);
@@ -159,7 +156,7 @@ function formatGeneralTable(portfolio, date, fund, dates) {
             return dateB - dateA; // This will sort in descending order
         })[0]; // Take the first item after sorting
         const latestDate = latestDateKey ? new Date(latestDateKey) : null;
-        position["Last Day Since Realizd"] = position["Notional Total"] == 0 ? (0, common_1.getDateMufg)(latestDate) : null;
+        position["Last Day Since Realizd"] = position["Notional Total"] == 0 ? (0, common_1.formatDateWorld)(latestDate) : null;
         mtdpl += position["MTD P&L (BC)"];
         mtdrlzd += position["MTD Rlzd (BC)"];
         mtdurlzd += position["MTD URlzd (BC)"];
@@ -220,12 +217,9 @@ function yearsUntil(dateString, dateInput) {
     if (dateString == 0 || dateString == "0") {
         return 0;
     }
+    let dateComponents = dateString.split("/");
+    dateString = dateComponents[1] + "/" + dateComponents[0] + "/" + dateComponents[2];
     let date = new Date(dateString).getTime();
-    if (!date) {
-        let dateComponents = dateString.split("/");
-        dateString = dateComponents[1] + "/" + dateComponents[0] + '/' + dateComponents[2];
-        date = new Date(dateString).getTime();
-    }
     // Get the current date
     const now = new Date(dateInput).getTime();
     // Calculate the difference in milliseconds

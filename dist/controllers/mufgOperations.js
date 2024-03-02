@@ -311,7 +311,7 @@ async function tradesTriada() {
         const document1 = await reportCollection1.find().toArray();
         const document2 = await reportCollection2.find().toArray();
         const document3 = await reportCollection3.find().toArray();
-        let document = [...document1, ...document2, ...document3];
+        let document = [...document1.sort((a, b) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime()), ...document2.sort((a, b) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime()), ...document3.sort((a, b) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime())];
         return document;
     }
     catch (error) {
@@ -321,7 +321,7 @@ async function tradesTriada() {
 exports.tradesTriada = tradesTriada;
 async function checkMUFGEndOfMonthWithPortfolio(MUFGData, portfolio) {
     try {
-        //    "Location", "Issue", "Identifier", "Quantity (app)", "Quantity (mufg)", "difference quantity", "Average Cost (app)", "Average Cost(app)", "difference average cost", "price (app)", "price (mufg)", "difference price"
+        //    "Location", "BB Ticker", "Identifier", "Quantity (app)", "Quantity (mufg)", "difference quantity", "Average Cost (app)", "Average Cost(app)", "difference average cost", "price (app)", "price (mufg)", "difference price"
         portfolio = updatePortfolioBasedOnIsin(portfolio);
         let formattedData = [];
         if (MUFGData.error) {

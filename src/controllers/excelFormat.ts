@@ -2,10 +2,9 @@ require("dotenv").config();
 
 import { uploadToGCloudBucket } from "./portfolioFunctions";
 import { readBBGBlot } from "./mufgOperations";
-import { getTradeDateYearTrades, formatDateReadable, convertExcelDateToJSDate, convertExcelDateToJSDateTime, generateRandomString, bucket } from "./common";
+import { getTradeDateYearTrades, formatDateUS, convertExcelDateToJSDate, convertExcelDateToJSDateTime, generateRandomString, bucket } from "./common";
 import { getSettlementDateYear, readIBEblot, readEmsxEBlot } from "./portfolioFunctions";
 import { getSecurityInPortfolioWithoutLocation } from "./graphApiConnect";
-import { formatTradeDate } from "./common";
 import { uri } from "./common";
 const xlsx = require("xlsx");
 const { PassThrough } = require("stream");
@@ -132,7 +131,7 @@ export function renderVcon(emailContent: string) {
   return vcon;
 }
 
-export async function uploadArrayAndReturnFilePath(data: any, pathName: string, folderName:string) {
+export async function uploadArrayAndReturnFilePath(data: any, pathName: string, folderName: string) {
   // Create a new Workbook
   var wb = xlsx.utils.book_new();
 
@@ -154,34 +153,32 @@ export async function getTriadaTrades(tradeType: any, fromTimestamp: number | nu
   const database = client.db("trades_v_2");
 
   let options: any = [];
-  
+
   // If both timestamps are provided, use them to filter the results
   if (fromTimestamp !== null && toTimestamp !== null) {
     options.push({ timestamp: { $gte: fromTimestamp, $lte: toTimestamp } });
-  // If only fromTimestamp is provided
+    // If only fromTimestamp is provided
   } else if (fromTimestamp !== null) {
     options.push({ timestamp: { $gte: fromTimestamp } });
-  // If only toTimestamp is provided
+    // If only toTimestamp is provided
   } else if (toTimestamp !== null) {
     options.push({ timestamp: { $lte: toTimestamp } });
   }
-  
+
   let query: any = {};
-  
+
   // If there are any timestamp options, use them in the query
   if (options.length > 0) {
     query.$and = options;
   }
-  
- 
+
   let reportCollection = await database.collection(`${tradeType}`).find(query).toArray();
   if (fromTimestamp && toTimestamp) {
-    reportCollection = reportCollection.filter((trade: any, index:any) => {
+    reportCollection = reportCollection.filter((trade: any, index: any) => {
       // Include trade if tradeDate property does not exist
-      
+
       // Convert tradeDate to a timestamp if necessary
       const tradeDateTimestamp = new Date(trade["Trade Date"]).getTime();
-      
 
       // Check if tradeDate falls within the specified range
       return tradeDateTimestamp >= fromTimestamp && tradeDateTimestamp <= toTimestamp;
@@ -190,9 +187,10 @@ export async function getTriadaTrades(tradeType: any, fromTimestamp: number | nu
   for (let index = 0; index < reportCollection.length; index++) {
     let trade = reportCollection[index];
     trade["Trade App Status"] = "uploaded_to_app";
+    trade["BB Ticker"] = trade["BB Ticker"] ? trade["BB Ticker"] : trade["Issue"];
     delete trade["_id"];
     delete trade["Quantity"];
-    delete trade["BB Ticker"];
+    delete trade["Issue"];
     delete trade["timestamp"];
   }
   return reportCollection;
@@ -234,7 +232,7 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
     "£": "GBP",
     SGD: "SGD",
   };
-  let centralizedBlotterHeader = ["B/S", "Issue", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Trade App Status"];
+  let centralizedBlotterHeader = ["B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Trade App Status"];
   // vcons already checking if duplicate trade and removes it. ib and emsx no. ib trades to be implement with their API
   for (let index = 0; index < bbbData.length; index++) {
     let obj: any = {};
@@ -242,7 +240,7 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
     if (trade["Status"] == "Accepted") {
       let settlementDate = getSettlementDateYear(convertExcelDateToJSDate(trade["Trade Date"]), convertExcelDateToJSDate(trade["Settle Date"]));
       obj["B/S"] = trade["Buy/Sell"];
-      obj["Issue"] = trade["Issue"];
+      obj["BB Ticker"] = trade["BB Ticker"];
       obj["Location"] = trade["Location"].trim();
       obj["Trade Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(trade["Trade Date"]));
       obj["Trade Time"] = trade["Entry Time"].split(" ")[1] + ":00";
@@ -275,7 +273,7 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
       let obj: any = {};
       let originalFace: any = Math.abs(trade["Notional Value"] / trade["T Price"] / trade["Quantity"]);
       obj["B/S"] = parseFloat(trade["Quantity"]) > 0 ? "B" : "S";
-      obj["Issue"] = trade["Symbol"];
+      obj["BB Ticker"] = trade["Symbol"];
       obj["Location"] = trade["Location"].trim();
       obj["Trade Date"] = trade["Trade Date"];
       obj["Trade Time"] = trade["Trade Date Time"];
@@ -308,7 +306,7 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
     let trade = bbeData[index3];
     if (blot_emsx.filter((emsxTrade: any) => emsxTrade["Triada Trade Id"] == trade["Triada Trade Id"])) {
       obj["B/S"] = trade["Buy/Sell"] == "Sell" ? "S" : "B";
-      obj["Issue"] = trade["Security"];
+      obj["BB Ticker"] = trade["Security"];
       obj["Location"] = trade["Location"].trim();
       obj["Trade Date"] = trade["Trade Date"];
       obj["Trade Time"] = "";
@@ -381,15 +379,15 @@ export function formatIbTrades(data: any, ibTrades: any, portfolio: any) {
         let tradeDate = convertExcelDateToJSDate(data[index]["Date/Time"]);
         let tradeDateTime = convertExcelDateToJSDateTime(data[index]["Date/Time"]);
         let trade_status = "new";
-        trade["Trade Date"] = formatTradeDate(tradeDate);
+        trade["Trade Date"] = formatDateUS(tradeDate);
 
-        trade["Settle Date"] = formatTradeDate(tradeDate);
+        trade["Settle Date"] = formatDateUS(tradeDate);
         trade["Symbol"] += " IB";
 
         let existingTrade = null;
         for (let ibIndex = 0; ibIndex < ibTrades.length; ibIndex++) {
           let ibTrade = ibTrades[ibIndex];
-          if (trade["Symbol"] == ibTrade["Issue"] && trade["Trade Date"] == ibTrade["Trade Date"] && Math.abs(ibTrade["Settlement Amount"]) == Math.abs(trade["Notional Value"])) {
+          if (trade["Symbol"] == ibTrade["BB Ticker"] && trade["Trade Date"] == ibTrade["Trade Date"] && Math.abs(ibTrade["Settlement Amount"]) == Math.abs(trade["Notional Value"])) {
             existingTrade = ibTrade;
           }
         }
@@ -438,9 +436,9 @@ function formatFxTrades(object: any) {
       formattedObject["Buy Currency"] = buyCurrency;
       formattedObject["Sell Currency"] = sellCurrency;
     } else if (title == "Timestamp") {
-      formattedObject["Trade Date"] = formatDateReadable(object[title]);
+      formattedObject["Trade Date"] = formatDateUS(object[title]);
     } else if (title == "Value Date") {
-      formattedObject["Settle Date"] = formatDateReadable(object[title]);
+      formattedObject["Settle Date"] = formatDateUS(object[title]);
     } else if (title == "Amount 1") {
       formattedObject["Buy Amount"] = parseFloat(object[title].split(" ")[1].replace(/,/g, ""));
     } else if (title == "Amount 2") {
@@ -477,7 +475,6 @@ export function formatEmsxTrades(data: any, emsxTrades: any, portfolio: any) {
   }
   let trades = [];
   try {
-   
     for (let index = 0; index < data.length; index++) {
       let trade = data[index];
       let id;
@@ -485,13 +482,13 @@ export function formatEmsxTrades(data: any, emsxTrades: any, portfolio: any) {
 
       let existingTrade: any = null;
 
-      let tradeDate = !trade["Create Time (As of)"].includes("/") ? formatTradeDate(new Date()) : formatTradeDate(convertExcelDateToJSDate(trade["Create Time (As of)"]));
+      let tradeDate = !trade["Create Time (As of)"].includes("/") ? formatDateUS(new Date()) : formatDateUS(convertExcelDateToJSDate(trade["Create Time (As of)"]));
       let tradeType = trade["Side"] == "Sell" ? "S" : "B";
       for (let emsxIndex = 0; emsxIndex < emsxTrades.length; emsxIndex++) {
         let emsxTrade = emsxTrades[emsxIndex];
         // net because previous trade counted quantity as fill quantity
 
-        if (tradeDate == emsxTrade["Trade Date"] && trade["Security"] == emsxTrade["Issue"] && tradeType == emsxTrade["B/S"] && trade["FillQty"] == emsxTrade["Settlement Amount"]) {
+        if (tradeDate == emsxTrade["Trade Date"] && trade["Security"] == emsxTrade["BB Ticker"] && tradeType == emsxTrade["B/S"] && trade["FillQty"] == emsxTrade["Settlement Amount"]) {
           existingTrade = emsxTrade;
         }
       }
@@ -506,7 +503,6 @@ export function formatEmsxTrades(data: any, emsxTrades: any, portfolio: any) {
         trade_status = "uploaded_to_app";
       } else {
         id = uuidv4();
-  
       }
       object["Status"] = trade["Status"];
       object["Buy/Sell"] = trade["Side"];

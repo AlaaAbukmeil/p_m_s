@@ -56,7 +56,7 @@ export function formatDate(date: any) {
   return formattedDate;
 }
 
-export function formatDateVconFile(date: string) {
+export function formatDateFile(date: string) {
   let d = new Date(date),
     month = "" + (d.getMonth() + 1),
     day = "" + d.getDate();
@@ -67,7 +67,7 @@ export function formatDateVconFile(date: string) {
   return [month, day].join("-");
 }
 
-export function formatDateReadable(date: string) {
+export function formatDateUS(date: any): any {
   let d = new Date(date),
     month = "" + (d.getMonth() + 1),
     day = "" + d.getDate(),
@@ -138,48 +138,6 @@ export function formatTradeDate(date: Date) {
   return `${month}/${day}/${year}`;
 }
 
-export function formatSettleDateVcon(date: Date) {
-  date = new Date(date);
-  const year = date.getFullYear().toString().slice(-2);
-  let month = (date.getMonth() + 1).toString();
-  let day = date.getDate().toString();
-
-  month = month.length < 2 ? "0" + month : month;
-  day = day.length < 2 ? "0" + day : day;
-
-  return `${month}/${day}`;
-}
-
-export function getSettlementDateYearTrades(date1: string, date2: string): string {
-  try {
-    // Convert the input strings to Date objects
-    let dateObj1 = new Date(date1);
-    let dateObj2 = new Date(date2);
-
-    // Check if the dates are valid
-    if (isNaN(dateObj1.getTime()) || isNaN(dateObj2.getTime())) {
-      throw new Error("Invalid date format. Use mm/dd/yyyy.");
-    }
-
-    // If the month of the second date is less than the month of the first date,
-    // it means we've crossed into a new year, so increment the year
-    if (dateObj2.getMonth() < dateObj1.getMonth()) {
-      dateObj2.setFullYear(dateObj2.getFullYear() + 1);
-    }
-
-    // Format the date as mm/dd/yyyy
-    let year = dateObj2.getFullYear();
-    let month = (dateObj2.getMonth() + 1).toString().padStart(2, "0"); // padStart ensures two-digit month
-    let day = dateObj2.getDate().toString().padStart(2, "0"); // padStart ensures two-digit day
-
-    // Return the second date with the potentially updated year
-    return `${month}/${day}/${year}`;
-  } catch (error: any) {
-    console.error(error.message);
-    return "";
-  }
-}
-
 export function getTradeDateYearTrades(date: any) {
   // Parse the month and year from the first date
 
@@ -206,7 +164,7 @@ export function getYear(dateInput: string) {
   return `${year}`;
 }
 
-export function getDateMufg(inputDate: any) {
+export function formatDateWorld(inputDate: any) {
   let date = new Date(inputDate);
   let day = `${date.getDate()}`.padStart(2, "0"); // get the day
   let month = `${date.getMonth() + 1}`.padStart(2, "0"); // get the month (months are 0-indexed in JS, so add 1)

@@ -2,7 +2,7 @@ import { NextFunction, Router } from "express";
 import { image } from "../models/image";
 import { registerUser, checkIfUserExists, sendResetPasswordRequest, resetPassword } from "../controllers/auth";
 import { Request, Response } from "express";
-import { verifyToken, formatDateVconFile, generateRandomString, monthlyRlzdDate, bucket } from "../controllers/common";
+import { verifyToken, formatDateFile, generateRandomString, monthlyRlzdDate, bucket } from "../controllers/common";
 import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, getTrades, getPortfolio, editPosition, getHistoricalSummaryPortfolioWithAnalytics, getRiskReportWithAnalytics } from "../controllers/reports";
 import { bloombergToTriada, getDateTimeInMongoDBCollectionFormat, readIBRawExcel, readPricingSheet } from "../controllers/portfolioFunctions";
 import { uploadArrayAndReturnFilePath, getTriadaTrades, formatCentralizedRawFiles, formatIbTrades, formatEmsxTrades, readEmsxRawExcel } from "../controllers/excelFormat";
@@ -250,7 +250,7 @@ router.post("/ib-excel", verifyToken, uploadBeforeExcel.any(), async (req: Reque
 
 router.post("/mufg-excel", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   let data = req.body;
-  let pathName = "mufg_" + formatDateVconFile(data.timestamp_start) + "_" + formatDateVconFile(data.timestamp_end) + "_";
+  let pathName = "mufg_" + formatDateFile(data.timestamp_start) + "_" + formatDateFile(data.timestamp_end) + "_";
   let trades = await tradesTriada();
 
   let array: any = await formatMufg(trades, data.timestamp_start, data.timestamp_end);
@@ -335,7 +335,7 @@ router.post("/emsx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Req
 
 router.post("/fx-excel", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   let data = req.body;
-  let pathName = "fx_" + formatDateVconFile(data.timestamp_start) + "_" + formatDateVconFile(data.timestamp_end) + "_";
+  let pathName = "fx_" + formatDateFile(data.timestamp_start) + "_" + formatDateFile(data.timestamp_end) + "_";
   let token = await getGraphToken();
   let array: any = await getFxTrades(token, data.timestamp_start, data.timestamp_end, []);
 
@@ -399,7 +399,7 @@ router.post("/delete-trade", verifyToken, uploadBeforeExcel.any(), async (req: R
     let data = req.body;
     let tradeType = req.body.tradeType;
     console.log(data, "test delete");
-    let action: any = await deleteTrade(tradeType, data["_id"], data["Issue"]);
+    let action: any = await deleteTrade(tradeType, data["_id"], data["BB Ticker"]);
     if (action.error) {
       res.send({ error: action.error, status: 404 });
     } else {

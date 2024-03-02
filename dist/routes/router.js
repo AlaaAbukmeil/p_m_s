@@ -233,7 +233,7 @@ router.post("/ib-excel", common_1.verifyToken, uploadBeforeExcel.any(), async (r
 });
 router.post("/mufg-excel", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
     let data = req.body;
-    let pathName = "mufg_" + (0, common_1.formatDateVconFile)(data.timestamp_start) + "_" + (0, common_1.formatDateVconFile)(data.timestamp_end) + "_";
+    let pathName = "mufg_" + (0, common_1.formatDateFile)(data.timestamp_start) + "_" + (0, common_1.formatDateFile)(data.timestamp_end) + "_";
     let trades = await (0, mufgOperations_1.tradesTriada)();
     let array = await (0, mufgOperations_1.formatMufg)(trades, data.timestamp_start, data.timestamp_end);
     if (array.length == 0) {
@@ -311,7 +311,7 @@ router.post("/emsx-excel", common_1.verifyToken, uploadBeforeExcel.any(), async 
 });
 router.post("/fx-excel", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
     let data = req.body;
-    let pathName = "fx_" + (0, common_1.formatDateVconFile)(data.timestamp_start) + "_" + (0, common_1.formatDateVconFile)(data.timestamp_end) + "_";
+    let pathName = "fx_" + (0, common_1.formatDateFile)(data.timestamp_start) + "_" + (0, common_1.formatDateFile)(data.timestamp_end) + "_";
     let token = await (0, graphApiConnect_1.getGraphToken)();
     let array = await (0, graphApiConnect_1.getFxTrades)(token, data.timestamp_start, data.timestamp_end, []);
     if (array.length == 0) {
@@ -372,7 +372,7 @@ router.post("/delete-trade", common_1.verifyToken, uploadBeforeExcel.any(), asyn
         let data = req.body;
         let tradeType = req.body.tradeType;
         console.log(data, "test delete");
-        let action = await (0, operations_1.deleteTrade)(tradeType, data["_id"], data["Issue"]);
+        let action = await (0, operations_1.deleteTrade)(tradeType, data["_id"], data["BB Ticker"]);
         if (action.error) {
             res.send({ error: action.error, status: 404 });
         }

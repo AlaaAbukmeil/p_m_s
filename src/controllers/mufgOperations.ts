@@ -1,4 +1,4 @@
-import { getDateMufg, convertExcelDateToJSDate, convertBBGEmexDate, bucket } from "./common";
+import {  convertExcelDateToJSDate, convertBBGEmexDate, bucket } from "./common";
 import { settlementDatePassed, uploadToGCloudBucket, readIBEblot } from "./portfolioFunctions";
 import { getTradeDateYearTrades } from "./common";
 import { getSettlementDateYear, readEmsxEBlot } from "./portfolioFunctions";
@@ -145,10 +145,10 @@ export async function formatMufg(trades: any, start: string, end: string) {
     obj["Security_ID_ISIN"] = trade["Trade Type"] == "vcon" ? trade["ISIN"] : "";
     obj["Security_ID_CUSIP"] = trade["Trade Type"] == "vcon" ? trade["Cusip"] : "";
     obj["Security_ID_SEDOL"] = "";
-    obj["Security_ID_Bloomberg"] = trade["BB Ticker"]
+    obj["Security_ID_Bloomberg"] = trade["BB Ticker"] 
     obj["Security_ID_Reuters"] = "";
     obj["Security_ID_UGC"] = "";
-    obj["Security_Description"] =  trade["BB Ticker"] 
+    obj["Security_Description"] =  trade["BB Ticker"]
     obj["Trade_ID_Client"] = trade["Triada Trade Id"];
     obj["Quantity"] = trade["Trade Type"] == "emsx" ? trade["Settlement Amount"] : trade["Trade Type"] == "ib" ? Math.abs(trade["Notional Amount"]) / originalFace : Math.abs(trade["Notional Amount"]);
     obj["Original_Face"] = trade["Trade Type"] == "ib" ? originalFace : "100";
@@ -340,10 +340,10 @@ export async function tradesTriada() {
     const reportCollection1 = database.collection("vcons");
     const reportCollection2 = database.collection("ib");
     const reportCollection3 = database.collection("emsx");
-    const document1 = await reportCollection1.find().toArray();
+    const document1 = await reportCollection1.find().toArray()
     const document2 = await reportCollection2.find().toArray();
     const document3 = await reportCollection3.find().toArray();
-    let document = [...document1, ...document2, ...document3];
+    let document = [...document1.sort((a:any, b:any)=> new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime()), ...document2.sort((a:any, b:any)=> new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime()), ...document3.sort((a:any, b:any)=> new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime())];
 
     return document;
   } catch (error) {
@@ -353,7 +353,7 @@ export async function tradesTriada() {
 
 export async function checkMUFGEndOfMonthWithPortfolio(MUFGData: any, portfolio: any) {
   try {
-    //    "Location", "Issue", "Identifier", "Quantity (app)", "Quantity (mufg)", "difference quantity", "Average Cost (app)", "Average Cost(app)", "difference average cost", "price (app)", "price (mufg)", "difference price"
+    //    "Location", "BB Ticker", "Identifier", "Quantity (app)", "Quantity (mufg)", "difference quantity", "Average Cost (app)", "Average Cost(app)", "difference average cost", "price (app)", "price (mufg)", "difference price"
     portfolio = updatePortfolioBasedOnIsin(portfolio);
     let formattedData: any = [];
     if (MUFGData.error) {

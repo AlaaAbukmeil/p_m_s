@@ -26,7 +26,7 @@ async function getCollectionDays() {
         let dates = [];
         for (let index = 0; index < collections.length; index++) {
             let collectionTime = collections[index].name.split("portfolio")[1];
-            let date = (0, common_1.formatDateReadable)(collectionTime);
+            let date = (0, common_1.formatDateUS)(collectionTime);
             if (!dates.includes(date)) {
                 dates.push(date);
             }
@@ -116,7 +116,7 @@ async function insertPreviousPricesUpdatesInPortfolio(updatedPortfolio, collecti
         const updatedOperations = portfolio.map((position) => {
             // Start with the known filters
             const filters = [];
-            // Only add the "Issue" filter if it's present in the trade object
+            // Only add the "BB Ticker" filter if it's present in the trade object
             if (position["ISIN"]) {
                 filters.push({
                     ISIN: position["ISIN"],
@@ -185,6 +185,11 @@ function getSecurityInPortfolioWithoutLocation(portfolio, identifier) {
                 document.push(issue);
             }
         }
+        else if (identifier.includes(issue["Bloomberg ID"])) {
+            if (issue["Bloomber ID"] != "") {
+                document.push(issue);
+            }
+        }
         else if (identifier.includes(issue["CUSIP"])) {
             if (issue["CUSIP"] != "") {
                 document.push(issue);
@@ -208,9 +213,12 @@ async function updatePreviousPricesPortfolioBloomberg(data, collectionDate, path
             let currencyInUSD = {};
             currencyInUSD["USD"] = 1;
             let divider = 1;
+            let currencyStart = true;
+            currencyInUSD["USD"] = 1;
             for (let index = 0; index < data.length; index++) {
                 let row = data[index];
                 if (row["BB Ticker"] == "Bonds") {
+                    currencyStart = false;
                     divider = 100;
                 }
                 else if (row["BB Ticker"] == "CDS") {
@@ -219,17 +227,16 @@ async function updatePreviousPricesPortfolioBloomberg(data, collectionDate, path
                 else if (row["BB Ticker"] == "Futures") {
                     divider = 1;
                 }
-                let currencyLength = row["BB Ticker"].split(" ")[0].split("");
-                if (!row["BB Ticker"].includes("Curncy") && currencyLength != 3 && index > 20) {
-                    let positions = getSecurityInPortfolioWithoutLocation(portfolio, row["ISIN"]);
+                if (!currencyStart) {
+                    let positions = getSecurityInPortfolioWithoutLocation(portfolio, row["Bloomberg ID"]);
+                    if (positions == 404) {
+                        positions = getSecurityInPortfolioWithoutLocation(portfolio, row["ISIN"]);
+                    }
                     if (positions == 404) {
                         positions = getSecurityInPortfolioWithoutLocation(portfolio, row["BB Ticker"]);
                     }
                     if (positions == 404) {
                         positions = getSecurityInPortfolioWithoutLocation(portfolio, row["CUSIP"]);
-                    }
-                    if (positions == 404) {
-                        positions = getSecurityInPortfolioWithoutLocation(portfolio, row["Bloomberg ID"]);
                     }
                     if (positions == 404) {
                         continue;
@@ -248,17 +255,14 @@ async function updatePreviousPricesPortfolioBloomberg(data, collectionDate, path
                         object["S&P Bond Rating"] = row["S&P Bond Rating"].toString().includes("N/A") ? "" : row["S&P Bond Rating"];
                         object["S&P Outlook"] = row["S&P Outlook"].toString().includes("N/A") ? "" : row["S&P Outlook"];
                         object["Moody's Bond Rating"] = row["Moody's Bond Rating"].toString().includes("N/A") ? "" : row["Moody's Bond Rating"];
-                        object["Moddy's Outlook"] = row["Moddy's Outlook"].toString().includes("N/A") ? "" : row["Moody's Outlook"];
+                        object["Moody's Outlook"] = row["Moody's Outlook"].toString().includes("N/A") ? "" : row["Moody's Outlook"];
                         object["Fitch Bond Rating"] = row["Fitch Bond Rating"].toString().includes("N/A") ? "" : row["Fitch Bond Rating"];
                         object["Fitch Outlook"] = row["Fitch Outlook"].toString().includes("N/A") ? "" : row["Fitch Outlook"];
                         object["BBG Composite Rating"] = row["BBG Composite Rating"].toString().includes("N/A") ? "" : row["BBG Composite Rating"];
                         object["BB Ticker"] = row["BB Ticker"].toString().includes("N/A") ? "" : row["BB Ticker"];
                         object["Issuer"] = row["Issuer Name"].toString().includes("N/A") ? "" : row["Issuer Name"];
                         object["Bloomberg ID"] = row["Bloomberg ID"];
-                        // object["Issuer"] = row["Issuer Name"].includes("#") ? "0" : row["Issuer Name"];
-                        if (row["ModDurPerp"]) {
-                            object["Modified Duration"] = row["ModDurPerp"].toString().includes("#") ? (row["ModDur"].toString().includes("N/A") ? 0 : row["ModDur"]) : row["ModDurPerp"];
-                        }
+                        object["CUSIP"] = row["CUSIP"];
                         if (!row["Call Date"].includes("N/A") && !row["Call Date"].includes("#")) {
                             object["Call Date"] = row["Call Date"];
                         }
@@ -277,9 +281,13 @@ async function updatePreviousPricesPortfolioBloomberg(data, collectionDate, path
                         updatedPricePortfolio.push(object);
                     }
                 }
-                else if (row["BB Ticker"].includes("Curncy") && currencyLength == 3 && index < 20) {
+                else if (row["BB Ticker"].includes("Curncy") && currencyStart) {
                     let rate = row["Today's Mid"];
                     let currency = row["BB Ticker"].split(" ")[0];
+                    if (currency == "USD") {
+                        rate = 1 / rate;
+                        currency = row["BB Ticker"].split(" ")[1];
+                    }
                     currencyInUSD[currency] = rate;
                 }
             }
@@ -604,7 +612,7 @@ async function editTrade(editedTrade, tradeType) {
         let beforeModify = JSON.parse(JSON.stringify(tradeInfo));
         beforeModify["_id"] = new ObjectId(beforeModify["_id"]);
         if (tradeInfo) {
-            let centralizedBlotKeys = ["B/S", "Issue", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Edit Note"];
+            let centralizedBlotKeys = ["B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Edit Note"];
             let changes = 0;
             let changesText = [];
             for (let index = 0; index < centralizedBlotKeys.length; index++) {
@@ -624,7 +632,7 @@ async function editTrade(editedTrade, tradeType) {
             // Access the collection named by the 'customerId' parameter
             const collection = database.collection(tradeType);
             let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
-            await insertEditLogs(changesText, "Update Trade", dateTime, tradeInfo["Edit Note"], tradeInfo["Issue"]);
+            await insertEditLogs(changesText, "Update Trade", dateTime, tradeInfo["Edit Note"], tradeInfo["BB Ticker"]);
             let action = await collection.updateOne({ _id: tradeInfo["_id"] }, // Filter to match the document
             { $set: tradeInfo } // Update operation
             );
@@ -680,10 +688,10 @@ async function reformatCentralizedData(data) {
     if (missingLocation.length) {
         let issueMissing = "";
         for (let indexMissingIssue = 0; indexMissingIssue < missingLocation.length; indexMissingIssue++) {
-            let issueName = missingLocation[indexMissingIssue]["Issue"];
+            let issueName = missingLocation[indexMissingIssue]["BB Ticker"];
             issueMissing += issueName + " //";
         }
-        return { error: `Issue ${issueMissing} has missing or more than one location/ISIN` };
+        return { error: `BB Ticker ${issueMissing} has missing or more than one location/ISIN` };
     }
     let vconTrades = filtered.filter((trade, index) => trade["Trade Type"] == "vcon");
     let ibTrades = filtered.filter((trade, index) => trade["Trade Type"] == "ib");
@@ -702,13 +710,13 @@ async function reformatCentralizedData(data) {
     }
     for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
         ibTrades[ibTradesIndex]["Quantity"] = Math.abs(ibTrades[ibTradesIndex]["Notional Amount"]);
-        ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["Issue"];
+        ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["BB Ticker"];
         ibTrades[ibTradesIndex]["timestamp"] = new Date(ibTrades[ibTradesIndex]["Trade Date"]).getTime();
         ibTrades[ibTradesIndex]["Trade App Status"] = "uploaded_to_app";
     }
     for (let emsxTradesIndex = 0; emsxTradesIndex < emsxTrades.length; emsxTradesIndex++) {
         emsxTrades[emsxTradesIndex]["Quantity"] = emsxTrades[emsxTradesIndex]["Settlement Amount"];
-        emsxTrades[emsxTradesIndex]["ISIN"] = emsxTrades[emsxTradesIndex]["Issue"];
+        emsxTrades[emsxTradesIndex]["ISIN"] = emsxTrades[emsxTradesIndex]["BB Ticker"];
         emsxTrades[emsxTradesIndex]["timestamp"] = new Date(emsxTrades[emsxTradesIndex]["Trade Date"]).getTime();
         emsxTrades[emsxTradesIndex]["Trade App Status"] = "uploaded_to_app";
     }
@@ -727,14 +735,14 @@ async function recalculateRlzd(data, date) {
         for (let index = 0; index < data.length; index++) {
             let row = data[index];
             let originalFace = parseFloat(row["Original Face"]);
-            let identifier = row["ISIN"] !== "" ? row["ISIN"] : row["BB Ticker"] ? row["BB Ticker"] : row["Issue"];
+            let identifier = row["ISIN"] !== "" ? row["ISIN"] : row["BB Ticker"] ? row["BB Ticker"] : row["BB Ticker"];
             let object = {};
             let location = row["Location"].trim();
             let securityInPortfolio = (0, reports_1.getSecurityInPortfolio)(portfolio, identifier, location);
             if (securityInPortfolio !== 404) {
                 object = securityInPortfolio;
             }
-            let couponDaysYear = securityInPortfolio !== 404 ? securityInPortfolio["Coupon Duration"] : row["Issue"].split(" ")[0] == "T" ? 365.0 : 360.0;
+            let couponDaysYear = securityInPortfolio !== 404 ? securityInPortfolio["Coupon Duration"] : row["BB Ticker"].split(" ")[0] == "T" ? 365.0 : 360.0;
             let previousQuantity = securityInPortfolio["Quantity"];
             let previousAverageCost = securityInPortfolio["Average Cost"] ? securityInPortfolio["Average Cost"] : 0;
             let tradeType = row["B/S"];
@@ -771,9 +779,6 @@ async function recalculateRlzd(data, date) {
                     object["Location"] = row["Location"].trim();
                     object["Last Modified Date"] = new Date();
                     object["BB Ticker"] = row["BB Ticker"];
-                    if (!object["Issue"]) {
-                        object["Issue"] = row["Issue"];
-                    }
                     object["ISIN"] = row["ISIN"];
                     object["Quantity"] = securityInPortfolio !== 404 ? securityInPortfolio["Quantity"] + currentQuantity : currentQuantity;
                     object["Net"] = securityInPortfolio !== 404 ? securityInPortfolio["Net"] + currentNet : currentNet;
@@ -838,9 +843,6 @@ async function recalculateRlzd(data, date) {
                     object["Location"] = row["Location"].trim();
                     object["Last Modified Date"] = new Date();
                     object["BB Ticker"] = row["BB Ticker"];
-                    if (!object["Issue"]) {
-                        object["Issue"] = row["Issue"];
-                    }
                     object["ISIN"] = row["ISIN"];
                     object["Currency"] = currency;
                     object["Quantity"] = currentQuantity + updatingPosition["Quantity"];

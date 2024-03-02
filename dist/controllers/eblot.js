@@ -20,6 +20,13 @@ async function getAllTrades(from, to) {
             const documents = await collection.find(query).toArray();
             allDocuments = allDocuments.concat(documents);
         }
+        for (let index = 0; index < allDocuments.length; index++) {
+            let trade = allDocuments[index];
+            if (!trade["BB Ticker"] && trade["Issue"]) {
+                trade["BB Ticker"] = trade["Issue"];
+                delete trade["Issue"];
+            }
+        }
         return allDocuments;
     }
     catch (error) {

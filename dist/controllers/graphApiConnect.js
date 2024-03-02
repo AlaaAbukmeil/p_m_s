@@ -28,7 +28,7 @@ function getSecurityInPortfolioWithoutLocation(portfolio, identifier) {
     let object = "";
     for (let index = 0; index < portfolio.length; index++) {
         let issue = portfolio[index];
-        if (issue["ISIN"].includes(identifier) || issue["Issue"].includes(identifier)) {
+        if (issue["ISIN"].includes(identifier) || issue["BB Ticker"].includes(identifier)) {
             if (issue["ISIN"] != "") {
                 object += issue["Location"] + " ";
             }

@@ -21,6 +21,15 @@ export async function getAllTrades(from: number, to: number) {
       allDocuments = allDocuments.concat(documents);
     }
 
+    for (let index = 0; index < allDocuments.length; index++) {
+      let trade = allDocuments[index];
+      if(!trade["BB Ticker"] && trade["Issue"]){
+        trade["BB Ticker"] = trade["Issue"]
+        delete trade["Issue"]
+      }
+      
+    }
+
     return allDocuments;
   } catch (error) {
     // Handle the error appropriately

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCurrentDateTime = exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDateTime = exports.convertExcelDateToJSDate = exports.swapMonthDay = exports.getDateMufg = exports.getYear = exports.monthlyRlzdDate = exports.getTradeDateYearTradesWithoutTheCentury = exports.getTradeDateYearTrades = exports.getSettlementDateYearTrades = exports.formatSettleDateVcon = exports.formatTradeDate = exports.getCurrentDateVconFormat = exports.verifyToken = exports.getTime = exports.formatDateReadable = exports.formatDateVconFile = exports.formatDate = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = exports.bucket = exports.uri = void 0;
+exports.getCurrentDateTime = exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDateTime = exports.convertExcelDateToJSDate = exports.swapMonthDay = exports.formatDateWorld = exports.getYear = exports.monthlyRlzdDate = exports.getTradeDateYearTradesWithoutTheCentury = exports.getTradeDateYearTrades = exports.formatTradeDate = exports.getCurrentDateVconFormat = exports.verifyToken = exports.getTime = exports.formatDateUS = exports.formatDateFile = exports.formatDate = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = exports.bucket = exports.uri = void 0;
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 exports.uri = "mongodb+srv://developertriada:" + process.env.NEWMONGODBPASSWORD + "@app.ywfxr8w.mongodb.net/?retryWrites=true&w=majority";
@@ -50,7 +50,7 @@ function formatDate(date) {
     return formattedDate;
 }
 exports.formatDate = formatDate;
-function formatDateVconFile(date) {
+function formatDateFile(date) {
     let d = new Date(date), month = "" + (d.getMonth() + 1), day = "" + d.getDate();
     if (month.length < 2)
         month = "0" + month;
@@ -58,8 +58,8 @@ function formatDateVconFile(date) {
         day = "0" + day;
     return [month, day].join("-");
 }
-exports.formatDateVconFile = formatDateVconFile;
-function formatDateReadable(date) {
+exports.formatDateFile = formatDateFile;
+function formatDateUS(date) {
     let d = new Date(date), month = "" + (d.getMonth() + 1), day = "" + d.getDate(), year = d.getFullYear();
     if (year == 1970) {
         return 0;
@@ -70,7 +70,7 @@ function formatDateReadable(date) {
         day = "0" + day;
     return [month, day, year].join("/");
 }
-exports.formatDateReadable = formatDateReadable;
+exports.formatDateUS = formatDateUS;
 function getTime() {
     const date = new Date(); // Current date and time
     let hours = date.getHours();
@@ -119,43 +119,6 @@ function formatTradeDate(date) {
     return `${month}/${day}/${year}`;
 }
 exports.formatTradeDate = formatTradeDate;
-function formatSettleDateVcon(date) {
-    date = new Date(date);
-    const year = date.getFullYear().toString().slice(-2);
-    let month = (date.getMonth() + 1).toString();
-    let day = date.getDate().toString();
-    month = month.length < 2 ? "0" + month : month;
-    day = day.length < 2 ? "0" + day : day;
-    return `${month}/${day}`;
-}
-exports.formatSettleDateVcon = formatSettleDateVcon;
-function getSettlementDateYearTrades(date1, date2) {
-    try {
-        // Convert the input strings to Date objects
-        let dateObj1 = new Date(date1);
-        let dateObj2 = new Date(date2);
-        // Check if the dates are valid
-        if (isNaN(dateObj1.getTime()) || isNaN(dateObj2.getTime())) {
-            throw new Error("Invalid date format. Use mm/dd/yyyy.");
-        }
-        // If the month of the second date is less than the month of the first date,
-        // it means we've crossed into a new year, so increment the year
-        if (dateObj2.getMonth() < dateObj1.getMonth()) {
-            dateObj2.setFullYear(dateObj2.getFullYear() + 1);
-        }
-        // Format the date as mm/dd/yyyy
-        let year = dateObj2.getFullYear();
-        let month = (dateObj2.getMonth() + 1).toString().padStart(2, "0"); // padStart ensures two-digit month
-        let day = dateObj2.getDate().toString().padStart(2, "0"); // padStart ensures two-digit day
-        // Return the second date with the potentially updated year
-        return `${month}/${day}/${year}`;
-    }
-    catch (error) {
-        console.error(error.message);
-        return "";
-    }
-}
-exports.getSettlementDateYearTrades = getSettlementDateYearTrades;
 function getTradeDateYearTrades(date) {
     // Parse the month and year from the first date
     let dateComponenets = date.split("/");
@@ -181,14 +144,14 @@ function getYear(dateInput) {
     return `${year}`;
 }
 exports.getYear = getYear;
-function getDateMufg(inputDate) {
+function formatDateWorld(inputDate) {
     let date = new Date(inputDate);
     let day = `${date.getDate()}`.padStart(2, "0"); // get the day
     let month = `${date.getMonth() + 1}`.padStart(2, "0"); // get the month (months are 0-indexed in JS, so add 1)
     let year = `${date.getFullYear()}`.slice(-2); // get the year and take the last two digits
     return `${month}/${day}/${year}`;
 }
-exports.getDateMufg = getDateMufg;
+exports.formatDateWorld = formatDateWorld;
 function swapMonthDay(dateStr) {
     // Split the string into components
     const parts = dateStr.split("/");

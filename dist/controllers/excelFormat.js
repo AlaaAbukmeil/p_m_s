@@ -8,13 +8,12 @@ const common_1 = require("./common");
 const portfolioFunctions_2 = require("./portfolioFunctions");
 const graphApiConnect_1 = require("./graphApiConnect");
 const common_2 = require("./common");
-const common_3 = require("./common");
 const xlsx = require("xlsx");
 const { PassThrough } = require("stream");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
-const client = new MongoClient(common_3.uri, {
+const client = new MongoClient(common_2.uri, {
     serverApi: {
         version: ServerApiVersion.v1,
         strict: false,
@@ -170,9 +169,10 @@ async function getTriadaTrades(tradeType, fromTimestamp = 0, toTimestamp = 0) {
     for (let index = 0; index < reportCollection.length; index++) {
         let trade = reportCollection[index];
         trade["Trade App Status"] = "uploaded_to_app";
+        trade["BB Ticker"] = trade["BB Ticker"] ? trade["BB Ticker"] : trade["Issue"];
         delete trade["_id"];
         delete trade["Quantity"];
-        delete trade["BB Ticker"];
+        delete trade["Issue"];
         delete trade["timestamp"];
     }
     return reportCollection;
@@ -215,7 +215,7 @@ async function formatCentralizedRawFiles(files, bbbData, vconTrades, ibTrades, e
         "£": "GBP",
         SGD: "SGD",
     };
-    let centralizedBlotterHeader = ["B/S", "Issue", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Trade App Status"];
+    let centralizedBlotterHeader = ["B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Trade App Status"];
     // vcons already checking if duplicate trade and removes it. ib and emsx no. ib trades to be implement with their API
     for (let index = 0; index < bbbData.length; index++) {
         let obj = {};
@@ -223,7 +223,7 @@ async function formatCentralizedRawFiles(files, bbbData, vconTrades, ibTrades, e
         if (trade["Status"] == "Accepted") {
             let settlementDate = (0, portfolioFunctions_2.getSettlementDateYear)((0, common_1.convertExcelDateToJSDate)(trade["Trade Date"]), (0, common_1.convertExcelDateToJSDate)(trade["Settle Date"]));
             obj["B/S"] = trade["Buy/Sell"];
-            obj["Issue"] = trade["Issue"];
+            obj["BB Ticker"] = trade["BB Ticker"];
             obj["Location"] = trade["Location"].trim();
             obj["Trade Date"] = (0, common_1.getTradeDateYearTrades)((0, common_1.convertExcelDateToJSDate)(trade["Trade Date"]));
             obj["Trade Time"] = trade["Entry Time"].split(" ")[1] + ":00";
@@ -255,7 +255,7 @@ async function formatCentralizedRawFiles(files, bbbData, vconTrades, ibTrades, e
             let obj = {};
             let originalFace = Math.abs(trade["Notional Value"] / trade["T Price"] / trade["Quantity"]);
             obj["B/S"] = parseFloat(trade["Quantity"]) > 0 ? "B" : "S";
-            obj["Issue"] = trade["Symbol"];
+            obj["BB Ticker"] = trade["Symbol"];
             obj["Location"] = trade["Location"].trim();
             obj["Trade Date"] = trade["Trade Date"];
             obj["Trade Time"] = trade["Trade Date Time"];
@@ -286,7 +286,7 @@ async function formatCentralizedRawFiles(files, bbbData, vconTrades, ibTrades, e
         let trade = bbeData[index3];
         if (blot_emsx.filter((emsxTrade) => emsxTrade["Triada Trade Id"] == trade["Triada Trade Id"])) {
             obj["B/S"] = trade["Buy/Sell"] == "Sell" ? "S" : "B";
-            obj["Issue"] = trade["Security"];
+            obj["BB Ticker"] = trade["Security"];
             obj["Location"] = trade["Location"].trim();
             obj["Trade Date"] = trade["Trade Date"];
             obj["Trade Time"] = "";
@@ -358,13 +358,13 @@ function formatIbTrades(data, ibTrades, portfolio) {
                 let tradeDate = (0, common_1.convertExcelDateToJSDate)(data[index]["Date/Time"]);
                 let tradeDateTime = (0, common_1.convertExcelDateToJSDateTime)(data[index]["Date/Time"]);
                 let trade_status = "new";
-                trade["Trade Date"] = (0, common_2.formatTradeDate)(tradeDate);
-                trade["Settle Date"] = (0, common_2.formatTradeDate)(tradeDate);
+                trade["Trade Date"] = (0, common_1.formatDateUS)(tradeDate);
+                trade["Settle Date"] = (0, common_1.formatDateUS)(tradeDate);
                 trade["Symbol"] += " IB";
                 let existingTrade = null;
                 for (let ibIndex = 0; ibIndex < ibTrades.length; ibIndex++) {
                     let ibTrade = ibTrades[ibIndex];
-                    if (trade["Symbol"] == ibTrade["Issue"] && trade["Trade Date"] == ibTrade["Trade Date"] && Math.abs(ibTrade["Settlement Amount"]) == Math.abs(trade["Notional Value"])) {
+                    if (trade["Symbol"] == ibTrade["BB Ticker"] && trade["Trade Date"] == ibTrade["Trade Date"] && Math.abs(ibTrade["Settlement Amount"]) == Math.abs(trade["Notional Value"])) {
                         existingTrade = ibTrade;
                     }
                 }
@@ -416,10 +416,10 @@ function formatFxTrades(object) {
             formattedObject["Sell Currency"] = sellCurrency;
         }
         else if (title == "Timestamp") {
-            formattedObject["Trade Date"] = (0, common_1.formatDateReadable)(object[title]);
+            formattedObject["Trade Date"] = (0, common_1.formatDateUS)(object[title]);
         }
         else if (title == "Value Date") {
-            formattedObject["Settle Date"] = (0, common_1.formatDateReadable)(object[title]);
+            formattedObject["Settle Date"] = (0, common_1.formatDateUS)(object[title]);
         }
         else if (title == "Amount 1") {
             formattedObject["Buy Amount"] = parseFloat(object[title].split(" ")[1].replace(/,/g, ""));
@@ -458,12 +458,12 @@ function formatEmsxTrades(data, emsxTrades, portfolio) {
             let id;
             let object = {};
             let existingTrade = null;
-            let tradeDate = !trade["Create Time (As of)"].includes("/") ? (0, common_2.formatTradeDate)(new Date()) : (0, common_2.formatTradeDate)((0, common_1.convertExcelDateToJSDate)(trade["Create Time (As of)"]));
+            let tradeDate = !trade["Create Time (As of)"].includes("/") ? (0, common_1.formatDateUS)(new Date()) : (0, common_1.formatDateUS)((0, common_1.convertExcelDateToJSDate)(trade["Create Time (As of)"]));
             let tradeType = trade["Side"] == "Sell" ? "S" : "B";
             for (let emsxIndex = 0; emsxIndex < emsxTrades.length; emsxIndex++) {
                 let emsxTrade = emsxTrades[emsxIndex];
                 // net because previous trade counted quantity as fill quantity
-                if (tradeDate == emsxTrade["Trade Date"] && trade["Security"] == emsxTrade["Issue"] && tradeType == emsxTrade["B/S"] && trade["FillQty"] == emsxTrade["Settlement Amount"]) {
+                if (tradeDate == emsxTrade["Trade Date"] && trade["Security"] == emsxTrade["BB Ticker"] && tradeType == emsxTrade["B/S"] && trade["FillQty"] == emsxTrade["Settlement Amount"]) {
                     existingTrade = emsxTrade;
                 }
             }

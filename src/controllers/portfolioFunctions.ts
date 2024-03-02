@@ -1,4 +1,4 @@
-import { formatDate, getDate, getTime, convertExcelDateToJSDate, formatTradeDate, formatSettleDateVcon, getDateMufg, getTradeDateYearTrades } from "./common";
+import { formatDate, getDate, getTime, convertExcelDateToJSDate, formatDateWorld, getTradeDateYearTrades } from "./common";
 
 const xlsx = require("xlsx");
 const axios = require("axios");
@@ -140,14 +140,14 @@ export function parseBondIdentifier(identifier: any): any {
           }
         }
         let dateComponents = components[2].split("/");
-        let date: any = new Date(`${dateComponents[0]}/${dateComponents[1]}/${"20" + dateComponents[2]}`);
+        let date: any = new Date(`${dateComponents[1]}/${dateComponents[0]}/${"20" + dateComponents[2]}`);
         if (identifier.toString().toLowerCase().includes("perp")) {
           date = null;
         }
         // let date: any = new Date(components[2])
 
         if (date) {
-          date = getDateMufg(date);
+          date = formatDateWorld(date);
         }
         return [rate, date];
       } catch (error) {
@@ -184,7 +184,7 @@ export function getMaturity(identifier: any) {
         }
         let dateComponents = components[index].split("/");
 
-        let date: any = `${dateComponents[0]}/${dateComponents[1]}/${"20" + dateComponents[2]}`;
+        let date: any = `${dateComponents[1]}/${dateComponents[0]}/${"20" + dateComponents[2]}`;
         // let date: any = new Date(components[2])
 
         if (new Date(date) && !date.includes("undefined")) {
@@ -342,64 +342,7 @@ function merge(left: any, right: any) {
   return resultArray.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
 }
 
-export async function readVconEBlot(path: string) {
-  const response = await axios.get(path, { responseType: "arraybuffer" });
 
-  /* Parse the data */
-  const workbook = xlsx.read(response.data, { type: "buffer" });
-
-  /* Get first worksheet */
-  const worksheetName = workbook.SheetNames[0];
-  const worksheet = workbook.Sheets[worksheetName];
-
-  /* Convert worksheet to JSON */
-  // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
-
-  // Read data
-
-  const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-  const headersFormat = [
-    "Broker Code",
-    "Status",
-    "Buy/Sell",
-    "Quantity",
-    // "Location code",
-    "Issue",
-    "Benchmark",
-    "Price",
-    "Yield",
-    "Principal",
-    "Trade Date",
-    "Acc Int",
-    "Settle Date",
-    "Net",
-    "Spread",
-    "Entry Time",
-    "Customer",
-    "Seq No",
-  ];
-  const arraysAreEqual = headersFormat.every((value, index) => value === headers[0][index]);
-  if (!arraysAreEqual) {
-    return {
-      error: "Incompatible format, please upload vcon e-blot xlsx/csv file",
-    };
-  } else {
-    let data = xlsx.utils.sheet_to_json(worksheet, {
-      defval: "",
-      range: "A1:CZ300",
-    });
-
-    for (let index = 0; index < data.length; index++) {
-      data[index]["Price"] = data[index]["Price (Decimal)"];
-    }
-
-    for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {}
-    // other trades type are sorted by default
-    data = mergeSort(data);
-
-    return data;
-  }
-}
 
 export async function readCentralizedEBlot(path: string) {
   const response = await axios.get(path, { responseType: "arraybuffer" });
@@ -417,7 +360,7 @@ export async function readCentralizedEBlot(path: string) {
   // Read data
 
   const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-  const headersFormat = ["B/S", "Issue", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Trade App Status"];
+  const headersFormat = ["B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Trade App Status"];
   const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : console.log(value, headers[0][index], "excel value are wrong")));
   if (!arraysAreEqual) {
     return {
@@ -436,10 +379,10 @@ export async function readCentralizedEBlot(path: string) {
     if (missingLocation.length) {
       let issueMissing = "";
       for (let indexMissingIssue = 0; indexMissingIssue < missingLocation.length; indexMissingIssue++) {
-        let issueName = missingLocation[indexMissingIssue]["Issue"];
+        let issueName = missingLocation[indexMissingIssue]["BB Ticker"];
         issueMissing += issueName + " //";
       }
-      return { error: `Issue ${issueMissing} has missing or more than one location/ISIN` };
+      return { error: `BB Ticker ${issueMissing} has missing or more than one location/ISIN` };
     }
     let vconTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "vcon");
     let ibTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "ib");
@@ -468,7 +411,7 @@ export async function readCentralizedEBlot(path: string) {
 
     for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
       ibTrades[ibTradesIndex]["Quantity"] = Math.abs(ibTrades[ibTradesIndex]["Notional Amount"]);
-      ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["Issue"];
+      ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["BB Ticker"];
       if (!ibTrades[ibTradesIndex]["Trade Date"].includes("/")) {
         ibTrades[ibTradesIndex]["Trade Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(ibTrades[ibTradesIndex]["Trade Date"]));
       }
@@ -481,7 +424,7 @@ export async function readCentralizedEBlot(path: string) {
 
     for (let emsxTradesIndex = 0; emsxTradesIndex < emsxTrades.length; emsxTradesIndex++) {
       emsxTrades[emsxTradesIndex]["Quantity"] = emsxTrades[emsxTradesIndex]["Settlement Amount"];
-      emsxTrades[emsxTradesIndex]["ISIN"] = emsxTrades[emsxTradesIndex]["Issue"];
+      emsxTrades[emsxTradesIndex]["ISIN"] = emsxTrades[emsxTradesIndex]["BB Ticker"];
       if (!emsxTrades[emsxTradesIndex]["Trade Date"].includes("/")) {
         emsxTrades[emsxTradesIndex]["Trade Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(emsxTrades[emsxTradesIndex]["Trade Date"]));
       }
@@ -516,7 +459,7 @@ export function formatIbTradesToVcon(data: any) {
       updatedTrade["ISIN"] = trade["Symbol"];
       // soon table api
       updatedTrade["BB Ticker"] = bbTicker[trade["Symbol"]] || null;
-      updatedTrade["Issue"] = trade["Symbol"];
+      updatedTrade["BB Ticker"] = trade["Symbol"];
       updatedTrade["Quantity"] = (Math.abs(trade["Quantity"]) * originalFace).toString();
       //this to pass the bond divider
       updatedTrade["Price"] = trade["C Price"] * 100.0;
@@ -545,7 +488,6 @@ export function formatEmsxTradesToVcon(data: any) {
       updatedTrade["Buy/Sell"] = trade["Buy/Sell"] == "Sell" ? "S" : "B";
       updatedTrade["ISIN"] = trade["Security"];
       updatedTrade["BB Ticker"] = trade["Security"];
-      updatedTrade["Issue"] = trade["Security"];
       // net -change
       updatedTrade["Quantity"] = Math.abs(trade["Quantity"]).toString();
       //this to pass the bond divider
@@ -680,67 +622,7 @@ export async function readEmsxEBlot(path: string) {
   }
 }
 
-export async function readMUFGEBlot(path: string) {
-  const response = await axios.get(path, { responseType: "arraybuffer" });
 
-  /* Parse the data */
-  const workbook = xlsx.read(response.data, { type: "buffer" });
-
-  /* Get first worksheet */
-  const worksheetName = workbook.SheetNames[0];
-  const worksheet = workbook.Sheets[worksheetName];
-
-  /* Convert worksheet to JSON */
-  // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
-
-  // Read data
-
-  const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-
-  const arraysAreEqual = true;
-  if (!arraysAreEqual) {
-    return {
-      error: "Incompatible format, please upload vcon e-blot xlsx/csv file",
-    };
-  } else {
-    let data = xlsx.utils.sheet_to_json(worksheet, {
-      defval: "",
-      range: "A1:V300",
-    });
-
-    let isinRequest = [];
-    for (let index = 0; index < data.length; index++) {
-      let positionMufg = data[index];
-      let isinObjReq = {
-        idType: "ID_ISIN",
-        idValue: positionMufg["Investment"],
-      };
-      isinRequest.push(isinObjReq);
-    }
-
-    let portfolio = [];
-
-    for (let index = 0; index < data.length; index++) {
-      let object: any = {};
-      let position = data[index];
-      object["BB Ticker"] = position["BB Ticker"] ? position["BB Ticker"].replace("Corp", "").replace("Govt", "").trim() : position["BB Ticker"];
-      object["Quantity"] = position["Investment"].includes("ib") ? 100 : position["Quantity MUFG"];
-      object["ISIN"] = position["Investment"];
-      object["Issue"] = position[" Issue "] ? position[" Issue "].trim() : "";
-      object["Average Cost"] = Math.round((parseFloat(position["LocalCost"]) / parseFloat(position["Quantity MUFG"])) * 10000000000) / 10000000000;
-      object["Buy/Sell"] = "B";
-      object["Status"] = "Accepted";
-      object["Trade Date"] = "09/29/23";
-      object["Settle Date"] = "09/29";
-      object["Net"] = position["Quantity MUFG"];
-      object["Mid"] = position["Investment"].includes("IB") ? parseFloat(position["Price"]) : parseFloat(position["Price"]) / 100.0;
-      object["Location"] = position["Location"].toUpperCase();
-      object["Currency"] = position["CCY"];
-      portfolio.push(object);
-    }
-    return portfolio;
-  }
-}
 
 function formartImagineDate(input: any) {
   input = input.toString();
@@ -961,6 +843,7 @@ export async function readPricingSheet(path: string) {
     "Spread to benchmark",
     "Country",
     "Sector",
+    "Maturity",
     "Call Date",
     "S&P Bond Rating",
     "S&P Outlook",
@@ -985,7 +868,7 @@ export async function readPricingSheet(path: string) {
   } else {
     const data = xlsx.utils.sheet_to_json(worksheet, {
       defval: "",
-      range: "A1:AE300",
+      range: "A1:AF300",
     });
     let keys = Object.keys(data[0]);
     let reformedData: any = [];
@@ -1074,9 +957,10 @@ export function formatUpdatedPositions(positions: any, portfolio: any, lastUpdat
       for (let indexPortfolio = 0; indexPortfolio < portfolio.length; indexPortfolio++) {
         const portfolioPosition = portfolio[indexPortfolio];
 
-        if ((position["ISIN"] == portfolioPosition["ISIN"] || position["Issue"] == portfolioPosition["Issue"]) && position["Location"].trim() == portfolioPosition["Location"].trim()) {
+        if ((position["ISIN"] == portfolioPosition["ISIN"] || position["BB Ticker"] == portfolioPosition["BB Ticker"]) && position["Location"].trim() == portfolioPosition["Location"].trim()) {
           portfolio[indexPortfolio] = position;
-          positionsThatGotUpdated.push(`${position["Issue"]} ${position["Location"]}\n`);
+          positionsThatGotUpdated.push(`${position["BB Ticker"]} ${position["Location"]}\n`);
+          
           positionsIndexThatExists.push(indexPositions);
         }
         portfolio[indexPortfolio][lastUpdatedDescription] = new Date();
@@ -1085,14 +969,14 @@ export function formatUpdatedPositions(positions: any, portfolio: any, lastUpdat
 
     for (let indexPositionsExists = 0; indexPositionsExists < positions.length; indexPositionsExists++) {
       if (!positionsIndexThatExists.includes(indexPositionsExists)) {
-        positionsThatGotUpdated.push(`${positions[indexPositionsExists]["Issue"]} ${positions[indexPositionsExists]["Location"]}\n`);
+        positionsThatGotUpdated.push(`${positions[indexPositionsExists]["BB Ticker"]} ${positions[indexPositionsExists]["Location"]}\n`);
         positionsThatDoNotExists.push(positions[indexPositionsExists]);
       }
     }
 
     for (let indexPositions = 0; indexPositions < portfolio.length; indexPositions++) {
-      if (!positionsThatGotUpdated.includes(`${portfolio[indexPositions]["Issue"]} ${portfolio[indexPositions]["Location"]}\n`)) {
-        positionsThatDoNotExistsNames[portfolio[indexPositions]["Issue"]] = { location: portfolio[indexPositions]["Location"], notional: portfolio[indexPositions]["Quantity"] };
+      if (!positionsThatGotUpdated.includes(`${portfolio[indexPositions]["BB Ticker"]} ${portfolio[indexPositions]["Location"]}\n`)) {
+        positionsThatDoNotExistsNames[portfolio[indexPositions]["BB Ticker"]] = { location: portfolio[indexPositions]["Location"], notional: portfolio[indexPositions]["Quantity"] };
       }
     }
 
