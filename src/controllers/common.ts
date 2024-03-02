@@ -82,8 +82,11 @@ export function formatDateUS(date: any): any {
   return [month, day, year].join("/");
 }
 
-export function getTime() {
-  const date = new Date(); // Current date and time
+export function getTime(input: any = null) {
+  let date = new Date(); // Current date and time
+  if (input) {
+    date = new Date(input);
+  }
 
   let hours: any = date.getHours();
   let minutes: any = date.getMinutes();
@@ -98,13 +101,13 @@ export function getTime() {
 }
 
 export const verifyToken = (req: Request | any, res: Response, next: NextFunction) => {
-  const token = req.headers.authorization?.split(" ")[1];
-
-  if (!token) {
-    return res.sendStatus(401);
-  }
-
   try {
+    const token = req.cookies["triada.admin.cookie"].token;
+
+    if (!token) {
+      return res.sendStatus(401);
+    }
+
     const decoded = jwt.verify(token, process.env.SECRET);
     req.userRole = decoded.accessRole;
     next();

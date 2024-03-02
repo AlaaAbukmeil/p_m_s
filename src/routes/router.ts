@@ -35,7 +35,7 @@ const uploadBeforeExcel = multer({
 
 const router = Router();
 
-router.get("/auth", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/auth", uploadBeforeExcel.any(), verifyToken, async (req: Request, res: Response, next: NextFunction) => {
   res.sendStatus(200);
 });
 
@@ -149,7 +149,7 @@ router.get("/all-trades", verifyToken, async (req, res) => {
     let vconTrades: [any[], number] | any = await getTriadaTrades("vcons", start, end);
 
     let vcons: any = await getVcons(token, start + 2 * 24 * 60 * 60 * 1000, end - 2 * 24 * 60 * 60 * 1000, vconTrades);
-    console.log(vcons);
+
     vcons = vcons.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app");
     let action: any = await formatCentralizedRawFiles({}, vcons, [], [], []);
     // action = action.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app");
@@ -191,16 +191,23 @@ router.get("/fund-details", verifyToken, async (req, res) => {
   }
 });
 
-router.post("/login", async (req: Request, res: Response, next: NextFunction) => {
+router.post("/login", uploadBeforeExcel.any(), async (req: Request, res: Response, next: NextFunction) => {
   let data = req.body;
   let email = data.email;
   let password = data.password;
-  let user = await checkIfUserExists(email, password);
 
-  res.send(user);
+  let user = await checkIfUserExists(email, password);
+  res.cookie("triada.admin.cookie", user, {
+    maxAge: 3 * 24 * 60 * 60 * 1000,
+    httpOnly: process.env.PRODUCTION === "production", 
+    secure: process.env.PRODUCTION === "production", // Set to true if using HTTPS
+    sameSite: "lax",
+  });
+
+  res.send({ status: 200 });
 });
 
-router.post("/signUp", async (req: Request, res: Response, next: NextFunction) => {
+router.post("/sign-up", async (req: Request, res: Response, next: NextFunction) => {
   let data = req.body;
   let email = data.email;
   let password = data.password;
@@ -372,6 +379,7 @@ router.post("/upload-trades", verifyToken, uploadBeforeExcel.any(), async (req: 
 
 router.post("/edit-position", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
+    console.log(req.body)
     let action = await editPosition(req.body, req.body.date);
 
     res.sendStatus(200);
@@ -550,16 +558,16 @@ router.post("/add-fund", verifyToken, uploadBeforeExcel.any(), async (req: Reque
   }
 });
 
-router.post("/one-time", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+router.post("/recalculate-position", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let data = req.body;
     let tradeType = data.tradeType;
     let isin = data["ISIN"];
     let location = data["Location"];
     let date = data.date;
-    console.log(tradeType, isin, location, date)
+    console.log(tradeType, isin, location, date);
     let trades = await getAllTradesForSpecificPosition(tradeType, isin, location);
-    let action: any = await readCalculatePosition(trades, date, isin,location);
+    let action: any = await readCalculatePosition(trades, date, isin, location);
 
     console.log(action);
     res.sendStatus(200);

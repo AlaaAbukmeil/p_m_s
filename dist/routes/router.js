@@ -33,7 +33,7 @@ const uploadBeforeExcel = multer({
     }),
 });
 const router = (0, express_1.Router)();
-router.get("/auth", common_1.verifyToken, async (req, res, next) => {
+router.get("/auth", uploadBeforeExcel.any(), common_1.verifyToken, async (req, res, next) => {
     res.sendStatus(200);
 });
 router.get("/portfolio", common_1.verifyToken, async (req, res, next) => {
@@ -137,7 +137,6 @@ router.get("/all-trades", common_1.verifyToken, async (req, res) => {
         trades.filter((trade, index) => new Date(trade["Trade Date"]).getTime() > start && new Date(trade["Trade Date"]).getTime() < end);
         let vconTrades = await (0, excelFormat_1.getTriadaTrades)("vcons", start, end);
         let vcons = await (0, graphApiConnect_1.getVcons)(token, start + 2 * 24 * 60 * 60 * 1000, end - 2 * 24 * 60 * 60 * 1000, vconTrades);
-        console.log(vcons);
         vcons = vcons.filter((trade, index) => trade["Trade App Status"] != "uploaded_to_app");
         let action = await (0, excelFormat_1.formatCentralizedRawFiles)({}, vcons, [], [], []);
         // action = action.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app");
@@ -179,14 +178,20 @@ router.get("/fund-details", common_1.verifyToken, async (req, res) => {
         res.status(500).send("An error occurred while reading the file.");
     }
 });
-router.post("/login", async (req, res, next) => {
+router.post("/login", uploadBeforeExcel.any(), async (req, res, next) => {
     let data = req.body;
     let email = data.email;
     let password = data.password;
     let user = await (0, auth_1.checkIfUserExists)(email, password);
-    res.send(user);
+    res.cookie("triada.admin.cookie", user, {
+        maxAge: 3 * 24 * 60 * 60 * 1000,
+        httpOnly: process.env.PRODUCTION === "production",
+        secure: process.env.PRODUCTION === "production",
+        sameSite: "lax",
+    });
+    res.send({ status: 200 });
 });
-router.post("/signUp", async (req, res, next) => {
+router.post("/sign-up", async (req, res, next) => {
     let data = req.body;
     let email = data.email;
     let password = data.password;
@@ -346,6 +351,7 @@ router.post("/upload-trades", common_1.verifyToken, uploadBeforeExcel.any(), asy
 });
 router.post("/edit-position", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
     try {
+        console.log(req.body);
         let action = await (0, reports_1.editPosition)(req.body, req.body.date);
         res.sendStatus(200);
     }
@@ -524,7 +530,7 @@ router.post("/add-fund", common_1.verifyToken, uploadBeforeExcel.any(), async (r
         res.send({ error: "Template is not correct" });
     }
 });
-router.post("/one-time", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/recalculate-position", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
     try {
         let data = req.body;
         let tradeType = data.tradeType;

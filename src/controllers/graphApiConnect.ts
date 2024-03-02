@@ -3,7 +3,7 @@ require("dotenv").config();
 import { renderVcon, renderFx } from "./excelFormat";
 import { getPortfolio } from "./reports";
 import { mergeSort } from "./portfolioFunctions";
-import { convertExcelDateToJSDate, getTradeDateYearTrades } from "./common";
+import { convertExcelDateToJSDate, getTime, getTradeDateYearTrades } from "./common";
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
 const FormData = require("form-data");
@@ -59,20 +59,22 @@ export async function getVcons(token: string, start_time: any, end_time: any, tr
     let object = [];
 
     let id;
-    // console.log(trades)
+  
     for (let index = 0; index < vcons.length; index++) {
+      let tradeTime = getTime((new Date(vcons[index]["receivedDateTime"]).toISOString()));
       let vcon = vcons[index].body.content;
+     
       vcon = renderVcon(vcon);
       let identifier = vcon["ISIN"];
-      vcon["BB Ticker"] = vcon["Issue"]
+      vcon["BB Ticker"] = vcon["Issue"];
+      vcon["Entry Time"] = tradeTime
       let securityInPortfolioLocation = getSecurityInPortfolioWithoutLocation(portfolio, identifier);
       let location = securityInPortfolioLocation.trim();
       let trade_status = "new";
       let triadaId = trades.find(function (trade: any) {
-        return (trade["Seq No"] == vcon["Seq No"] && trade["ISIN"] == vcon["ISIN"])
+        return trade["Seq No"] == vcon["Seq No"] && trade["ISIN"] == vcon["ISIN"];
       });
-      
-      
+
       // console.log(vcon["Issue"], vcon["Seq No"],triadaId)
 
       if (triadaId) {
@@ -89,7 +91,6 @@ export async function getVcons(token: string, start_time: any, end_time: any, tr
       if (!trade["Triada Trade Id"]) {
         id = uuidv4();
         trade["Triada Trade Id"] = id;
-        
       }
     }
     return object;

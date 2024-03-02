@@ -226,7 +226,7 @@ async function formatCentralizedRawFiles(files, bbbData, vconTrades, ibTrades, e
             obj["BB Ticker"] = trade["BB Ticker"];
             obj["Location"] = trade["Location"].trim();
             obj["Trade Date"] = (0, common_1.getTradeDateYearTrades)((0, common_1.convertExcelDateToJSDate)(trade["Trade Date"]));
-            obj["Trade Time"] = trade["Entry Time"].split(" ")[1] + ":00";
+            obj["Trade Time"] = trade["Entry Time"];
             obj["Settle Date"] = (0, common_1.getTradeDateYearTrades)(settlementDate);
             obj["Price"] = trade["Price (Decimal)"];
             obj["Notional Amount"] = parseFloat(trade["Quantity"].replace(/,/g, ""));

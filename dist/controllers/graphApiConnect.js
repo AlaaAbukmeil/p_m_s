@@ -5,6 +5,7 @@ require("dotenv").config();
 const excelFormat_1 = require("./excelFormat");
 const reports_1 = require("./reports");
 const portfolioFunctions_1 = require("./portfolioFunctions");
+const common_1 = require("./common");
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
 const FormData = require("form-data");
@@ -58,17 +59,18 @@ async function getVcons(token, start_time, end_time, trades) {
         let vcons = action.data.value;
         let object = [];
         let id;
-        // console.log(trades)
         for (let index = 0; index < vcons.length; index++) {
+            let tradeTime = (0, common_1.getTime)((new Date(vcons[index]["receivedDateTime"]).toISOString()));
             let vcon = vcons[index].body.content;
             vcon = (0, excelFormat_1.renderVcon)(vcon);
             let identifier = vcon["ISIN"];
             vcon["BB Ticker"] = vcon["Issue"];
+            vcon["Entry Time"] = tradeTime;
             let securityInPortfolioLocation = getSecurityInPortfolioWithoutLocation(portfolio, identifier);
             let location = securityInPortfolioLocation.trim();
             let trade_status = "new";
             let triadaId = trades.find(function (trade) {
-                return (trade["Seq No"] == vcon["Seq No"] && trade["ISIN"] == vcon["ISIN"]);
+                return trade["Seq No"] == vcon["Seq No"] && trade["ISIN"] == vcon["ISIN"];
             });
             // console.log(vcon["Issue"], vcon["Seq No"],triadaId)
             if (triadaId) {
