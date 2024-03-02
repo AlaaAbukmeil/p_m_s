@@ -8,7 +8,7 @@ import { bloombergToTriada, getDateTimeInMongoDBCollectionFormat, readIBRawExcel
 import { uploadArrayAndReturnFilePath, getTriadaTrades, formatCentralizedRawFiles, formatIbTrades, formatEmsxTrades, readEmsxRawExcel } from "../controllers/excelFormat";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/graphApiConnect";
 import { formatMufg, formatFxMufg, tradesTriada, checkMUFGEndOfMonthWithPortfolio } from "../controllers/mufgOperations";
-import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, getPortfolioOnSpecificDate, editPositionPortfolio, getAllFundDetails, editFund, deleteFund, addFund, editTrade, deleteTrade, deletePosition } from "../controllers/operations";
+import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, getPortfolioOnSpecificDate, editPositionPortfolio, getAllFundDetails, editFund, deleteFund, addFund, editTrade, deleteTrade, deletePosition, getAllTradesForSpecificPosition, readCalculatePosition } from "../controllers/operations";
 import { getAllTrades } from "../controllers/eblot";
 import util from "util";
 const fs = require("fs");
@@ -50,7 +50,7 @@ router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: 
     let sign: any = req.query.sign || 1;
 
     let report: any = await getHistoricalPortfolioWithAnalytics(date, sort, sign);
-   
+
     if (report.error) {
       res.send({ error: report.error });
     } else {
@@ -149,14 +149,14 @@ router.get("/all-trades", verifyToken, async (req, res) => {
     let vconTrades: [any[], number] | any = await getTriadaTrades("vcons", start, end);
 
     let vcons: any = await getVcons(token, start + 2 * 24 * 60 * 60 * 1000, end - 2 * 24 * 60 * 60 * 1000, vconTrades);
-    console.log(vcons)
+    console.log(vcons);
     vcons = vcons.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app");
     let action: any = await formatCentralizedRawFiles({}, vcons, [], [], []);
     // action = action.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app");
     let allTrades = action.concat(trades).sort((a: any, b: any) => new Date(b["Trade Date"]).getTime() - new Date(a["Trade Date"]).getTime());
     res.send({ trades: allTrades });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     res.status(500).send("An error occurred while reading the file.");
   }
 });
@@ -437,7 +437,7 @@ router.post("/update-prices", verifyToken, uploadBeforeExcel.any(), async (req: 
     const fileName = req.files[0].filename;
     const path = bucket + fileName;
     let action: any = await updatePricesPortfolio(path);
-  
+
     if (action?.error) {
       res.send({ error: action.error });
     } else {
@@ -550,26 +550,23 @@ router.post("/add-fund", verifyToken, uploadBeforeExcel.any(), async (req: Reque
   }
 });
 
-router.post("/one-time", uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  // Online Javascript Editor for free
-  // Write, Edit and Run your Javascript code using JS Online Compiler
-  let text = `2.23 0.24	-0.17	0.94	0.14	0.66 1.41	-0.77	0.07	-1.07	3.31	2.06
--0.49	-7.18	0.27	-4.40	-0.88	-3.28	-1.17	2.93	0.19	-3.84	1.20	1.52
--5.12	0.12	0.01	1.58	1.29	-2.41	-6.46	-0.51	-4.63	-11.85	-2.15	-0.09`;
+router.post("/one-time", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let data = req.body;
+    let tradeType = data.tradeType;
+    let isin = data["ISIN"];
+    let location = data["Location"];
+    let date = data.date;
+    console.log(tradeType, isin, location, date)
+    let trades = await getAllTradesForSpecificPosition(tradeType, isin, location);
+    let action: any = await readCalculatePosition(trades, date, isin,location);
 
-  let array = text.split(" ");
-
-  let updatedText = "";
-
-  for (let index = 0; index < array.length; index++) {
-    const element = array[index];
-    updatedText += element + " , ";
+    console.log(action);
+    res.sendStatus(200);
+  } catch (error) {
+    console.log(error);
+    res.send({ error: error });
   }
-
-  // Convert the log entry to a string
-
-  // Append the log entry to the file
-  await writeFile("trades-logs.txt", updatedText, { flag: "a" });
 });
 
 export default router;

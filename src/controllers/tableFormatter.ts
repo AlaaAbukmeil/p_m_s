@@ -69,6 +69,13 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     if ((!position["Asset Class"] || position["Asset Class"] == "") && position["BBG Composite Rating"]) {
       position["Asset Class"] = isRatingHigherThanBBBMinus(position["BBG Composite Rating"]);
     }
+    if (position["Notional Total"] < 0) {
+      position["Asset Class"] = "Hedge";
+    }
+    if (position["Type"] == "BND" && position["Strategy"] == "RV") {
+      position["Asset Class"] = "IG";
+    }
+
     position["Cost (BC)"] = position["Type"] == "CDS" ? Math.round((position["Average Cost"] * position["Notional Total"] * usdRatio) / position["Original Face"]) : Math.round(position["Average Cost"] * position["Notional Total"] * usdRatio);
     position["FX Rate"] = Math.round(position["FX Rate"] * 1000) / 1000;
     position["Value (LC)"] = position["Type"] == "CDS" ? Math.round((position["Notional Total"] * position["Mid"]) / originalFace) || 0 : Math.round(position["Notional Total"] * position["Mid"]) || 0;
@@ -1209,8 +1216,6 @@ function assignBorderAndCustomSortAggregateGroup(portfolio: any, groupedByLocati
     .sort((a: any, b: any) => (sign == -1 ? a[1][`${sort}`] - b[1][`${sort}`] : b[1][`${sort}`] - a[1][`${sort}`]))
     .map((entry) => entry[0]);
 
-    
-
   for (let index = 0; index < locationCodes.length; index++) {
     let locationCode = locationCodes[index];
 
@@ -1869,7 +1874,7 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio: any, nav:
       return group;
     }
   }, {});
-  
+
   assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNotional, pairHedgeDV01Sum, pairIGDV01Sum, globalHedgeNotional, singleIGNotional, globalHedgeDV01Sum, singleIGDV01Sum, hedgeCurrencyNotional, HYNotional, HYDV01Sum, cdsNotional, countryNAVPercentage, sectorNAVPercentage, strategyNAVPercentage, longShortDV01Sum, durationSummary, groupedByLocation, view, ustTable, igTable, hyTable, currTable, issuerTable, ustTableByCoupon, issuerNAVPercentage, rvPairTable, tickerTable);
 
   let portfolio: any = [];

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deletePosition = exports.reformatCentralizedData = exports.deleteTrade = exports.editTrade = exports.getTrade = exports.addFund = exports.deleteFund = exports.editFund = exports.getAllFundDetails = exports.getEarliestCollectionNameFund = exports.getFundDetails = exports.getSecurityInPortfolioById = exports.editPositionPortfolio = exports.readMUFGEndOfMonthFile = exports.getEditLogs = exports.insertEditLogs = exports.updatePreviousPricesPortfolioBloomberg = exports.getSecurityInPortfolioWithoutLocation = exports.getPortfolioOnSpecificDate = exports.insertPreviousPricesUpdatesInPortfolio = exports.updatePreviousPricesPortfolioMUFG = exports.readMUFGPrices = exports.getCollectionDays = void 0;
+exports.readCalculatePosition = exports.getAllTradesForSpecificPosition = exports.deletePosition = exports.reformatCentralizedData = exports.deleteTrade = exports.editTrade = exports.getTrade = exports.addFund = exports.deleteFund = exports.editFund = exports.getAllFundDetails = exports.getEarliestCollectionNameFund = exports.getFundDetails = exports.getSecurityInPortfolioById = exports.editPositionPortfolio = exports.readMUFGEndOfMonthFile = exports.getEditLogs = exports.insertEditLogs = exports.updatePreviousPricesPortfolioBloomberg = exports.getSecurityInPortfolioWithoutLocation = exports.getPortfolioOnSpecificDate = exports.insertPreviousPricesUpdatesInPortfolio = exports.updatePreviousPricesPortfolioMUFG = exports.readMUFGPrices = exports.getCollectionDays = void 0;
 const axios = require("axios");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const mongoose = require("mongoose");
@@ -133,7 +133,7 @@ async function insertPreviousPricesUpdatesInPortfolio(updatedPortfolio, collecti
             }
             else if (position["CUSIP"]) {
                 filters.push({
-                    "CUSIP": position["CUSIP"],
+                    CUSIP: position["CUSIP"],
                     Location: position["Location"],
                     _id: new ObjectId(position["_id"]),
                 });
@@ -265,6 +265,9 @@ async function updatePreviousPricesPortfolioBloomberg(data, collectionDate, path
                         object["CUSIP"] = row["CUSIP"];
                         if (!row["Call Date"].includes("N/A") && !row["Call Date"].includes("#")) {
                             object["Call Date"] = row["Call Date"];
+                        }
+                        if (!row["Maturity"].includes("N/A") && !row["Maturity"].includes("#")) {
+                            object["Maturity"] = row["Maturity"];
                         }
                         if (currencyInUSD[object["Currency"]]) {
                             object["FX Rate"] = currencyInUSD[object["Currency"]];
@@ -746,3 +749,185 @@ async function deletePosition(data) {
     }
 }
 exports.deletePosition = deletePosition;
+async function getAllTradesForSpecificPosition(tradeType, isin, location) {
+    try {
+        // Connect to the MongoDB client
+        await client.connect();
+        // Access the 'structure' database
+        const database = client.db("trades_v_2");
+        // Access the collection named by the 'customerId' parameter
+        const collection = database.collection(tradeType);
+        // Perform your operations, such as find documents in the collection
+        // This is an example operation that fetches all documents in the collection
+        // Empty query object means "match all documents"
+        const options = {}; // You can set options for the find operation if needed
+        const query = { ISIN: isin, Location: location }; // Replace yourIdValue with the actual ID you're querying
+        const results = await collection.find(query, options).toArray();
+        // The 'results' variable now contains an array of documents from the collection
+        return results;
+    }
+    catch (error) {
+        // Handle any errors that occurred during the operation
+        console.error("An error occurred while retrieving data from MongoDB:", error);
+    }
+}
+exports.getAllTradesForSpecificPosition = getAllTradesForSpecificPosition;
+async function readCalculatePosition(data, date, isin, location) {
+    try {
+        let positions = [];
+        const database = client.db("portfolios");
+        let earliestPortfolioName = await (0, reports_1.getEarliestCollectionName)(date);
+        console.log(earliestPortfolioName.predecessorDate, "get edit portfolio");
+        const reportCollection = database.collection(`portfolio-${earliestPortfolioName.predecessorDate}`);
+        let portfolio = await reportCollection
+            .aggregate([
+            {
+                $sort: {
+                    "BB Ticker": 1, // replace 'BB Ticker' with the name of the field you want to sort alphabetically
+                },
+            },
+        ])
+            .toArray();
+        let triadaIds = [];
+        for (let index = 0; index < data.length; index++) {
+            let row = data[index];
+            row["BB Ticker"] = row["BB Ticker"] ? row["BB Ticker"] : row["Issue"];
+            let originalFace = parseFloat(row["Original Face"]);
+            let identifier = row["ISIN"] !== "" ? row["ISIN"].trim() : row["BB Ticker"].trim();
+            let object = {};
+            let location = row["Location"].trim();
+            let couponDaysYear = row["BB Ticker"].split(" ")[0] == "T" || row["BB Ticker"].includes("U.S") ? 365.0 : 360.0;
+            let previousQuantity = 0;
+            let previousAverageCost = 0;
+            let tradeType = row["B/S"];
+            let operation = tradeType == "B" ? 1 : -1;
+            let divider = row["Trade Type"] == "vcon" ? 100 : 1;
+            let currentPrice = row["Price"] / divider;
+            let currentQuantity = parseFloat(row["Quantity"].toString().replace(/,/g, "")) * operation;
+            let currentNet = parseFloat(row["Settlement Amount"].toString().replace(/,/g, "")) * operation;
+            let currentPrincipal = parseFloat(row["Principal"].toString().replace(/,/g, ""));
+            let currency = row["Currency"];
+            let bondCouponMaturity = (0, portfolioFunctions_1.parseBondIdentifier)(row["BB Ticker"]);
+            let tradeExistsAlready = triadaIds.includes(row["Triada Trade Id"]);
+            let updatingPosition = (0, reports_1.returnPositionProgress)(positions, identifier, location);
+            let tradeDate = new Date(row["Trade Date"]);
+            let thisMonth = (0, common_1.monthlyRlzdDate)(tradeDate);
+            let thisDay = (0, common_1.getDate)(tradeDate);
+            let rlzdOperation = -1;
+            if (updatingPosition) {
+                let accumlatedQuantityState = updatingPosition["Quantity"] > 0 ? 1 : -1;
+                if (operation == -1 * accumlatedQuantityState && updatingPosition["Quantity"] != 0) {
+                    rlzdOperation = 1;
+                }
+            }
+            else {
+                let accumlatedQuantityState = previousQuantity > 0 ? 1 : -1;
+                if (operation == -1 * accumlatedQuantityState && previousQuantity) {
+                    rlzdOperation = 1;
+                }
+            }
+            if (!tradeExistsAlready && identifier !== "") {
+                triadaIds.push(row["Triada Trade Id"]);
+                if (!updatingPosition) {
+                    let divider = row["tradeType"] == "vcon" ? 100 : 1;
+                    let shortLongType = currentQuantity >= 0 ? 1 : -1;
+                    let settlementDate = row["Settle Date"];
+                    object["Location"] = row["Location"].trim();
+                    object["Last Modified Date"] = new Date();
+                    object["Entry Yield"] = row["Yield"] || 0;
+                    object["BB Ticker"] = row["BB Ticker"];
+                    object["ISIN"] = row["ISIN"].trim();
+                    object["CUSIP"] = row["Cuisp"].trim() || "";
+                    object["Quantity"] = currentQuantity;
+                    object["Net"] = currentNet;
+                    object["Currency"] = currency;
+                    object["Average Cost"] = currentPrice;
+                    object["Coupon Rate"] = bondCouponMaturity.rate || 0;
+                    object["Maturity"] = bondCouponMaturity.date || 0;
+                    object["Interest"] = {};
+                    object["Interest"][settlementDate] = object["Interest"][settlementDate] ? object["Interest"][settlementDate] + currentQuantity : currentQuantity;
+                    object["MTD Rlzd"] = {};
+                    object["MTD Rlzd"][thisMonth] = [];
+                    let MTDRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
+                    if (rlzdOperation == 1) {
+                        object["MTD Rlzd"][thisMonth].push(MTDRlzdForThisTrade);
+                    }
+                    object["Day Rlzd"] = {};
+                    object["Day Rlzd"][thisDay] = [];
+                    let dayRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
+                    if (rlzdOperation == 1) {
+                        object["Day Rlzd"][thisDay].push(dayRlzdForThisTrade);
+                    }
+                    object["Cost MTD"] = {};
+                    let curentMonthCost = 0;
+                    object["Cost MTD"][thisMonth] = operation == 1 ? parseFloat(currentPrincipal) : 0;
+                    object["Original Face"] = originalFace;
+                    if (!object["Entry Price"]) {
+                        object["Entry Price"] = {};
+                    }
+                    if (!object["Entry Price"][thisMonth]) {
+                        object["Entry Price"][thisMonth] = currentPrice;
+                    }
+                    object["Last Individual Upload Trade"] = new Date();
+                    positions.push(object);
+                }
+                else if ((0, reports_1.returnPositionProgress)(positions, identifier, location)) {
+                    let shortLongType = updatingPosition["Quantity"] >= 0 ? 1 : -1;
+                    let settlementDate = row["Settle Date"];
+                    object["Location"] = row["Location"].trim();
+                    object["Last Modified Date"] = new Date();
+                    object["BB Ticker"] = row["BB Ticker"];
+                    object["ISIN"] = row["ISIN"];
+                    object["Currency"] = currency;
+                    object["Quantity"] = currentQuantity + updatingPosition["Quantity"];
+                    object["Net"] = currentNet + updatingPosition["Net"];
+                    object["Average Cost"] = rlzdOperation == -1 ? (0, portfolioFunctions_1.getAverageCost)(currentQuantity, updatingPosition["Quantity"], currentPrice, parseFloat(updatingPosition["Average Cost"])) : updatingPosition["Average Cost"];
+                    // this is reversed because the quantity is negated
+                    object["Cost MTD"] = updatingPosition["Cost MTD"];
+                    object["Cost MTD"][thisMonth] += operation == 1 ? currentPrincipal : 0;
+                    object["Coupon Rate"] = bondCouponMaturity.rate || 0;
+                    object["Maturity"] = bondCouponMaturity.date || 0;
+                    object["Interest"] = updatingPosition["Interest"];
+                    object["Interest"][settlementDate] = object["Interest"][settlementDate] ? object["Interest"][settlementDate] + currentQuantity : currentQuantity;
+                    object["Original Face"] = originalFace;
+                    object["Coupon Duration"] = object["Coupon Rate"] ? couponDaysYear : "";
+                    object["Entry Price"] = updatingPosition["Entry Price"];
+                    object["MTD Rlzd"] = updatingPosition["MTD Rlzd"];
+                    let MTDRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
+                    if (rlzdOperation == 1) {
+                        object["MTD Rlzd"][thisMonth] = object["MTD Rlzd"][thisMonth] ? object["MTD Rlzd"][thisMonth] : [];
+                        object["MTD Rlzd"][thisMonth].push(MTDRlzdForThisTrade);
+                    }
+                    object["Day Rlzd"] = updatingPosition["Day Rlzd"];
+                    let dayRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
+                    if (rlzdOperation == 1) {
+                        object["Day Rlzd"][thisDay] = object["Day Rlzd"][thisDay] ? object["Day Rlzd"][thisDay] : [];
+                        object["Day Rlzd"][thisDay].push(dayRlzdForThisTrade);
+                    }
+                    object["Last Individual Upload Trade"] = new Date();
+                    positions = (0, reports_1.updateExisitingPosition)(positions, identifier, location, object);
+                }
+            }
+        }
+        try {
+            for (let index = 0; index < portfolio.length; index++) {
+                let position = portfolio[index];
+                if (position["ISIN"].trim() == isin && position["Location"] == location) {
+                    portfolio[index] = positions[0];
+                }
+            }
+            let action = await (0, reports_1.insertTradesInPortfolioAtASpecificDate)(portfolio, `portfolio-${earliestPortfolioName.predecessorDate}`);
+            let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
+            // await insertEditLogs(data[0]["BB Ticker"], "Recalculate Position", dateTime, "Centarlized Blotter", data[0]["BB Ticker"] + " " + data[0]["Location"]);
+            // console.log(positions)
+            return action;
+        }
+        catch (error) {
+            return { error: error };
+        }
+    }
+    catch (error) {
+        return { error: error };
+    }
+}
+exports.readCalculatePosition = readCalculatePosition;

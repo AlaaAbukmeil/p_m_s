@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.insertTradesInPortfolioAtASpecificDate = exports.editPosition = exports.calculateAccruedSinceInception = exports.insertPricesUpdatesInPortfolio = exports.updatePricesPortfolio = exports.insertTradesInPortfolio = exports.updatePositionPortfolio = exports.updateExisitingPosition = exports.returnPositionProgress = exports.getBBTicker = exports.findTrade = exports.tradesTriadaIds = exports.insertTrade = exports.getSecurityInPortfolio = exports.getTrades = exports.getHistoricalPortfolio = exports.getPortfolio = exports.getAllCollectionDatesSinceStartMonth = exports.getEarliestCollectionName = exports.getRiskReportWithAnalytics = exports.getHistoricalSummaryPortfolioWithAnalytics = exports.getHistoricalPortfolioWithAnalytics = void 0;
+exports.insertTradesInPortfolioAtASpecificDate = exports.insertTradesInPortfolioAtASpecificDateBasedOnID = exports.editPosition = exports.calculateAccruedSinceInception = exports.insertPricesUpdatesInPortfolio = exports.updatePricesPortfolio = exports.insertTradesInPortfolio = exports.updatePositionPortfolio = exports.updateExisitingPosition = exports.returnPositionProgress = exports.getBBTicker = exports.findTrade = exports.tradesTriadaIds = exports.insertTrade = exports.getSecurityInPortfolio = exports.getTrades = exports.getHistoricalPortfolio = exports.getPortfolio = exports.getAllCollectionDatesSinceStartMonth = exports.getEarliestCollectionName = exports.getRiskReportWithAnalytics = exports.getHistoricalSummaryPortfolioWithAnalytics = exports.getHistoricalPortfolioWithAnalytics = void 0;
 require("dotenv").config();
 const portfolioFunctions_1 = require("./portfolioFunctions");
 const util_1 = __importDefault(require("util"));
@@ -849,6 +849,9 @@ async function updatePricesPortfolio(path) {
                         if (!row["Call Date"].includes("N/A") && !row["Call Date"].includes("#")) {
                             object["Call Date"] = row["Call Date"];
                         }
+                        if (!row["Maturity"].includes("N/A") && !row["Maturity"].includes("#")) {
+                            object["Maturity"] = row["Maturity"];
+                        }
                         if (currencyInUSD[object["Currency"]]) {
                             object["FX Rate"] = currencyInUSD[object["Currency"]];
                         }
@@ -955,7 +958,7 @@ function calculateDailyIntURlzdDaily(portfolio, date) {
         }
         else {
             yesterdayPrice = parseFloat(position["Entry Price"][thisMonth]);
-            portfolio[index]["Notes"] += "Previous Mark was not found";
+            portfolio[index]["Notes"] += " Previous Mark X";
         }
         position["Previous Mark"] = yesterdayPrice;
         let todayPrice = parseFloat(position["Mid"]);
@@ -1055,7 +1058,7 @@ async function getMTDParams(portfolio, lastMonthPortfolio, dateInput) {
         for (let index = 0; index < portfolio.length; index++) {
             if (!parseFloat(portfolio[index]["MTD Mark"]) && parseFloat(portfolio[index]["MTD Mark"]) != 0 && portfolio[index]["Entry Price"][thisMonth]) {
                 portfolio[index]["MTD Mark"] = portfolio[index]["Entry Price"][thisMonth];
-                portfolio[index]["Notes"] = "MTD Mark not found";
+                portfolio[index]["Notes"] = "MTD Mark X";
             }
         }
         return portfolio;
@@ -1237,8 +1240,8 @@ async function editPosition(editedPosition, date) {
         portfolio[positionIndex] = positionInPortfolio;
         console.log(positionInPortfolio, `portfolio-${earliestPortfolioName.predecessorDate}`, "portfolio edited name");
         await (0, operations_1.insertEditLogs)(changes, editedPosition["Event Type"], dateTime, editedPosition["Edit Note"], positionInPortfolio["BB Ticker"]);
-        let action = await insertTradesInPortfolioAtASpecificDate(portfolio, `portfolio-${earliestPortfolioName.predecessorDate}`);
-        if (1) {
+        let action = await insertTradesInPortfolioAtASpecificDateBasedOnID(portfolio, `portfolio-${earliestPortfolioName.predecessorDate}`);
+        if (action) {
             return { status: 200 };
         }
         else {
@@ -1251,7 +1254,7 @@ async function editPosition(editedPosition, date) {
     }
 }
 exports.editPosition = editPosition;
-async function insertTradesInPortfolioAtASpecificDate(trades, date) {
+async function insertTradesInPortfolioAtASpecificDateBasedOnID(trades, date) {
     const database = client.db("portfolios");
     let operations = trades
         .filter((trade) => trade["Location"])
@@ -1262,6 +1265,45 @@ async function insertTradesInPortfolioAtASpecificDate(trades, date) {
         if (trade["ISIN"]) {
             filters.push({
                 _id: new ObjectId(trade["_id"]),
+            });
+        }
+        return {
+            updateOne: {
+                filter: { $or: filters },
+                update: { $set: trade },
+                upsert: true,
+            },
+        };
+    });
+    // Execute the operations in bulk
+    try {
+        const historicalReportCollection = database.collection(date);
+        let action = await historicalReportCollection.bulkWrite(operations);
+        return action;
+    }
+    catch (error) {
+        return error;
+    }
+}
+exports.insertTradesInPortfolioAtASpecificDateBasedOnID = insertTradesInPortfolioAtASpecificDateBasedOnID;
+async function insertTradesInPortfolioAtASpecificDate(trades, date) {
+    const database = client.db("portfolios");
+    let operations = trades
+        .filter((trade) => trade["Location"])
+        .map((trade) => {
+        // Start with the known filters
+        let filters = [];
+        // If "ISIN", "BB Ticker", or "Issue" exists, check for both the field and "Location"
+        if (trade["ISIN"]) {
+            filters.push({
+                ISIN: trade["ISIN"],
+                Location: trade["Location"],
+            });
+        }
+        else if (trade["BB Ticker"]) {
+            filters.push({
+                "BB Ticker": trade["BB Ticker"],
+                Location: trade["Location"],
             });
         }
         return {

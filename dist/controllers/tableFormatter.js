@@ -60,6 +60,12 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         if ((!position["Asset Class"] || position["Asset Class"] == "") && position["BBG Composite Rating"]) {
             position["Asset Class"] = isRatingHigherThanBBBMinus(position["BBG Composite Rating"]);
         }
+        if (position["Notional Total"] < 0) {
+            position["Asset Class"] = "Hedge";
+        }
+        if (position["Type"] == "BND" && position["Strategy"] == "RV") {
+            position["Asset Class"] = "IG";
+        }
         position["Cost (BC)"] = position["Type"] == "CDS" ? Math.round((position["Average Cost"] * position["Notional Total"] * usdRatio) / position["Original Face"]) : Math.round(position["Average Cost"] * position["Notional Total"] * usdRatio);
         position["FX Rate"] = Math.round(position["FX Rate"] * 1000) / 1000;
         position["Value (LC)"] = position["Type"] == "CDS" ? Math.round((position["Notional Total"] * position["Mid"]) / originalFace) || 0 : Math.round(position["Notional Total"] * position["Mid"]) || 0;

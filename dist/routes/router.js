@@ -524,20 +524,22 @@ router.post("/add-fund", common_1.verifyToken, uploadBeforeExcel.any(), async (r
         res.send({ error: "Template is not correct" });
     }
 });
-router.post("/one-time", uploadBeforeExcel.any(), async (req, res, next) => {
-    // Online Javascript Editor for free
-    // Write, Edit and Run your Javascript code using JS Online Compiler
-    let text = `2.23 0.24	-0.17	0.94	0.14	0.66 1.41	-0.77	0.07	-1.07	3.31	2.06
--0.49	-7.18	0.27	-4.40	-0.88	-3.28	-1.17	2.93	0.19	-3.84	1.20	1.52
--5.12	0.12	0.01	1.58	1.29	-2.41	-6.46	-0.51	-4.63	-11.85	-2.15	-0.09`;
-    let array = text.split(" ");
-    let updatedText = "";
-    for (let index = 0; index < array.length; index++) {
-        const element = array[index];
-        updatedText += element + " , ";
+router.post("/one-time", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+    try {
+        let data = req.body;
+        let tradeType = data.tradeType;
+        let isin = data["ISIN"];
+        let location = data["Location"];
+        let date = data.date;
+        console.log(tradeType, isin, location, date);
+        let trades = await (0, operations_1.getAllTradesForSpecificPosition)(tradeType, isin, location);
+        let action = await (0, operations_1.readCalculatePosition)(trades, date, isin, location);
+        console.log(action);
+        res.sendStatus(200);
     }
-    // Convert the log entry to a string
-    // Append the log entry to the file
-    await writeFile("trades-logs.txt", updatedText, { flag: "a" });
+    catch (error) {
+        console.log(error);
+        res.send({ error: error });
+    }
 });
 exports.default = router;
