@@ -149,7 +149,7 @@ export function parseBondIdentifier(identifier: any): any {
         if (date) {
           date = formatDateWorld(date);
         }
-        return [rate, date];
+        return { rate: rate, date: date };
       } catch (error) {
         return error;
       }
@@ -341,9 +341,9 @@ function merge(left: any, right: any) {
 
   return resultArray.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
 }
-
-
-
+export function findTradeRecord(trades: any, rowId: any) {
+  return trades.filter((trade: any) => trade["Triada Trade Id"] === rowId);
+}
 export async function readCentralizedEBlot(path: string) {
   const response = await axios.get(path, { responseType: "arraybuffer" });
 
@@ -388,13 +388,6 @@ export async function readCentralizedEBlot(path: string) {
     let ibTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "ib");
     let emsxTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "emsx");
 
-    let isinRequest = [];
-    for (let index = 0; index < vconTrades.length; index++) {
-      let trade = vconTrades[index];
-      let isinObjReq = { idType: "ID_ISIN", idValue: trade["ISIN"] };
-      isinRequest.push(isinObjReq);
-    }
-
     for (let rowIndex = 0; rowIndex < vconTrades.length; rowIndex++) {
       vconTrades[rowIndex]["Quantity"] = vconTrades[rowIndex]["Notional Amount"];
       vconTrades[rowIndex]["Triada Trade Id"] = vconTrades[rowIndex]["Triada Trade Id"];
@@ -407,6 +400,7 @@ export async function readCentralizedEBlot(path: string) {
       }
       vconTrades[rowIndex]["timestamp"] = new Date(vconTrades[rowIndex]["Trade Date"]).getTime();
       vconTrades[rowIndex]["Trade App Status"] = "uploaded_to_app";
+      vconTrades[rowIndex]["Price"] = vconTrades[rowIndex]["Price"] / 100;
     }
 
     for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
@@ -621,8 +615,6 @@ export async function readEmsxEBlot(path: string) {
     return { error: error };
   }
 }
-
-
 
 function formartImagineDate(input: any) {
   input = input.toString();
@@ -935,6 +927,25 @@ export function getAllDatesSinceLastMonthLastDay(date: string | null): string[] 
 
   return dates;
 }
+export function getLastDayOfMonth(dateInput: any) {
+  // Create a date object from the date input
+  let date = new Date(dateInput);
+
+  // Set the date to the first day of the next month
+  date.setMonth(date.getMonth() + 1);
+  date.setDate(1);
+
+  // Subtract one day to get the last day of the input month
+  date.setDate(date.getDate() - 1);
+
+  // Format the date components
+  let lastDay = date.getDate();
+  let month = date.getMonth() + 1; // In JavaScript, months are 0-indexed
+  let year = date.getFullYear();
+
+  // Return the formatted string
+  return `${month}/${lastDay}/${year} 23:59`;
+}
 
 export function sortVconTrades(object: any) {
   let issues = Object.keys(object);
@@ -960,7 +971,7 @@ export function formatUpdatedPositions(positions: any, portfolio: any, lastUpdat
         if ((position["ISIN"] == portfolioPosition["ISIN"] || position["BB Ticker"] == portfolioPosition["BB Ticker"]) && position["Location"].trim() == portfolioPosition["Location"].trim()) {
           portfolio[indexPortfolio] = position;
           positionsThatGotUpdated.push(`${position["BB Ticker"]} ${position["Location"]}\n`);
-          
+
           positionsIndexThatExists.push(indexPositions);
         }
         portfolio[indexPortfolio][lastUpdatedDescription] = new Date();

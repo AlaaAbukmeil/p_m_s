@@ -137,6 +137,7 @@ router.get("/all-trades", common_1.verifyToken, async (req, res) => {
         trades.filter((trade, index) => new Date(trade["Trade Date"]).getTime() > start && new Date(trade["Trade Date"]).getTime() < end);
         let vconTrades = await (0, excelFormat_1.getTriadaTrades)("vcons", start, end);
         let vcons = await (0, graphApiConnect_1.getVcons)(token, start + 2 * 24 * 60 * 60 * 1000, end - 2 * 24 * 60 * 60 * 1000, vconTrades);
+        console.log(vcons);
         vcons = vcons.filter((trade, index) => trade["Trade App Status"] != "uploaded_to_app");
         let action = await (0, excelFormat_1.formatCentralizedRawFiles)({}, vcons, [], [], []);
         // action = action.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app");
@@ -144,6 +145,7 @@ router.get("/all-trades", common_1.verifyToken, async (req, res) => {
         res.send({ trades: allTrades });
     }
     catch (error) {
+        console.log(error);
         res.status(500).send("An error occurred while reading the file.");
     }
 });

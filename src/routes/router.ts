@@ -8,7 +8,7 @@ import { bloombergToTriada, getDateTimeInMongoDBCollectionFormat, readIBRawExcel
 import { uploadArrayAndReturnFilePath, getTriadaTrades, formatCentralizedRawFiles, formatIbTrades, formatEmsxTrades, readEmsxRawExcel } from "../controllers/excelFormat";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/graphApiConnect";
 import { formatMufg, formatFxMufg, tradesTriada, checkMUFGEndOfMonthWithPortfolio } from "../controllers/mufgOperations";
-import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, getPortfolioOnSpecificDate, editPositionPortfolio, getAllFundDetails, editFund, deleteFund, addFund, editTrade, deleteTrade, recalculateRlzd, deletePosition } from "../controllers/operations";
+import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, getPortfolioOnSpecificDate, editPositionPortfolio, getAllFundDetails, editFund, deleteFund, addFund, editTrade, deleteTrade, deletePosition } from "../controllers/operations";
 import { getAllTrades } from "../controllers/eblot";
 import util from "util";
 const fs = require("fs");
@@ -149,12 +149,14 @@ router.get("/all-trades", verifyToken, async (req, res) => {
     let vconTrades: [any[], number] | any = await getTriadaTrades("vcons", start, end);
 
     let vcons: any = await getVcons(token, start + 2 * 24 * 60 * 60 * 1000, end - 2 * 24 * 60 * 60 * 1000, vconTrades);
+    console.log(vcons)
     vcons = vcons.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app");
     let action: any = await formatCentralizedRawFiles({}, vcons, [], [], []);
     // action = action.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app");
     let allTrades = action.concat(trades).sort((a: any, b: any) => new Date(b["Trade Date"]).getTime() - new Date(a["Trade Date"]).getTime());
     res.send({ trades: allTrades });
   } catch (error) {
+    console.log(error)
     res.status(500).send("An error occurred while reading the file.");
   }
 });

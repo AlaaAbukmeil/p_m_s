@@ -36,7 +36,10 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         let holdBackRatio = (position["Asset Class"] || position["Rating Class"]) == "Illiquid" ? parseFloat(fund.holdBackRatio) : 1;
         position["Notional Total"] = position["Quantity"];
         position["Quantity"] = position["Quantity"] / originalFace;
-        position["Coupon Rate"] = position["Coupon Rate"] ? position["Coupon Rate"] : (0, portfolioFunctions_1.parseBondIdentifier)(position["BB Ticker"])[0];
+        if (!position["BB Ticker"]) {
+            position["BB Ticker"] = position["Issue"];
+        }
+        position["Coupon Rate"] = position["Coupon Rate"] ? position["Coupon Rate"] : (0, portfolioFunctions_1.parseBondIdentifier)(position["BB Ticker"]).rate || 0;
         let bondDivider = position["Type"] == "BND" || position["Type"] == "UST" ? 100 : 1;
         if (!position["Type"]) {
             position["Type"] = position["BB Ticker"].split(" ")[0] == "T" || position["Issuer"] == "US TREASURY N/B" ? "UST" : "BND";
@@ -106,6 +109,7 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         position["MTD P&L (BC)"] = Math.round(position["MTD P&L"] * usdRatio * holdBackRatio + position["MTD P&L FX"]);
         // position["MTD Cost (LC)"] = Math.round(position["MTD Cost"] * holdBackRatio * 1000000) / 1000000;
         position["Cost (LC)"] = Math.round(position["Average Cost"] * position["Notional Total"] * holdBackRatio);
+        position["Cost MTD (LC)"] = position["Cost MTD"];
         position["Average Cost"] = Math.round(position["Average Cost"]);
         position["Day Int. (LC)"] = Math.round(position["Day Int."] * holdBackRatio);
         position["Day Rlzd (LC)"] = Math.round(position["Day Rlzd"] * holdBackRatio);
@@ -169,7 +173,6 @@ function formatGeneralTable(portfolio, date, fund, dates) {
         dayrlzd += position["Day Rlzd (BC)"];
         dv01Sum += position["DV01"];
     }
-    // console.log(daypl)
     let monthGross = Math.round((mtdpl / parseFloat(fund.nav)) * 100000) / 1000;
     let dayGross = Math.round((daypl / parseFloat(fund.nav)) * 100000) / 1000;
     let dayFXGross = Math.round((dayfx / parseFloat(fund.nav)) * 100000) / 1000;
@@ -867,7 +870,7 @@ function assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNoti
         groupedByLocation[locationCode]["DV01 Dollar Value Impact Utilization % of Nav"] = 0;
         for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
             let country = groupedByLocation[locationCode].data[index]["Country"] ? groupedByLocation[locationCode].data[index]["Country"] : "Unspecified";
-            let issuer = groupedByLocation[locationCode].data[index]["Issuer"] ? groupedByLocation[locationCode].data[index]["Issuer"].split(" ")[0].toString().toUpperCase() : "Unspecified";
+            let issuer = groupedByLocation[locationCode].data[index]["Issuer"] ? groupedByLocation[locationCode].data[index]["Issuer"] : "Unspecified";
             let bbTicker = groupedByLocation[locationCode].data[index]["BB Ticker"] ? groupedByLocation[locationCode].data[index]["BB Ticker"] : "Unspecified";
             let sector = groupedByLocation[locationCode].data[index]["Sector"] ? groupedByLocation[locationCode].data[index]["Sector"] : "Unspecified";
             let duration = parseFloat(groupedByLocation[locationCode].data[index]["Duration"]) || 0;
@@ -1059,8 +1062,8 @@ function assignBorderAndCustomSortAggregateGroup(portfolio, groupedByLocation, s
         for (let groupPositionIndex = 0; groupPositionIndex < groupedByLocation[locationCode].data.length; groupPositionIndex++) {
             if (groupedByLocation[locationCode].data[groupPositionIndex]["Notional Total"] == 0) {
                 groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = "#C5E1A5";
-                //no need for borders when rlzd
-                continue;
+                //   //no need for borders when rlzd
+                //   // continue;
             }
             else {
                 groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = groupedByLocation[locationCode].color;
@@ -1070,8 +1073,8 @@ function assignBorderAndCustomSortAggregateGroup(portfolio, groupedByLocation, s
                 groupedByLocation[locationCode].data[length - 1]["bottom"] = true;
             }
         }
-        if (groupedByLocation[locationCode].data.length > 1 && locationCode != "Rlzd") {
-            let portfolioViewType = groupedByLocation[locationCode].data[groupedByLocation[locationCode].data.length - 1]["Value (BC)"] ? "backOffice" : "frontOffice";
+        if (groupedByLocation[locationCode].data.length > 1) {
+            let portfolioViewType = groupedByLocation[locationCode].data[groupedByLocation[locationCode].data.length - 1]["_id"] ? "backOffice" : "frontOffice";
             let newObject = {};
             if (portfolioViewType == "frontOffice") {
                 newObject = {
@@ -1633,14 +1636,18 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
     const groupedByLocation = formattedPortfolio.reduce((group, item) => {
         const { Location } = item;
         let notional = item["Notional Total"];
+        let rlzdTimestamp = new Date(item["Last Day Since Realizd"]).getTime();
         if (notional != 0) {
             group[Location] = group[Location] ? group[Location] : { data: [] };
             group[Location].data.push(item);
             return group;
         }
         else {
-            group["Rlzd"] = group["Rlzd"] ? group["Rlzd"] : { data: [] };
-            group["Rlzd"].data.push(item);
+            group[Location + " Rlzd"] = group[Location + " Rlzd"] ? group[Location + " Rlzd"] : { data: [], "Last Day Since Realizd": 0 };
+            if (rlzdTimestamp > group[Location + " Rlzd"]["Last Day Since Realizd"]) {
+                group[Location + " Rlzd"]["Last Day Since Realizd"] = rlzdTimestamp;
+            }
+            group[Location + " Rlzd"].data.push(item);
             return group;
         }
     }, {});
@@ -1649,24 +1656,23 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio, nav, sort
     assignBorderAndCustomSortAggregateGroup(portfolio, groupedByLocation, sort, sign);
     // This is your already sorted array of objects
     // Filter out the items with L/S !== 'rlzd'
-    const nonRlzdItems = portfolio.filter((item) => item["L/S"] !== "Rlzd");
+    // const nonRlzdItems = portfolio.filter((item: any) => item["L/S"] !== "Rlzd"&& item["Location"] !== "Rlzd");
     // Filter out the items with L/S === 'rlzd' and sort them by lastDate
-    const rlzdItems = portfolio
-        .filter((item) => item["Notional Total"] === 0 && item["L/S"] !== "Total" && item["Type"] !== "Total")
-        .sort((a, b) => {
-        // Assuming lastDate is in a format that can be parsed by the Date constructor
-        const dateA = new Date(a["Last Day Since Realizd"]).getTime();
-        const dateB = new Date(b["Last Day Since Realizd"]).getTime();
-        return dateB - dateA; // Use dateB - dateA for descending order
-    });
+    // const rlzdItems = portfolio
+    //   .filter((item: any) => item["Notional Total"] === 0 && (item["Type"] !== "Total" || item["Location"] == "Rlzd"))
+    //   .sort((a: any, b: any) => {
+    //     // Assuming lastDate is in a format that can be parsed by the Date constructor
+    //     const dateA = new Date(a["Last Day Since Realizd"]).getTime();
+    //     const dateB = new Date(b["Last Day Since Realizd"]).getTime();
+    //     return dateB - dateA; // Use dateB - dateA for descending order
+    //   });
     // Assuming the rest of the array should remain in its original order, recombine the arrays
-    let updatedPortfolio = [];
-    if (format == "risk") {
-        updatedPortfolio = [...nonRlzdItems];
-    }
-    else {
-        updatedPortfolio = [...nonRlzdItems, ...rlzdItems];
-    }
+    let updatedPortfolio = portfolio;
+    // if (format == "risk") {
+    //   updatedPortfolio = [...nonRlzdItems];
+    // } else {
+    //   updatedPortfolio = [...nonRlzdItems, ...rlzdItems];
+    // }
     let topWorstPerformaners = getTopWorst(groupedByLocation);
     let riskAssessment = {
         pairHedgeNotional: pairHedgeNotional,

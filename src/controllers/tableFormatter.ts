@@ -1,5 +1,5 @@
 import { tradesMTDRlzd } from "../models/reports";
-import {  formatDateWorld, swapMonthDay } from "./common";
+import { formatDateWorld, swapMonthDay } from "./common";
 import { getMaturity, parseBondIdentifier } from "./portfolioFunctions";
 import { calculateAccruedSinceInception } from "./reports";
 
@@ -44,9 +44,12 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     let holdBackRatio = (position["Asset Class"] || position["Rating Class"]) == "Illiquid" ? parseFloat(fund.holdBackRatio) : 1;
     position["Notional Total"] = position["Quantity"];
     position["Quantity"] = position["Quantity"] / originalFace;
-    position["Coupon Rate"] = position["Coupon Rate"] ? position["Coupon Rate"] : parseBondIdentifier(position["BB Ticker"])[0]
+    if (!position["BB Ticker"]) {
+      position["BB Ticker"] = position["Issue"];
+    }
+    position["Coupon Rate"] = position["Coupon Rate"] ? position["Coupon Rate"] : parseBondIdentifier(position["BB Ticker"]).rate || 0;
     let bondDivider = position["Type"] == "BND" || position["Type"] == "UST" ? 100 : 1;
-   
+
     if (!position["Type"]) {
       position["Type"] = position["BB Ticker"].split(" ")[0] == "T" || position["Issuer"] == "US TREASURY N/B" ? "UST" : "BND";
     }
@@ -121,7 +124,7 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
 
     // position["MTD Cost (LC)"] = Math.round(position["MTD Cost"] * holdBackRatio * 1000000) / 1000000;
     position["Cost (LC)"] = Math.round(position["Average Cost"] * position["Notional Total"] * holdBackRatio);
-
+    position["Cost MTD (LC)"] = position["Cost MTD"];
     position["Average Cost"] = Math.round(position["Average Cost"]);
 
     position["Day Int. (LC)"] = Math.round(position["Day Int."] * holdBackRatio);
@@ -135,7 +138,7 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
 
     position["Day P&L (BC)"] = Math.round(position["Day P&L"] * usdRatio * holdBackRatio + position["Day P&L FX"]);
 
-    position["ISIN"] =position["ISIN"];
+    position["ISIN"] = position["ISIN"];
 
     position["Maturity"] = position["Maturity"] ? position["Maturity"] : getMaturity(position["BB Ticker"]) || 0;
 
@@ -212,7 +215,7 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     dayrlzd += position["Day Rlzd (BC)"];
     dv01Sum += position["DV01"];
   }
-  // console.log(daypl)
+
   let monthGross = Math.round((mtdpl / parseFloat(fund.nav)) * 100000) / 1000;
   let dayGross = Math.round((daypl / parseFloat(fund.nav)) * 100000) / 1000;
   let dayFXGross = Math.round((dayfx / parseFloat(fund.nav)) * 100000) / 1000;
@@ -1016,7 +1019,7 @@ function assignColorAndSortParamsBasedOnAssetClass(
 
     for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
       let country = groupedByLocation[locationCode].data[index]["Country"] ? groupedByLocation[locationCode].data[index]["Country"] : "Unspecified";
-      let issuer = groupedByLocation[locationCode].data[index]["Issuer"] ? groupedByLocation[locationCode].data[index]["Issuer"].split(" ")[0].toString().toUpperCase() : "Unspecified";
+      let issuer = groupedByLocation[locationCode].data[index]["Issuer"] ? groupedByLocation[locationCode].data[index]["Issuer"] : "Unspecified";
       let bbTicker = groupedByLocation[locationCode].data[index]["BB Ticker"] ? groupedByLocation[locationCode].data[index]["BB Ticker"] : "Unspecified";
       let sector = groupedByLocation[locationCode].data[index]["Sector"] ? groupedByLocation[locationCode].data[index]["Sector"] : "Unspecified";
       let duration = parseFloat(groupedByLocation[locationCode].data[index]["Duration"]) || 0;
@@ -1206,6 +1209,8 @@ function assignBorderAndCustomSortAggregateGroup(portfolio: any, groupedByLocati
     .sort((a: any, b: any) => (sign == -1 ? a[1][`${sort}`] - b[1][`${sort}`] : b[1][`${sort}`] - a[1][`${sort}`]))
     .map((entry) => entry[0]);
 
+    
+
   for (let index = 0; index < locationCodes.length; index++) {
     let locationCode = locationCodes[index];
 
@@ -1222,8 +1227,8 @@ function assignBorderAndCustomSortAggregateGroup(portfolio: any, groupedByLocati
     for (let groupPositionIndex = 0; groupPositionIndex < groupedByLocation[locationCode].data.length; groupPositionIndex++) {
       if (groupedByLocation[locationCode].data[groupPositionIndex]["Notional Total"] == 0) {
         groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = "#C5E1A5";
-        //no need for borders when rlzd
-        continue;
+        //   //no need for borders when rlzd
+        //   // continue;
       } else {
         groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = groupedByLocation[locationCode].color;
       }
@@ -1234,8 +1239,8 @@ function assignBorderAndCustomSortAggregateGroup(portfolio: any, groupedByLocati
       }
     }
 
-    if (groupedByLocation[locationCode].data.length > 1 && locationCode != "Rlzd") {
-      let portfolioViewType = groupedByLocation[locationCode].data[groupedByLocation[locationCode].data.length - 1]["Value (BC)"] ? "backOffice" : "frontOffice";
+    if (groupedByLocation[locationCode].data.length > 1) {
+      let portfolioViewType = groupedByLocation[locationCode].data[groupedByLocation[locationCode].data.length - 1]["_id"] ? "backOffice" : "frontOffice";
 
       let newObject = {};
 
@@ -1850,17 +1855,21 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio: any, nav:
   const groupedByLocation = formattedPortfolio.reduce((group: any, item: any) => {
     const { Location } = item;
     let notional = item["Notional Total"];
+    let rlzdTimestamp = new Date(item["Last Day Since Realizd"]).getTime();
     if (notional != 0) {
       group[Location] = group[Location] ? group[Location] : { data: [] };
       group[Location].data.push(item);
       return group;
     } else {
-      group["Rlzd"] = group["Rlzd"] ? group["Rlzd"] : { data: [] };
-      group["Rlzd"].data.push(item);
+      group[Location + " Rlzd"] = group[Location + " Rlzd"] ? group[Location + " Rlzd"] : { data: [], "Last Day Since Realizd": 0 };
+      if (rlzdTimestamp > group[Location + " Rlzd"]["Last Day Since Realizd"]) {
+        group[Location + " Rlzd"]["Last Day Since Realizd"] = rlzdTimestamp;
+      }
+      group[Location + " Rlzd"].data.push(item);
       return group;
     }
   }, {});
-
+  
   assignColorAndSortParamsBasedOnAssetClass(pairHedgeNotional, pairIGNotional, pairHedgeDV01Sum, pairIGDV01Sum, globalHedgeNotional, singleIGNotional, globalHedgeDV01Sum, singleIGDV01Sum, hedgeCurrencyNotional, HYNotional, HYDV01Sum, cdsNotional, countryNAVPercentage, sectorNAVPercentage, strategyNAVPercentage, longShortDV01Sum, durationSummary, groupedByLocation, view, ustTable, igTable, hyTable, currTable, issuerTable, ustTableByCoupon, issuerNAVPercentage, rvPairTable, tickerTable);
 
   let portfolio: any = [];
@@ -1870,27 +1879,27 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio: any, nav:
   // This is your already sorted array of objects
 
   // Filter out the items with L/S !== 'rlzd'
-  const nonRlzdItems = portfolio.filter((item: any) => item["L/S"] !== "Rlzd");
+  // const nonRlzdItems = portfolio.filter((item: any) => item["L/S"] !== "Rlzd"&& item["Location"] !== "Rlzd");
 
   // Filter out the items with L/S === 'rlzd' and sort them by lastDate
 
-  const rlzdItems = portfolio
-    .filter((item: any) => item["Notional Total"] === 0 && item["L/S"] !== "Total" && item["Type"] !== "Total")
-    .sort((a: any, b: any) => {
-      // Assuming lastDate is in a format that can be parsed by the Date constructor
-      const dateA = new Date(a["Last Day Since Realizd"]).getTime();
-      const dateB = new Date(b["Last Day Since Realizd"]).getTime();
+  // const rlzdItems = portfolio
+  //   .filter((item: any) => item["Notional Total"] === 0 && (item["Type"] !== "Total" || item["Location"] == "Rlzd"))
+  //   .sort((a: any, b: any) => {
+  //     // Assuming lastDate is in a format that can be parsed by the Date constructor
+  //     const dateA = new Date(a["Last Day Since Realizd"]).getTime();
+  //     const dateB = new Date(b["Last Day Since Realizd"]).getTime();
 
-      return dateB - dateA; // Use dateB - dateA for descending order
-    });
+  //     return dateB - dateA; // Use dateB - dateA for descending order
+  //   });
 
   // Assuming the rest of the array should remain in its original order, recombine the arrays
-  let updatedPortfolio = [];
-  if (format == "risk") {
-    updatedPortfolio = [...nonRlzdItems];
-  } else {
-    updatedPortfolio = [...nonRlzdItems, ...rlzdItems];
-  }
+  let updatedPortfolio = portfolio;
+  // if (format == "risk") {
+  //   updatedPortfolio = [...nonRlzdItems];
+  // } else {
+  //   updatedPortfolio = [...nonRlzdItems, ...rlzdItems];
+  // }
 
   let topWorstPerformaners = getTopWorst(groupedByLocation);
 

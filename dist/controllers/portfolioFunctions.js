@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mapDatetimeToSameDay = exports.getDateTimeInMongoDBCollectionFormat = exports.formatDateRlzdDaily = exports.formatUpdatedPositions = exports.sortVconTrades = exports.getAllDatesSinceLastMonthLastDay = exports.uploadTriadaAndReturnFilePath = exports.calculateDailyProfitLoss = exports.readPricingSheet = exports.readBloombergTriadaEBlot = exports.readPortfolioFromLivePorfolio = exports.readPortfolioFromImagine = exports.readEditInput = exports.readEmsxEBlot = exports.readIBRawExcel = exports.readIBEblot = exports.formatEmsxTradesToVcon = exports.formatIbTradesToVcon = exports.readCentralizedEBlot = exports.mergeSort = exports.uploadToGCloudBucket = exports.getSettlementDateYear = exports.bloombergToTriada = exports.getMaturity = exports.parseBondIdentifier = exports.settlementDatePassed = exports.getAverageCost = exports.formatExcelDate = void 0;
+exports.mapDatetimeToSameDay = exports.getDateTimeInMongoDBCollectionFormat = exports.formatDateRlzdDaily = exports.formatUpdatedPositions = exports.sortVconTrades = exports.getLastDayOfMonth = exports.getAllDatesSinceLastMonthLastDay = exports.uploadTriadaAndReturnFilePath = exports.calculateDailyProfitLoss = exports.readPricingSheet = exports.readBloombergTriadaEBlot = exports.readPortfolioFromLivePorfolio = exports.readPortfolioFromImagine = exports.readEditInput = exports.readEmsxEBlot = exports.readIBRawExcel = exports.readIBEblot = exports.formatEmsxTradesToVcon = exports.formatIbTradesToVcon = exports.readCentralizedEBlot = exports.findTradeRecord = exports.mergeSort = exports.uploadToGCloudBucket = exports.getSettlementDateYear = exports.bloombergToTriada = exports.getMaturity = exports.parseBondIdentifier = exports.settlementDatePassed = exports.getAverageCost = exports.formatExcelDate = void 0;
 const common_1 = require("./common");
 const xlsx = require("xlsx");
 const axios = require("axios");
@@ -139,7 +139,7 @@ function parseBondIdentifier(identifier) {
                 if (date) {
                     date = (0, common_1.formatDateWorld)(date);
                 }
-                return [rate, date];
+                return { rate: rate, date: date };
             }
             catch (error) {
                 return error;
@@ -317,6 +317,10 @@ function merge(left, right) {
     }
     return resultArray.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
 }
+function findTradeRecord(trades, rowId) {
+    return trades.filter((trade) => trade["Triada Trade Id"] === rowId);
+}
+exports.findTradeRecord = findTradeRecord;
 async function readCentralizedEBlot(path) {
     const response = await axios.get(path, { responseType: "arraybuffer" });
     /* Parse the data */
@@ -354,12 +358,6 @@ async function readCentralizedEBlot(path) {
         let vconTrades = filtered.filter((trade, index) => trade["Trade Type"] == "vcon");
         let ibTrades = filtered.filter((trade, index) => trade["Trade Type"] == "ib");
         let emsxTrades = filtered.filter((trade, index) => trade["Trade Type"] == "emsx");
-        let isinRequest = [];
-        for (let index = 0; index < vconTrades.length; index++) {
-            let trade = vconTrades[index];
-            let isinObjReq = { idType: "ID_ISIN", idValue: trade["ISIN"] };
-            isinRequest.push(isinObjReq);
-        }
         for (let rowIndex = 0; rowIndex < vconTrades.length; rowIndex++) {
             vconTrades[rowIndex]["Quantity"] = vconTrades[rowIndex]["Notional Amount"];
             vconTrades[rowIndex]["Triada Trade Id"] = vconTrades[rowIndex]["Triada Trade Id"];
@@ -371,6 +369,7 @@ async function readCentralizedEBlot(path) {
             }
             vconTrades[rowIndex]["timestamp"] = new Date(vconTrades[rowIndex]["Trade Date"]).getTime();
             vconTrades[rowIndex]["Trade App Status"] = "uploaded_to_app";
+            vconTrades[rowIndex]["Price"] = vconTrades[rowIndex]["Price"] / 100;
         }
         for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
             ibTrades[ibTradesIndex]["Quantity"] = Math.abs(ibTrades[ibTradesIndex]["Notional Amount"]);
@@ -859,6 +858,22 @@ function getAllDatesSinceLastMonthLastDay(date) {
     return dates;
 }
 exports.getAllDatesSinceLastMonthLastDay = getAllDatesSinceLastMonthLastDay;
+function getLastDayOfMonth(dateInput) {
+    // Create a date object from the date input
+    let date = new Date(dateInput);
+    // Set the date to the first day of the next month
+    date.setMonth(date.getMonth() + 1);
+    date.setDate(1);
+    // Subtract one day to get the last day of the input month
+    date.setDate(date.getDate() - 1);
+    // Format the date components
+    let lastDay = date.getDate();
+    let month = date.getMonth() + 1; // In JavaScript, months are 0-indexed
+    let year = date.getFullYear();
+    // Return the formatted string
+    return `${month}/${lastDay}/${year} 23:59`;
+}
+exports.getLastDayOfMonth = getLastDayOfMonth;
 function sortVconTrades(object) {
     let issues = Object.keys(object);
     let trades = [];

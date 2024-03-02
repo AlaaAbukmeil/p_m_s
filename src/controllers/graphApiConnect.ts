@@ -27,12 +27,12 @@ export function getSecurityInPortfolioWithoutLocation(portfolio: any, identifier
   let object = "";
   for (let index = 0; index < portfolio.length; index++) {
     let issue = portfolio[index];
-    if (issue["ISIN"].includes(identifier) || issue["BB Ticker"].includes(identifier)) {
+    if (issue["ISIN"].includes(identifier)) {
       if (issue["ISIN"] != "") {
         object += issue["Location"] + " ";
       }
-    } else if (identifier == issue["BB Ticker"]) {
-      if (issue["BB Ticker"] != "") {
+    } else if (issue["BB Ticker"]) {
+      if (issue["BB Ticker"] != "" && issue["BB Ticker"] == identifier) {
         object += issue["Location"] + " ";
       }
     }
