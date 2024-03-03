@@ -36,6 +36,26 @@ const router = (0, express_1.Router)();
 router.get("/auth", uploadBeforeExcel.any(), common_1.verifyToken, async (req, res, next) => {
     res.sendStatus(200);
 });
+router.get("/trades-logs", common_1.verifyToken, async (req, res) => {
+    try {
+        const filePath = path.resolve("trades-logs.txt");
+        const lastLines = await readLastLines.read(filePath, 4000);
+        res.send(lastLines);
+    }
+    catch (error) {
+        res.status(500).send("An error occurred while reading the file.");
+    }
+});
+router.get("/prices-logs", common_1.verifyToken, async (req, res) => {
+    try {
+        const filePath = path.resolve("prices-logs.txt");
+        const lastLines = await readLastLines.read(filePath);
+        res.send(lastLines);
+    }
+    catch (error) {
+        res.status(500).send("An error occurred while reading the file.");
+    }
+});
 router.get("/portfolio", common_1.verifyToken, async (req, res, next) => {
     try {
         let date = req.query.date;
@@ -96,31 +116,21 @@ router.get("/risk-report", async (req, res, next) => {
         res.send({ error: error.toString() });
     }
 });
-router.get("/trades-logs", common_1.verifyToken, async (req, res) => {
-    try {
-        const filePath = path.resolve("trades-logs.txt");
-        const lastLines = await readLastLines.read(filePath, 4000);
-        res.send(lastLines);
-    }
-    catch (error) {
-        res.status(500).send("An error occurred while reading the file.");
-    }
-});
-router.get("/prices-logs", common_1.verifyToken, async (req, res) => {
-    try {
-        const filePath = path.resolve("prices-logs.txt");
-        const lastLines = await readLastLines.read(filePath);
-        res.send(lastLines);
-    }
-    catch (error) {
-        res.status(500).send("An error occurred while reading the file.");
-    }
-});
 router.get("/trades", common_1.verifyToken, async (req, res) => {
     try {
         const tradeType = req.query.tradeType;
         let trades = await (0, reports_1.getTrades)(`${tradeType}`);
         res.send(trades);
+    }
+    catch (error) {
+        res.status(500).send("An error occurred while reading the file.");
+    }
+});
+router.get("/edit-logs", common_1.verifyToken, async (req, res) => {
+    try {
+        const editLogsType = req.query.logsType;
+        let editLogs = await (0, operations_1.getEditLogs)(`${editLogsType}`);
+        res.send(editLogs);
     }
     catch (error) {
         res.status(500).send("An error occurred while reading the file.");
@@ -145,16 +155,6 @@ router.get("/all-trades", common_1.verifyToken, async (req, res) => {
     }
     catch (error) {
         console.log(error);
-        res.status(500).send("An error occurred while reading the file.");
-    }
-});
-router.get("/edit-logs", common_1.verifyToken, async (req, res) => {
-    try {
-        const editLogsType = req.query.logsType;
-        let editLogs = await (0, operations_1.getEditLogs)(`${editLogsType}`);
-        res.send(editLogs);
-    }
-    catch (error) {
         res.status(500).send("An error occurred while reading the file.");
     }
 });
@@ -380,7 +380,7 @@ router.post("/delete-trade", common_1.verifyToken, uploadBeforeExcel.any(), asyn
         let data = req.body;
         let tradeType = req.body.tradeType;
         console.log(data, "test delete");
-        let action = await (0, operations_1.deleteTrade)(tradeType, data["_id"], data["BB Ticker"]);
+        let action = await (0, operations_1.deleteTrade)(tradeType, data["_id"], data["BB Ticker"], data["Location"]);
         if (action.error) {
             res.send({ error: action.error, status: 404 });
         }
@@ -537,11 +537,16 @@ router.post("/recalculate-position", common_1.verifyToken, uploadBeforeExcel.any
         let isin = data["ISIN"];
         let location = data["Location"];
         let date = data.date;
-        console.log(tradeType, isin, location, date);
         let trades = await (0, operations_1.getAllTradesForSpecificPosition)(tradeType, isin, location);
-        let action = await (0, operations_1.readCalculatePosition)(trades, date, isin, location);
-        console.log(action);
-        res.sendStatus(200);
+        console.log(tradeType, isin, location, date, trades);
+        if (trades.length) {
+            let action = await (0, operations_1.readCalculatePosition)(trades, date, isin, location);
+            res.sendStatus(200);
+            console.log(action);
+        }
+        else {
+            res.send({ error: "no trades" });
+        }
     }
     catch (error) {
         console.log(error);

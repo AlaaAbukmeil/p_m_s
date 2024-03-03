@@ -353,7 +353,6 @@ export async function tradesTriada() {
 
 export async function checkMUFGEndOfMonthWithPortfolio(MUFGData: any, portfolio: any) {
   try {
-    //    "Location", "BB Ticker", "Identifier", "Quantity (app)", "Quantity (mufg)", "difference quantity", "Average Cost (app)", "Average Cost(app)", "difference average cost", "price (app)", "price (mufg)", "difference price"
     portfolio = updatePortfolioBasedOnIsin(portfolio);
     let formattedData: any = [];
     if (MUFGData.error) {
@@ -364,8 +363,8 @@ export async function checkMUFGEndOfMonthWithPortfolio(MUFGData: any, portfolio:
       let positionInMufg = MUFGData.filter((row: any, index: any) => row["Investment"].includes(positionInPortfolio["ISIN"]) || (row["Investment"].includes(positionInPortfolio["BB Ticker"]) && positionInPortfolio["BB Ticker"] != ""));
       positionInMufg = positionInMufg ? positionInMufg[0] : null;
 
-      let portfolioPositionQuantity = positionInPortfolio["ISIN"].includes("IB") ? positionInPortfolio["Quantity"] / positionInPortfolio["Original Face"] : positionInPortfolio["Quantity"];
-      let mufgPositionQuantity = positionInMufg ? parseFloat(positionInMufg["Quantity"]) : 0;
+      let portfolioPositionQuantity = positionInPortfolio["ISIN"].includes("IB") ? positionInPortfolio["Notional Amount"] / positionInPortfolio["Original Face"] : positionInPortfolio["Notional Amount"];
+      let mufgPositionQuantity = positionInMufg ? parseFloat(positionInMufg["Notional Amount"]) : 0;
       let portfolioAverageCost = parseFloat(positionInPortfolio["Average Cost"]);
       let mufgAverageCost = positionInMufg ? parseFloat(positionInMufg["LocalCost"]) / mufgPositionQuantity : 0;
       let portfolioPrice = positionInPortfolio["ISIN"].includes("CXP") || positionInPortfolio["ISIN"].includes("CDX") || positionInPortfolio["ISIN"].includes("ITRX") || positionInPortfolio["ISIN"].includes("1393") || positionInPortfolio["ISIN"].includes("IB") ? Math.round(positionInPortfolio["Mid"] * 1000000) / 1000000 : Math.round(positionInPortfolio["Mid"] * 1000000) / 10000;
@@ -376,9 +375,9 @@ export async function checkMUFGEndOfMonthWithPortfolio(MUFGData: any, portfolio:
         "BB Ticker": positionInPortfolio["BB Ticker"],
         ISIN: positionInPortfolio["ISIN"],
 
-        "Quantity (app)": portfolioPositionQuantity || 0,
-        "Quantity (mufg)": mufgPositionQuantity || 0,
-        "Difference Quantity": Math.round(portfolioPositionQuantity - mufgPositionQuantity) || 0,
+        "Notional Amount (app)": portfolioPositionQuantity || 0,
+        "Notional Amount (mufg)": mufgPositionQuantity || 0,
+        "Difference Notional Amount": Math.round(portfolioPositionQuantity - mufgPositionQuantity) || 0,
 
         "Average Cost (app)": portfolioAverageCost || 0,
         "Average Cost (mufg)": mufgAverageCost || 0,
@@ -416,7 +415,7 @@ export function updatePortfolioBasedOnIsin(portfolio: any) {
     let isin = isins[index];
     let positions = updatedPortfolio[isin];
     let updatedPosition = {
-      Quantity: 0,
+      "Notional Amount": 0,
       "Average Cost": 0,
 
       "Original Face": positions[0]["Original Face"],
@@ -427,12 +426,12 @@ export function updatePortfolioBasedOnIsin(portfolio: any) {
 
     for (let positionIndex = 0; positionIndex < positions.length; positionIndex++) {
       let data = positions[positionIndex];
-      let quantity = data["Quantity"];
+      let quantity = data["Notional Amount"];
       let averageCost = data["Average Cost"];
-      updatedPosition["Quantity"] += quantity;
-      updatedPosition["Average Cost"] += data["Quantity"] * data["Average Cost"];
+      updatedPosition["Notional Amount"] += quantity;
+      updatedPosition["Average Cost"] += data["Notional Amount"] * data["Average Cost"];
     }
-    updatedPosition["Average Cost"] /= updatedPosition["Quantity"];
+    updatedPosition["Average Cost"] /= updatedPosition["Notional Amount"];
     aggregatedPortfolio.push(updatedPosition);
   }
 

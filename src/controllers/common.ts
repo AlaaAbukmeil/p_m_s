@@ -105,6 +105,7 @@ export const verifyToken = (req: Request | any, res: Response, next: NextFunctio
     const token = req.cookies["triada.admin.cookie"].token;
 
     if (!token) {
+      console.log("ye1")
       return res.sendStatus(401);
     }
 
@@ -112,6 +113,7 @@ export const verifyToken = (req: Request | any, res: Response, next: NextFunctio
     req.userRole = decoded.accessRole;
     next();
   } catch (error) {
+    console.log(error)
     return res.sendStatus(401);
   }
 };

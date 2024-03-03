@@ -169,6 +169,9 @@ export async function getPortfolioOnSpecificDate(collectionDate: string): Promis
     let earliestCollectionName = await getEarliestCollectionName(date);
     const reportCollection = database.collection(`portfolio-${earliestCollectionName.predecessorDate}`);
     let documents = await reportCollection.find().toArray();
+    for (let index = 0; index < documents.length; index++) {
+      documents[index]["Notional Amount"] = documents[index]["Notional Amount"] ? documents[index]["Notional Amount"] : documents[index]["Quantity"];
+    }
 
     return [documents, earliestCollectionName.predecessorDate];
   } catch (error: any) {
@@ -671,7 +674,7 @@ export async function editTrade(editedTrade: any, tradeType: any) {
       const collection = database.collection(tradeType);
 
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-      await insertEditLogs(changesText, "Update Trade", dateTime, tradeInfo["Edit Note"], tradeInfo["BB Ticker"]);
+      await insertEditLogs(changesText, "Update Trade", dateTime, tradeInfo["Edit Note"], tradeInfo["BB Ticker"] + " " + tradeInfo["Location"]);
 
       let action = await collection.updateOne(
         { _id: tradeInfo["_id"] }, // Filter to match the document
@@ -694,7 +697,7 @@ export async function editTrade(editedTrade: any, tradeType: any) {
   }
 }
 
-export async function deleteTrade(tradeType: string, tradeId: string, tradeIssue: string) {
+export async function deleteTrade(tradeType: string, tradeId: string, tradeIssue: string, location: string) {
   try {
     // Connect to the MongoDB client
     await client.connect();
@@ -712,7 +715,7 @@ export async function deleteTrade(tradeType: string, tradeId: string, tradeIssue
       return { error: `Trade does not exist!` };
     } else {
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-      await insertEditLogs(["deleted"], "Update Trade", dateTime, "deleted", tradeIssue);
+      await insertEditLogs(["deleted"], "Update Trade", dateTime, "deleted", tradeIssue + " " + location);
       console.log("deleted");
       return { error: null };
     }
@@ -747,21 +750,21 @@ export async function reformatCentralizedData(data: any) {
   }
 
   for (let rowIndex = 0; rowIndex < vconTrades.length; rowIndex++) {
-    vconTrades[rowIndex]["Quantity"] = vconTrades[rowIndex]["Notional Amount"];
+   
     vconTrades[rowIndex]["Triada Trade Id"] = vconTrades[rowIndex]["Triada Trade Id"];
     vconTrades[rowIndex]["timestamp"] = new Date(vconTrades[rowIndex]["Trade Date"]).getTime();
     vconTrades[rowIndex]["Trade App Status"] = "uploaded_to_app";
   }
 
   for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
-    ibTrades[ibTradesIndex]["Quantity"] = Math.abs(ibTrades[ibTradesIndex]["Notional Amount"]);
+  
     ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["BB Ticker"];
     ibTrades[ibTradesIndex]["timestamp"] = new Date(ibTrades[ibTradesIndex]["Trade Date"]).getTime();
     ibTrades[ibTradesIndex]["Trade App Status"] = "uploaded_to_app";
   }
 
   for (let emsxTradesIndex = 0; emsxTradesIndex < emsxTrades.length; emsxTradesIndex++) {
-    emsxTrades[emsxTradesIndex]["Quantity"] = emsxTrades[emsxTradesIndex]["Settlement Amount"];
+  
     emsxTrades[emsxTradesIndex]["ISIN"] = emsxTrades[emsxTradesIndex]["BB Ticker"];
     emsxTrades[emsxTradesIndex]["timestamp"] = new Date(emsxTrades[emsxTradesIndex]["Trade Date"]).getTime();
     emsxTrades[emsxTradesIndex]["Trade App Status"] = "uploaded_to_app";
@@ -845,6 +848,7 @@ export async function readCalculatePosition(data: any, date: string, isin: any, 
     for (let index = 0; index < data.length; index++) {
       let row = data[index];
       row["BB Ticker"] = row["BB Ticker"] ? row["BB Ticker"] : row["Issue"];
+
       let originalFace = parseFloat(row["Original Face"]);
       let identifier = row["ISIN"] !== "" ? row["ISIN"].trim() : row["BB Ticker"].trim();
       let object: any = {};
@@ -858,7 +862,7 @@ export async function readCalculatePosition(data: any, date: string, isin: any, 
       let divider = row["Trade Type"] == "vcon" ? 100 : 1;
 
       let currentPrice: any = row["Price"] / divider;
-      let currentQuantity: any = parseFloat(row["Quantity"].toString().replace(/,/g, "")) * operation;
+      let currentQuantity: any = parseFloat(row["Notional Amount"].toString().replace(/,/g, "")) * operation;
       let currentNet = parseFloat(row["Settlement Amount"].toString().replace(/,/g, "")) * operation;
 
       let currentPrincipal: any = parseFloat(row["Principal"].toString().replace(/,/g, ""));
@@ -875,9 +879,9 @@ export async function readCalculatePosition(data: any, date: string, isin: any, 
 
       let rlzdOperation = -1;
       if (updatingPosition) {
-        let accumlatedQuantityState = updatingPosition["Quantity"] > 0 ? 1 : -1;
+        let accumlatedQuantityState = updatingPosition["Notional Amount"] > 0 ? 1 : -1;
 
-        if (operation == -1 * accumlatedQuantityState && updatingPosition["Quantity"] != 0) {
+        if (operation == -1 * accumlatedQuantityState && updatingPosition["Notional Amount"] != 0) {
           rlzdOperation = 1;
         }
       } else {
@@ -904,7 +908,7 @@ export async function readCalculatePosition(data: any, date: string, isin: any, 
 
           object["ISIN"] = row["ISIN"].trim();
           object["CUSIP"] = row["Cuisp"].trim() || "";
-          object["Quantity"] = currentQuantity;
+          object["Notional Amount"] = currentQuantity;
 
           object["Net"] = currentNet;
           object["Currency"] = currency;
@@ -948,7 +952,7 @@ export async function readCalculatePosition(data: any, date: string, isin: any, 
 
           positions.push(object);
         } else if (returnPositionProgress(positions, identifier, location)) {
-          let shortLongType = updatingPosition["Quantity"] >= 0 ? 1 : -1;
+          let shortLongType = updatingPosition["Notional Amount"] >= 0 ? 1 : -1;
 
           let settlementDate = row["Settle Date"];
           object["Location"] = row["Location"].trim();
@@ -957,10 +961,10 @@ export async function readCalculatePosition(data: any, date: string, isin: any, 
 
           object["ISIN"] = row["ISIN"];
           object["Currency"] = currency;
-          object["Quantity"] = currentQuantity + updatingPosition["Quantity"];
+          object["Notional Amount"] = currentQuantity + updatingPosition["Notional Amount"];
 
           object["Net"] = currentNet + updatingPosition["Net"];
-          object["Average Cost"] = rlzdOperation == -1 ? getAverageCost(currentQuantity, updatingPosition["Quantity"], currentPrice, parseFloat(updatingPosition["Average Cost"])) : updatingPosition["Average Cost"];
+          object["Average Cost"] = rlzdOperation == -1 ? getAverageCost(currentQuantity, updatingPosition["Notional Amount"], currentPrice, parseFloat(updatingPosition["Average Cost"])) : updatingPosition["Average Cost"];
           // this is reversed because the quantity is negated
 
           object["Cost MTD"] = updatingPosition["Cost MTD"];
@@ -997,18 +1001,19 @@ export async function readCalculatePosition(data: any, date: string, isin: any, 
     }
 
     try {
-      
+      console.log(positions);
       for (let index = 0; index < portfolio.length; index++) {
         let position = portfolio[index];
-        if (position["ISIN"].trim() ==  isin && position["Location"] == location) {
-          portfolio[index] = positions[0]
+        if (position["ISIN"].trim() == isin && position["Location"] == location) {
+          portfolio[index] = positions[0];
         }
+        // console.log(portfolio[index]["Location"], portfolio[index]["BB Ticker"])
       }
-      
+
       let action = await insertTradesInPortfolioAtASpecificDate(portfolio, `portfolio-${earliestPortfolioName.predecessorDate}`);
 
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-      // await insertEditLogs(data[0]["BB Ticker"], "Recalculate Position", dateTime, "Centarlized Blotter", data[0]["BB Ticker"] + " " + data[0]["Location"]);
+      await insertEditLogs(data[0]["BB Ticker"], "Recalculate Position", dateTime, "Centarlized Blotter", data[0]["BB Ticker"] + " " + data[0]["Location"]);
       // console.log(positions)
       return action;
     } catch (error) {

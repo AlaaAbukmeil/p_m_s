@@ -68,6 +68,7 @@ export async function getVcons(token: string, start_time: any, end_time: any, tr
       let identifier = vcon["ISIN"];
       vcon["BB Ticker"] = vcon["Issue"];
       vcon["Entry Time"] = tradeTime
+      vcon["Notional Amount"] = vcon["Quantity"]
       let securityInPortfolioLocation = getSecurityInPortfolioWithoutLocation(portfolio, identifier);
       let location = securityInPortfolioLocation.trim();
       let trade_status = "new";

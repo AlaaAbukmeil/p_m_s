@@ -188,6 +188,7 @@ export async function getTriadaTrades(tradeType: any, fromTimestamp: number | nu
     let trade = reportCollection[index];
     trade["Trade App Status"] = "uploaded_to_app";
     trade["BB Ticker"] = trade["BB Ticker"] ? trade["BB Ticker"] : trade["Issue"];
+    trade["Notioanl Amount"] = trade["Notioanl Amount"] ? trade["Notioanl Amount"] : trade["Quantity"];
     delete trade["_id"];
     delete trade["Quantity"];
     delete trade["Issue"];
@@ -243,10 +244,10 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
       obj["BB Ticker"] = trade["BB Ticker"];
       obj["Location"] = trade["Location"].trim();
       obj["Trade Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(trade["Trade Date"]));
-      obj["Trade Time"] = trade["Entry Time"]
+      obj["Trade Time"] = trade["Entry Time"];
       obj["Settle Date"] = getTradeDateYearTrades(settlementDate);
       obj["Price"] = trade["Price (Decimal)"];
-      obj["Notional Amount"] = parseFloat(trade["Quantity"].replace(/,/g, ""));
+      obj["Notional Amount"] = parseFloat(trade["Notional Amount"].replace(/,/g, ""));
       obj["Settlement Amount"] = parseFloat(trade["Net"].replace(/,/g, ""));
       obj["Principal"] = parseFloat(trade["Principal"].replace(/,/g, ""));
       obj["Counter Party"] = trade["Broker Code"];
@@ -271,17 +272,17 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
     let trade = ibData[index2];
     if (blot_ib.filter((ibTrade: any) => ibTrade["Triada Trade Id"] == trade["Triada Trade Id"])) {
       let obj: any = {};
-      let originalFace: any = Math.abs(trade["Notional Value"] / trade["T Price"] / trade["Quantity"]);
-      obj["B/S"] = parseFloat(trade["Quantity"]) > 0 ? "B" : "S";
+      let originalFace: any = Math.abs(trade["Notional Value"] / trade["T Price"] / trade["Notional Amount"]);
+      obj["B/S"] = parseFloat(trade["Notional Amount"]) > 0 ? "B" : "S";
       obj["BB Ticker"] = trade["Symbol"];
       obj["Location"] = trade["Location"].trim();
       obj["Trade Date"] = trade["Trade Date"];
       obj["Trade Time"] = trade["Trade Date Time"];
       obj["Settle Date"] = trade["Trade Date"];
       obj["Price"] = trade["T Price"];
-      obj["Notional Amount"] = Math.abs(parseFloat(trade["Quantity"])) * originalFace;
+      obj["Notional Amount"] = Math.abs(parseFloat(trade["Notional Amount"])) * originalFace;
       obj["Settlement Amount"] = Math.abs(trade["Notional Value"]);
-      obj["Principal"] = Math.abs(trade["T Price"] * trade["Quantity"] * originalFace);
+      obj["Principal"] = Math.abs(trade["T Price"] * trade["Notional Amount"] * originalFace);
       obj["Counter Party"] = "IB";
       obj["Triada Trade Id"] = trade["Triada Trade Id"];
       obj["Seq No"] = "";
@@ -312,7 +313,7 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
       obj["Trade Time"] = "";
       obj["Settle Date"] = trade["Trade Date"];
       obj["Price"] = trade["Price"];
-      obj["Notional Amount"] = parseFloat(trade["Quantity"]);
+      obj["Notional Amount"] = parseFloat(trade["Notional Amount"]);
       obj["Settlement Amount"] = trade["Net"];
       obj["Principal"] = trade["Net"] * trade["Price"];
       obj["Counter Party"] = "EMSX";
@@ -373,6 +374,7 @@ export function formatIbTrades(data: any, ibTrades: any, portfolio: any) {
   try {
     for (let index = 0; index < data.length; index++) {
       let trade = data[index];
+     
       let id;
       let object: any = {};
       if (trade["Header"] == "Data") {
@@ -402,7 +404,8 @@ export function formatIbTrades(data: any, ibTrades: any, portfolio: any) {
         }
         object["Currency"] = trade["Currency"];
         object["Symbol"] = trade["Symbol"];
-        object["Quantity"] = trade["Quantity"];
+        // ib file has as quantity
+        object["Notional Amount"] = trade["Quantity"];
         object["T Price"] = trade["T. Price"];
         object["C Price"] = data[index]["C. Price"];
         object["Notional Value"] = trade["Notional Value"];
@@ -507,7 +510,7 @@ export function formatEmsxTrades(data: any, emsxTrades: any, portfolio: any) {
       object["Status"] = trade["Status"];
       object["Buy/Sell"] = trade["Side"];
       object["Security"] = trade["Security"];
-      object["Quantity"] = trade["Qty"];
+      object["Notional Amount"] = trade["Qty"];
       object["Net"] = trade["FillQty"];
       object["Price"] = trade["LmtPr"];
       object["Trade Date"] = trade["Trade Date"];

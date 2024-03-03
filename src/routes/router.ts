@@ -39,6 +39,27 @@ router.get("/auth", uploadBeforeExcel.any(), verifyToken, async (req: Request, r
   res.sendStatus(200);
 });
 
+
+
+router.get("/trades-logs", verifyToken, async (req, res) => {
+  try {
+    const filePath = path.resolve("trades-logs.txt");
+    const lastLines = await readLastLines.read(filePath, 4000);
+    res.send(lastLines);
+  } catch (error) {
+    res.status(500).send("An error occurred while reading the file.");
+  }
+});
+
+router.get("/prices-logs", verifyToken, async (req, res) => {
+  try {
+    const filePath = path.resolve("prices-logs.txt");
+    const lastLines = await readLastLines.read(filePath);
+    res.send(lastLines);
+  } catch (error) {
+    res.status(500).send("An error occurred while reading the file.");
+  }
+});
 router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
     let date: any = req.query.date;
@@ -104,32 +125,24 @@ router.get("/risk-report", async (req: Request, res: Response, next: NextFunctio
   }
 });
 
-router.get("/trades-logs", verifyToken, async (req, res) => {
-  try {
-    const filePath = path.resolve("trades-logs.txt");
-    const lastLines = await readLastLines.read(filePath, 4000);
-    res.send(lastLines);
-  } catch (error) {
-    res.status(500).send("An error occurred while reading the file.");
-  }
-});
-
-router.get("/prices-logs", verifyToken, async (req, res) => {
-  try {
-    const filePath = path.resolve("prices-logs.txt");
-    const lastLines = await readLastLines.read(filePath);
-    res.send(lastLines);
-  } catch (error) {
-    res.status(500).send("An error occurred while reading the file.");
-  }
-});
-
 router.get("/trades", verifyToken, async (req, res) => {
   try {
     const tradeType: any = req.query.tradeType;
 
     let trades = await getTrades(`${tradeType}`);
     res.send(trades);
+  } catch (error) {
+    res.status(500).send("An error occurred while reading the file.");
+  }
+});
+
+
+router.get("/edit-logs", verifyToken, async (req, res) => {
+  try {
+    const editLogsType: any = req.query.logsType;
+
+    let editLogs = await getEditLogs(`${editLogsType}`);
+    res.send(editLogs);
   } catch (error) {
     res.status(500).send("An error occurred while reading the file.");
   }
@@ -157,16 +170,6 @@ router.get("/all-trades", verifyToken, async (req, res) => {
     res.send({ trades: allTrades });
   } catch (error) {
     console.log(error);
-    res.status(500).send("An error occurred while reading the file.");
-  }
-});
-router.get("/edit-logs", verifyToken, async (req, res) => {
-  try {
-    const editLogsType: any = req.query.logsType;
-
-    let editLogs = await getEditLogs(`${editLogsType}`);
-    res.send(editLogs);
-  } catch (error) {
     res.status(500).send("An error occurred while reading the file.");
   }
 });
@@ -199,7 +202,7 @@ router.post("/login", uploadBeforeExcel.any(), async (req: Request, res: Respons
   let user = await checkIfUserExists(email, password);
   res.cookie("triada.admin.cookie", user, {
     maxAge: 3 * 24 * 60 * 60 * 1000,
-    httpOnly: process.env.PRODUCTION === "production", 
+    httpOnly: process.env.PRODUCTION === "production",
     secure: process.env.PRODUCTION === "production", // Set to true if using HTTPS
     sameSite: "lax",
   });
@@ -379,7 +382,7 @@ router.post("/upload-trades", verifyToken, uploadBeforeExcel.any(), async (req: 
 
 router.post("/edit-position", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
-    console.log(req.body)
+    console.log(req.body);
     let action = await editPosition(req.body, req.body.date);
 
     res.sendStatus(200);
@@ -409,7 +412,7 @@ router.post("/delete-trade", verifyToken, uploadBeforeExcel.any(), async (req: R
     let data = req.body;
     let tradeType = req.body.tradeType;
     console.log(data, "test delete");
-    let action: any = await deleteTrade(tradeType, data["_id"], data["BB Ticker"]);
+    let action: any = await deleteTrade(tradeType, data["_id"], data["BB Ticker"], data["Location"]);
     if (action.error) {
       res.send({ error: action.error, status: 404 });
     } else {
@@ -565,16 +568,24 @@ router.post("/recalculate-position", verifyToken, uploadBeforeExcel.any(), async
     let isin = data["ISIN"];
     let location = data["Location"];
     let date = data.date;
-    console.log(tradeType, isin, location, date);
     let trades = await getAllTradesForSpecificPosition(tradeType, isin, location);
-    let action: any = await readCalculatePosition(trades, date, isin, location);
+    console.log(tradeType, isin, location, date, trades);
+    if (trades.length) {
+      let action: any = await readCalculatePosition(trades, date, isin, location);
+      res.sendStatus(200);
+      console.log(action);
+    }else{
+      res.send({error:"no trades"})
+    }
 
-    console.log(action);
-    res.sendStatus(200);
   } catch (error) {
     console.log(error);
     res.send({ error: error });
   }
 });
+
+
+
+
 
 export default router;

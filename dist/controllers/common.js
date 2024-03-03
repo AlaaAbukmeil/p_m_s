@@ -89,6 +89,7 @@ const verifyToken = (req, res, next) => {
     try {
         const token = req.cookies["triada.admin.cookie"].token;
         if (!token) {
+            console.log("ye1");
             return res.sendStatus(401);
         }
         const decoded = jwt.verify(token, process.env.SECRET);
@@ -96,6 +97,7 @@ const verifyToken = (req, res, next) => {
         next();
     }
     catch (error) {
+        console.log(error);
         return res.sendStatus(401);
     }
 };
