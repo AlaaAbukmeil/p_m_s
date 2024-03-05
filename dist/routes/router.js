@@ -99,6 +99,29 @@ router.get("/summary-portfolio", async (req, res, next) => {
         res.send({ error: error.toString() });
     }
 });
+router.get("/performers-portfolio", async (req, res, next) => {
+    try {
+        let date = req.query.date;
+        let conditions = req.query || {};
+        let sort = req.query.sort || "order";
+        let sign = req.query.sign || 1;
+        if (date.includes("NaN")) {
+            date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
+        }
+        date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date(date)).split(" ")[0] + " 23:59";
+        let report = await (0, reports_1.getHistoricalSummaryPortfolioWithAnalytics)(date, sort, sign, conditions);
+        if (report.error) {
+            res.send({ error: report.error });
+        }
+        else {
+            res.send(report);
+        }
+    }
+    catch (error) {
+        console.log(error);
+        res.send({ error: error.toString() });
+    }
+});
 router.get("/risk-report", async (req, res, next) => {
     try {
         let date = req.query.date;
@@ -108,7 +131,7 @@ router.get("/risk-report", async (req, res, next) => {
             date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
         }
         date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date(date)).split(" ")[0] + " 23:59";
-        let report = await (0, reports_1.getRiskReportWithAnalytics)(date, sort, sign);
+        let report = await (0, reports_1.getHistoricalSummaryPortfolioWithAnalytics)(date, sort, sign);
         res.send(report);
     }
     catch (error) {
@@ -183,12 +206,13 @@ router.post("/login", uploadBeforeExcel.any(), async (req, res, next) => {
     let email = data.email;
     let password = data.password;
     let user = await (0, auth_1.checkIfUserExists)(email, password);
-    res.cookie("triada.admin.cookie", user, {
+    let cookie = {
         maxAge: 3 * 24 * 60 * 60 * 1000,
         httpOnly: process.env.PRODUCTION === "production",
         secure: process.env.PRODUCTION === "production",
         sameSite: "lax",
-    });
+    };
+    res.cookie("triada.admin.cookie", user, cookie);
     res.send({ status: 200 });
 });
 router.post("/sign-up", async (req, res, next) => {
@@ -276,6 +300,7 @@ router.post("/centralized-blotter", common_1.verifyToken, uploadBeforeExcel.any(
         }
         else {
             if (action.length > 0) {
+                console.log(action[0]);
                 let url = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(action, "centralized_blot", "centralized_blot");
                 url = common_1.bucket + url;
                 res.send(url);
@@ -351,7 +376,6 @@ router.post("/upload-trades", common_1.verifyToken, uploadBeforeExcel.any(), asy
 });
 router.post("/edit-position", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
     try {
-        console.log(req.body);
         let action = await (0, reports_1.editPosition)(req.body, req.body.date);
         res.sendStatus(200);
     }
@@ -396,9 +420,9 @@ router.post("/delete-trade", common_1.verifyToken, uploadBeforeExcel.any(), asyn
 router.post("/delete-position", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
     try {
         let data = JSON.parse(req.body.data);
-        let tradeType = req.body.tradeType;
+        let date = req.body.date;
         console.log(data["_id"]);
-        let action = await (0, operations_1.deletePosition)(data);
+        let action = await (0, operations_1.deletePosition)(data, date);
         console.log(action);
         if (action.error) {
             res.send({ error: action.error, status: 404 });
@@ -489,7 +513,7 @@ router.post("/check-mufg", common_1.verifyToken, uploadBeforeExcel.any(), async 
     }
     catch (error) {
         console.log(error);
-        res.send({ error: "File Template is not correct" });
+        res.send({ error: error.toString() });
     }
 });
 router.post("/edit-fund", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
@@ -537,12 +561,12 @@ router.post("/recalculate-position", common_1.verifyToken, uploadBeforeExcel.any
         let isin = data["ISIN"];
         let location = data["Location"];
         let date = data.date;
-        let trades = await (0, operations_1.getAllTradesForSpecificPosition)(tradeType, isin, location);
+        let trades = await (0, operations_1.getAllTradesForSpecificPosition)(tradeType, isin, location, date);
         console.log(tradeType, isin, location, date, trades);
         if (trades.length) {
             let action = await (0, operations_1.readCalculatePosition)(trades, date, isin, location);
-            res.sendStatus(200);
             console.log(action);
+            res.sendStatus(200);
         }
         else {
             res.send({ error: "no trades" });

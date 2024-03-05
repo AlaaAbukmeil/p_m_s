@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCurrentDateTime = exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDateTime = exports.convertExcelDateToJSDate = exports.swapMonthDay = exports.formatDateWorld = exports.getYear = exports.monthlyRlzdDate = exports.getTradeDateYearTradesWithoutTheCentury = exports.getTradeDateYearTrades = exports.formatTradeDate = exports.getCurrentDateVconFormat = exports.verifyToken = exports.getTime = exports.formatDateUS = exports.formatDateFile = exports.formatDate = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = exports.bucket = exports.uri = void 0;
+exports.getCurrentDateTime = exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDateTime = exports.convertExcelDateToJSDate = exports.swapMonthDay = exports.formatDateWorld = exports.getYear = exports.monthlyRlzdDate = exports.isNotNullOrUndefined = exports.getTradeDateYearTradesWithoutTheCentury = exports.getTradeDateYearTrades = exports.formatTradeDate = exports.getCurrentDateVconFormat = exports.verifyToken = exports.getTime = exports.formatDateUS = exports.formatDateFile = exports.formatDate = exports.parsePercentage = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = exports.bucket = exports.uri = void 0;
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 exports.uri = "mongodb+srv://developertriada:" + process.env.NEWMONGODBPASSWORD + "@app.ywfxr8w.mongodb.net/?retryWrites=true&w=majority";
@@ -37,6 +37,17 @@ function getDate(dateInput) {
     return formattedDate;
 }
 exports.getDate = getDate;
+function parsePercentage(str) {
+    // Remove the percent sign and any surrounding whitespace, then parse to float
+    try {
+        return parseFloat(str.toString().replace("%", "").trim());
+    }
+    catch (error) {
+        // console.log(str, "wrong value str%", error);
+        return 0;
+    }
+}
+exports.parsePercentage = parsePercentage;
 function formatDate(date) {
     date = new Date(date);
     if (!date) {
@@ -135,6 +146,10 @@ function getTradeDateYearTradesWithoutTheCentury(date) {
     return `${dateComponenets[0]}/${dateComponenets[1]}/${dateComponenets[2]}`;
 }
 exports.getTradeDateYearTradesWithoutTheCentury = getTradeDateYearTradesWithoutTheCentury;
+function isNotNullOrUndefined(value) {
+    return value !== undefined && value !== null;
+}
+exports.isNotNullOrUndefined = isNotNullOrUndefined;
 function monthlyRlzdDate(dateInput) {
     let date = new Date(dateInput);
     const year = date.getFullYear();

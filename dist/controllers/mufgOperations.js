@@ -319,6 +319,15 @@ async function tradesTriada() {
     }
 }
 exports.tradesTriada = tradesTriada;
+function getPositionInMUFG(mufgData, bbTicker, isin) {
+    for (let index = 0; index < mufgData.length; index++) {
+        let row = mufgData[index];
+        if (row["Investment"].includes(bbTicker) || row["Investment"].includes(isin)) {
+            return row;
+        }
+    }
+    return null;
+}
 async function checkMUFGEndOfMonthWithPortfolio(MUFGData, portfolio) {
     try {
         portfolio = updatePortfolioBasedOnIsin(portfolio);
@@ -328,13 +337,16 @@ async function checkMUFGEndOfMonthWithPortfolio(MUFGData, portfolio) {
         }
         for (let index = 0; index < portfolio.length; index++) {
             let positionInPortfolio = portfolio[index];
-            let positionInMufg = MUFGData.filter((row, index) => row["Investment"].includes(positionInPortfolio["ISIN"]) || (row["Investment"].includes(positionInPortfolio["BB Ticker"]) && positionInPortfolio["BB Ticker"] != ""));
-            positionInMufg = positionInMufg ? positionInMufg[0] : null;
+            let positionInMufg = getPositionInMUFG(MUFGData, positionInPortfolio["BB Ticker"], positionInPortfolio["ISIN"]);
+            if (!positionInPortfolio["Type"]) {
+                positionInPortfolio["Type"] = positionInPortfolio["BB Ticker"].split(" ")[0] == "T" || positionInPortfolio["Issuer"] == "US TREASURY N/B" ? "UST" : "BND";
+            }
+            let bondDivider = (positionInPortfolio["Type"] == "BND" || positionInPortfolio["Type"] == "UST") ? 100 : 1;
             let portfolioPositionQuantity = positionInPortfolio["ISIN"].includes("IB") ? positionInPortfolio["Notional Amount"] / positionInPortfolio["Original Face"] : positionInPortfolio["Notional Amount"];
-            let mufgPositionQuantity = positionInMufg ? parseFloat(positionInMufg["Notional Amount"]) : 0;
+            let mufgPositionQuantity = positionInMufg ? parseFloat(positionInMufg["Quantity"]) : 0;
             let portfolioAverageCost = parseFloat(positionInPortfolio["Average Cost"]);
             let mufgAverageCost = positionInMufg ? parseFloat(positionInMufg["LocalCost"]) / mufgPositionQuantity : 0;
-            let portfolioPrice = positionInPortfolio["ISIN"].includes("CXP") || positionInPortfolio["ISIN"].includes("CDX") || positionInPortfolio["ISIN"].includes("ITRX") || positionInPortfolio["ISIN"].includes("1393") || positionInPortfolio["ISIN"].includes("IB") ? Math.round(positionInPortfolio["Mid"] * 1000000) / 1000000 : Math.round(positionInPortfolio["Mid"] * 1000000) / 10000;
+            let portfolioPrice = Math.round(positionInPortfolio["Mid"] * 10000 * bondDivider) / 10000;
             portfolioPrice = portfolioPrice ? portfolioPrice : 0;
             let mufgPrice = positionInMufg ? parseFloat(positionInMufg["Price"]) : 0;
             let formattedRow = {

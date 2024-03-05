@@ -42,7 +42,15 @@ export function getDate(dateInput: any | null) {
   });
   return formattedDate;
 }
-
+export function parsePercentage(str: string) {
+  // Remove the percent sign and any surrounding whitespace, then parse to float
+  try {
+    return parseFloat(str.toString().replace("%", "").trim());
+  } catch (error) {
+    // console.log(str, "wrong value str%", error);
+    return 0;
+  }
+}
 export function formatDate(date: any) {
   date = new Date(date);
   if (!date) {
@@ -105,7 +113,7 @@ export const verifyToken = (req: Request | any, res: Response, next: NextFunctio
     const token = req.cookies["triada.admin.cookie"].token;
 
     if (!token) {
-      console.log("ye1")
+      console.log("ye1");
       return res.sendStatus(401);
     }
 
@@ -113,7 +121,7 @@ export const verifyToken = (req: Request | any, res: Response, next: NextFunctio
     req.userRole = decoded.accessRole;
     next();
   } catch (error) {
-    console.log(error)
+    console.log(error);
     return res.sendStatus(401);
   }
 };
@@ -155,7 +163,9 @@ export function getTradeDateYearTradesWithoutTheCentury(date: any) {
   let dateComponenets = date.split("/");
   return `${dateComponenets[0]}/${dateComponenets[1]}/${dateComponenets[2]}`;
 }
-
+export function isNotNullOrUndefined(value: any) {
+  return value !== undefined && value !== null;
+}
 export function monthlyRlzdDate(dateInput: string) {
   let date = new Date(dateInput);
   const year = date.getFullYear();

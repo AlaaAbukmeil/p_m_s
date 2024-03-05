@@ -188,7 +188,7 @@ export async function getTriadaTrades(tradeType: any, fromTimestamp: number | nu
     let trade = reportCollection[index];
     trade["Trade App Status"] = "uploaded_to_app";
     trade["BB Ticker"] = trade["BB Ticker"] ? trade["BB Ticker"] : trade["Issue"];
-    trade["Notioanl Amount"] = trade["Notioanl Amount"] ? trade["Notioanl Amount"] : trade["Quantity"];
+    trade["Notional Amount"] = trade["Notional Amount"] && parseFloat(trade["Notional Amount"]) != 0 ? trade["Notional Amount"] : trade["Quantity"];
     delete trade["_id"];
     delete trade["Quantity"];
     delete trade["Issue"];
@@ -221,9 +221,9 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
       }
     }
   }
-  let blot_vcons = [...vconTrades];
-  let blot_ib = [...ibTrades];
-  let blot_emsx = [...emsxTrades];
+  let blot_vcons = vconTrades.map(({ "Edit Note": _, "Updated Notional": __, ...rest }: any) => rest);
+  let blot_ib = ibTrades.map(({ "Edit Note": _, "Updated Notional": __, ...rest }: any) => rest);
+  let blot_emsx = emsxTrades.map(({ "Edit Note": _, "Updated Notional": __, ...rest }: any) => rest);
   let blot: any = [];
   let counter = 1;
   let bbbCurrency: any = {
@@ -332,6 +332,7 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
       counter++;
     }
   }
+
   blot_emsx.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
   blot = [...blot_vcons, ...blot_ib, ...blot_emsx];
   if (blot.length > 0) {
@@ -342,7 +343,6 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
         formattedObject[title] = blot[0][title];
       }
     });
-
     blot[0] = formattedObject;
     return blot;
   } else {
@@ -374,7 +374,7 @@ export function formatIbTrades(data: any, ibTrades: any, portfolio: any) {
   try {
     for (let index = 0; index < data.length; index++) {
       let trade = data[index];
-     
+
       let id;
       let object: any = {};
       if (trade["Header"] == "Data") {

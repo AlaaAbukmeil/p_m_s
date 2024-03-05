@@ -170,7 +170,7 @@ async function getTriadaTrades(tradeType, fromTimestamp = 0, toTimestamp = 0) {
         let trade = reportCollection[index];
         trade["Trade App Status"] = "uploaded_to_app";
         trade["BB Ticker"] = trade["BB Ticker"] ? trade["BB Ticker"] : trade["Issue"];
-        trade["Notioanl Amount"] = trade["Notioanl Amount"] ? trade["Notioanl Amount"] : trade["Quantity"];
+        trade["Notional Amount"] = trade["Notional Amount"] && parseFloat(trade["Notional Amount"]) != 0 ? trade["Notional Amount"] : trade["Quantity"];
         delete trade["_id"];
         delete trade["Quantity"];
         delete trade["Issue"];
@@ -204,9 +204,9 @@ async function formatCentralizedRawFiles(files, bbbData, vconTrades, ibTrades, e
             }
         }
     }
-    let blot_vcons = [...vconTrades];
-    let blot_ib = [...ibTrades];
-    let blot_emsx = [...emsxTrades];
+    let blot_vcons = vconTrades.map(({ "Edit Note": _, "Updated Notional": __, ...rest }) => rest);
+    let blot_ib = ibTrades.map(({ "Edit Note": _, "Updated Notional": __, ...rest }) => rest);
+    let blot_emsx = emsxTrades.map(({ "Edit Note": _, "Updated Notional": __, ...rest }) => rest);
     let blot = [];
     let counter = 1;
     let bbbCurrency = {

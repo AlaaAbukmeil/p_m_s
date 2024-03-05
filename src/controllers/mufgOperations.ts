@@ -1,4 +1,4 @@
-import {  convertExcelDateToJSDate, convertBBGEmexDate, bucket } from "./common";
+import { convertExcelDateToJSDate, convertBBGEmexDate, bucket } from "./common";
 import { settlementDatePassed, uploadToGCloudBucket, readIBEblot } from "./portfolioFunctions";
 import { getTradeDateYearTrades } from "./common";
 import { getSettlementDateYear, readEmsxEBlot } from "./portfolioFunctions";
@@ -145,10 +145,10 @@ export async function formatMufg(trades: any, start: string, end: string) {
     obj["Security_ID_ISIN"] = trade["Trade Type"] == "vcon" ? trade["ISIN"] : "";
     obj["Security_ID_CUSIP"] = trade["Trade Type"] == "vcon" ? trade["Cusip"] : "";
     obj["Security_ID_SEDOL"] = "";
-    obj["Security_ID_Bloomberg"] = trade["BB Ticker"] 
+    obj["Security_ID_Bloomberg"] = trade["BB Ticker"];
     obj["Security_ID_Reuters"] = "";
     obj["Security_ID_UGC"] = "";
-    obj["Security_Description"] =  trade["BB Ticker"]
+    obj["Security_Description"] = trade["BB Ticker"];
     obj["Trade_ID_Client"] = trade["Triada Trade Id"];
     obj["Quantity"] = trade["Trade Type"] == "emsx" ? trade["Settlement Amount"] : trade["Trade Type"] == "ib" ? Math.abs(trade["Notional Amount"]) / originalFace : Math.abs(trade["Notional Amount"]);
     obj["Original_Face"] = trade["Trade Type"] == "ib" ? originalFace : "100";
@@ -340,15 +340,24 @@ export async function tradesTriada() {
     const reportCollection1 = database.collection("vcons");
     const reportCollection2 = database.collection("ib");
     const reportCollection3 = database.collection("emsx");
-    const document1 = await reportCollection1.find().toArray()
+    const document1 = await reportCollection1.find().toArray();
     const document2 = await reportCollection2.find().toArray();
     const document3 = await reportCollection3.find().toArray();
-    let document = [...document1.sort((a:any, b:any)=> new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime()), ...document2.sort((a:any, b:any)=> new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime()), ...document3.sort((a:any, b:any)=> new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime())];
+    let document = [...document1.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime()), ...document2.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime()), ...document3.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime())];
 
     return document;
   } catch (error) {
     return error;
   }
+}
+function getPositionInMUFG(mufgData: any, bbTicker: string, isin: string) {
+  for (let index = 0; index < mufgData.length; index++) {
+    let row = mufgData[index];
+    if (row["Investment"].includes(bbTicker) || row["Investment"].includes(isin)) {
+      return row;
+    }
+  }
+  return null;
 }
 
 export async function checkMUFGEndOfMonthWithPortfolio(MUFGData: any, portfolio: any) {
@@ -360,14 +369,17 @@ export async function checkMUFGEndOfMonthWithPortfolio(MUFGData: any, portfolio:
     }
     for (let index = 0; index < portfolio.length; index++) {
       let positionInPortfolio = portfolio[index];
-      let positionInMufg = MUFGData.filter((row: any, index: any) => row["Investment"].includes(positionInPortfolio["ISIN"]) || (row["Investment"].includes(positionInPortfolio["BB Ticker"]) && positionInPortfolio["BB Ticker"] != ""));
-      positionInMufg = positionInMufg ? positionInMufg[0] : null;
+      let positionInMufg = getPositionInMUFG(MUFGData, positionInPortfolio["BB Ticker"], positionInPortfolio["ISIN"]);
+      if (!positionInPortfolio["Type"]) {
+        positionInPortfolio["Type"] = positionInPortfolio["BB Ticker"].split(" ")[0] == "T" || positionInPortfolio["Issuer"] == "US TREASURY N/B" ? "UST" : "BND";
+      }
+      let bondDivider = (positionInPortfolio["Type"] == "BND" || positionInPortfolio["Type"] == "UST")  ? 100 : 1;
 
       let portfolioPositionQuantity = positionInPortfolio["ISIN"].includes("IB") ? positionInPortfolio["Notional Amount"] / positionInPortfolio["Original Face"] : positionInPortfolio["Notional Amount"];
-      let mufgPositionQuantity = positionInMufg ? parseFloat(positionInMufg["Notional Amount"]) : 0;
+      let mufgPositionQuantity = positionInMufg ? parseFloat(positionInMufg["Quantity"]) : 0;
       let portfolioAverageCost = parseFloat(positionInPortfolio["Average Cost"]);
       let mufgAverageCost = positionInMufg ? parseFloat(positionInMufg["LocalCost"]) / mufgPositionQuantity : 0;
-      let portfolioPrice = positionInPortfolio["ISIN"].includes("CXP") || positionInPortfolio["ISIN"].includes("CDX") || positionInPortfolio["ISIN"].includes("ITRX") || positionInPortfolio["ISIN"].includes("1393") || positionInPortfolio["ISIN"].includes("IB") ? Math.round(positionInPortfolio["Mid"] * 1000000) / 1000000 : Math.round(positionInPortfolio["Mid"] * 1000000) / 10000;
+      let portfolioPrice = Math.round(positionInPortfolio["Mid"] * 10000 * bondDivider) / 10000;
       portfolioPrice = portfolioPrice ? portfolioPrice : 0;
       let mufgPrice = positionInMufg ? parseFloat(positionInMufg["Price"]) : 0;
 

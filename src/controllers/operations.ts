@@ -84,7 +84,8 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
 
         for (let index = 0; index < object.length; index++) {
           let position = object[index];
-          position["Mid"] = parseFloat(row["Price"]);
+          let divider = position["Type"] == "BND" || position["Type"] == "UST" ? 100 : 1;
+          position["Mid"] = parseFloat(row["Price"]) / divider;
           position["Last Price Update"] = new Date();
           updatedPricePortfolio.push(position);
         }
@@ -101,9 +102,9 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
         } else {
           return { error: updatedPortfolio[1] };
         }
-      } catch (error) {
+      } catch (error: any) {
         console.log(error);
-        return { error: "Template does not match" };
+        return { error: error.toString() };
       }
     }
   } catch (error) {
@@ -170,7 +171,8 @@ export async function getPortfolioOnSpecificDate(collectionDate: string): Promis
     const reportCollection = database.collection(`portfolio-${earliestCollectionName.predecessorDate}`);
     let documents = await reportCollection.find().toArray();
     for (let index = 0; index < documents.length; index++) {
-      documents[index]["Notional Amount"] = documents[index]["Notional Amount"] ? documents[index]["Notional Amount"] : documents[index]["Quantity"];
+      documents[index]["BB Ticker"] = documents[index]["BB Ticker"] ? documents[index]["BB Ticker"] : documents[index]["Issue"];
+      documents[index]["Notional Amount"] = documents[index]["Notional Amount"] || parseFloat(documents[index]["Notional Amount"]) == 0 ? documents[index]["Notional Amount"] : documents[index]["Quantity"];
     }
 
     return [documents, earliestCollectionName.predecessorDate];
@@ -253,6 +255,7 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
 
           for (let index = 0; index < positions.length; index++) {
             let object = positions[index];
+
             object["Mid"] = parseFloat(row["Today's Mid"]) / divider;
             object["Ask"] = parseFloat(row["Override Ask"]) > 0 ? parseFloat(row["Override Ask"]) / divider : parseFloat(row["Today's Ask (Broker)"]) > 0 ? parseFloat(row["Today's Ask (Broker)"]) / divider : parseFloat(row["Today's Ask"]) / divider;
             object["Bid"] = parseFloat(row["Override Bid"]) > 0 ? parseFloat(row["Override Bid"]) / divider : parseFloat(row["Today's Bid (Broker)"]) > 0 ? parseFloat(row["Today's Bid (Broker)"]) / divider : parseFloat(row["Today's Bid"]) / divider;
@@ -273,7 +276,7 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
             object["BB Ticker"] = row["BB Ticker"].toString().includes("N/A") ? "" : row["BB Ticker"];
             object["Issuer"] = row["Issuer Name"].toString().includes("N/A") ? "" : row["Issuer Name"];
             object["Bloomberg ID"] = row["Bloomberg ID"];
-            object["CUSIP"] = row["CUSIP"];
+            object["CUSIP"] = row["CUSIP"].toString().includes("N/A") ? "" : row["CUSIP"];
 
             if (!row["Call Date"].includes("N/A") && !row["Call Date"].includes("#")) {
               object["Call Date"] = row["Call Date"];
@@ -293,6 +296,7 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
             if (row["Sector"] && !row["Sector"].includes("N/A")) {
               object["Sector"] = row["Sector"];
             }
+
             updatedPricePortfolio.push(object);
           }
         } else if (row["BB Ticker"].includes("Curncy") && currencyStart) {
@@ -674,7 +678,7 @@ export async function editTrade(editedTrade: any, tradeType: any) {
       const collection = database.collection(tradeType);
 
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-      await insertEditLogs(changesText, "Update Trade", dateTime, tradeInfo["Edit Note"], tradeInfo["BB Ticker"] + " " + tradeInfo["Location"]);
+      await insertEditLogs(changesText, "Edit Trade", dateTime, tradeInfo["Edit Note"], tradeInfo["BB Ticker"] + " " + tradeInfo["Location"]);
 
       let action = await collection.updateOne(
         { _id: tradeInfo["_id"] }, // Filter to match the document
@@ -715,7 +719,7 @@ export async function deleteTrade(tradeType: string, tradeId: string, tradeIssue
       return { error: `Trade does not exist!` };
     } else {
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-      await insertEditLogs(["deleted"], "Update Trade", dateTime, "deleted", tradeIssue + " " + location);
+      await insertEditLogs(["deleted"], "Edit Trade", dateTime, "deleted", tradeIssue + " " + location);
       console.log("deleted");
       return { error: null };
     }
@@ -750,21 +754,18 @@ export async function reformatCentralizedData(data: any) {
   }
 
   for (let rowIndex = 0; rowIndex < vconTrades.length; rowIndex++) {
-   
     vconTrades[rowIndex]["Triada Trade Id"] = vconTrades[rowIndex]["Triada Trade Id"];
     vconTrades[rowIndex]["timestamp"] = new Date(vconTrades[rowIndex]["Trade Date"]).getTime();
     vconTrades[rowIndex]["Trade App Status"] = "uploaded_to_app";
   }
 
   for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
-  
     ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["BB Ticker"];
     ibTrades[ibTradesIndex]["timestamp"] = new Date(ibTrades[ibTradesIndex]["Trade Date"]).getTime();
     ibTrades[ibTradesIndex]["Trade App Status"] = "uploaded_to_app";
   }
 
   for (let emsxTradesIndex = 0; emsxTradesIndex < emsxTrades.length; emsxTradesIndex++) {
-  
     emsxTrades[emsxTradesIndex]["ISIN"] = emsxTrades[emsxTradesIndex]["BB Ticker"];
     emsxTrades[emsxTradesIndex]["timestamp"] = new Date(emsxTrades[emsxTradesIndex]["Trade Date"]).getTime();
     emsxTrades[emsxTradesIndex]["Trade App Status"] = "uploaded_to_app";
@@ -773,10 +774,10 @@ export async function reformatCentralizedData(data: any) {
   return [...vconTrades, ...ibTrades, ...emsxTrades];
 }
 
-export async function deletePosition(data: any): Promise<any> {
+export async function deletePosition(data: any, dateInput: any): Promise<any> {
   try {
     const database = client.db("portfolios");
-    let date = getDateTimeInMongoDBCollectionFormat(new Date()).split(" ")[0] + " 23:59";
+    let date = getDateTimeInMongoDBCollectionFormat(new Date(dateInput)).split(" ")[0] + " 23:59";
     let earliestPortfolioName = await getEarliestCollectionName(date);
 
     const reportCollection = database.collection(`portfolio-${earliestPortfolioName.predecessorDate}`);
@@ -791,17 +792,21 @@ export async function deletePosition(data: any): Promise<any> {
     } else if (updateResult.deletedCount === 0) {
       return { error: "Document not updated. It may already have the same values" };
     }
-
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    await insertEditLogs(data["BB Ticker"], "Delete Position", dateTime, "Delete Position", data["BB Ticker"] + " " + data["Location"]);
+     
     return updateResult;
   } catch (error: any) {
     return { error: error.message }; // Return the error message
   }
 }
 
-export async function getAllTradesForSpecificPosition(tradeType: string, isin: string, location: string) {
+export async function getAllTradesForSpecificPosition(tradeType: string, isin: string, location: string, date:string) {
+
   try {
     // Connect to the MongoDB client
     await client.connect();
+    let timestamp = new Date(date).getTime()
 
     // Access the 'structure' database
     const database = client.db("trades_v_2");
@@ -813,7 +818,7 @@ export async function getAllTradesForSpecificPosition(tradeType: string, isin: s
     // This is an example operation that fetches all documents in the collection
     // Empty query object means "match all documents"
     const options = {}; // You can set options for the find operation if needed
-    const query = { ISIN: isin, Location: location }; // Replace yourIdValue with the actual ID you're querying
+    const query = { ISIN: isin, Location: location ,timestamp: { $lt: timestamp } }; // Replace yourIdValue with the actual ID you're querying
     const results = await collection.find(query, options).toArray();
 
     // The 'results' variable now contains an array of documents from the collection
@@ -1001,13 +1006,14 @@ export async function readCalculatePosition(data: any, date: string, isin: any, 
     }
 
     try {
-      console.log(positions);
+      // console.log(positions);
       for (let index = 0; index < portfolio.length; index++) {
         let position = portfolio[index];
-        if (position["ISIN"].trim() == isin && position["Location"] == location) {
+        if (position["ISIN"].trim() == isin.trim() && position["Location"] == location.trim()) {
           portfolio[index] = positions[0];
+          portfolio[index]["Quantity"] = portfolio[index]["Notional Amount"];
+          console.log(portfolio[index], "updateed", `portfolio-${earliestPortfolioName.predecessorDate}`);
         }
-        // console.log(portfolio[index]["Location"], portfolio[index]["BB Ticker"])
       }
 
       let action = await insertTradesInPortfolioAtASpecificDate(portfolio, `portfolio-${earliestPortfolioName.predecessorDate}`);

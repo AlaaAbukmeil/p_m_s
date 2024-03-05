@@ -1,9 +1,9 @@
-import { NextFunction, Router } from "express";
+import { CookieOptions, NextFunction, Router } from "express";
 import { image } from "../models/image";
 import { registerUser, checkIfUserExists, sendResetPasswordRequest, resetPassword } from "../controllers/auth";
 import { Request, Response } from "express";
 import { verifyToken, formatDateFile, generateRandomString, monthlyRlzdDate, bucket } from "../controllers/common";
-import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, getTrades, getPortfolio, editPosition, getHistoricalSummaryPortfolioWithAnalytics, getRiskReportWithAnalytics } from "../controllers/reports";
+import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, getTrades, getPortfolio, editPosition, getHistoricalSummaryPortfolioWithAnalytics } from "../controllers/reports";
 import { bloombergToTriada, getDateTimeInMongoDBCollectionFormat, readIBRawExcel, readPricingSheet } from "../controllers/portfolioFunctions";
 import { uploadArrayAndReturnFilePath, getTriadaTrades, formatCentralizedRawFiles, formatIbTrades, formatEmsxTrades, readEmsxRawExcel } from "../controllers/excelFormat";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/graphApiConnect";
@@ -38,8 +38,6 @@ const router = Router();
 router.get("/auth", uploadBeforeExcel.any(), verifyToken, async (req: Request, res: Response, next: NextFunction) => {
   res.sendStatus(200);
 });
-
-
 
 router.get("/trades-logs", verifyToken, async (req, res) => {
   try {
@@ -104,6 +102,29 @@ router.get("/summary-portfolio", async (req: Request, res: Response, next: NextF
     res.send({ error: error.toString() });
   }
 });
+router.get("/performers-portfolio", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    let date: any = req.query.date;
+    let conditions: any = req.query||{};
+    let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMonthlyPl" | "groupDV01Sum" | "groupDuration" | any = req.query.sort || "order";
+    let sign: any = req.query.sign || 1;
+  
+    if (date.includes("NaN")) {
+      date = getDateTimeInMongoDBCollectionFormat(new Date());
+    }
+
+    date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
+    let report = await getHistoricalSummaryPortfolioWithAnalytics(date, sort, sign, conditions);
+    if (report.error) {
+      res.send({ error: report.error });
+    } else {
+      res.send(report);
+    }
+  } catch (error: any) {
+    console.log(error);
+    res.send({ error: error.toString() });
+  }
+});
 
 router.get("/risk-report", async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -116,7 +137,7 @@ router.get("/risk-report", async (req: Request, res: Response, next: NextFunctio
     }
 
     date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
-    let report = await getRiskReportWithAnalytics(date, sort, sign);
+    let report = await getHistoricalSummaryPortfolioWithAnalytics(date, sort, sign);
 
     res.send(report);
   } catch (error: any) {
@@ -135,7 +156,6 @@ router.get("/trades", verifyToken, async (req, res) => {
     res.status(500).send("An error occurred while reading the file.");
   }
 });
-
 
 router.get("/edit-logs", verifyToken, async (req, res) => {
   try {
@@ -200,12 +220,14 @@ router.post("/login", uploadBeforeExcel.any(), async (req: Request, res: Respons
   let password = data.password;
 
   let user = await checkIfUserExists(email, password);
-  res.cookie("triada.admin.cookie", user, {
+  let cookie: CookieOptions = {
     maxAge: 3 * 24 * 60 * 60 * 1000,
     httpOnly: process.env.PRODUCTION === "production",
     secure: process.env.PRODUCTION === "production", // Set to true if using HTTPS
     sameSite: "lax",
-  });
+  };
+
+  res.cookie("triada.admin.cookie", user, cookie);
 
   res.send({ status: 200 });
 });
@@ -303,6 +325,7 @@ router.post("/centralized-blotter", verifyToken, uploadBeforeExcel.any(), async 
       res.send({ error: action.error });
     } else {
       if (action.length > 0) {
+        console.log(action[0]);
         let url = await uploadArrayAndReturnFilePath(action, "centralized_blot", "centralized_blot");
         url = bucket + url;
 
@@ -382,7 +405,6 @@ router.post("/upload-trades", verifyToken, uploadBeforeExcel.any(), async (req: 
 
 router.post("/edit-position", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
-    console.log(req.body);
     let action = await editPosition(req.body, req.body.date);
 
     res.sendStatus(200);
@@ -427,10 +449,10 @@ router.post("/delete-trade", verifyToken, uploadBeforeExcel.any(), async (req: R
 router.post("/delete-position", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let data = JSON.parse(req.body.data);
-    let tradeType = req.body.tradeType;
+    let date = req.body.date;
     console.log(data["_id"]);
 
-    let action: any = await deletePosition(data);
+    let action: any = await deletePosition(data, date);
     console.log(action);
     if (action.error) {
       res.send({ error: action.error, status: 404 });
@@ -517,9 +539,9 @@ router.post("/check-mufg", verifyToken, uploadBeforeExcel.any(), async (req: Req
       let downloadEBlotName = bucket + link;
       res.send(downloadEBlotName);
     }
-  } catch (error) {
+  } catch (error: any) {
     console.log(error);
-    res.send({ error: "File Template is not correct" });
+    res.send({ error: error.toString() });
   }
 });
 
@@ -568,24 +590,19 @@ router.post("/recalculate-position", verifyToken, uploadBeforeExcel.any(), async
     let isin = data["ISIN"];
     let location = data["Location"];
     let date = data.date;
-    let trades = await getAllTradesForSpecificPosition(tradeType, isin, location);
+    let trades = await getAllTradesForSpecificPosition(tradeType, isin, location, date);
     console.log(tradeType, isin, location, date, trades);
     if (trades.length) {
       let action: any = await readCalculatePosition(trades, date, isin, location);
-      res.sendStatus(200);
       console.log(action);
-    }else{
-      res.send({error:"no trades"})
+      res.sendStatus(200);
+    } else {
+      res.send({ error: "no trades" });
     }
-
   } catch (error) {
     console.log(error);
     res.send({ error: error });
   }
 });
-
-
-
-
 
 export default router;
