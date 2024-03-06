@@ -108,6 +108,7 @@ function parseBondIdentifier(identifier) {
     try {
         if (identifier) {
             const components = identifier.split(" ");
+            let dateIndex = 2;
             const fractionMap = {
                 "⅛": 0.125,
                 "¼": 0.25,
@@ -127,11 +128,12 @@ function parseBondIdentifier(identifier) {
                         let fraction = fractions[index];
                         if (components.includes(fraction)) {
                             rate += fractionMap[fraction];
+                            dateIndex += 1;
                         }
                     }
                 }
-                let dateComponents = components[2].split("/");
-                let date = new Date(`${dateComponents[1]}/${dateComponents[0]}/${"20" + dateComponents[2]}`);
+                let dateComponents = components[dateIndex].split("/");
+                let date = new Date(`${dateComponents[0]}/${dateComponents[1]}/${"20" + dateComponents[2]}`);
                 if (identifier.toString().toLowerCase().includes("perp")) {
                     date = null;
                 }
@@ -368,7 +370,7 @@ async function readCentralizedEBlot(path) {
             }
             vconTrades[rowIndex]["timestamp"] = new Date(vconTrades[rowIndex]["Trade Date"]).getTime();
             vconTrades[rowIndex]["Trade App Status"] = "uploaded_to_app";
-            vconTrades[rowIndex]["Price"] = vconTrades[rowIndex]["Price"] / 100;
+            vconTrades[rowIndex]["Price"] = vconTrades[rowIndex]["Price"];
         }
         for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
             ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["BB Ticker"];
@@ -380,6 +382,7 @@ async function readCentralizedEBlot(path) {
             }
             ibTrades[ibTradesIndex]["timestamp"] = new Date(ibTrades[ibTradesIndex]["Trade Date"]).getTime();
             ibTrades[ibTradesIndex]["Trade App Status"] = "uploaded_to_app";
+            ibTrades[ibTradesIndex]["Price"] = ibTrades[ibTradesIndex]["Price"] * 100;
         }
         for (let emsxTradesIndex = 0; emsxTradesIndex < emsxTrades.length; emsxTradesIndex++) {
             emsxTrades[emsxTradesIndex]["Notional Amount"] = emsxTrades[emsxTradesIndex]["Settlement Amount"];
@@ -392,6 +395,7 @@ async function readCentralizedEBlot(path) {
             }
             emsxTrades[emsxTradesIndex]["timestamp"] = new Date(emsxTrades[emsxTradesIndex]["Trade Date"]).getTime();
             emsxTrades[emsxTradesIndex]["Trade App Status"] = "uploaded_to_app";
+            emsxTrades[emsxTradesIndex]["Price"] = emsxTrades[emsxTradesIndex]["Price"] * 100;
         }
         return [vconTrades, ibTrades, emsxTrades, [...vconTrades, ...ibTrades, ...emsxTrades]];
     }

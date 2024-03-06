@@ -300,7 +300,6 @@ router.post("/centralized-blotter", common_1.verifyToken, uploadBeforeExcel.any(
         }
         else {
             if (action.length > 0) {
-                console.log(action[0]);
                 let url = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(action, "centralized_blot", "centralized_blot");
                 url = common_1.bucket + url;
                 res.send(url);

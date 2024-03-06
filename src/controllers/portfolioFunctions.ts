@@ -117,6 +117,7 @@ export function parseBondIdentifier(identifier: any): any {
   try {
     if (identifier) {
       const components: any = identifier.split(" ");
+      let dateIndex = 2;
       const fractionMap: any = {
         "⅛": 0.125,
         "¼": 0.25,
@@ -136,11 +137,12 @@ export function parseBondIdentifier(identifier: any): any {
             let fraction = fractions[index];
             if (components.includes(fraction)) {
               rate += fractionMap[fraction];
+              dateIndex += 1;
             }
           }
         }
-        let dateComponents = components[2].split("/");
-        let date: any = new Date(`${dateComponents[1]}/${dateComponents[0]}/${"20" + dateComponents[2]}`);
+        let dateComponents = components[dateIndex].split("/");
+        let date: any = new Date(`${dateComponents[0]}/${dateComponents[1]}/${"20" + dateComponents[2]}`);
         if (identifier.toString().toLowerCase().includes("perp")) {
           date = null;
         }
@@ -389,7 +391,6 @@ export async function readCentralizedEBlot(path: string) {
     let emsxTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "emsx");
 
     for (let rowIndex = 0; rowIndex < vconTrades.length; rowIndex++) {
-     
       vconTrades[rowIndex]["Triada Trade Id"] = vconTrades[rowIndex]["Triada Trade Id"];
 
       if (!vconTrades[rowIndex]["Trade Date"].includes("/")) {
@@ -400,11 +401,10 @@ export async function readCentralizedEBlot(path: string) {
       }
       vconTrades[rowIndex]["timestamp"] = new Date(vconTrades[rowIndex]["Trade Date"]).getTime();
       vconTrades[rowIndex]["Trade App Status"] = "uploaded_to_app";
-      vconTrades[rowIndex]["Price"] = vconTrades[rowIndex]["Price"] / 100;
+      vconTrades[rowIndex]["Price"] = vconTrades[rowIndex]["Price"];
     }
 
     for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
-      
       ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["BB Ticker"];
       if (!ibTrades[ibTradesIndex]["Trade Date"].includes("/")) {
         ibTrades[ibTradesIndex]["Trade Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(ibTrades[ibTradesIndex]["Trade Date"]));
@@ -414,6 +414,7 @@ export async function readCentralizedEBlot(path: string) {
       }
       ibTrades[ibTradesIndex]["timestamp"] = new Date(ibTrades[ibTradesIndex]["Trade Date"]).getTime();
       ibTrades[ibTradesIndex]["Trade App Status"] = "uploaded_to_app";
+      ibTrades[ibTradesIndex]["Price"] = ibTrades[ibTradesIndex]["Price"] * 100;
     }
 
     for (let emsxTradesIndex = 0; emsxTradesIndex < emsxTrades.length; emsxTradesIndex++) {
@@ -427,14 +428,12 @@ export async function readCentralizedEBlot(path: string) {
       }
       emsxTrades[emsxTradesIndex]["timestamp"] = new Date(emsxTrades[emsxTradesIndex]["Trade Date"]).getTime();
       emsxTrades[emsxTradesIndex]["Trade App Status"] = "uploaded_to_app";
+      emsxTrades[emsxTradesIndex]["Price"] = emsxTrades[emsxTradesIndex]["Price"] * 100;
     }
 
     return [vconTrades, ibTrades, emsxTrades, [...vconTrades, ...ibTrades, ...emsxTrades]];
   }
 }
-
-
-
 
 export async function readIBEblot(path: string) {
   const response = await axios.get(path, { responseType: "arraybuffer" });
@@ -595,8 +594,6 @@ export async function readEditInput(path: string) {
     return data;
   }
 }
-
-
 
 export async function readBloombergTriadaEBlot(path: string) {
   const response = await axios.get(path, { responseType: "arraybuffer" });
@@ -822,7 +819,7 @@ export function formatUpdatedPositions(positions: any, portfolio: any, lastUpdat
         positionsThatDoNotExistsNames[portfolio[indexPositions]["BB Ticker"]] = { location: portfolio[indexPositions]["Location"], notional: portfolio[indexPositions]["Notional Amount"] };
       }
     }
-    
+
     let data = [[...portfolio, ...positionsThatDoNotExists], positionsThatDoNotExistsNames, positionsThatGotUpdated, positionsThatDoNotExists, positionsIndexThatExists];
 
     return data;

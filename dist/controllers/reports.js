@@ -496,7 +496,7 @@ async function updatePositionPortfolio(path) {
                 let previousAverageCost = securityInPortfolio["Average Cost"] ? securityInPortfolio["Average Cost"] : 0;
                 let tradeType = row["B/S"];
                 let operation = tradeType == "B" ? 1 : -1;
-                let currentPrice = row["Price"];
+                let currentPrice = row["Price"] / 100;
                 let currentQuantity = parseFloat(row["Notional Amount"].toString().replace(/,/g, "")) * operation;
                 let currentNet = parseFloat(row["Settlement Amount"].toString().replace(/,/g, "")) * operation;
                 let currentPrincipal = parseFloat(row["Principal"].toString().replace(/,/g, ""));
@@ -1117,6 +1117,12 @@ async function editPosition(editedPosition, date) {
             "Cost (LC)",
             "Day Accrual",
             "_id",
+            "Value (BC)",
+            "Value (LC)",
+            "MTD Int. (BC)",
+            "Day URlzd (BC)",
+            "Day Rlzd (BC)",
+            "Day Int. (LC)",
             "Day Accrual (LC)",
             "Cost MTD (LC)",
             "Quantity",
@@ -1145,7 +1151,7 @@ async function editPosition(editedPosition, date) {
             "Day Rlzd (LC)",
             "Day URlzd (LC)",
             "MTD Int. (LC)",
-            "Day Int. (LC)",
+            "Currency)	Day Int. (LC)",
         ];
         // these keys are made up by the function frontend table, it reverts keys to original keys
         let positionIndex = null;
@@ -1173,7 +1179,7 @@ async function editPosition(editedPosition, date) {
                     console.log(editedPosition[title], title);
                     positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
                 }
-                else if (title == "Mid" || title == "Ask" || title == "Bid" || title == "Average Cost") {
+                else if ((title == "Mid" || title == "Ask" || title == "Bid" || title == "Average Cost") && editedPosition[title] != "") {
                     if (!positionInPortfolio["Type"]) {
                         positionInPortfolio["Type"] = positionInPortfolio["BB Ticker"].split(" ")[0] == "T" || positionInPortfolio["Issuer"] == "US TREASURY N/B" ? "UST" : "BND";
                     }
@@ -1186,18 +1192,13 @@ async function editPosition(editedPosition, date) {
                 }
                 else {
                     changes.push(`${title} changed from ${positionInPortfolio[title] || "''"} to ${editedPosition[title]}`);
-                    if (isFinite(editedPosition[title]) && editedPosition[title] != null && editedPosition[title] != "") {
-                        positionInPortfolio[title] = parseFloat(editedPosition[title]);
-                    }
-                    else {
-                        positionInPortfolio[title] = editedPosition[title];
-                    }
+                    positionInPortfolio[title] = editedPosition[title];
                 }
             }
         }
         let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
         portfolio[positionIndex] = positionInPortfolio;
-        console.log(positionInPortfolio, `portfolio-${earliestPortfolioName.predecessorDate}`, "portfolio edited name");
+        // console.log(positionInPortfolio, `portfolio-${earliestPortfolioName.predecessorDate}`, "portfolio edited name");
         await (0, operations_1.insertEditLogs)(changes, editedPosition["Event Type"], dateTime, editedPosition["Edit Note"], positionInPortfolio["BB Ticker"] + " " + positionInPortfolio["Location"]);
         let action = await insertTradesInPortfolioAtASpecificDateBasedOnID(portfolio, `portfolio-${earliestPortfolioName.predecessorDate}`);
         if (action) {
@@ -1223,7 +1224,7 @@ async function insertTradesInPortfolioAtASpecificDateBasedOnID(trades, date) {
         // If "ISIN", "BB Ticker", or "Issue" exists, check for both the field and "Location"
         if (trade["ISIN"]) {
             filters.push({
-                _id: new ObjectId(trade["_id"]),
+                _id: new ObjectId(trade["_id"].toString()),
             });
         }
         return {
@@ -1238,6 +1239,7 @@ async function insertTradesInPortfolioAtASpecificDateBasedOnID(trades, date) {
     try {
         const historicalReportCollection = database.collection(date);
         let action = await historicalReportCollection.bulkWrite(operations);
+        console.log(action);
         return action;
     }
     catch (error) {

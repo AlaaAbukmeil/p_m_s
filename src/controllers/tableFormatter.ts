@@ -20,40 +20,59 @@ function oasWithChange(oas: any): any {
 }
 
 function checkPosition(position: any, conditions: any) {
-  let country = position["Country"].toString().toLowerCase();
-  let sector = position["Sector"].toString().toLowerCase();
-  let strategy = position["Strategy"].toString().toLowerCase();
-  let duration = position["Duration"].toString().toLowerCase();
-  let currency = position["Currency"].toString().toLowerCase();
-  let issuer = position["Issuer"].toString().toLowerCase();
-  let ticker = position["BB Ticker"].toString().toLowerCase();
+  try{
+  let country = position["Country"] ? position["Country"].toString().toLowerCase() : null;
+  let sector = position["Sector"] ? position["Sector"].toString().toLowerCase() : null;
+  let strategy = position["Strategy"] ? position["Strategy"].toString().toLowerCase() : null;
+  let duration = position["Duration"] ? position["Duration"].toString().toLowerCase() : null;
+  let currency = position["Currency"] ? position["Currency"].toString().toLowerCase() : null;
+  let issuer = position["Issuer"] ? position["Issuer"].toString().toLowerCase() : null;
+  let ticker = position["BB Ticker"] ? position["BB Ticker"].toString().toLowerCase() : null;
 
-  if (conditions.country && !country.includes(conditions.country.toString().toLowerCase())) {
-    return false;
+  if (conditions.country) {
+    if (!country.includes(conditions.country.toString().toLowerCase())) {
+      return false;
+    }
   }
-  if (conditions.sector && !sector.includes(conditions.sector.toString().toLowerCase())) {
-    return false;
+  if (conditions.sector) {
+    if (!sector.includes(conditions.sector.toString().toLowerCase())) {
+      return false;
+    }
   }
-  if (conditions.strategy && !strategy.includes(conditions.strategy.toString().toLowerCase())) {
-    return false;
+  if (conditions.strategy) {
+    if (!strategy.includes(conditions.strategy.toString().toLowerCase())) {
+      return false;
+    }
   }
-  if (conditions.currency && !currency.includes(conditions.currency.toString().toLowerCase())) {
-    return false;
+  if (conditions.currency) {
+    if (!currency.includes(conditions.currency.toString().toLowerCase())) {
+      return false;
+    }
   }
-  if (conditions.issuer && !issuer.includes(conditions.issuer.toString().toLowerCase())) {
-    return false;
+  if (conditions.issuer) {
+    if (!issuer.includes(conditions.issuer.toString().toLowerCase())) {
+      return false;
+    }
   }
 
-  if (conditions.ticker && !ticker.includes(conditions.ticker.toString().toLowerCase())) {
-    return false;
+  if (conditions.ticker) {
+    if (!ticker.includes(conditions.ticker.toString().toLowerCase())) {
+      return false;
+    }
   }
   if (conditions.durationStart && !conditions.durationEnd) {
     conditions.durationEnd = 100;
   }
-  if (isNotNullOrUndefined(conditions.durationStart) && isNotNullOrUndefined(conditions.durationEnd) && (duration < parseFloat(conditions.durationStart) || duration > parseFloat(conditions.durationEnd))) {
-    return false;
+  if (conditions.durationStart && conditions.durationEnd) {
+    if (isNotNullOrUndefined(conditions.durationStart) && isNotNullOrUndefined(conditions.durationEnd) && (duration < parseFloat(conditions.durationStart) || duration > parseFloat(conditions.durationEnd))) {
+      return false;
+    }
   }
   return true;
+}catch(error){
+  console.log(position, error)
+  return false
+}
 }
 
 export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: any, conditions = null) {
@@ -86,7 +105,7 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     }
     position["Coupon Rate"] = position["Coupon Rate"] ? position["Coupon Rate"] : parseBondIdentifier(position["BB Ticker"]).rate || 0;
     let bondDivider = position["Type"] == "BND" || position["Type"] == "UST" ? 100 : 1;
-
+   
     if (!position["Type"]) {
       position["Type"] = position["BB Ticker"].split(" ")[0] == "T" || position["Issuer"] == "US TREASURY N/B" ? "UST" : "BND";
     }
@@ -264,7 +283,7 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
         dayrlzd += position["Day Rlzd (BC)"];
         dv01Sum += position["DV01"];
       } else {
-        delete portfolio[index]
+        delete portfolio[index];
       }
     } else {
       mtdpl += position["MTD P&L (BC)"];
@@ -589,10 +608,9 @@ export function formatFrontEndSummaryTable(portfolio: any, date: any, fund: any,
 
   for (let formattedPortfolioIndex = 0; formattedPortfolioIndex < formattedPortfolio.portfolio.length; formattedPortfolioIndex++) {
     let unformattedPosition = formattedPortfolio.portfolio[formattedPortfolioIndex];
-    if(unformattedPosition){
+    if (unformattedPosition) {
       let formattedPosition = formatSummaryPosition(unformattedPosition, formattedPortfolio.fundDetails, dates);
       formatted.push(formattedPosition);
-
     }
   }
 

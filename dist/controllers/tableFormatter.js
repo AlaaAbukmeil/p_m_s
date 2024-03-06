@@ -25,38 +25,58 @@ function oasWithChange(oas) {
     }
 }
 function checkPosition(position, conditions) {
-    let country = position["Country"].toString().toLowerCase();
-    let sector = position["Sector"].toString().toLowerCase();
-    let strategy = position["Strategy"].toString().toLowerCase();
-    let duration = position["Duration"].toString().toLowerCase();
-    let currency = position["Currency"].toString().toLowerCase();
-    let issuer = position["Issuer"].toString().toLowerCase();
-    let ticker = position["BB Ticker"].toString().toLowerCase();
-    if (conditions.country && !country.includes(conditions.country.toString().toLowerCase())) {
+    try {
+        let country = position["Country"] ? position["Country"].toString().toLowerCase() : null;
+        let sector = position["Sector"] ? position["Sector"].toString().toLowerCase() : null;
+        let strategy = position["Strategy"] ? position["Strategy"].toString().toLowerCase() : null;
+        let duration = position["Duration"] ? position["Duration"].toString().toLowerCase() : null;
+        let currency = position["Currency"] ? position["Currency"].toString().toLowerCase() : null;
+        let issuer = position["Issuer"] ? position["Issuer"].toString().toLowerCase() : null;
+        let ticker = position["BB Ticker"] ? position["BB Ticker"].toString().toLowerCase() : null;
+        if (conditions.country) {
+            if (!country.includes(conditions.country.toString().toLowerCase())) {
+                return false;
+            }
+        }
+        if (conditions.sector) {
+            if (!sector.includes(conditions.sector.toString().toLowerCase())) {
+                return false;
+            }
+        }
+        if (conditions.strategy) {
+            if (!strategy.includes(conditions.strategy.toString().toLowerCase())) {
+                return false;
+            }
+        }
+        if (conditions.currency) {
+            if (!currency.includes(conditions.currency.toString().toLowerCase())) {
+                return false;
+            }
+        }
+        if (conditions.issuer) {
+            if (!issuer.includes(conditions.issuer.toString().toLowerCase())) {
+                return false;
+            }
+        }
+        if (conditions.ticker) {
+            if (!ticker.includes(conditions.ticker.toString().toLowerCase())) {
+                return false;
+            }
+        }
+        if (conditions.durationStart && !conditions.durationEnd) {
+            conditions.durationEnd = 100;
+        }
+        if (conditions.durationStart && conditions.durationEnd) {
+            if ((0, common_1.isNotNullOrUndefined)(conditions.durationStart) && (0, common_1.isNotNullOrUndefined)(conditions.durationEnd) && (duration < parseFloat(conditions.durationStart) || duration > parseFloat(conditions.durationEnd))) {
+                return false;
+            }
+        }
+        return true;
+    }
+    catch (error) {
+        console.log(position, error);
         return false;
     }
-    if (conditions.sector && !sector.includes(conditions.sector.toString().toLowerCase())) {
-        return false;
-    }
-    if (conditions.strategy && !strategy.includes(conditions.strategy.toString().toLowerCase())) {
-        return false;
-    }
-    if (conditions.currency && !currency.includes(conditions.currency.toString().toLowerCase())) {
-        return false;
-    }
-    if (conditions.issuer && !issuer.includes(conditions.issuer.toString().toLowerCase())) {
-        return false;
-    }
-    if (conditions.ticker && !ticker.includes(conditions.ticker.toString().toLowerCase())) {
-        return false;
-    }
-    if (conditions.durationStart && !conditions.durationEnd) {
-        conditions.durationEnd = 100;
-    }
-    if ((0, common_1.isNotNullOrUndefined)(conditions.durationStart) && (0, common_1.isNotNullOrUndefined)(conditions.durationEnd) && (duration < parseFloat(conditions.durationStart) || duration > parseFloat(conditions.durationEnd))) {
-        return false;
-    }
-    return true;
 }
 function formatGeneralTable(portfolio, date, fund, dates, conditions = null) {
     let currencies = {};

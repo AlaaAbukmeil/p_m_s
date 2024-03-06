@@ -325,7 +325,7 @@ router.post("/centralized-blotter", verifyToken, uploadBeforeExcel.any(), async 
       res.send({ error: action.error });
     } else {
       if (action.length > 0) {
-        console.log(action[0]);
+  
         let url = await uploadArrayAndReturnFilePath(action, "centralized_blot", "centralized_blot");
         url = bucket + url;
 
@@ -406,7 +406,7 @@ router.post("/upload-trades", verifyToken, uploadBeforeExcel.any(), async (req: 
 router.post("/edit-position", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let action = await editPosition(req.body, req.body.date);
-
+    
     res.sendStatus(200);
   } catch (error) {
     console.log(error);

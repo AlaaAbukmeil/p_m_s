@@ -128,7 +128,7 @@ export async function getHistoricalPortfolioWithAnalytics(date: string, sort: an
   return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: uploadTradesDate };
 }
 
-export async function getHistoricalSummaryPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions=null) {
+export async function getHistoricalSummaryPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions = null) {
   const database = client.db("portfolios");
   let earliestPortfolioName = await getEarliestCollectionName(date);
   let sameDayCollectionsPublished = earliestPortfolioName.collectionNames;
@@ -525,7 +525,7 @@ export async function updatePositionPortfolio(path: string) {
         let previousAverageCost = securityInPortfolio["Average Cost"] ? securityInPortfolio["Average Cost"] : 0;
         let tradeType = row["B/S"];
         let operation = tradeType == "B" ? 1 : -1;
-        let currentPrice: any = row["Price"];
+        let currentPrice: any = row["Price"] / 100;
         let currentQuantity: any = parseFloat(row["Notional Amount"].toString().replace(/,/g, "")) * operation;
         let currentNet = parseFloat(row["Settlement Amount"].toString().replace(/,/g, "")) * operation;
 
@@ -1220,7 +1220,12 @@ export async function editPosition(editedPosition: any, date: string) {
       "Cost (LC)",
       "Day Accrual",
       "_id",
-
+      "Value (BC)",
+      "Value (LC)",
+      "MTD Int. (BC)",
+      "Day URlzd (BC)",
+      "Day Rlzd (BC)",
+      "Day Int. (LC)",
       "Day Accrual (LC)",
       "Cost MTD (LC)",
       "Quantity",
@@ -1236,6 +1241,7 @@ export async function editPosition(editedPosition: any, date: string) {
       "S&P Bond Rating",
       "MTD FX",
       "Day URlzd",
+
       "Day P&L (LC)",
       "MTD Rlzd (LC)",
       "MTD URlzd (LC)",
@@ -1249,7 +1255,7 @@ export async function editPosition(editedPosition: any, date: string) {
       "Day Rlzd (LC)",
       "Day URlzd (LC)",
       "MTD Int. (LC)",
-      "Day Int. (LC)",
+      "Currency)	Day Int. (LC)",
     ];
     // these keys are made up by the function frontend table, it reverts keys to original keys
 
@@ -1279,7 +1285,7 @@ export async function editPosition(editedPosition: any, date: string) {
           positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
           console.log(editedPosition[title], title);
           positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
-        } else if (title == "Mid" || title == "Ask" || title == "Bid" || title == "Average Cost") {
+        } else if ((title == "Mid" || title == "Ask" || title == "Bid" || title == "Average Cost") && editedPosition[title] != "") {
           if (!positionInPortfolio["Type"]) {
             positionInPortfolio["Type"] = positionInPortfolio["BB Ticker"].split(" ")[0] == "T" || positionInPortfolio["Issuer"] == "US TREASURY N/B" ? "UST" : "BND";
           }
@@ -1291,18 +1297,15 @@ export async function editPosition(editedPosition: any, date: string) {
           }
         } else {
           changes.push(`${title} changed from ${positionInPortfolio[title] || "''"} to ${editedPosition[title]}`);
-          if (isFinite(editedPosition[title]) && editedPosition[title] != null && editedPosition[title] != "") {
-            positionInPortfolio[title] = parseFloat(editedPosition[title]);
-          } else {
-            positionInPortfolio[title] = editedPosition[title];
-          }
+
+          positionInPortfolio[title] = editedPosition[title];
         }
       }
     }
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     portfolio[positionIndex] = positionInPortfolio;
 
-    console.log(positionInPortfolio, `portfolio-${earliestPortfolioName.predecessorDate}`, "portfolio edited name");
+    // console.log(positionInPortfolio, `portfolio-${earliestPortfolioName.predecessorDate}`, "portfolio edited name");
     await insertEditLogs(changes, editedPosition["Event Type"], dateTime, editedPosition["Edit Note"], positionInPortfolio["BB Ticker"] + " " + positionInPortfolio["Location"]);
 
     let action = await insertTradesInPortfolioAtASpecificDateBasedOnID(portfolio, `portfolio-${earliestPortfolioName.predecessorDate}`);
@@ -1329,7 +1332,7 @@ export async function insertTradesInPortfolioAtASpecificDateBasedOnID(trades: an
       // If "ISIN", "BB Ticker", or "Issue" exists, check for both the field and "Location"
       if (trade["ISIN"]) {
         filters.push({
-          _id: new ObjectId(trade["_id"]),
+          _id: new ObjectId(trade["_id"].toString()),
         });
       }
 
@@ -1346,7 +1349,7 @@ export async function insertTradesInPortfolioAtASpecificDateBasedOnID(trades: an
   try {
     const historicalReportCollection = database.collection(date);
     let action = await historicalReportCollection.bulkWrite(operations);
-
+    console.log(action);
     return action;
   } catch (error) {
     return error;
