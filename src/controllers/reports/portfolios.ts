@@ -99,7 +99,6 @@ export async function getPortfolioWithAnalytics(date: string, sort: any, sign: n
   return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: uploadTradesDate };
 }
 
-
 export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInput: any) {
   // try {
 
@@ -201,7 +200,7 @@ export function getYTDParams(portfolio: any, lastYearPortfolio: any, date: any) 
 }
 
 function getDayURlzdInt(portfolio: any, date: any) {
-  let thisMonth = monthlyRlzdDate(date);
+ let lastUploadTradesDate, lastUpdatePricesDate
   for (let index = 0; index < portfolio.length; index++) {
     let position = portfolio[index];
 
@@ -216,7 +215,7 @@ function getDayURlzdInt(portfolio: any, date: any) {
 
     position["Previous Mark"] = yesterdayPrice;
     let todayPrice: any = parseFloat(position["Mid"]);
-
+    if(portfolio[index]["Day URlzd"])
     portfolio[index]["Day URlzd"] = portfolio[index]["Type"] == "CDS" ? ((parseFloat(todayPrice) - parseFloat(yesterdayPrice)) * portfolio[index]["Notional Amount"]) / portfolio[index]["Original Face"] : (parseFloat(todayPrice) - parseFloat(yesterdayPrice)) * portfolio[index]["Notional Amount"] || 0;
     let settlementDates = Object.keys(interestInfo);
     for (let indexSettlementDate = 0; indexSettlementDate < settlementDates.length; indexSettlementDate++) {
