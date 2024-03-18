@@ -1,8 +1,9 @@
 import util from "util";
 import { getPortfolio, insertTradesInPortfolioAtASpecificDate } from "./reports";
-import { monthlyRlzdDate, uri } from "./common";
+import {  uri } from "./common";
 import { insertTradesInPortfolio } from "./reports";
 import { getPortfolioOnSpecificDate } from "./operations";
+import { monthlyRlzdDate } from "./reports/common";
 const fs = require("fs");
 const writeFile = util.promisify(fs.writeFile);
 const { MongoClient, ServerApiVersion } = require("mongodb");

@@ -1,11 +1,11 @@
 require("dotenv").config();
 
-import { uploadToGCloudBucket } from "./portfolioFunctions";
 import { readBBGBlot } from "./mufgOperations";
 import { getTradeDateYearTrades, formatDateUS, convertExcelDateToJSDate, convertExcelDateToJSDateTime, generateRandomString, bucket } from "./common";
-import { getSettlementDateYear, readIBEblot, readEmsxEBlot } from "./portfolioFunctions";
+import { getSettlementDateYear } from "./reports/tools";
 import { getSecurityInPortfolioWithoutLocation } from "./graphApiConnect";
 import { uri } from "./common";
+import { readEmsxEBlot, readIBEblot, uploadToGCloudBucket } from "./reports/readExcel";
 const xlsx = require("xlsx");
 const { PassThrough } = require("stream");
 const { MongoClient, ServerApiVersion } = require("mongodb");

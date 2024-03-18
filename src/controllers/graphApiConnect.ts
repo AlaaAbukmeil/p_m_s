@@ -2,8 +2,8 @@ require("dotenv").config();
 
 import { renderVcon, renderFx } from "./excelFormat";
 import { getPortfolio } from "./reports";
-import { mergeSort } from "./portfolioFunctions";
 import { convertExcelDateToJSDate, getTime, getTradeDateYearTrades } from "./common";
+import { mergeSort } from "./reports/common";
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
 const FormData = require("form-data");

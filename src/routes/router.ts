@@ -2,15 +2,17 @@ import { CookieOptions, NextFunction, Router } from "express";
 import { image } from "../models/image";
 import { registerUser, checkIfUserExists, sendResetPasswordRequest, resetPassword } from "../controllers/auth";
 import { Request, Response } from "express";
-import { verifyToken, formatDateFile, generateRandomString, monthlyRlzdDate, bucket } from "../controllers/common";
-import { updatePositionPortfolio, getHistoricalPortfolioWithAnalytics, updatePricesPortfolio, getTrades, getPortfolio, editPosition, getHistoricalSummaryPortfolioWithAnalytics } from "../controllers/reports";
-import { bloombergToTriada, getDateTimeInMongoDBCollectionFormat, readIBRawExcel, readPricingSheet } from "../controllers/portfolioFunctions";
+import { verifyToken, formatDateFile, generateRandomString, bucket } from "../controllers/common";
+import { updatePositionPortfolio, updatePricesPortfolio, getTrades, getPortfolio, editPosition, insertTradesInPortfolioAtASpecificDateBasedOnID } from "../controllers/reports";
 import { uploadArrayAndReturnFilePath, getTriadaTrades, formatCentralizedRawFiles, formatIbTrades, formatEmsxTrades, readEmsxRawExcel } from "../controllers/excelFormat";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/graphApiConnect";
 import { formatMufg, formatFxMufg, tradesTriada, checkMUFGEndOfMonthWithPortfolio } from "../controllers/mufgOperations";
 import { getCollectionDays, readMUFGPrices, updatePreviousPricesPortfolioMUFG, updatePreviousPricesPortfolioBloomberg, getEditLogs, readMUFGEndOfMonthFile, getPortfolioOnSpecificDate, editPositionPortfolio, getAllFundDetails, editFund, deleteFund, addFund, editTrade, deleteTrade, deletePosition, getAllTradesForSpecificPosition, readCalculatePosition } from "../controllers/operations";
 import { getAllTrades } from "../controllers/eblot";
 import util from "util";
+import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../controllers/reports/common";
+import { getPortfolioWithAnalytics } from "../controllers/reports/portfolios";
+import { readIBRawExcel, readPricingSheet } from "../controllers/reports/readExcel";
 const fs = require("fs");
 const writeFile = util.promisify(fs.writeFile);
 
@@ -68,7 +70,7 @@ router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: 
     let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMonthlyPl" | "groupDV01Sum" | any = req.query.sort || "order";
     let sign: any = req.query.sign || 1;
 
-    let report: any = await getHistoricalPortfolioWithAnalytics(date, sort, sign);
+    let report: any = await getPortfolioWithAnalytics(date, sort, sign, null, "back office");
 
     if (report.error) {
       res.send({ error: report.error });
@@ -91,7 +93,7 @@ router.get("/summary-portfolio", async (req: Request, res: Response, next: NextF
     }
 
     date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
-    let report = await getHistoricalSummaryPortfolioWithAnalytics(date, sort, sign);
+    let report = await getPortfolioWithAnalytics(date, sort, sign, null, "front office");
     if (report.error) {
       res.send({ error: report.error });
     } else {
@@ -105,16 +107,16 @@ router.get("/summary-portfolio", async (req: Request, res: Response, next: NextF
 router.get("/performers-portfolio", async (req: Request, res: Response, next: NextFunction) => {
   try {
     let date: any = req.query.date;
-    let conditions: any = req.query||{};
+    let conditions: any = req.query || {};
     let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMonthlyPl" | "groupDV01Sum" | "groupDuration" | any = req.query.sort || "order";
     let sign: any = req.query.sign || 1;
-  
+
     if (date.includes("NaN")) {
       date = getDateTimeInMongoDBCollectionFormat(new Date());
     }
 
     date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
-    let report = await getHistoricalSummaryPortfolioWithAnalytics(date, sort, sign, conditions);
+    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, "front office");
     if (report.error) {
       res.send({ error: report.error });
     } else {
@@ -137,7 +139,7 @@ router.get("/risk-report", async (req: Request, res: Response, next: NextFunctio
     }
 
     date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
-    let report = await getHistoricalSummaryPortfolioWithAnalytics(date, sort, sign);
+    let report = await getPortfolioWithAnalytics(date, sort, sign, null, "front office");
 
     res.send(report);
   } catch (error: any) {
@@ -325,7 +327,6 @@ router.post("/centralized-blotter", verifyToken, uploadBeforeExcel.any(), async 
       res.send({ error: action.error });
     } else {
       if (action.length > 0) {
-  
         let url = await uploadArrayAndReturnFilePath(action, "centralized_blot", "centralized_blot");
         url = bucket + url;
 
@@ -406,7 +407,7 @@ router.post("/upload-trades", verifyToken, uploadBeforeExcel.any(), async (req: 
 router.post("/edit-position", verifyToken, uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let action = await editPosition(req.body, req.body.date);
-    
+
     res.sendStatus(200);
   } catch (error) {
     console.log(error);
@@ -591,9 +592,9 @@ router.post("/recalculate-position", verifyToken, uploadBeforeExcel.any(), async
     let location = data["Location"];
     let date = data.date;
     let trades = await getAllTradesForSpecificPosition(tradeType, isin, location, date);
-    console.log(tradeType, isin, location, date, trades);
+    // console.log(tradeType, isin, location, date, trades);
     if (trades.length) {
-      let action: any = await readCalculatePosition(trades, date, isin, location);
+      let action: any = await readCalculatePosition(trades, date, isin, location, tradeType);
       console.log(action);
       res.sendStatus(200);
     } else {
@@ -603,6 +604,10 @@ router.post("/recalculate-position", verifyToken, uploadBeforeExcel.any(), async
     console.log(error);
     res.send({ error: error });
   }
+});
+router.post("/one-time", uploadBeforeExcel.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+
+  res.send(200);
 });
 
 export default router;

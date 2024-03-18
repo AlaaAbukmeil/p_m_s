@@ -1,6 +1,6 @@
 import { tradesMTDRlzd } from "../models/reports";
 import { formatDateWorld, isNotNullOrUndefined, parsePercentage, swapMonthDay } from "./common";
-import { getMaturity, parseBondIdentifier } from "./portfolioFunctions";
+import { parseBondIdentifier } from "./reports/tools";
 import { calculateAccruedSinceInception } from "./reports";
 
 function oasWithChange(oas: any): any {
@@ -20,59 +20,59 @@ function oasWithChange(oas: any): any {
 }
 
 function checkPosition(position: any, conditions: any) {
-  try{
-  let country = position["Country"] ? position["Country"].toString().toLowerCase() : null;
-  let sector = position["Sector"] ? position["Sector"].toString().toLowerCase() : null;
-  let strategy = position["Strategy"] ? position["Strategy"].toString().toLowerCase() : null;
-  let duration = position["Duration"] ? position["Duration"].toString().toLowerCase() : null;
-  let currency = position["Currency"] ? position["Currency"].toString().toLowerCase() : null;
-  let issuer = position["Issuer"] ? position["Issuer"].toString().toLowerCase() : null;
-  let ticker = position["BB Ticker"] ? position["BB Ticker"].toString().toLowerCase() : null;
+  try {
+    let country = position["Country"] ? position["Country"].toString().toLowerCase() : null;
+    let sector = position["Sector"] ? position["Sector"].toString().toLowerCase() : null;
+    let strategy = position["Strategy"] ? position["Strategy"].toString().toLowerCase() : null;
+    let duration = position["Duration"] ? position["Duration"].toString().toLowerCase() : null;
+    let currency = position["Currency"] ? position["Currency"].toString().toLowerCase() : null;
+    let issuer = position["Issuer"] ? position["Issuer"].toString().toLowerCase() : null;
+    let ticker = position["BB Ticker"] ? position["BB Ticker"].toString().toLowerCase() : null;
 
-  if (conditions.country) {
-    if (!country.includes(conditions.country.toString().toLowerCase())) {
-      return false;
+    if (conditions.country) {
+      if (!country.includes(conditions.country.toString().toLowerCase())) {
+        return false;
+      }
     }
-  }
-  if (conditions.sector) {
-    if (!sector.includes(conditions.sector.toString().toLowerCase())) {
-      return false;
+    if (conditions.sector) {
+      if (!sector.includes(conditions.sector.toString().toLowerCase())) {
+        return false;
+      }
     }
-  }
-  if (conditions.strategy) {
-    if (!strategy.includes(conditions.strategy.toString().toLowerCase())) {
-      return false;
+    if (conditions.strategy) {
+      if (!strategy.includes(conditions.strategy.toString().toLowerCase())) {
+        return false;
+      }
     }
-  }
-  if (conditions.currency) {
-    if (!currency.includes(conditions.currency.toString().toLowerCase())) {
-      return false;
+    if (conditions.currency) {
+      if (!currency.includes(conditions.currency.toString().toLowerCase())) {
+        return false;
+      }
     }
-  }
-  if (conditions.issuer) {
-    if (!issuer.includes(conditions.issuer.toString().toLowerCase())) {
-      return false;
+    if (conditions.issuer) {
+      if (!issuer.includes(conditions.issuer.toString().toLowerCase())) {
+        return false;
+      }
     }
-  }
 
-  if (conditions.ticker) {
-    if (!ticker.includes(conditions.ticker.toString().toLowerCase())) {
-      return false;
+    if (conditions.ticker) {
+      if (!ticker.includes(conditions.ticker.toString().toLowerCase())) {
+        return false;
+      }
     }
-  }
-  if (conditions.durationStart && !conditions.durationEnd) {
-    conditions.durationEnd = 100;
-  }
-  if (conditions.durationStart && conditions.durationEnd) {
-    if (isNotNullOrUndefined(conditions.durationStart) && isNotNullOrUndefined(conditions.durationEnd) && (duration < parseFloat(conditions.durationStart) || duration > parseFloat(conditions.durationEnd))) {
-      return false;
+    if (conditions.durationStart && !conditions.durationEnd) {
+      conditions.durationEnd = 100;
     }
+    if (conditions.durationStart && conditions.durationEnd) {
+      if (isNotNullOrUndefined(conditions.durationStart) && isNotNullOrUndefined(conditions.durationEnd) && (duration < parseFloat(conditions.durationStart) || duration > parseFloat(conditions.durationEnd))) {
+        return false;
+      }
+    }
+    return true;
+  } catch (error) {
+    console.log(position, error);
+    return false;
   }
-  return true;
-}catch(error){
-  console.log(position, error)
-  return false
-}
 }
 
 export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: any, conditions = null) {
@@ -84,12 +84,17 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     mtdrlzd = 0,
     mtdurlzd = 0,
     mtdint = 0,
+    mtdfx = 0,
     dayint = 0,
     daypl = 0,
     dayfx = 0,
-    mtdfx = 0,
     dayurlzd = 0,
     dayrlzd = 0,
+    ytdint = 0,
+    ytdpl = 0,
+    ytdfx = 0,
+    ytdurlzd = 0,
+    ytdrlzd = 0,
     nmv = 0,
     lmv = 0,
     smv = 0;
@@ -103,12 +108,14 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     if (!position["BB Ticker"]) {
       position["BB Ticker"] = position["Issue"];
     }
-    position["Coupon Rate"] = position["Coupon Rate"] ? position["Coupon Rate"] : parseBondIdentifier(position["BB Ticker"]).rate || 0;
-    let bondDivider = position["Type"] == "BND" || position["Type"] == "UST" ? 100 : 1;
-   
+    if (!position["Strategy"]) {
+      position["Strategy"] = position["BB Ticker"].toLowerCase().includes("perp") ? "CE" : "VI";
+    }
+
     if (!position["Type"]) {
       position["Type"] = position["BB Ticker"].split(" ")[0] == "T" || position["Issuer"] == "US TREASURY N/B" ? "UST" : "BND";
     }
+    let bondDivider = position["Type"] == "BND" || position["Type"] == "UST" ? 100 : 1;
 
     let currency = position["Currency"];
     if (!position["FX Rate"]) {
@@ -157,6 +164,7 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     position["MTD Mark"] = Math.round(position["MTD Mark"] * 1000 * bondDivider) / 1000;
     position["Day Rlzd"] = position["Day Rlzd"] ? position["Day Rlzd"] : 0;
     position["Previous Mark"] = Math.round(position["Previous Mark"] * 1000 * bondDivider) / 1000;
+    position["YTD Mark"] = Math.round(position["YTD Mark"] * 1000 * bondDivider) / 1000;
 
     if (!position["Previous FX"]) {
       position["Previous FX"] = position["FX Rate"];
@@ -164,15 +172,20 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     if (position["BB Ticker"].includes("CDS")) {
       position["Day P&L FX"] = Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["Previous FX"])) / parseFloat(position["Previous FX"])) * position["Notional Amount"] * holdBackRatio * 1000000) / 1000000 || 0;
       position["MTD P&L FX"] = Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["MTD FX"] || position["FX Rate"])) / parseFloat(position["MTD FX"] || position["FX Rate"])) * position["Notional Amount"] * holdBackRatio * 1000000) / 1000000 || 0;
+      position["YTD P&L FX"] = Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["YTD FX"] || position["FX Rate"])) / parseFloat(position["YTD FX"] || position["YTD Rate"])) * position["Notional Amount"] * holdBackRatio * 1000000) / 1000000 || 0;
     } else {
       position["Day P&L FX"] = Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["Previous FX"])) / parseFloat(position["Previous FX"])) * position["Notional Amount"] * holdBackRatio * 1000000) / 1000000;
       position["MTD P&L FX"] = (Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["MTD FX"] || position["FX Rate"])) / parseFloat(position["MTD FX"] || position["FX Rate"])) * position["Notional Amount"] * holdBackRatio) * 1000000) / 1000000 || 0;
+      position["YTD P&L FX"] = (Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["YTD FX"] || position["FX Rate"])) / parseFloat(position["YTD FX"] || position["FX Rate"])) * position["Notional Amount"] * holdBackRatio) * 1000000) / 1000000 || 0;
     }
     if (!position["Day P&L FX"]) {
       position["Day P&L FX"] = 0;
     }
     if (!position["MTD P&L FX"]) {
       position["MTD P&L FX"] = 0;
+    }
+    if (!position["YTD P&L FX"]) {
+      position["YTD P&L FX"] = 0;
     }
 
     position["MTD FX"] = position["MTD FX"] ? Math.round(position["MTD FX"] * 1000) / 1000 : Math.round(position["Previous FX"] * 1000) / 1000;
@@ -187,6 +200,17 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     position["MTD URlzd (BC)"] = Math.round(position["MTD URlzd"] * usdRatio * holdBackRatio);
 
     position["MTD P&L (BC)"] = Math.round(position["MTD P&L"] * usdRatio * holdBackRatio + position["MTD P&L FX"]);
+
+    position["YTD Int. (LC)"] = Math.round(position["YTD Int."] * holdBackRatio);
+    position["YTD Rlzd (LC)"] = Math.round(position["YTD Rlzd"] * holdBackRatio);
+    position["YTD URlzd (LC)"] = Math.round(position["YTD URlzd"] * holdBackRatio);
+    position["YTD P&L (LC)"] = Math.round(position["YTD P&L"] * holdBackRatio);
+
+    position["YTD Int. (BC)"] = Math.round(position["YTD Int."] * usdRatio * holdBackRatio);
+    position["YTD Rlzd (BC)"] = Math.round(position["YTD Rlzd"] * usdRatio * holdBackRatio);
+    position["YTD URlzd (BC)"] = Math.round(position["YTD URlzd"] * usdRatio * holdBackRatio);
+
+    position["YTD P&L (BC)"] = Math.round(position["YTD P&L"] * usdRatio * holdBackRatio + position["YTD P&L FX"]);
 
     // position["MTD Cost (LC)"] = Math.round(position["MTD Cost"] * holdBackRatio * 1000000) / 1000000;
     position["Cost (LC)"] = Math.round(position["Average Cost"] * position["Notional Amount"] * holdBackRatio);
@@ -206,13 +230,12 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
 
     position["ISIN"] = position["ISIN"];
 
-    position["Maturity"] = position["Maturity"] ? position["Maturity"] : getMaturity(position["BB Ticker"]) || 0;
+    position["Maturity"] = position["Maturity"] ? position["Maturity"] : parseBondIdentifier(position["BB Ticker"]).date || 0;
 
     position["Call Date"] = position["Call Date"] ? position["Call Date"] : 0;
 
     position["L/S"] = position["Notional Amount"] > 0 && position["Type"] != "CDS" ? "Long" : position["Notional Amount"] == 0 && position["Type"] != "CDS" ? "Rlzd" : "Short";
     position["Duration"] = yearsUntil(position["Call Date"] ? position["Call Date"] : position["Maturity"], date);
-    position["Coupon Duration"] = position["Coupon Duration"] ? position["Coupon Duration"] : position["Type"] == "UST" ? 365.0 : 360.0;
 
     position["Issuer"] = position["Issuer"] == "0" ? "" : position["Issuer"];
 
@@ -242,7 +265,7 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     position["Capital Gain/ Loss since Inception (Live Position)"] = position["Value (BC)"] - position["Cost (BC)"];
     let shortLongType = position["Value (BC)"] > 0 ? 1 : -1;
     position["% of Capital Gain/ Loss since Inception (Live Position)"] = Math.round((position["Value (BC)"] / position["Cost (BC)"] - 1) * shortLongType * 10000) / 100 + " %";
-    position["Accrued Int. Since Inception"] = calculateAccruedSinceInception(position["Interest"], position["Coupon Rate"] / 100, position["Coupon Duration"]);
+    position["Accrued Int. Since Inception"] = calculateAccruedSinceInception(position["Interest"], position["Coupon Rate"] / 100, position["Coupon Duration"], position["ISIN"]);
 
     position["Total Gain/ Loss (USD)"] = Math.round(position["Capital Gain/ Loss since Inception (Live Position)"] + position["Accrued Int. Since Inception"]);
     position["% of Total Gain/ Loss since Inception (Live Position)"] = Math.round(((position["Total Gain/ Loss (USD)"] + position["Cost (BC)"]) / position["Cost (BC)"] - 1) * shortLongType * 10000) / 100 + " %";
@@ -271,13 +294,19 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
         mtdrlzd += position["MTD Rlzd (BC)"];
         mtdurlzd += position["MTD URlzd (BC)"];
         mtdint += position["MTD Int. (BC)"];
+        mtdfx += position["MTD P&L FX"];
+
+        ytdpl += position["YTD P&L (BC)"];
+        ytdrlzd += position["YTD Rlzd (BC)"];
+        ytdurlzd += position["YTD URlzd (BC)"];
+        ytdint += position["YTD Int. (BC)"];
+        ytdfx += position["YTD P&L FX"];
 
         dayint += position["Day Int. (BC)"];
 
         daypl += position["Day P&L (BC)"];
         dayfx += position["Day P&L FX"];
 
-        mtdfx += position["MTD P&L FX"];
 
         dayurlzd += position["Day URlzd (BC)"];
         dayrlzd += position["Day Rlzd (BC)"];
@@ -298,6 +327,12 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
 
       mtdfx += position["MTD P&L FX"];
 
+      ytdpl += position["YTD P&L (BC)"];
+      ytdrlzd += position["YTD Rlzd (BC)"];
+      ytdurlzd += position["YTD URlzd (BC)"];
+      ytdint += position["YTD Int. (BC)"];
+      ytdfx += position["YTD P&L FX"];
+
       dayurlzd += position["Day URlzd (BC)"];
       dayrlzd += position["Day Rlzd (BC)"];
       dv01Sum += position["DV01"];
@@ -305,26 +340,40 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
   }
 
   let monthGross = Math.round((mtdpl / parseFloat(fund.nav)) * 100000) / 1000;
+  let yearGross = Math.round((ytdpl / parseFloat(fund.nav)) * 100000) / 1000;
   let dayGross = Math.round((daypl / parseFloat(fund.nav)) * 100000) / 1000;
+
   let dayFXGross = Math.round((dayfx / parseFloat(fund.nav)) * 100000) / 1000;
   let mtdFXGross = Math.round((mtdfx / parseFloat(fund.nav)) * 100000) / 1000;
+  let ytdFXGross = Math.round((ytdfx / parseFloat(fund.nav)) * 100000) / 1000;
   let fundDetails = {
     nav: parseFloat(fund.nav),
     holdbackRatio: parseFloat(fund.holdBackRatio),
     mtdGross: monthGross,
-    dayGross: dayGross,
-    dayFXGross: dayFXGross,
-    mtdFXGross: mtdFXGross,
     mtdpl: Math.round(mtdpl * 1000) / 1000,
     mtdrlzd: Math.round(mtdrlzd * 1000) / 1000,
     mtdurlzd: Math.round(mtdurlzd * 1000) / 1000,
     mtdint: Math.round(mtdint * 1000) / 1000,
-    dayint: Math.round(dayint * 1000) / 1000,
+    mtdfx: Math.round(mtdfx * 1000) / 1000,
     mtdintPercentage: Math.round((mtdint / parseFloat(fund.nav)) * 100000) / 1000,
+    mtdFXGross: mtdFXGross,
+
+    ytdGross: yearGross,
+    ytdpl: Math.round(ytdpl * 1000) / 1000,
+    ytdrlzd: Math.round(ytdrlzd * 1000) / 1000,
+    ytdurlzd: Math.round(ytdurlzd * 1000) / 1000,
+    ytdint: Math.round(ytdint * 1000) / 1000,
+    ytdfx: Math.round(ytdfx * 1000) / 1000,
+    ytdintPercentage: Math.round((ytdint / parseFloat(fund.nav)) * 100000) / 1000,
+    ytdFXGross:ytdFXGross,
+
+
+    dayGross: dayGross,
+    dayFXGross: dayFXGross,
+    dayint: Math.round(dayint * 1000) / 1000,
     dayintPercentage: Math.round((dayint / parseFloat(fund.nav)) * 100000) / 1000,
     daypl: Math.round(daypl * 1000) / 1000,
     dayfx: Math.round(dayfx * 1000) / 1000,
-    mtdfx: Math.round(mtdfx * 1000) / 1000,
     dayurlzd: Math.round(dayurlzd * 1000) / 1000,
     dayrlzd: Math.round(dayrlzd * 1000) / 1000,
     dv01Sum: Math.round(dv01Sum * 1000) / 1000,
@@ -376,21 +425,6 @@ function yearsUntil(dateString: any, dateInput: any) {
   return Math.round(years * 100) / 100;
 }
 
-export function calculateRlzd(trades: tradesMTDRlzd[], mark: number, issue: string) {
-  let total = 0;
-
-  for (let index = 0; index < trades.length; index++) {
-    let trade = trades[index];
-    let price = trade.price;
-    let quantity = trade.quantity;
-
-    let rlzdTrade = (price - mark) * quantity;
-
-    total += rlzdTrade;
-  }
-
-  return total;
-}
 export function calculateMTDCost(trades: tradesMTDRlzd[], mark: number, issue: string) {
   let total = 0;
 

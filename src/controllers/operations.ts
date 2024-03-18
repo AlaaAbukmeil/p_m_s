@@ -3,9 +3,11 @@ const { MongoClient, ServerApiVersion } = require("mongodb");
 const mongoose = require("mongoose");
 const ObjectId = require("mongodb").ObjectId;
 
-import { formatDateUS, getDate, getTradeDateYearTrades, monthlyRlzdDate, uri } from "./common";
+import { formatDateUS, getDate, getTradeDateYearTrades, uri } from "./common";
 import { getEarliestCollectionName, getSecurityInPortfolio, getPortfolio, insertTradesInPortfolio, tradesTriadaIds, returnPositionProgress, updateExisitingPosition, getHistoricalPortfolio, insertTradesInPortfolioAtASpecificDate } from "./reports";
-import { findTradeRecord, formatUpdatedPositions, getAllDatesSinceLastMonthLastDay, getAverageCost, getDateTimeInMongoDBCollectionFormat, parseBondIdentifier, readEditInput } from "./portfolioFunctions";
+import { findTradeRecord, formatUpdatedPositions, getAverageCost, parseBondIdentifier } from "./reports/tools";
+import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "./reports/common";
+import { readEditInput } from "./reports/readExcel";
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -94,7 +96,7 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
       try {
         let updatedPortfolio: any = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-        await insertEditLogs(["prices update"], "Update Previous Prices based on MUFG", dateTime, "mufg Previous Pricing Sheet on " + collectionDate, "Link: " + path);
+        await insertEditLogs([updatedPortfolio[1]], "Update Previous Prices based on MUFG", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio[1]).length, "Link: " + path);
         let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio[0], collectionDate);
         console.log(updatedPricePortfolio.length, "number of positions prices updated");
         if (!Object.keys(updatedPortfolio[1]).length) {
@@ -313,7 +315,7 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
       try {
         let updatedPortfolio: any = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-        await insertEditLogs(["prices update"], "Update Previous Prices based on bloomberg", dateTime, "Bloomberg Previous Pricing Sheet on " + collectionDate, "Link: " + path);
+        await insertEditLogs([updatedPortfolio[1]], "Update Previous Prices based on bloomberg", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio[1]).length, "Link: " + path);
         let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio[0], collectionDate);
         console.log(updatedPricePortfolio.length, "number of positions prices updated");
         if (!Object.keys(updatedPortfolio[1]).length) {
@@ -793,20 +795,19 @@ export async function deletePosition(data: any, dateInput: any): Promise<any> {
       return { error: "Document not updated. It may already have the same values" };
     }
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    await insertEditLogs(data["BB Ticker"], "Delete Position", dateTime, "Delete Position", data["BB Ticker"] + " " + data["Location"]);
-     
+    await insertEditLogs([], "Delete Position", dateTime, "Delete Position", data["BB Ticker"] + " " + data["Location"]);
+
     return updateResult;
   } catch (error: any) {
     return { error: error.message }; // Return the error message
   }
 }
 
-export async function getAllTradesForSpecificPosition(tradeType: string, isin: string, location: string, date:string) {
-
+export async function getAllTradesForSpecificPosition(tradeType: string, isin: string, location: string, date: string) {
   try {
     // Connect to the MongoDB client
     await client.connect();
-    let timestamp = new Date(date).getTime()
+    let timestamp = new Date(date).getTime();
 
     // Access the 'structure' database
     const database = client.db("trades_v_2");
@@ -818,7 +819,7 @@ export async function getAllTradesForSpecificPosition(tradeType: string, isin: s
     // This is an example operation that fetches all documents in the collection
     // Empty query object means "match all documents"
     const options = {}; // You can set options for the find operation if needed
-    const query = { ISIN: isin, Location: location ,timestamp: { $lt: timestamp } }; // Replace yourIdValue with the actual ID you're querying
+    const query = { ISIN: isin, Location: location, timestamp: { $lt: timestamp } }; // Replace yourIdValue with the actual ID you're querying
     const results = await collection.find(query, options).toArray();
 
     // The 'results' variable now contains an array of documents from the collection
@@ -829,7 +830,7 @@ export async function getAllTradesForSpecificPosition(tradeType: string, isin: s
   }
 }
 
-export async function readCalculatePosition(data: any, date: string, isin: any, location: any) {
+export async function readCalculatePosition(data: any, date: string, isin: any, location: any, tradeType: string) {
   try {
     let positions: any = [];
     const database = client.db("portfolios");
@@ -943,7 +944,7 @@ export async function readCalculatePosition(data: any, date: string, isin: any, 
           }
 
           object["Cost MTD"] = {};
-          let curentMonthCost = 0;
+
           object["Cost MTD"][thisMonth] = operation == 1 ? parseFloat(currentPrincipal) : 0;
           object["Original Face"] = originalFace;
 
@@ -954,6 +955,13 @@ export async function readCalculatePosition(data: any, date: string, isin: any, 
             object["Entry Price"][thisMonth] = currentPrice;
           }
           object["Last Individual Upload Trade"] = new Date();
+          let tradeRecord = null;
+          if (!tradeRecord) {
+            tradeRecord = findTradeRecord(data, row["Triada Trade Id"]);
+            if (tradeRecord.length > 0) {
+              tradeRecord[0]["Updated Notional"] = object["Notional Amount"];
+            }
+          }
 
           positions.push(object);
         } else if (returnPositionProgress(positions, identifier, location)) {
@@ -1000,6 +1008,13 @@ export async function readCalculatePosition(data: any, date: string, isin: any, 
             object["Day Rlzd"][thisDay].push(dayRlzdForThisTrade);
           }
           object["Last Individual Upload Trade"] = new Date();
+          let tradeRecord = null;
+          if (!tradeRecord) {
+            tradeRecord = findTradeRecord(data, row["Triada Trade Id"]);
+            if (tradeRecord.length > 0) {
+              tradeRecord[0]["Updated Notional"] = object["Notional Amount"];
+            }
+          }
           positions = updateExisitingPosition(positions, identifier, location, object);
         }
       }
@@ -1012,14 +1027,16 @@ export async function readCalculatePosition(data: any, date: string, isin: any, 
         if (position["ISIN"].trim() == isin.trim() && position["Location"] == location.trim()) {
           portfolio[index] = positions[0];
           portfolio[index]["Quantity"] = portfolio[index]["Notional Amount"];
-          console.log(portfolio[index], "updateed", `portfolio-${earliestPortfolioName.predecessorDate}`);
+          // console.log(portfolio[index], "updateed", `portfolio-${earliestPortfolioName.predecessorDate}`);
         }
       }
 
       let action = await insertTradesInPortfolioAtASpecificDate(portfolio, `portfolio-${earliestPortfolioName.predecessorDate}`);
-
+      console.log(data, tradeType);
+      let modifyTradesAction = await modifyTradesDueToRecalculate(data, tradeType);
+      console.log(modifyTradesAction, "modified trades");
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-      await insertEditLogs(data[0]["BB Ticker"], "Recalculate Position", dateTime, "Centarlized Blotter", data[0]["BB Ticker"] + " " + data[0]["Location"]);
+      await insertEditLogs([], "Recalculate Position", dateTime, "", data[0]["BB Ticker"] + " " + data[0]["Location"]);
       // console.log(positions)
       return action;
     } catch (error) {
@@ -1027,5 +1044,38 @@ export async function readCalculatePosition(data: any, date: string, isin: any, 
     }
   } catch (error) {
     return { error: error };
+  }
+}
+
+export async function modifyTradesDueToRecalculate(trades: any, tradeType: any) {
+  const database = client.db("trades_v_2");
+
+  let operations = trades.map((trade: any) => {
+    // Start with the known filters
+    let filters: any = [];
+
+    // If "ISIN", "BB Ticker", or "Issue" exists, check for both the field and "Location"
+
+    filters.push({
+      _id: new ObjectId(trade["_id"].toString()),
+    });
+
+    return {
+      updateOne: {
+        filter: { $or: filters },
+        update: { $set: trade },
+        upsert: false,
+      },
+    };
+  });
+
+  // Execute the operations in bulk
+  try {
+    const historicalReportCollection = database.collection(tradeType);
+    let action = await historicalReportCollection.bulkWrite(operations);
+    console.log(action);
+    return action;
+  } catch (error) {
+    return error;
   }
 }

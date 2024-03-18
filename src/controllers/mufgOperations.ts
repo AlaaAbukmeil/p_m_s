@@ -1,9 +1,10 @@
 import { convertExcelDateToJSDate, convertBBGEmexDate, bucket } from "./common";
-import { settlementDatePassed, uploadToGCloudBucket, readIBEblot } from "./portfolioFunctions";
+import { settlementDatePassed } from "./reports/tools";
 import { getTradeDateYearTrades } from "./common";
-import { getSettlementDateYear, readEmsxEBlot } from "./portfolioFunctions";
+import { getSettlementDateYear } from "./reports/tools";
 import { generateRandomIntegers } from "./auth";
 import { uri } from "./common";
+import { uploadToGCloudBucket } from "./reports/readExcel";
 
 const xlsx = require("xlsx");
 const axios = require("axios");
@@ -314,25 +315,6 @@ export async function createExcelAndReturnPath(data: any, pathName: string) {
   return fileName;
 }
 
-function parseAndFormat(inputDate: string) {
-  // Extract the last part of the input string
-
-  // Get today's date
-  let today = new Date(inputDate);
-
-  // Format the date as yyyymmdd
-  let year = today.getFullYear();
-  let month: any = today.getMonth() + 1; // JavaScript months are 0-11
-  let day: any = today.getDate();
-
-  month = month < 10 ? "0" + month : month; // Ensure two-digit month
-  day = day < 10 ? "0" + day : day; // Ensure two-digit day
-
-  let formattedDate = "" + year + month + day;
-
-  // Output formatted date + last character
-  return formattedDate;
-}
 
 export async function tradesTriada() {
   try {

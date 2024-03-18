@@ -166,12 +166,7 @@ export function getTradeDateYearTradesWithoutTheCentury(date: any) {
 export function isNotNullOrUndefined(value: any) {
   return value !== undefined && value !== null;
 }
-export function monthlyRlzdDate(dateInput: string) {
-  let date = new Date(dateInput);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  return `${year}/${month}`;
-}
+
 
 export function getYear(dateInput: string) {
   let date = new Date(dateInput);
