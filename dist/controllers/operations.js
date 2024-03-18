@@ -1,13 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.readCalculatePosition = exports.getAllTradesForSpecificPosition = exports.deletePosition = exports.reformatCentralizedData = exports.deleteTrade = exports.editTrade = exports.getTrade = exports.addFund = exports.deleteFund = exports.editFund = exports.getAllFundDetails = exports.getEarliestCollectionNameFund = exports.getFundDetails = exports.getSecurityInPortfolioById = exports.editPositionPortfolio = exports.readMUFGEndOfMonthFile = exports.getEditLogs = exports.insertEditLogs = exports.updatePreviousPricesPortfolioBloomberg = exports.getSecurityInPortfolioWithoutLocation = exports.getPortfolioOnSpecificDate = exports.insertPreviousPricesUpdatesInPortfolio = exports.updatePreviousPricesPortfolioMUFG = exports.readMUFGPrices = exports.getCollectionDays = void 0;
+exports.modifyTradesDueToRecalculate = exports.readCalculatePosition = exports.getAllTradesForSpecificPosition = exports.deletePosition = exports.reformatCentralizedData = exports.deleteTrade = exports.editTrade = exports.getTrade = exports.addFund = exports.deleteFund = exports.editFund = exports.getAllFundDetails = exports.getEarliestCollectionNameFund = exports.getFundDetails = exports.getSecurityInPortfolioById = exports.editPositionPortfolio = exports.readMUFGEndOfMonthFile = exports.getEditLogs = exports.insertEditLogs = exports.updatePreviousPricesPortfolioBloomberg = exports.getSecurityInPortfolioWithoutLocation = exports.getPortfolioOnSpecificDate = exports.insertPreviousPricesUpdatesInPortfolio = exports.updatePreviousPricesPortfolioMUFG = exports.readMUFGPrices = exports.getCollectionDays = void 0;
 const axios = require("axios");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const mongoose = require("mongoose");
 const ObjectId = require("mongodb").ObjectId;
 const common_1 = require("./common");
 const reports_1 = require("./reports");
-const portfolioFunctions_1 = require("./portfolioFunctions");
+const tools_1 = require("./reports/tools");
+const common_2 = require("./reports/common");
+const readExcel_1 = require("./reports/readExcel");
 const client = new MongoClient(common_1.uri, {
     serverApi: {
         version: ServerApiVersion.v1,
@@ -82,9 +84,9 @@ async function updatePreviousPricesPortfolioMUFG(data, collectionDate, path) {
                 }
             }
             try {
-                let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(updatedPricePortfolio, portfolio, "Last Price Update");
-                let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
-                await insertEditLogs(["prices update"], "Update Previous Prices based on MUFG", dateTime, "mufg Previous Pricing Sheet on " + collectionDate, "Link: " + path);
+                let updatedPortfolio = (0, tools_1.formatUpdatedPositions)(updatedPricePortfolio, portfolio, "Last Price Update");
+                let dateTime = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date());
+                await insertEditLogs([updatedPortfolio[1]], "Update Previous Prices based on MUFG", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio[1]).length, "Link: " + path);
                 let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio[0], collectionDate);
                 console.log(updatedPricePortfolio.length, "number of positions prices updated");
                 if (!Object.keys(updatedPortfolio[1]).length) {
@@ -110,7 +112,7 @@ async function insertPreviousPricesUpdatesInPortfolio(updatedPortfolio, collecti
     let portfolio = updatedPortfolio;
     // Create an array of updateOne operations
     // Execute the operations in bulk
-    let day = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(collectionDate);
+    let day = (0, common_2.getDateTimeInMongoDBCollectionFormat)(collectionDate);
     console.log(day, "updated collection");
     try {
         //so the latest updated version portfolio profits will not be copied into a new instance
@@ -158,7 +160,7 @@ exports.insertPreviousPricesUpdatesInPortfolio = insertPreviousPricesUpdatesInPo
 async function getPortfolioOnSpecificDate(collectionDate) {
     try {
         const database = client.db("portfolios");
-        let date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date(collectionDate)).split(" ")[0] + " 23:59";
+        let date = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date(collectionDate)).split(" ")[0] + " 23:59";
         let earliestCollectionName = await (0, reports_1.getEarliestCollectionName)(date);
         const reportCollection = database.collection(`portfolio-${earliestCollectionName.predecessorDate}`);
         let documents = await reportCollection.find().toArray();
@@ -301,9 +303,9 @@ async function updatePreviousPricesPortfolioBloomberg(data, collectionDate, path
             }
             console.log(currencyInUSD, "currency prices");
             try {
-                let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(updatedPricePortfolio, portfolio, "Last Price Update");
-                let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
-                await insertEditLogs(["prices update"], "Update Previous Prices based on bloomberg", dateTime, "Bloomberg Previous Pricing Sheet on " + collectionDate, "Link: " + path);
+                let updatedPortfolio = (0, tools_1.formatUpdatedPositions)(updatedPricePortfolio, portfolio, "Last Price Update");
+                let dateTime = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date());
+                await insertEditLogs([updatedPortfolio[1]], "Update Previous Prices based on bloomberg", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio[1]).length, "Link: " + path);
                 let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio[0], collectionDate);
                 console.log(updatedPricePortfolio.length, "number of positions prices updated");
                 if (!Object.keys(updatedPortfolio[1]).length) {
@@ -385,7 +387,7 @@ async function readMUFGEndOfMonthFile(path) {
 }
 exports.readMUFGEndOfMonthFile = readMUFGEndOfMonthFile;
 async function editPositionPortfolio(path) {
-    let data = await (0, portfolioFunctions_1.readEditInput)(path);
+    let data = await (0, readExcel_1.readEditInput)(path);
     if (data.error) {
         return { error: data.error };
     }
@@ -407,9 +409,9 @@ async function editPositionPortfolio(path) {
                 }
             }
             try {
-                let updatedPortfolio = (0, portfolioFunctions_1.formatUpdatedPositions)(positions, portfolio, "Last edit operation");
+                let updatedPortfolio = (0, tools_1.formatUpdatedPositions)(positions, portfolio, "Last edit operation");
                 let insertion = await (0, reports_1.insertTradesInPortfolio)(updatedPortfolio[0]);
-                let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
+                let dateTime = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date());
                 await insertEditLogs(["bulk edit"], "Bulk Edit", dateTime, "Bulk Edit E-blot", "Link: " + path);
                 return insertion;
             }
@@ -639,7 +641,7 @@ async function editTrade(editedTrade, tradeType) {
             const database = client.db("trades_v_2");
             // Access the collection named by the 'customerId' parameter
             const collection = database.collection(tradeType);
-            let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
+            let dateTime = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date());
             await insertEditLogs(changesText, "Edit Trade", dateTime, tradeInfo["Edit Note"], tradeInfo["BB Ticker"] + " " + tradeInfo["Location"]);
             let action = await collection.updateOne({ _id: tradeInfo["_id"] }, // Filter to match the document
             { $set: tradeInfo } // Update operation
@@ -677,7 +679,7 @@ async function deleteTrade(tradeType, tradeId, tradeIssue, location) {
             return { error: `Trade does not exist!` };
         }
         else {
-            let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
+            let dateTime = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date());
             await insertEditLogs(["deleted"], "Edit Trade", dateTime, "deleted", tradeIssue + " " + location);
             console.log("deleted");
             return { error: null };
@@ -731,7 +733,7 @@ exports.reformatCentralizedData = reformatCentralizedData;
 async function deletePosition(data, dateInput) {
     try {
         const database = client.db("portfolios");
-        let date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date(dateInput)).split(" ")[0] + " 23:59";
+        let date = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date(dateInput)).split(" ")[0] + " 23:59";
         let earliestPortfolioName = await (0, reports_1.getEarliestCollectionName)(date);
         const reportCollection = database.collection(`portfolio-${earliestPortfolioName.predecessorDate}`);
         const id = new ObjectId(data["_id"]);
@@ -744,8 +746,8 @@ async function deletePosition(data, dateInput) {
         else if (updateResult.deletedCount === 0) {
             return { error: "Document not updated. It may already have the same values" };
         }
-        let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
-        await insertEditLogs(data["BB Ticker"], "Delete Position", dateTime, "Delete Position", data["BB Ticker"] + " " + data["Location"]);
+        let dateTime = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date());
+        await insertEditLogs([], "Delete Position", dateTime, "Delete Position", data["BB Ticker"] + " " + data["Location"]);
         return updateResult;
     }
     catch (error) {
@@ -777,7 +779,7 @@ async function getAllTradesForSpecificPosition(tradeType, isin, location, date) 
     }
 }
 exports.getAllTradesForSpecificPosition = getAllTradesForSpecificPosition;
-async function readCalculatePosition(data, date, isin, location) {
+async function readCalculatePosition(data, date, isin, location, tradeType) {
     try {
         let positions = [];
         const database = client.db("portfolios");
@@ -812,11 +814,11 @@ async function readCalculatePosition(data, date, isin, location) {
             let currentNet = parseFloat(row["Settlement Amount"].toString().replace(/,/g, "")) * operation;
             let currentPrincipal = parseFloat(row["Principal"].toString().replace(/,/g, ""));
             let currency = row["Currency"];
-            let bondCouponMaturity = (0, portfolioFunctions_1.parseBondIdentifier)(row["BB Ticker"]);
+            let bondCouponMaturity = (0, tools_1.parseBondIdentifier)(row["BB Ticker"]);
             let tradeExistsAlready = triadaIds.includes(row["Triada Trade Id"]);
             let updatingPosition = (0, reports_1.returnPositionProgress)(positions, identifier, location);
             let tradeDate = new Date(row["Trade Date"]);
-            let thisMonth = (0, common_1.monthlyRlzdDate)(tradeDate);
+            let thisMonth = (0, common_2.monthlyRlzdDate)(tradeDate);
             let thisDay = (0, common_1.getDate)(tradeDate);
             let rlzdOperation = -1;
             if (updatingPosition) {
@@ -864,7 +866,6 @@ async function readCalculatePosition(data, date, isin, location) {
                         object["Day Rlzd"][thisDay].push(dayRlzdForThisTrade);
                     }
                     object["Cost MTD"] = {};
-                    let curentMonthCost = 0;
                     object["Cost MTD"][thisMonth] = operation == 1 ? parseFloat(currentPrincipal) : 0;
                     object["Original Face"] = originalFace;
                     if (!object["Entry Price"]) {
@@ -874,6 +875,13 @@ async function readCalculatePosition(data, date, isin, location) {
                         object["Entry Price"][thisMonth] = currentPrice;
                     }
                     object["Last Individual Upload Trade"] = new Date();
+                    let tradeRecord = null;
+                    if (!tradeRecord) {
+                        tradeRecord = (0, tools_1.findTradeRecord)(data, row["Triada Trade Id"]);
+                        if (tradeRecord.length > 0) {
+                            tradeRecord[0]["Updated Notional"] = object["Notional Amount"];
+                        }
+                    }
                     positions.push(object);
                 }
                 else if ((0, reports_1.returnPositionProgress)(positions, identifier, location)) {
@@ -886,7 +894,7 @@ async function readCalculatePosition(data, date, isin, location) {
                     object["Currency"] = currency;
                     object["Notional Amount"] = currentQuantity + updatingPosition["Notional Amount"];
                     object["Net"] = currentNet + updatingPosition["Net"];
-                    object["Average Cost"] = rlzdOperation == -1 ? (0, portfolioFunctions_1.getAverageCost)(currentQuantity, updatingPosition["Notional Amount"], currentPrice, parseFloat(updatingPosition["Average Cost"])) : updatingPosition["Average Cost"];
+                    object["Average Cost"] = rlzdOperation == -1 ? (0, tools_1.getAverageCost)(currentQuantity, updatingPosition["Notional Amount"], currentPrice, parseFloat(updatingPosition["Average Cost"])) : updatingPosition["Average Cost"];
                     // this is reversed because the quantity is negated
                     object["Cost MTD"] = updatingPosition["Cost MTD"];
                     object["Cost MTD"][thisMonth] += operation == 1 ? currentPrincipal : 0;
@@ -910,6 +918,13 @@ async function readCalculatePosition(data, date, isin, location) {
                         object["Day Rlzd"][thisDay].push(dayRlzdForThisTrade);
                     }
                     object["Last Individual Upload Trade"] = new Date();
+                    let tradeRecord = null;
+                    if (!tradeRecord) {
+                        tradeRecord = (0, tools_1.findTradeRecord)(data, row["Triada Trade Id"]);
+                        if (tradeRecord.length > 0) {
+                            tradeRecord[0]["Updated Notional"] = object["Notional Amount"];
+                        }
+                    }
                     positions = (0, reports_1.updateExisitingPosition)(positions, identifier, location, object);
                 }
             }
@@ -921,12 +936,15 @@ async function readCalculatePosition(data, date, isin, location) {
                 if (position["ISIN"].trim() == isin.trim() && position["Location"] == location.trim()) {
                     portfolio[index] = positions[0];
                     portfolio[index]["Quantity"] = portfolio[index]["Notional Amount"];
-                    console.log(portfolio[index], "updateed", `portfolio-${earliestPortfolioName.predecessorDate}`);
+                    // console.log(portfolio[index], "updateed", `portfolio-${earliestPortfolioName.predecessorDate}`);
                 }
             }
             let action = await (0, reports_1.insertTradesInPortfolioAtASpecificDate)(portfolio, `portfolio-${earliestPortfolioName.predecessorDate}`);
-            let dateTime = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
-            await insertEditLogs(data[0]["BB Ticker"], "Recalculate Position", dateTime, "Centarlized Blotter", data[0]["BB Ticker"] + " " + data[0]["Location"]);
+            console.log(data, tradeType);
+            let modifyTradesAction = await modifyTradesDueToRecalculate(data, tradeType);
+            console.log(modifyTradesAction, "modified trades");
+            let dateTime = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date());
+            await insertEditLogs([], "Recalculate Position", dateTime, "", data[0]["BB Ticker"] + " " + data[0]["Location"]);
             // console.log(positions)
             return action;
         }
@@ -939,3 +957,32 @@ async function readCalculatePosition(data, date, isin, location) {
     }
 }
 exports.readCalculatePosition = readCalculatePosition;
+async function modifyTradesDueToRecalculate(trades, tradeType) {
+    const database = client.db("trades_v_2");
+    let operations = trades.map((trade) => {
+        // Start with the known filters
+        let filters = [];
+        // If "ISIN", "BB Ticker", or "Issue" exists, check for both the field and "Location"
+        filters.push({
+            _id: new ObjectId(trade["_id"].toString()),
+        });
+        return {
+            updateOne: {
+                filter: { $or: filters },
+                update: { $set: trade },
+                upsert: false,
+            },
+        };
+    });
+    // Execute the operations in bulk
+    try {
+        const historicalReportCollection = database.collection(tradeType);
+        let action = await historicalReportCollection.bulkWrite(operations);
+        console.log(action);
+        return action;
+    }
+    catch (error) {
+        return error;
+    }
+}
+exports.modifyTradesDueToRecalculate = modifyTradesDueToRecalculate;

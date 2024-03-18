@@ -2,9 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updatePortfolioBasedOnIsin = exports.checkMUFGEndOfMonthWithPortfolio = exports.tradesTriada = exports.createExcelAndReturnPath = exports.formatFxTradesToMufg = exports.formatFxMufg = exports.formatMufg = exports.readFxTrades = exports.readBBE = exports.readIB = exports.readBBGBlot = void 0;
 const common_1 = require("./common");
-const portfolioFunctions_1 = require("./portfolioFunctions");
 const auth_1 = require("./auth");
 const common_2 = require("./common");
+const readExcel_1 = require("./reports/readExcel");
 const xlsx = require("xlsx");
 const axios = require("axios");
 const { Storage } = require("@google-cloud/storage");
@@ -284,24 +284,10 @@ async function createExcelAndReturnPath(data, pathName) {
     const stream = new PassThrough();
     const buffer = xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
     let fileName = `after-excel/${(0, auth_1.generateRandomIntegers)()}_mufg_output.xlsx`;
-    (0, portfolioFunctions_1.uploadToGCloudBucket)(buffer, process.env.BUCKET, fileName).then().catch(console.error);
+    (0, readExcel_1.uploadToGCloudBucket)(buffer, process.env.BUCKET, fileName).then().catch(console.error);
     return fileName;
 }
 exports.createExcelAndReturnPath = createExcelAndReturnPath;
-function parseAndFormat(inputDate) {
-    // Extract the last part of the input string
-    // Get today's date
-    let today = new Date(inputDate);
-    // Format the date as yyyymmdd
-    let year = today.getFullYear();
-    let month = today.getMonth() + 1; // JavaScript months are 0-11
-    let day = today.getDate();
-    month = month < 10 ? "0" + month : month; // Ensure two-digit month
-    day = day < 10 ? "0" + day : day; // Ensure two-digit day
-    let formattedDate = "" + year + month + day;
-    // Output formatted date + last character
-    return formattedDate;
-}
 async function tradesTriada() {
     try {
         const database = client.db("trades_v_2");

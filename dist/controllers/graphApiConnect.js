@@ -4,8 +4,8 @@ exports.getFxTrades = exports.getVcons = exports.getSecurityInPortfolioWithoutLo
 require("dotenv").config();
 const excelFormat_1 = require("./excelFormat");
 const reports_1 = require("./reports");
-const portfolioFunctions_1 = require("./portfolioFunctions");
 const common_1 = require("./common");
+const common_2 = require("./reports/common");
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
 const FormData = require("form-data");
@@ -81,7 +81,7 @@ async function getVcons(token, start_time, end_time, trades) {
             vcon["Trade App Status"] = trade_status;
             object.push(vcon);
         }
-        object = (0, portfolioFunctions_1.mergeSort)(object);
+        object = (0, common_2.mergeSort)(object);
         for (let customIndex = 0; customIndex < object.length; customIndex++) {
             let trade = object[customIndex];
             if (!trade["Triada Trade Id"]) {

@@ -2,12 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.formatVconToNomuraBulkUpload = exports.readEmsxRawExcel = exports.formatEmsxTrades = exports.renderFx = exports.formatIbTrades = exports.formatCentralizedRawFiles = exports.getTriadaTrades = exports.uploadArrayAndReturnFilePath = exports.renderVcon = void 0;
 require("dotenv").config();
-const portfolioFunctions_1 = require("./portfolioFunctions");
 const mufgOperations_1 = require("./mufgOperations");
 const common_1 = require("./common");
-const portfolioFunctions_2 = require("./portfolioFunctions");
+const tools_1 = require("./reports/tools");
 const graphApiConnect_1 = require("./graphApiConnect");
 const common_2 = require("./common");
+const readExcel_1 = require("./reports/readExcel");
 const xlsx = require("xlsx");
 const { PassThrough } = require("stream");
 const { MongoClient, ServerApiVersion } = require("mongodb");
@@ -132,7 +132,7 @@ async function uploadArrayAndReturnFilePath(data, pathName, folderName) {
     const buffer = xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
     let randomString = (0, common_1.generateRandomString)(6);
     let fileName = `${folderName}/${pathName.replace(/[!@#$%^&*(),.?":{}|<>\/\[\]\\;'\-=+`~]/g, "_")}_${randomString}.xlsx`;
-    (0, portfolioFunctions_1.uploadToGCloudBucket)(buffer, process.env.BUCKET, fileName).then().catch(console.error);
+    (0, readExcel_1.uploadToGCloudBucket)(buffer, process.env.BUCKET, fileName).then().catch(console.error);
     return "/" + fileName;
 }
 exports.uploadArrayAndReturnFilePath = uploadArrayAndReturnFilePath;
@@ -191,14 +191,14 @@ async function formatCentralizedRawFiles(files, bbbData, vconTrades, ibTrades, e
         }
         else if (file["fieldname"] == "IB") {
             let url = common_1.bucket + file["filename"];
-            ibData = await (0, portfolioFunctions_2.readIBEblot)(url);
+            ibData = await (0, readExcel_1.readIBEblot)(url);
             if (ibData.error) {
                 return ibData;
             }
         }
         else if (file["fieldname"] == "BBE") {
             let url = common_1.bucket + file["filename"];
-            bbeData = await (0, portfolioFunctions_2.readEmsxEBlot)(url);
+            bbeData = await (0, readExcel_1.readEmsxEBlot)(url);
             if (bbeData.error) {
                 return bbeData;
             }
@@ -222,7 +222,7 @@ async function formatCentralizedRawFiles(files, bbbData, vconTrades, ibTrades, e
         let obj = {};
         let trade = bbbData[index];
         if (trade["Status"] == "Accepted") {
-            let settlementDate = (0, portfolioFunctions_2.getSettlementDateYear)((0, common_1.convertExcelDateToJSDate)(trade["Trade Date"]), (0, common_1.convertExcelDateToJSDate)(trade["Settle Date"]));
+            let settlementDate = (0, tools_1.getSettlementDateYear)((0, common_1.convertExcelDateToJSDate)(trade["Trade Date"]), (0, common_1.convertExcelDateToJSDate)(trade["Settle Date"]));
             obj["B/S"] = trade["Buy/Sell"];
             obj["BB Ticker"] = trade["BB Ticker"];
             obj["Location"] = trade["Location"].trim();

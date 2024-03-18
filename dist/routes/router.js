@@ -7,13 +7,15 @@ const express_1 = require("express");
 const auth_1 = require("../controllers/auth");
 const common_1 = require("../controllers/common");
 const reports_1 = require("../controllers/reports");
-const portfolioFunctions_1 = require("../controllers/portfolioFunctions");
 const excelFormat_1 = require("../controllers/excelFormat");
 const graphApiConnect_1 = require("../controllers/graphApiConnect");
 const mufgOperations_1 = require("../controllers/mufgOperations");
 const operations_1 = require("../controllers/operations");
 const eblot_1 = require("../controllers/eblot");
 const util_1 = __importDefault(require("util"));
+const common_2 = require("../controllers/reports/common");
+const portfolios_1 = require("../controllers/reports/portfolios");
+const readExcel_1 = require("../controllers/reports/readExcel");
 const fs = require("fs");
 const writeFile = util_1.default.promisify(fs.writeFile);
 require("dotenv").config();
@@ -60,11 +62,11 @@ router.get("/portfolio", common_1.verifyToken, async (req, res, next) => {
     try {
         let date = req.query.date;
         if (date.includes("NaN")) {
-            date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
+            date = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date());
         }
         let sort = req.query.sort || "order";
         let sign = req.query.sign || 1;
-        let report = await (0, reports_1.getHistoricalPortfolioWithAnalytics)(date, sort, sign);
+        let report = await (0, portfolios_1.getPortfolioWithAnalytics)(date, sort, sign, null, "back office");
         if (report.error) {
             res.send({ error: report.error });
         }
@@ -83,10 +85,10 @@ router.get("/summary-portfolio", async (req, res, next) => {
         let sort = req.query.sort || "order";
         let sign = req.query.sign || 1;
         if (date.includes("NaN")) {
-            date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
+            date = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date());
         }
-        date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date(date)).split(" ")[0] + " 23:59";
-        let report = await (0, reports_1.getHistoricalSummaryPortfolioWithAnalytics)(date, sort, sign);
+        date = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date(date)).split(" ")[0] + " 23:59";
+        let report = await (0, portfolios_1.getPortfolioWithAnalytics)(date, sort, sign, null, "front office");
         if (report.error) {
             res.send({ error: report.error });
         }
@@ -106,10 +108,10 @@ router.get("/performers-portfolio", async (req, res, next) => {
         let sort = req.query.sort || "order";
         let sign = req.query.sign || 1;
         if (date.includes("NaN")) {
-            date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
+            date = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date());
         }
-        date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date(date)).split(" ")[0] + " 23:59";
-        let report = await (0, reports_1.getHistoricalSummaryPortfolioWithAnalytics)(date, sort, sign, conditions);
+        date = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date(date)).split(" ")[0] + " 23:59";
+        let report = await (0, portfolios_1.getPortfolioWithAnalytics)(date, sort, sign, conditions, "front office");
         if (report.error) {
             res.send({ error: report.error });
         }
@@ -128,10 +130,10 @@ router.get("/risk-report", async (req, res, next) => {
         let sort = req.query.sort || "order";
         let sign = req.query.sign || 1;
         if (date.includes("NaN")) {
-            date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date());
+            date = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date());
         }
-        date = (0, portfolioFunctions_1.getDateTimeInMongoDBCollectionFormat)(new Date(date)).split(" ")[0] + " 23:59";
-        let report = await (0, reports_1.getHistoricalSummaryPortfolioWithAnalytics)(date, sort, sign);
+        date = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date(date)).split(" ")[0] + " 23:59";
+        let report = await (0, portfolios_1.getPortfolioWithAnalytics)(date, sort, sign, null, "front office");
         res.send(report);
     }
     catch (error) {
@@ -193,7 +195,7 @@ router.get("/previous-collections", common_1.verifyToken, async (req, res) => {
 router.get("/fund-details", common_1.verifyToken, async (req, res) => {
     try {
         const date = req.query.date;
-        let thisMonth = (0, common_1.monthlyRlzdDate)(date);
+        let thisMonth = (0, common_2.monthlyRlzdDate)(date);
         let fundDetails = await (0, operations_1.getAllFundDetails)(thisMonth);
         res.send(fundDetails);
     }
@@ -244,7 +246,7 @@ router.post("/ib-excel", common_1.verifyToken, uploadBeforeExcel.any(), async (r
         let beforeMonth = new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
         let now = new Date().getTime() + 5 * 24 * 60 * 60 * 1000;
         let trades = await (0, excelFormat_1.getTriadaTrades)("ib", beforeMonth, now);
-        let data = await (0, portfolioFunctions_1.readIBRawExcel)(path);
+        let data = await (0, readExcel_1.readIBRawExcel)(path);
         let portfolio = await (0, reports_1.getPortfolio)();
         let action = (0, excelFormat_1.formatIbTrades)(data, trades, portfolio);
         // console.log(action)
@@ -475,7 +477,7 @@ router.post("/update-previous-prices", common_1.verifyToken, uploadBeforeExcel.a
         let collectionType = req.body.collectionType;
         const fileName = req.files[0].filename;
         const path = common_1.bucket + fileName;
-        let data = collectionType == "MUFG" ? await (0, operations_1.readMUFGPrices)(path) : await (0, portfolioFunctions_1.readPricingSheet)(path);
+        let data = collectionType == "MUFG" ? await (0, operations_1.readMUFGPrices)(path) : await (0, readExcel_1.readPricingSheet)(path);
         let action = collectionType == "MUFG" ? await (0, operations_1.updatePreviousPricesPortfolioMUFG)(data, collectionDate, path) : await (0, operations_1.updatePreviousPricesPortfolioBloomberg)(data, collectionDate, path);
         if (action === null || action === void 0 ? void 0 : action.error) {
             res.send({ error: action.error });
@@ -561,9 +563,9 @@ router.post("/recalculate-position", common_1.verifyToken, uploadBeforeExcel.any
         let location = data["Location"];
         let date = data.date;
         let trades = await (0, operations_1.getAllTradesForSpecificPosition)(tradeType, isin, location, date);
-        console.log(tradeType, isin, location, date, trades);
+        // console.log(tradeType, isin, location, date, trades);
         if (trades.length) {
-            let action = await (0, operations_1.readCalculatePosition)(trades, date, isin, location);
+            let action = await (0, operations_1.readCalculatePosition)(trades, date, isin, location, tradeType);
             console.log(action);
             res.sendStatus(200);
         }
@@ -575,5 +577,8 @@ router.post("/recalculate-position", common_1.verifyToken, uploadBeforeExcel.any
         console.log(error);
         res.send({ error: error });
     }
+});
+router.post("/one-time", uploadBeforeExcel.any(), async (req, res, next) => {
+    res.send(200);
 });
 exports.default = router;

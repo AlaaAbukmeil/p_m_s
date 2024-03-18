@@ -9,6 +9,7 @@ const reports_1 = require("./reports");
 const common_1 = require("./common");
 const reports_2 = require("./reports");
 const operations_1 = require("./operations");
+const common_2 = require("./reports/common");
 const fs = require("fs");
 const writeFile = util_1.default.promisify(fs.writeFile);
 const { MongoClient, ServerApiVersion } = require("mongodb");
@@ -20,7 +21,7 @@ const client = new MongoClient(common_1.uri, {
         deprecationErrors: true,
     },
 });
-let month = (0, common_1.monthlyRlzdDate)(new Date(new Date().getTime() - 0 * 24 * 60 * 60 * 1000).toString());
+let month = (0, common_2.monthlyRlzdDate)(new Date(new Date().getTime() - 0 * 24 * 60 * 60 * 1000).toString());
 async function appendLogs(positions) {
     for (let obj of positions) {
         // Create a new object with only the _id and Day Rlzd properties
@@ -84,7 +85,7 @@ async function changeMTDRlzd() {
         if (portfolio[index]["MTD Rlzd"]) {
             let object = portfolio[index]["MTD Rlzd"];
             portfolio[index]["MTD Rlzd"] = {};
-            portfolio[index]["MTD Rlzd"][(0, common_1.monthlyRlzdDate)(new Date().toString())] = object;
+            portfolio[index]["MTD Rlzd"][(0, common_2.monthlyRlzdDate)(new Date().toString())] = object;
         }
     }
     await (0, reports_2.insertTradesInPortfolio)(portfolio);
