@@ -1,11 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getFxTrades = exports.getVcons = exports.getSecurityInPortfolioWithoutLocation = exports.getGraphToken = void 0;
+exports.getFxTrades = exports.getVcons = exports.getSecurityInPortfolioWithoutLocationForVcon = exports.getGraphToken = void 0;
 require("dotenv").config();
 const excelFormat_1 = require("./excelFormat");
-const reports_1 = require("./reports");
 const common_1 = require("./common");
 const common_2 = require("./reports/common");
+const positions_1 = require("./reports/positions");
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
 const FormData = require("form-data");
@@ -25,7 +25,7 @@ async function getGraphToken() {
     }
 }
 exports.getGraphToken = getGraphToken;
-function getSecurityInPortfolioWithoutLocation(portfolio, identifier) {
+function getSecurityInPortfolioWithoutLocationForVcon(portfolio, identifier) {
     let object = "";
     for (let index = 0; index < portfolio.length; index++) {
         let issue = portfolio[index];
@@ -43,12 +43,12 @@ function getSecurityInPortfolioWithoutLocation(portfolio, identifier) {
     // If a matching document was found, return it. Otherwise, return a message indicating that no match was found.
     return object;
 }
-exports.getSecurityInPortfolioWithoutLocation = getSecurityInPortfolioWithoutLocation;
+exports.getSecurityInPortfolioWithoutLocationForVcon = getSecurityInPortfolioWithoutLocationForVcon;
 function format_date_ISO(date) {
     return new Date(date).toISOString();
 }
 async function getVcons(token, start_time, end_time, trades) {
-    let portfolio = await (0, reports_1.getPortfolio)();
+    let portfolio = await (0, positions_1.getPortfolio)();
     try {
         let url = `https://graph.microsoft.com/v1.0/users/vcons@triadacapital.com/messages?$filter=contains(subject,'New BB') and receivedDateTime ge ${format_date_ISO(start_time)} and receivedDateTime le ${format_date_ISO(end_time)}&$top=1000000`;
         let action = await axios.get(url, {
@@ -67,7 +67,7 @@ async function getVcons(token, start_time, end_time, trades) {
             vcon["BB Ticker"] = vcon["Issue"];
             vcon["Entry Time"] = tradeTime;
             vcon["Notional Amount"] = vcon["Quantity"];
-            let securityInPortfolioLocation = getSecurityInPortfolioWithoutLocation(portfolio, identifier);
+            let securityInPortfolioLocation = getSecurityInPortfolioWithoutLocationForVcon(portfolio, identifier);
             let location = securityInPortfolioLocation.trim();
             let trade_status = "new";
             let triadaId = trades.find(function (trade) {

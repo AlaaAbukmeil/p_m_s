@@ -1,29 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.modifyTradesDueToRecalculate = exports.readCalculatePosition = exports.getAllTradesForSpecificPosition = exports.deletePosition = exports.reformatCentralizedData = exports.deleteTrade = exports.editTrade = exports.getTrade = exports.addFund = exports.deleteFund = exports.editFund = exports.getAllFundDetails = exports.getEarliestCollectionNameFund = exports.getFundDetails = exports.getSecurityInPortfolioById = exports.editPositionPortfolio = exports.readMUFGEndOfMonthFile = exports.getEditLogs = exports.insertEditLogs = exports.updatePreviousPricesPortfolioBloomberg = exports.getSecurityInPortfolioWithoutLocation = exports.getPortfolioOnSpecificDate = exports.insertPreviousPricesUpdatesInPortfolio = exports.updatePreviousPricesPortfolioMUFG = exports.readMUFGPrices = exports.getCollectionDays = void 0;
+exports.modifyTradesDueToRecalculate = exports.readCalculatePosition = exports.getAllTradesForSpecificPosition = exports.deletePosition = exports.reformatCentralizedData = exports.deleteTrade = exports.editTrade = exports.getTrade = exports.addFund = exports.deleteFund = exports.editFund = exports.getAllFundDetails = exports.getEarliestCollectionNameFund = exports.getFundDetails = exports.getSecurityInPortfolioById = exports.editPositionPortfolio = exports.readNomuraReconcileFile = exports.readMUFGReconcileFile = exports.getEditLogs = exports.insertEditLogs = exports.updatePreviousPricesPortfolioBloomberg = exports.getSecurityInPortfolioWithoutLocation = exports.getPortfolioOnSpecificDate = exports.getCollectionDays = void 0;
 const axios = require("axios");
-const { MongoClient, ServerApiVersion } = require("mongodb");
-const mongoose = require("mongoose");
 const ObjectId = require("mongodb").ObjectId;
 const common_1 = require("./common");
-const reports_1 = require("./reports");
 const tools_1 = require("./reports/tools");
 const common_2 = require("./reports/common");
-const readExcel_1 = require("./reports/readExcel");
-const client = new MongoClient(common_1.uri, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-    },
-});
-mongoose.connect(common_1.uri, {
-    useNewUrlParser: true,
-});
+const readExcel_1 = require("./operations/readExcel");
+const positions_1 = require("./reports/positions");
+const auth_1 = require("./auth");
 const xlsx = require("xlsx");
 async function getCollectionDays() {
     try {
-        const database = client.db("portfolios");
+        const database = auth_1.client.db("portfolios");
         let collections = await database.listCollections().toArray();
         let dates = [];
         for (let index = 0; index < collections.length; index++) {
@@ -41,127 +30,11 @@ async function getCollectionDays() {
     }
 }
 exports.getCollectionDays = getCollectionDays;
-async function readMUFGPrices(path) {
-    const response = await axios.get(path, { responseType: "arraybuffer" });
-    /* Parse the data */
-    const workbook = xlsx.read(response.data, { type: "buffer" });
-    /* Get first worksheet */
-    const worksheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[worksheetName];
-    /* Convert worksheet to JSON */
-    // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
-    // Read data
-    let data = xlsx.utils.sheet_to_json(worksheet, {
-        defval: "",
-        range: "A1:R300",
-    });
-    return data;
-}
-exports.readMUFGPrices = readMUFGPrices;
-async function updatePreviousPricesPortfolioMUFG(data, collectionDate, path) {
-    try {
-        if (data.error) {
-            return data;
-        }
-        else {
-            let updatedPricePortfolio = [];
-            let action = await getPortfolioOnSpecificDate(collectionDate);
-            let portfolio = action[0];
-            collectionDate = action[1];
-            console.log(collectionDate, "collection day used");
-            for (let index = 0; index < data.length; index++) {
-                let row = data[index];
-                let object = getSecurityInPortfolioWithoutLocation(portfolio, row["Investment"].trim());
-                if (object == 404) {
-                    continue;
-                }
-                for (let index = 0; index < object.length; index++) {
-                    let position = object[index];
-                    let divider = position["Type"] == "BND" || position["Type"] == "UST" ? 100 : 1;
-                    position["Mid"] = parseFloat(row["Price"]) / divider;
-                    position["Last Price Update"] = new Date();
-                    updatedPricePortfolio.push(position);
-                }
-            }
-            try {
-                let updatedPortfolio = (0, tools_1.formatUpdatedPositions)(updatedPricePortfolio, portfolio, "Last Price Update");
-                let dateTime = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date());
-                await insertEditLogs([updatedPortfolio[1]], "Update Previous Prices based on MUFG", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio[1]).length, "Link: " + path);
-                let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio[0], collectionDate);
-                console.log(updatedPricePortfolio.length, "number of positions prices updated");
-                if (!Object.keys(updatedPortfolio[1]).length) {
-                    return updatedPortfolio[1];
-                }
-                else {
-                    return { error: updatedPortfolio[1] };
-                }
-            }
-            catch (error) {
-                console.log(error);
-                return { error: error.toString() };
-            }
-        }
-    }
-    catch (error) {
-        return { error: "error" };
-    }
-}
-exports.updatePreviousPricesPortfolioMUFG = updatePreviousPricesPortfolioMUFG;
-async function insertPreviousPricesUpdatesInPortfolio(updatedPortfolio, collectionDate) {
-    const database = client.db("portfolios");
-    let portfolio = updatedPortfolio;
-    // Create an array of updateOne operations
-    // Execute the operations in bulk
-    let day = (0, common_2.getDateTimeInMongoDBCollectionFormat)(collectionDate);
-    console.log(day, "updated collection");
-    try {
-        //so the latest updated version portfolio profits will not be copied into a new instance
-        const updatedOperations = portfolio.map((position) => {
-            // Start with the known filters
-            const filters = [];
-            // Only add the "BB Ticker" filter if it's present in the trade object
-            if (position["ISIN"]) {
-                filters.push({
-                    ISIN: position["ISIN"],
-                    Location: position["Location"],
-                    _id: new ObjectId(position["_id"]),
-                });
-            }
-            else if (position["BB Ticker"]) {
-                filters.push({
-                    "BB Ticker": position["BB Ticker"],
-                    Location: position["Location"],
-                    _id: new ObjectId(position["_id"]),
-                });
-            }
-            else if (position["CUSIP"]) {
-                filters.push({
-                    CUSIP: position["CUSIP"],
-                    Location: position["Location"],
-                    _id: new ObjectId(position["_id"]),
-                });
-            }
-            return {
-                updateOne: {
-                    filter: { $or: filters },
-                    update: { $set: position },
-                },
-            };
-        });
-        let updatedCollection = database.collection(`portfolio-${day}`);
-        let updatedResult = await updatedCollection.bulkWrite(updatedOperations);
-        return updatedResult;
-    }
-    catch (error) {
-        return error;
-    }
-}
-exports.insertPreviousPricesUpdatesInPortfolio = insertPreviousPricesUpdatesInPortfolio;
 async function getPortfolioOnSpecificDate(collectionDate) {
     try {
-        const database = client.db("portfolios");
+        const database = auth_1.client.db("portfolios");
         let date = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date(collectionDate)).split(" ")[0] + " 23:59";
-        let earliestCollectionName = await (0, reports_1.getEarliestCollectionName)(date);
+        let earliestCollectionName = await (0, tools_1.getEarliestCollectionName)(date);
         const reportCollection = database.collection(`portfolio-${earliestCollectionName.predecessorDate}`);
         let documents = await reportCollection.find().toArray();
         for (let index = 0; index < documents.length; index++) {
@@ -336,7 +209,7 @@ async function insertEditLogs(changes, type, dateTime, editNote, identifier) {
         identifier: identifier,
         timestamp: new Date().getTime(),
     };
-    const database = client.db("edit_logs");
+    const database = auth_1.client.db("edit_logs");
     const reportCollection = database.collection(`${type}`);
     try {
         const result = await reportCollection.insertOne(object);
@@ -349,7 +222,7 @@ async function insertEditLogs(changes, type, dateTime, editNote, identifier) {
 exports.insertEditLogs = insertEditLogs;
 async function getEditLogs(logsType) {
     try {
-        const database = client.db("edit_logs");
+        const database = auth_1.client.db("edit_logs");
         const reportCollection = database.collection(`${logsType}`);
         let documents = await reportCollection.find().sort({ dateTime: -1 }).toArray();
         return documents;
@@ -359,7 +232,7 @@ async function getEditLogs(logsType) {
     }
 }
 exports.getEditLogs = getEditLogs;
-async function readMUFGEndOfMonthFile(path) {
+async function readMUFGReconcileFile(path) {
     const response = await axios.get(path, { responseType: "arraybuffer" });
     /* Parse the data */
     const workbook = xlsx.read(response.data, { type: "buffer" });
@@ -385,7 +258,75 @@ async function readMUFGEndOfMonthFile(path) {
         return data;
     }
 }
-exports.readMUFGEndOfMonthFile = readMUFGEndOfMonthFile;
+exports.readMUFGReconcileFile = readMUFGReconcileFile;
+async function readNomuraReconcileFile(path) {
+    const response = await axios.get(path, { responseType: "arraybuffer" });
+    /* Parse the data */
+    const workbook = xlsx.read(response.data, { type: "buffer" });
+    /* Get first worksheet */
+    const worksheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[worksheetName];
+    /* Convert worksheet to JSON */
+    // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
+    // Read data
+    const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+    const headersFormat = [
+        "Account ID",
+        "Account Name",
+        "Long/Short Indicator",
+        "Cusip",
+        "Quick Code",
+        "Sedol",
+        "Isin",
+        "Symbol",
+        "Security Name",
+        "Security Issue CCY",
+        "Base CCY",
+        "US Margin Ind",
+        "TD Quantity",
+        "SD Quantity",
+        "Price",
+        "TD Market Value Local",
+        "SD Market Value Local",
+        "TD Market Value Base",
+        "SD Market Value Base",
+        "Quantity Subject to Right of Use/Stock Loan",
+        "FX Rate",
+        "Last Activity Date",
+        "Business Date",
+        "Run Date",
+        "Run Time",
+        "OTC DerivativeType",
+        "Ticker",
+        "Ric Code",
+        "Preferred ID",
+        "Pricing Factor",
+        "Price Type",
+        "Product Type",
+        "Expiration Date",
+        "Option Contract Type",
+        "Td Accrued Interest",
+        "Sd Accrued Interest",
+        "Clean Price",
+        "Asset Class",
+        "Stock Loan Financed Positions Base Ccy",
+        "Stock Loan Financed Positions (USD)",
+    ];
+    const arraysAreEqual = headersFormat.every((value, index) => (value === headers[1][index] ? true : console.log(value, headers[1][index])));
+    if (!arraysAreEqual) {
+        return {
+            error: "Incompatible format, please upload MUFG end of month xlsx/csv file",
+        };
+    }
+    else {
+        const data = xlsx.utils.sheet_to_json(worksheet, {
+            defval: "",
+            range: "A2:AP300",
+        });
+        return data;
+    }
+}
+exports.readNomuraReconcileFile = readNomuraReconcileFile;
 async function editPositionPortfolio(path) {
     let data = await (0, readExcel_1.readEditInput)(path);
     if (data.error) {
@@ -394,7 +335,7 @@ async function editPositionPortfolio(path) {
     else {
         try {
             let positions = [];
-            let portfolio = await (0, reports_1.getPortfolio)();
+            let portfolio = await (0, positions_1.getPortfolio)();
             let titles = ["Type", "Strategy", "Country", "Asset Class", "Sector"];
             for (let index = 0; index < data.length; index++) {
                 let row = data[index];
@@ -410,7 +351,7 @@ async function editPositionPortfolio(path) {
             }
             try {
                 let updatedPortfolio = (0, tools_1.formatUpdatedPositions)(positions, portfolio, "Last edit operation");
-                let insertion = await (0, reports_1.insertTradesInPortfolio)(updatedPortfolio[0]);
+                let insertion = await (0, positions_1.insertTradesInPortfolio)(updatedPortfolio[0]);
                 let dateTime = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date());
                 await insertEditLogs(["bulk edit"], "Bulk Edit", dateTime, "Bulk Edit E-blot", "Link: " + path);
                 return insertion;
@@ -442,7 +383,7 @@ function getSecurityInPortfolioById(portfolio, id) {
 exports.getSecurityInPortfolioById = getSecurityInPortfolioById;
 async function getFundDetails(date) {
     try {
-        const database = client.db("fund");
+        const database = auth_1.client.db("fund");
         const reportCollection = database.collection("details");
         let test = await getEarliestCollectionNameFund(date);
         let documents = await reportCollection.find({ month: test }).toArray();
@@ -466,7 +407,7 @@ function compareMonths(a, b) {
 }
 // Sort the array without modifying the original objects
 async function getEarliestCollectionNameFund(originalDate) {
-    const database = client.db("fund");
+    const database = auth_1.client.db("fund");
     let details = await database.collection("details").find().toArray();
     let dates = [];
     for (let index = 0; index < details.length; index++) {
@@ -500,7 +441,7 @@ function getMonthInFundDetailsFormat(date) {
 }
 async function getAllFundDetails(date) {
     try {
-        const database = client.db("fund");
+        const database = auth_1.client.db("fund");
         const reportCollection = database.collection("details");
         let documents = await reportCollection.find().toArray();
         return documents.sort(compareMonths);
@@ -512,7 +453,7 @@ async function getAllFundDetails(date) {
 exports.getAllFundDetails = getAllFundDetails;
 async function editFund(data) {
     try {
-        const database = client.db("fund");
+        const database = auth_1.client.db("fund");
         const reportCollection = database.collection("details");
         const id = new ObjectId(data["_id"]);
         const updates = {};
@@ -544,7 +485,7 @@ async function editFund(data) {
 exports.editFund = editFund;
 async function deleteFund(data) {
     try {
-        const database = client.db("fund");
+        const database = auth_1.client.db("fund");
         const reportCollection = database.collection("details");
         const id = new ObjectId(data["_id"]);
         // Update the document with the built updates object
@@ -564,7 +505,7 @@ async function deleteFund(data) {
 exports.deleteFund = deleteFund;
 async function addFund(data) {
     try {
-        const database = client.db("fund");
+        const database = auth_1.client.db("fund");
         const reportCollection = database.collection("details");
         const newFundData = {};
         const tableTitles = ["month", "nav", "holdBackRatio"];
@@ -596,9 +537,9 @@ exports.addFund = addFund;
 async function getTrade(tradeType, tradeId) {
     try {
         // Connect to the MongoDB client
-        await client.connect();
+        await auth_1.client.connect();
         // Access the 'structure' database
-        const database = client.db("trades_v_2");
+        const database = auth_1.client.db("trades_v_2");
         // Access the collection named by the 'customerId' parameter
         const collection = database.collection(tradeType);
         // Perform your operations, such as find documents in the collection
@@ -636,9 +577,9 @@ async function editTrade(editedTrade, tradeType) {
             if (!changes) {
                 return { error: "The trade is still the same." };
             }
-            await client.connect();
+            await auth_1.client.connect();
             // Access the 'structure' database
-            const database = client.db("trades_v_2");
+            const database = auth_1.client.db("trades_v_2");
             // Access the collection named by the 'customerId' parameter
             const collection = database.collection(tradeType);
             let dateTime = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date());
@@ -668,9 +609,9 @@ exports.editTrade = editTrade;
 async function deleteTrade(tradeType, tradeId, tradeIssue, location) {
     try {
         // Connect to the MongoDB client
-        await client.connect();
+        await auth_1.client.connect();
         // Get the database and the specific collection
-        const database = client.db("trades_v_2");
+        const database = auth_1.client.db("trades_v_2");
         const collection = database.collection(tradeType);
         let query = { _id: new ObjectId(tradeId) };
         // Delete the document with the specified _id
@@ -732,9 +673,9 @@ async function reformatCentralizedData(data) {
 exports.reformatCentralizedData = reformatCentralizedData;
 async function deletePosition(data, dateInput) {
     try {
-        const database = client.db("portfolios");
+        const database = auth_1.client.db("portfolios");
         let date = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date(dateInput)).split(" ")[0] + " 23:59";
-        let earliestPortfolioName = await (0, reports_1.getEarliestCollectionName)(date);
+        let earliestPortfolioName = await (0, tools_1.getEarliestCollectionName)(date);
         const reportCollection = database.collection(`portfolio-${earliestPortfolioName.predecessorDate}`);
         const id = new ObjectId(data["_id"]);
         // Update the document with the built updates object
@@ -758,10 +699,10 @@ exports.deletePosition = deletePosition;
 async function getAllTradesForSpecificPosition(tradeType, isin, location, date) {
     try {
         // Connect to the MongoDB client
-        await client.connect();
+        await auth_1.client.connect();
         let timestamp = new Date(date).getTime();
         // Access the 'structure' database
-        const database = client.db("trades_v_2");
+        const database = auth_1.client.db("trades_v_2");
         // Access the collection named by the 'customerId' parameter
         const collection = database.collection(tradeType);
         // Perform your operations, such as find documents in the collection
@@ -782,8 +723,8 @@ exports.getAllTradesForSpecificPosition = getAllTradesForSpecificPosition;
 async function readCalculatePosition(data, date, isin, location, tradeType) {
     try {
         let positions = [];
-        const database = client.db("portfolios");
-        let earliestPortfolioName = await (0, reports_1.getEarliestCollectionName)(date);
+        const database = auth_1.client.db("portfolios");
+        let earliestPortfolioName = await (0, tools_1.getEarliestCollectionName)(date);
         console.log(earliestPortfolioName.predecessorDate, "get edit portfolio");
         const reportCollection = database.collection(`portfolio-${earliestPortfolioName.predecessorDate}`);
         let portfolio = await reportCollection
@@ -816,7 +757,7 @@ async function readCalculatePosition(data, date, isin, location, tradeType) {
             let currency = row["Currency"];
             let bondCouponMaturity = (0, tools_1.parseBondIdentifier)(row["BB Ticker"]);
             let tradeExistsAlready = triadaIds.includes(row["Triada Trade Id"]);
-            let updatingPosition = (0, reports_1.returnPositionProgress)(positions, identifier, location);
+            let updatingPosition = (0, positions_1.returnPositionProgress)(positions, identifier, location);
             let tradeDate = new Date(row["Trade Date"]);
             let thisMonth = (0, common_2.monthlyRlzdDate)(tradeDate);
             let thisDay = (0, common_1.getDate)(tradeDate);
@@ -884,7 +825,7 @@ async function readCalculatePosition(data, date, isin, location, tradeType) {
                     }
                     positions.push(object);
                 }
-                else if ((0, reports_1.returnPositionProgress)(positions, identifier, location)) {
+                else if ((0, positions_1.returnPositionProgress)(positions, identifier, location)) {
                     let shortLongType = updatingPosition["Notional Amount"] >= 0 ? 1 : -1;
                     let settlementDate = row["Settle Date"];
                     object["Location"] = row["Location"].trim();
@@ -925,7 +866,7 @@ async function readCalculatePosition(data, date, isin, location, tradeType) {
                             tradeRecord[0]["Updated Notional"] = object["Notional Amount"];
                         }
                     }
-                    positions = (0, reports_1.updateExisitingPosition)(positions, identifier, location, object);
+                    positions = (0, positions_1.updateExisitingPosition)(positions, identifier, location, object);
                 }
             }
         }
@@ -939,7 +880,7 @@ async function readCalculatePosition(data, date, isin, location, tradeType) {
                     // console.log(portfolio[index], "updateed", `portfolio-${earliestPortfolioName.predecessorDate}`);
                 }
             }
-            let action = await (0, reports_1.insertTradesInPortfolioAtASpecificDate)(portfolio, `portfolio-${earliestPortfolioName.predecessorDate}`);
+            let action = await (0, positions_1.insertTradesInPortfolioAtASpecificDate)(portfolio, `portfolio-${earliestPortfolioName.predecessorDate}`);
             console.log(data, tradeType);
             let modifyTradesAction = await modifyTradesDueToRecalculate(data, tradeType);
             console.log(modifyTradesAction, "modified trades");
@@ -958,7 +899,7 @@ async function readCalculatePosition(data, date, isin, location, tradeType) {
 }
 exports.readCalculatePosition = readCalculatePosition;
 async function modifyTradesDueToRecalculate(trades, tradeType) {
-    const database = client.db("trades_v_2");
+    const database = auth_1.client.db("trades_v_2");
     let operations = trades.map((trade) => {
         // Start with the known filters
         let filters = [];

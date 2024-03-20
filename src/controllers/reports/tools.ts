@@ -1,5 +1,6 @@
+import { client } from "../auth";
 import { formatDateWorld } from "../common";
-
+import { getAllDatesSinceLastMonthLastDay, getDateTimeInMongoDBCollectionFormat } from "./common";
 
 export function getAverageCost(currentQuantity: number, previousQuantity: number, currentPrice: any, previousAverageCost: any) {
   if (!previousQuantity) {
@@ -63,7 +64,7 @@ export function parseBondIdentifier(identifier: any): any {
           }
         }
         let dateComponents = components[dateIndex].split("/");
-        let date: any = new Date(`${dateComponents[1]}/${dateComponents[0]}/${"20" + dateComponents[2]}`);
+        let date: any = new Date(`${dateComponents[0]}/${dateComponents[1]}/${"20" + dateComponents[2]}`);
         if (identifier.toString().toLowerCase().includes("perp")) {
           date = null;
         }
@@ -150,6 +151,74 @@ export function formatUpdatedPositions(positions: any, portfolio: any, lastUpdat
   }
 }
 
+export async function getEarliestCollectionName(originalDate: string): Promise<{ predecessorDate: string; collectionNames: string[] }> {
+  const database = client.db("portfolios");
+  let collections = await database.listCollections().toArray();
+  let collectionNames = [];
+  for (let index = 0; index < collections.length; index++) {
+    let collection = collections[index];
+    let collectionDateName = collection.name.split("-");
+    let collectionDate = collectionDateName[1] + "-" + collectionDateName[2] + "-" + collectionDateName[3].split(" ")[0];
+    if (originalDate.includes(collectionDate)) {
+      collectionNames.push(collection.name);
+    }
+  }
+  let dates = [];
+  for (let collectionIndex = 0; collectionIndex < collections.length; collectionIndex++) {
+    let collection = collections[collectionIndex];
+    let collectionDateName = collection.name.split("-");
+    let collectionDate = collectionDateName[1] + "/" + collectionDateName[2] + "/" + collectionDateName[3];
 
+    if (new Date(collectionDate)) {
+      dates.push(new Date(collectionDate));
+    }
+  }
+  let inputDate = new Date(originalDate);
 
+  let predecessorDates: any = dates.filter((date) => date < inputDate);
 
+  if (predecessorDates.length == 0) {
+    return { predecessorDate: "", collectionNames: collectionNames };
+  }
+  let predecessorDate: any = new Date(Math.max.apply(null, predecessorDates));
+  //hong kong time difference with utc
+  if (predecessorDate) {
+    predecessorDate = getDateTimeInMongoDBCollectionFormat(new Date(predecessorDate));
+  }
+  return { predecessorDate: predecessorDate, collectionNames: collectionNames };
+}
+
+export async function getAllCollectionDatesSinceStartMonth(originalDate: string) {
+  const database = client.db("portfolios");
+  let collections = await database.listCollections().toArray();
+  let currentDayDate = new Date(new Date(originalDate).getTime()).toISOString().slice(0, 10);
+  let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate);
+
+  let dates = [];
+  for (let collectionIndex = 0; collectionIndex < collections.length; collectionIndex++) {
+    let collection = collections[collectionIndex];
+    let collectionDateName = collection.name.split("-");
+    let collectionDate: any = collectionDateName[1] + "/" + collectionDateName[2] + "/" + collectionDateName[3];
+    collectionDate = new Date(collectionDate);
+    if (collectionDate.getTime() > new Date(previousMonthDates[0]) && collectionDate.getTime() < new Date(previousMonthDates[previousMonthDates.length - 1])) {
+      dates.push(collection.name);
+    }
+  }
+
+  return dates;
+}
+
+export function getDaysBetween(startDate: any, endDate: any) {
+  // Parse the start and end dates into Date objects
+  const start = new Date(startDate).getTime();
+  const end = new Date(endDate).getTime();
+
+  // Calculate the difference in milliseconds
+  const diffInMs = end - start;
+
+  // Convert milliseconds to days (1 day = 24 hours * 60 minutes * 60 seconds * 1000 milliseconds)
+  const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+
+  // Return the absolute value of the difference in days
+  return Math.abs(Math.round(diffInDays)) || 0;
+}

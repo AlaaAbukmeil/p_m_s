@@ -1,29 +1,25 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../controllers/auth");
 const common_1 = require("../controllers/common");
-const reports_1 = require("../controllers/reports");
+const trades_1 = require("../controllers/reports/trades");
 const excelFormat_1 = require("../controllers/excelFormat");
 const graphApiConnect_1 = require("../controllers/graphApiConnect");
 const mufgOperations_1 = require("../controllers/mufgOperations");
-const operations_1 = require("../controllers/operations");
+const operations_1 = require("../controllers/operations/operations");
 const eblot_1 = require("../controllers/eblot");
-const util_1 = __importDefault(require("util"));
 const common_2 = require("../controllers/reports/common");
 const portfolios_1 = require("../controllers/reports/portfolios");
-const readExcel_1 = require("../controllers/reports/readExcel");
-const fs = require("fs");
-const writeFile = util_1.default.promisify(fs.writeFile);
+const readExcel_1 = require("../controllers/operations/readExcel");
+const positions_1 = require("../controllers/reports/positions");
+const readExcel_2 = require("../controllers/operations/readExcel");
 require("dotenv").config();
 const readLastLines = require("read-last-lines");
 const path = require("path");
 const multerGoogleStorage = require("multer-google-storage");
 const multer = require("multer");
-const uploadBeforeExcel = multer({
+const uploadToBucket = multer({
     storage: multerGoogleStorage.storageEngine({
         autoRetry: true,
         bucket: process.env.BUCKET,
@@ -35,7 +31,7 @@ const uploadBeforeExcel = multer({
     }),
 });
 const router = (0, express_1.Router)();
-router.get("/auth", uploadBeforeExcel.any(), common_1.verifyToken, async (req, res, next) => {
+router.get("/auth", uploadToBucket.any(), common_1.verifyToken, async (req, res, next) => {
     res.sendStatus(200);
 });
 router.get("/trades-logs", common_1.verifyToken, async (req, res) => {
@@ -66,7 +62,8 @@ router.get("/portfolio", common_1.verifyToken, async (req, res, next) => {
         }
         let sort = req.query.sort || "order";
         let sign = req.query.sign || 1;
-        let report = await (0, portfolios_1.getPortfolioWithAnalytics)(date, sort, sign, null, "back office");
+        let conditions = req.query || {};
+        let report = await (0, portfolios_1.getPortfolioWithAnalytics)(date, sort, sign, conditions, "back office");
         if (report.error) {
             res.send({ error: report.error });
         }
@@ -84,11 +81,13 @@ router.get("/summary-portfolio", async (req, res, next) => {
         let date = req.query.date;
         let sort = req.query.sort || "order";
         let sign = req.query.sign || 1;
+        let conditions = req.query || {};
+        // console.log(conditions)
         if (date.includes("NaN")) {
             date = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date());
         }
         date = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date(date)).split(" ")[0] + " 23:59";
-        let report = await (0, portfolios_1.getPortfolioWithAnalytics)(date, sort, sign, null, "front office");
+        let report = await (0, portfolios_1.getPortfolioWithAnalytics)(date, sort, sign, conditions, "front office");
         if (report.error) {
             res.send({ error: report.error });
         }
@@ -144,7 +143,7 @@ router.get("/risk-report", async (req, res, next) => {
 router.get("/trades", common_1.verifyToken, async (req, res) => {
     try {
         const tradeType = req.query.tradeType;
-        let trades = await (0, reports_1.getTrades)(`${tradeType}`);
+        let trades = await (0, trades_1.getTrades)(`${tradeType}`);
         res.send(trades);
     }
     catch (error) {
@@ -203,7 +202,7 @@ router.get("/fund-details", common_1.verifyToken, async (req, res) => {
         res.status(500).send("An error occurred while reading the file.");
     }
 });
-router.post("/login", uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/login", uploadToBucket.any(), async (req, res, next) => {
     let data = req.body;
     let email = data.email;
     let password = data.password;
@@ -238,7 +237,7 @@ router.post("/reset-password", async (req, res, next) => {
     let result = await (0, auth_1.resetPassword)(data.email, data.code, data.password);
     res.send(result);
 });
-router.post("/ib-excel", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/ib-excel", common_1.verifyToken, uploadToBucket.any(), async (req, res, next) => {
     try {
         const fileName = req.files[0].filename;
         const path = common_1.bucket + fileName;
@@ -247,14 +246,14 @@ router.post("/ib-excel", common_1.verifyToken, uploadBeforeExcel.any(), async (r
         let now = new Date().getTime() + 5 * 24 * 60 * 60 * 1000;
         let trades = await (0, excelFormat_1.getTriadaTrades)("ib", beforeMonth, now);
         let data = await (0, readExcel_1.readIBRawExcel)(path);
-        let portfolio = await (0, reports_1.getPortfolio)();
+        let portfolio = await (0, positions_1.getPortfolio)();
         let action = (0, excelFormat_1.formatIbTrades)(data, trades, portfolio);
         // console.log(action)
         if (!action) {
             res.send({ error: action });
         }
         else {
-            let ib = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(action, "ib_formatted", "ib");
+            let ib = await (0, readExcel_2.uploadArrayAndReturnFilePath)(action, "ib_formatted", "ib");
             let downloadEBlotName = common_1.bucket + ib;
             res.send(downloadEBlotName);
         }
@@ -264,7 +263,7 @@ router.post("/ib-excel", common_1.verifyToken, uploadBeforeExcel.any(), async (r
         res.send({ error: "File Template is not correct" });
     }
 });
-router.post("/mufg-excel", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/mufg-excel", common_1.verifyToken, uploadToBucket.any(), async (req, res, next) => {
     let data = req.body;
     let pathName = "mufg_" + (0, common_1.formatDateFile)(data.timestamp_start) + "_" + (0, common_1.formatDateFile)(data.timestamp_end) + "_";
     let trades = await (0, mufgOperations_1.tradesTriada)();
@@ -273,19 +272,19 @@ router.post("/mufg-excel", common_1.verifyToken, uploadBeforeExcel.any(), async 
         res.send({ error: "No Trades" });
     }
     else {
-        let mufgTrades = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(array, pathName, "mufg");
+        let mufgTrades = await (0, readExcel_2.uploadArrayAndReturnFilePath)(array, pathName, "mufg");
         let downloadEBlotName = common_1.bucket + mufgTrades;
         res.send(downloadEBlotName);
     }
 });
-router.post("/mufg-fx", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/mufg-fx", common_1.verifyToken, uploadToBucket.any(), async (req, res, next) => {
     let tradesCount = req.body.tradesCount;
     let action = await (0, mufgOperations_1.formatFxMufg)(req.files, tradesCount);
-    let url = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(action, "fx_mufg_formatted", "mufg_fx");
+    let url = await (0, readExcel_2.uploadArrayAndReturnFilePath)(action, "fx_mufg_formatted", "mufg_fx");
     url = common_1.bucket + url;
     res.send(url);
 });
-router.post("/centralized-blotter", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/centralized-blotter", common_1.verifyToken, uploadToBucket.any(), async (req, res, next) => {
     try {
         let data = req.body;
         let token = await (0, graphApiConnect_1.getGraphToken)();
@@ -302,7 +301,7 @@ router.post("/centralized-blotter", common_1.verifyToken, uploadBeforeExcel.any(
         }
         else {
             if (action.length > 0) {
-                let url = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(action, "centralized_blot", "centralized_blot");
+                let url = await (0, readExcel_2.uploadArrayAndReturnFilePath)(action, "centralized_blot", "centralized_blot");
                 url = common_1.bucket + url;
                 res.send(url);
             }
@@ -316,7 +315,7 @@ router.post("/centralized-blotter", common_1.verifyToken, uploadBeforeExcel.any(
         res.send({ error: error });
     }
 });
-router.post("/emsx-excel", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/emsx-excel", common_1.verifyToken, uploadToBucket.any(), async (req, res, next) => {
     try {
         let files = req.files;
         const fileName = req.files[0].filename;
@@ -325,14 +324,14 @@ router.post("/emsx-excel", common_1.verifyToken, uploadBeforeExcel.any(), async 
         let beforeMonth = new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
         let now = new Date().getTime() + 5 * 24 * 60 * 60 * 1000;
         let trades = await (0, excelFormat_1.getTriadaTrades)("emsx", beforeMonth, now);
-        let data = await (0, excelFormat_1.readEmsxRawExcel)(path);
-        let portfolio = await (0, reports_1.getPortfolio)();
+        let data = await (0, readExcel_1.readEmsxRawExcel)(path);
+        let portfolio = await (0, positions_1.getPortfolio)();
         let action = (0, excelFormat_1.formatEmsxTrades)(data, trades, portfolio);
         if (!action) {
             res.send({ error: action });
         }
         else {
-            let emsx = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(action, "emsx_formated", "emsx");
+            let emsx = await (0, readExcel_2.uploadArrayAndReturnFilePath)(action, "emsx_formated", "emsx");
             let downloadEBlotName = common_1.bucket + emsx;
             res.send(downloadEBlotName);
         }
@@ -342,7 +341,7 @@ router.post("/emsx-excel", common_1.verifyToken, uploadBeforeExcel.any(), async 
         res.send({ error: "File Template is not correct" });
     }
 });
-router.post("/fx-excel", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/fx-excel", common_1.verifyToken, uploadToBucket.any(), async (req, res, next) => {
     let data = req.body;
     let pathName = "fx_" + (0, common_1.formatDateFile)(data.timestamp_start) + "_" + (0, common_1.formatDateFile)(data.timestamp_end) + "_";
     let token = await (0, graphApiConnect_1.getGraphToken)();
@@ -351,17 +350,17 @@ router.post("/fx-excel", common_1.verifyToken, uploadBeforeExcel.any(), async (r
         res.send({ error: "No Trades" });
     }
     else {
-        let fxTrades = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(array, pathName, "fx");
+        let fxTrades = await (0, readExcel_2.uploadArrayAndReturnFilePath)(array, pathName, "fx");
         let downloadEBlotName = common_1.bucket + fxTrades;
         res.send(downloadEBlotName);
     }
 });
-router.post("/upload-trades", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/upload-trades", common_1.verifyToken, uploadToBucket.any(), async (req, res, next) => {
     try {
         let files = req.files;
         const fileName = files[0].filename;
         const path = common_1.bucket + fileName;
-        let action = await (0, reports_1.updatePositionPortfolio)(path);
+        let action = await (0, positions_1.updatePositionPortfolio)(path);
         console.log(action);
         if (action === null || action === void 0 ? void 0 : action.error) {
             res.send({ error: action.error });
@@ -375,9 +374,9 @@ router.post("/upload-trades", common_1.verifyToken, uploadBeforeExcel.any(), asy
         res.send({ error: "File Template is not correct" });
     }
 });
-router.post("/edit-position", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/edit-position", common_1.verifyToken, uploadToBucket.any(), async (req, res, next) => {
     try {
-        let action = await (0, reports_1.editPosition)(req.body, req.body.date);
+        let action = await (0, positions_1.editPosition)(req.body, req.body.date);
         res.sendStatus(200);
     }
     catch (error) {
@@ -385,7 +384,7 @@ router.post("/edit-position", common_1.verifyToken, uploadBeforeExcel.any(), asy
         res.send({ error: "Template is not correct" });
     }
 });
-router.post("/edit-trade", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/edit-trade", common_1.verifyToken, uploadToBucket.any(), async (req, res, next) => {
     try {
         let action = await (0, operations_1.editTrade)(req.body, req.body.tradeType);
         if (action.error) {
@@ -400,7 +399,7 @@ router.post("/edit-trade", common_1.verifyToken, uploadBeforeExcel.any(), async 
         res.send({ error: "Template is not correct" });
     }
 });
-router.post("/delete-trade", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/delete-trade", common_1.verifyToken, uploadToBucket.any(), async (req, res, next) => {
     try {
         let data = req.body;
         let tradeType = req.body.tradeType;
@@ -418,7 +417,7 @@ router.post("/delete-trade", common_1.verifyToken, uploadBeforeExcel.any(), asyn
         res.send({ error: "Unexpected Error" });
     }
 });
-router.post("/delete-position", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/delete-position", common_1.verifyToken, uploadToBucket.any(), async (req, res, next) => {
     try {
         let data = JSON.parse(req.body.data);
         let date = req.body.date;
@@ -437,11 +436,11 @@ router.post("/delete-position", common_1.verifyToken, uploadBeforeExcel.any(), a
         res.send({ error: "Unexpected Error" });
     }
 });
-router.post("/update-prices", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/update-prices", common_1.verifyToken, uploadToBucket.any(), async (req, res, next) => {
     try {
         const fileName = req.files[0].filename;
         const path = common_1.bucket + fileName;
-        let action = await (0, reports_1.updatePricesPortfolio)(path);
+        let action = await (0, positions_1.updatePricesPortfolio)(path);
         if (action === null || action === void 0 ? void 0 : action.error) {
             res.send({ error: action.error });
         }
@@ -453,7 +452,7 @@ router.post("/update-prices", common_1.verifyToken, uploadBeforeExcel.any(), asy
         res.send({ error: "File Template is not correct" });
     }
 });
-router.post("/bulk-edit", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/bulk-edit", common_1.verifyToken, uploadToBucket.any(), async (req, res, next) => {
     try {
         const fileName = req.files[0].filename;
         const path = common_1.bucket + fileName;
@@ -471,7 +470,7 @@ router.post("/bulk-edit", common_1.verifyToken, uploadBeforeExcel.any(), async (
         res.send({ error: "File Template is not correct" });
     }
 });
-router.post("/update-previous-prices", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/update-previous-prices", common_1.verifyToken, uploadToBucket.any(), async (req, res, next) => {
     try {
         let collectionDate = req.body.collectionDate;
         let collectionType = req.body.collectionType;
@@ -491,7 +490,7 @@ router.post("/update-previous-prices", common_1.verifyToken, uploadBeforeExcel.a
         res.send({ error: "fatal error" });
     }
 });
-router.post("/check-mufg", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/check-mufg", common_1.verifyToken, uploadToBucket.any(), async (req, res, next) => {
     try {
         let collectionDate = req.body.collectionDate;
         let files = req.files[0];
@@ -500,14 +499,14 @@ router.post("/check-mufg", common_1.verifyToken, uploadBeforeExcel.any(), async 
         if (files) {
             const fileName = req.files[0].filename;
             const path = common_1.bucket + fileName;
-            data = await (0, operations_1.readMUFGEndOfMonthFile)(path);
+            data = await (0, operations_1.readMUFGReconcileFile)(path);
         }
-        let action = await (0, mufgOperations_1.checkMUFGEndOfMonthWithPortfolio)(data, portfolio[0]);
+        let action = await (0, mufgOperations_1.reconcileMUFG)(data, portfolio[0]);
         if (action === null || action === void 0 ? void 0 : action.error) {
             res.send({ error: action.error });
         }
         else {
-            let link = await (0, excelFormat_1.uploadArrayAndReturnFilePath)(action, `mufg_check_${collectionDate}`, "mufg_check");
+            let link = await (0, readExcel_2.uploadArrayAndReturnFilePath)(action, `mufg_check_${collectionDate}`, "mufg_check");
             let downloadEBlotName = common_1.bucket + link;
             res.send(downloadEBlotName);
         }
@@ -517,7 +516,33 @@ router.post("/check-mufg", common_1.verifyToken, uploadBeforeExcel.any(), async 
         res.send({ error: error.toString() });
     }
 });
-router.post("/edit-fund", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/check-nomura", common_1.verifyToken, uploadToBucket.any(), async (req, res, next) => {
+    try {
+        let collectionDate = req.body.collectionDate;
+        let files = req.files[0];
+        let portfolio = await (0, operations_1.getPortfolioOnSpecificDate)(collectionDate);
+        let data = [];
+        if (files) {
+            const fileName = req.files[0].filename;
+            const path = common_1.bucket + fileName;
+            data = await (0, operations_1.readNomuraReconcileFile)(path);
+        }
+        let action = await (0, mufgOperations_1.reconcileNomura)(data, portfolio[0]);
+        if (action === null || action === void 0 ? void 0 : action.error) {
+            res.send({ error: action.error });
+        }
+        else {
+            let link = await (0, readExcel_2.uploadArrayAndReturnFilePath)(action, `nomura_check_${collectionDate}`, "nomura_check");
+            let downloadEBlotName = common_1.bucket + link;
+            res.send(downloadEBlotName);
+        }
+    }
+    catch (error) {
+        console.log(error);
+        res.send({ error: error.toString() });
+    }
+});
+router.post("/edit-fund", common_1.verifyToken, uploadToBucket.any(), async (req, res, next) => {
     try {
         console.log(req.body, "before");
         let action = await (0, operations_1.editFund)(req.body);
@@ -528,7 +553,7 @@ router.post("/edit-fund", common_1.verifyToken, uploadBeforeExcel.any(), async (
         res.send({ error: "Template is not correct" });
     }
 });
-router.post("/delete-fund", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/delete-fund", common_1.verifyToken, uploadToBucket.any(), async (req, res, next) => {
     try {
         console.log(req.body, "before");
         let action = await (0, operations_1.deleteFund)(req.body);
@@ -539,7 +564,7 @@ router.post("/delete-fund", common_1.verifyToken, uploadBeforeExcel.any(), async
         res.send({ error: "Template is not correct" });
     }
 });
-router.post("/add-fund", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/add-fund", common_1.verifyToken, uploadToBucket.any(), async (req, res, next) => {
     try {
         console.log(req.body, "before");
         let action = await (0, operations_1.addFund)(req.body);
@@ -555,7 +580,7 @@ router.post("/add-fund", common_1.verifyToken, uploadBeforeExcel.any(), async (r
         res.send({ error: "Template is not correct" });
     }
 });
-router.post("/recalculate-position", common_1.verifyToken, uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/recalculate-position", common_1.verifyToken, uploadToBucket.any(), async (req, res, next) => {
     try {
         let data = req.body;
         let tradeType = data.tradeType;
@@ -578,7 +603,7 @@ router.post("/recalculate-position", common_1.verifyToken, uploadBeforeExcel.any
         res.send({ error: error });
     }
 });
-router.post("/one-time", uploadBeforeExcel.any(), async (req, res, next) => {
+router.post("/one-time", uploadToBucket.any(), async (req, res, next) => {
     res.send(200);
 });
 exports.default = router;

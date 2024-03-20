@@ -1,79 +1,8 @@
-import { tradesMTDRlzd } from "../models/reports";
-import { formatDateWorld, isNotNullOrUndefined, parsePercentage, swapMonthDay } from "./common";
-import { parseBondIdentifier } from "./reports/tools";
-import { calculateAccruedSinceInception } from "./reports";
-
-function oasWithChange(oas: any): any {
-  if (oas < 50) {
-    return [30, 30];
-  } else if (oas >= 50 && oas < 100) {
-    return [40, 40];
-  } else if (oas >= 100 && oas < 150) {
-    return [50, 50];
-  } else if (oas >= 150 && oas < 250) {
-    return [75, 75];
-  } else if (oas >= 250 && oas < 400) {
-    return [100, 100];
-  } else if (oas >= 400) {
-    return [parseFloat(oas) * 0.25, "25 % of spread"];
-  }
-}
-
-function checkPosition(position: any, conditions: any) {
-  try {
-    let country = position["Country"] ? position["Country"].toString().toLowerCase() : null;
-    let sector = position["Sector"] ? position["Sector"].toString().toLowerCase() : null;
-    let strategy = position["Strategy"] ? position["Strategy"].toString().toLowerCase() : null;
-    let duration = position["Duration"] ? position["Duration"].toString().toLowerCase() : null;
-    let currency = position["Currency"] ? position["Currency"].toString().toLowerCase() : null;
-    let issuer = position["Issuer"] ? position["Issuer"].toString().toLowerCase() : null;
-    let ticker = position["BB Ticker"] ? position["BB Ticker"].toString().toLowerCase() : null;
-
-    if (conditions.country) {
-      if (!country.includes(conditions.country.toString().toLowerCase())) {
-        return false;
-      }
-    }
-    if (conditions.sector) {
-      if (!sector.includes(conditions.sector.toString().toLowerCase())) {
-        return false;
-      }
-    }
-    if (conditions.strategy) {
-      if (!strategy.includes(conditions.strategy.toString().toLowerCase())) {
-        return false;
-      }
-    }
-    if (conditions.currency) {
-      if (!currency.includes(conditions.currency.toString().toLowerCase())) {
-        return false;
-      }
-    }
-    if (conditions.issuer) {
-      if (!issuer.includes(conditions.issuer.toString().toLowerCase())) {
-        return false;
-      }
-    }
-
-    if (conditions.ticker) {
-      if (!ticker.includes(conditions.ticker.toString().toLowerCase())) {
-        return false;
-      }
-    }
-    if (conditions.durationStart && !conditions.durationEnd) {
-      conditions.durationEnd = 100;
-    }
-    if (conditions.durationStart && conditions.durationEnd) {
-      if (isNotNullOrUndefined(conditions.durationStart) && isNotNullOrUndefined(conditions.durationEnd) && (duration < parseFloat(conditions.durationStart) || duration > parseFloat(conditions.durationEnd))) {
-        return false;
-      }
-    }
-    return true;
-  } catch (error) {
-    console.log(position, error);
-    return false;
-  }
-}
+import { tradesMTDRlzd } from "../../models/reports";
+import { formatDateWorld, isNotNullOrUndefined, parsePercentage, swapMonthDay } from "../common";
+import { calculateAccruedSinceInception } from "../reports/portfolios";
+import { parseBondIdentifier } from "../reports/tools";
+import { bbgRating, isRatingHigherThanBBBMinus, sortObjectBasedOnKey, toTitleCase, oasWithChange, checkPosition, formatMarkDate, yearsUntil, getDuration, getSectorAssetClass, moodyRating } from "./tools";
 
 export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: any, conditions = null) {
   let currencies: any = {};
@@ -273,6 +202,7 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     position["Z Spread"] = (position["Z Spread"] / 1000000) * position["Notional Amount"] * usdRatio;
     position["Z Spread"] = Math.round(position["Z Spread"] * 1000000) / 1000000 || 0;
     position["Entry Yield"] = position["Entry Yield"] ? Math.round(position["Entry Yield"] * 100) / 100 + " %" : "0 %";
+    position["Coupon Rate"] = position["Coupon Rate"] + " %";
     let latestDateKey;
 
     latestDateKey = Object.keys(position["Interest"]).sort((a, b) => {
@@ -306,7 +236,6 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
 
         daypl += position["Day P&L (BC)"];
         dayfx += position["Day P&L FX"];
-
 
         dayurlzd += position["Day URlzd (BC)"];
         dayrlzd += position["Day Rlzd (BC)"];
@@ -365,8 +294,7 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     ytdint: Math.round(ytdint * 1000) / 1000,
     ytdfx: Math.round(ytdfx * 1000) / 1000,
     ytdintPercentage: Math.round((ytdint / parseFloat(fund.nav)) * 100000) / 1000,
-    ytdFXGross:ytdFXGross,
-
+    ytdFXGross: ytdFXGross,
 
     dayGross: dayGross,
     dayFXGross: dayFXGross,
@@ -397,34 +325,6 @@ export function formatFrontEndTable(portfolio: any, date: any, fund: any, dates:
   return { portfolio: analyzedPortfolio.portfolio, fundDetails: formattedPortfolio.fundDetails, analysis: analyzedPortfolio };
 }
 
-function yearsUntil(dateString: any, dateInput: any) {
-  // Parse the date string and create a new Date object
-  if (dateString == 0 || dateString == "0") {
-    return 0;
-  }
-
-  let dateComponents = dateString.split("/");
-  dateString = dateComponents[0] + "/" + dateComponents[1] + "/" + dateComponents[2];
-  let date = new Date(dateString).getTime();
-
-  // Get the current date
-  const now: any = new Date(dateInput).getTime();
-
-  // Calculate the difference in milliseconds
-  const diff: any = date - now;
-
-  // Convert the difference from milliseconds to years
-  let years = diff / (1000 * 60 * 60 * 24 * 365.25);
-
-  // If the difference is negative (i.e., the date is in the future), take the absolute value
-  if (years < 0) {
-    years = 0;
-  }
-
-  // Round to two decimal places and return
-  return Math.round(years * 100) / 100;
-}
-
 export function calculateMTDCost(trades: tradesMTDRlzd[], mark: number, issue: string) {
   let total = 0;
 
@@ -439,19 +339,6 @@ export function calculateMTDCost(trades: tradesMTDRlzd[], mark: number, issue: s
   }
 
   return total;
-}
-function formatMarkDate(date: any) {
-  date = new Date(date);
-
-  let day = date.getDate().toString();
-  let month = (date.getMonth() + 1).toString(); // getMonth() is zero-based
-  let year = date.getFullYear().toString().substr(-2); // get only the last two digits of the year
-
-  // Ensuring day and month are two digits by adding a leading '0' if necessary
-  day = day.length < 2 ? "0" + day : day;
-  month = month.length < 2 ? "0" + month : month;
-
-  return `${month}/${day}/${year}`;
 }
 
 export function formatSummaryPosition(position: any, fundDetails: any, dates: any) {
@@ -651,37 +538,6 @@ export function formatFrontEndSummaryTable(portfolio: any, date: any, fund: any,
   let analyzedPortfolio = groupAndSortByLocationAndTypeDefineTables(formatted, formattedPortfolio.fundDetails.nav, sort, sign, "frontOffice", formattedPortfolio.currencies, "summary");
 
   return { portfolio: analyzedPortfolio.portfolio, fundDetails: formattedPortfolio.fundDetails, analysis: analyzedPortfolio };
-}
-
-function getDuration(duration: any) {
-  duration = parseFloat(duration);
-  if (duration < 2) {
-    return "0 To 2";
-  } else if (duration >= 2 && duration < 5) {
-    return "2 To 5";
-  } else if (duration >= 5 && duration < 10) {
-    return "5 To 10";
-  } else if (duration >= 10 && duration < 30) {
-    return "10 To 30";
-  } else if (duration >= 30) {
-    return "> 30";
-  }
-}
-
-function getSectorAssetClass(issue: string, sector: string) {
-  if (issue.toLocaleLowerCase().includes("perp")) {
-    if (sector) {
-      if (sector.toLocaleLowerCase().includes("bank")) {
-        return "FINS Perps";
-      } else {
-        return "Corps Perps";
-      }
-    } else {
-      return "Corps Perps";
-    }
-  } else {
-    return "Bonds";
-  }
 }
 
 function sumTable(table: any, data: any, view: any, param: any, subtotal = false, subtotalParam = "") {
@@ -1044,9 +900,10 @@ function assignColorAndSortParamsBasedOnAssetClass(
 
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
         let duration: any = getDuration(groupedByLocation[locationCode].data[index]["Duration"]);
-        let couponRate: any = groupedByLocation[locationCode].data[index]["Coupon Rate"] + " %";
+        let couponRate: any = groupedByLocation[locationCode].data[index]["Coupon Rate"];
         let notional = groupedByLocation[locationCode].data[index]["Notional Amount"];
         let issue: any = groupedByLocation[locationCode].data[index]["BB Ticker"];
+        // console.log(issue, couponRate, "table formamated")
         sumTable(rvPairTable, groupedByLocation[locationCode].data[index], view, locationCode);
         if (notional < 0) {
           sumTable(ustTableByCoupon, groupedByLocation[locationCode].data[index], view, couponRate);
@@ -1107,9 +964,10 @@ function assignColorAndSortParamsBasedOnAssetClass(
       groupedByLocation[locationCode].color = "#E8F5E9";
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
         let duration: any = getDuration(groupedByLocation[locationCode].data[index]["Duration"]);
-        let couponRate: any = groupedByLocation[locationCode].data[index]["Coupon Rate"] + " %";
+        let couponRate: any = groupedByLocation[locationCode].data[index]["Coupon Rate"];
         let notional = groupedByLocation[locationCode].data[index]["Notional Amount"];
         let issue: any = groupedByLocation[locationCode].data[index]["BB Ticker"];
+        //  console.log(issue, couponRate, "table")
         if (notional < 0) {
           sumTable(ustTableByCoupon, groupedByLocation[locationCode].data[index], view, couponRate);
           sumTable(ustTable, groupedByLocation[locationCode].data[index], view, duration, true, issue);
@@ -1462,539 +1320,49 @@ function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio: any, nav:
 
   let ustTable: any = {
     "0 To 2": {},
-    "0 To 2 Aggregated": {
-      DayPL: 0,
-      MTDPL: 0,
-      DV01Sum: 0,
-      groupUSDMarketValue: 0,
-      oasSum: 0,
-      zSpreadSum: 0,
-      oasWChangeSum: 0,
-      "DV01 Dollar Value Impact": 0,
-      "DV01 Dollar Value Impact % of Nav": 0,
-      "DV01 Dollar Value Impact Limit % of Nav": 0,
-      "DV01 Dollar Value Impact Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Test": "Pass",
-
-      "Value (BC) % of Nav": 0,
-      "Value (BC) % of GMV": 0,
-      "Value (BC) Limit % of Nav": 0,
-
-      "Value (BC) Utilization % of Nav": 0,
-
-      "Value (BC) Test": "Pass",
-      "Capital Gain/ Loss since Inception (Live Position)": 0,
-      "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-      "Accrued Int. Since Inception": 0,
-      "Total Gain/ Loss (USD)": 0,
-      "% of Total Gain/ Loss since Inception (Live Position)": 0,
-      "Notional Amount": 0,
-    },
+    "0 To 2 Aggregated": new AggregatedData(),
     "2 To 5": {},
-    "2 To 5 Aggregated": {
-      DayPL: 0,
-      MTDPL: 0,
-      DV01Sum: 0,
-      groupUSDMarketValue: 0,
-      oasSum: 0,
-      zSpreadSum: 0,
-      oasWChangeSum: 0,
-      "DV01 Dollar Value Impact": 0,
-      "DV01 Dollar Value Impact % of Nav": 0,
-      "DV01 Dollar Value Impact Limit % of Nav": 0,
-      "DV01 Dollar Value Impact Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Test": "Pass",
-      "Value (BC) % of Nav": 0,
-      "Value (BC) % of GMV": 0,
-      "Value (BC) Limit % of Nav": 0,
-
-      "Value (BC) Utilization % of Nav": 0,
-
-      "Value (BC) Test": "Pass",
-      "Capital Gain/ Loss since Inception (Live Position)": 0,
-      "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-      "Accrued Int. Since Inception": 0,
-      "Total Gain/ Loss (USD)": 0,
-      "% of Total Gain/ Loss since Inception (Live Position)": 0,
-
-      "Notional Amount": 0,
-    },
+    "2 To 5 Aggregated": new AggregatedData(),
     "5 To 10": {},
-    "5 To 10 Aggregated": {
-      DayPL: 0,
-      MTDPL: 0,
-      DV01Sum: 0,
-      groupUSDMarketValue: 0,
-      oasSum: 0,
-      zSpreadSum: 0,
-      oasWChangeSum: 0,
-      "DV01 Dollar Value Impact": 0,
-      "DV01 Dollar Value Impact % of Nav": 0,
-      "DV01 Dollar Value Impact Limit % of Nav": 0,
-      "DV01 Dollar Value Impact Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Test": "Pass",
-      "Value (BC) % of Nav": 0,
-      "Value (BC) % of GMV": 0,
-      "Value (BC) Limit % of Nav": 0,
-
-      "Value (BC) Utilization % of Nav": 0,
-
-      "Value (BC) Test": "Pass",
-      "Capital Gain/ Loss since Inception (Live Position)": 0,
-      "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-      "Accrued Int. Since Inception": 0,
-      "Total Gain/ Loss (USD)": 0,
-      "% of Total Gain/ Loss since Inception (Live Position)": 0,
-      "Notional Amount": 0,
-    },
+    "5 To 10 Aggregated": new AggregatedData(),
     "10 To 30": {},
-    "10 To 30 Aggregated": {
-      DayPL: 0,
-      MTDPL: 0,
-      DV01Sum: 0,
-      groupUSDMarketValue: 0,
-      oasSum: 0,
-      zSpreadSum: 0,
-      oasWChangeSum: 0,
-      "DV01 Dollar Value Impact": 0,
-      "DV01 Dollar Value Impact % of Nav": 0,
-      "DV01 Dollar Value Impact Limit % of Nav": 0,
-      "DV01 Dollar Value Impact Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Test": "Pass",
-      "Value (BC) % of Nav": 0,
-      "Value (BC) % of GMV": 0,
-      "Value (BC) Limit % of Nav": 0,
-
-      "Value (BC) Utilization % of Nav": 0,
-
-      "Value (BC) Test": "Pass",
-      "Capital Gain/ Loss since Inception (Live Position)": 0,
-      "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-      "Accrued Int. Since Inception": 0,
-      "Total Gain/ Loss (USD)": 0,
-      "% of Total Gain/ Loss since Inception (Live Position)": 0,
-      "Notional Amount": 0,
-    },
+    "10 To 30 Aggregated": new AggregatedData(),
     "> 30": {},
-    "> 30 Aggregated": {
-      DayPl: 0,
-      MTDPL: 0,
-      DV01Sum: 0,
-      groupUSDMarketValue: 0,
-      oasSum: 0,
-      zSpreadSum: 0,
-      oasWChangeSum: 0,
-      "DV01 Dollar Value Impact": 0,
-      "DV01 Dollar Value Impact % of Nav": 0,
-      "DV01 Dollar Value Impact Limit % of Nav": 0,
-      "DV01 Dollar Value Impact Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Test": "Pass",
-      "Value (BC) % of Nav": 0,
-      "Value (BC) % of GMV": 0,
-      "Value (BC) Limit % of Nav": 0,
-
-      "Value (BC) Utilization % of Nav": 0,
-
-      "Value (BC) Test": "Pass",
-      "Capital Gain/ Loss since Inception (Live Position)": 0,
-      "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-      "Accrued Int. Since Inception": 0,
-      "Total Gain/ Loss (USD)": 0,
-      "% of Total Gain/ Loss since Inception (Live Position)": 0,
-      "Notional Amount": 0,
-    },
-    Total: {
-      DayPL: 0,
-      MTDPL: 0,
-      DV01Sum: 0,
-      groupUSDMarketValue: 0,
-      oasSum: 0,
-      zSpreadSum: 0,
-      oasWChangeSum: 0,
-      "DV01 Dollar Value Impact": 0,
-      "DV01 Dollar Value Impact % of Nav": 0,
-      "DV01 Dollar Value Impact Limit % of Nav": 0,
-      "DV01 Dollar Value Impact Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Test": "Pass",
-      "Value (BC) % of Nav": 0,
-      "Value (BC) % of GMV": 0,
-      "Value (BC) Limit % of Nav": 0,
-
-      "Value (BC) Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-      "Value (BC) Color Test": "#C5E1A5",
-      "Value (BC) Test": "Pass",
-      "Capital Gain/ Loss since Inception (Live Position)": 0,
-      "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-      "Accrued Int. Since Inception": 0,
-      "Total Gain/ Loss (USD)": 0,
-      "% of Total Gain/ Loss since Inception (Live Position)": 0,
-      "Notional Amount": 0,
-    },
+    "> 30 Aggregated": new AggregatedData(),
+    Total: new AggregatedData(),
   };
 
   let ustTableByCoupon: any = {
-    Total: {
-      DayPL: 0,
-      MTDPL: 0,
-      DV01Sum: 0,
-      groupUSDMarketValue: 0,
-      oasSum: 0,
-      zSpreadSum: 0,
-      oasWChangeSum: 0,
-      "DV01 Dollar Value Impact": 0,
-      "DV01 Dollar Value Impact % of Nav": 0,
-      "DV01 Dollar Value Impact Limit % of Nav": 0,
-      "DV01 Dollar Value Impact Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Test": "Pass",
-      "Value (BC) % of Nav": 0,
-      "Value (BC) % of GMV": 0,
-      "Value (BC) Limit % of Nav": 0,
-
-      "Value (BC) Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-      "Value (BC) Color Test": "#C5E1A5",
-      "Value (BC) Test": "Pass",
-      "Capital Gain/ Loss since Inception (Live Position)": 0,
-      "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-      "Accrued Int. Since Inception": 0,
-      "Total Gain/ Loss (USD)": 0,
-      "% of Total Gain/ Loss since Inception (Live Position)": 0,
-      "Notional Amount": 0,
-    },
+    Total: new AggregatedData(),
   };
 
   let igTable: any = {
     Bonds: [],
-    "Bonds Aggregated": {
-      DayPL: 0,
-      MTDPL: 0,
-      DV01Sum: 0,
-      groupUSDMarketValue: 0,
-      oasSum: 0,
-      zSpreadSum: 0,
-      oasWChangeSum: 0,
-      "DV01 Dollar Value Impact": 0,
-      "DV01 Dollar Value Impact % of Nav": 0,
-      "DV01 Dollar Value Impact Limit % of Nav": 0,
-      "DV01 Dollar Value Impact Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Test": "Pass",
-      "Value (BC) % of Nav": 0,
-      "Value (BC) % of GMV": 0,
-      "Value (BC) Limit % of Nav": 0,
-
-      "Value (BC) Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-      "Value (BC) Color Test": "#C5E1A5",
-      "Value (BC) Test": "Pass",
-      "Capital Gain/ Loss since Inception (Live Position)": 0,
-      "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-      "Accrued Int. Since Inception": 0,
-      "Total Gain/ Loss (USD)": 0,
-      "% of Total Gain/ Loss since Inception (Live Position)": 0,
-      "Notional Amount": 0,
-    },
+    "Bonds Aggregated": new AggregatedData(),
     "FINS Perps": [],
-    "FINS Perps Aggregated": {
-      DayPL: 0,
-      MTDPL: 0,
-      DV01Sum: 0,
-      groupUSDMarketValue: 0,
-      oasSum: 0,
-      zSpreadSum: 0,
-      oasWChangeSum: 0,
-      "DV01 Dollar Value Impact": 0,
-      "DV01 Dollar Value Impact % of Nav": 0,
-      "DV01 Dollar Value Impact Limit % of Nav": 0,
-      "DV01 Dollar Value Impact Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Test": "Pass",
-
-      "Value (BC) % of Nav": 0,
-      "Value (BC) % of GMV": 0,
-      "Value (BC) Limit % of Nav": 0,
-
-      "Value (BC) Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-      "Value (BC) Test": "Pass",
-      "Value (BC) Color Test": "#C5E1A5",
-      "Capital Gain/ Loss since Inception (Live Position)": 0,
-      "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-      "Accrued Int. Since Inception": 0,
-      "Total Gain/ Loss (USD)": 0,
-      "% of Total Gain/ Loss since Inception (Live Position)": 0,
-      "Notional Amount": 0,
-    },
+    "FINS Perps Aggregated": new AggregatedData(),
     "Corps Perps": [],
-    "Corps Perps Aggregated": {
-      DayPL: 0,
-      MTDPL: 0,
-      DV01Sum: 0,
-      groupUSDMarketValue: 0,
-      oasSum: 0,
-      zSpreadSum: 0,
-      oasWChangeSum: 0,
-      "DV01 Dollar Value Impact": 0,
-      "DV01 Dollar Value Impact % of Nav": 0,
-      "DV01 Dollar Value Impact Limit % of Nav": 0,
-      "DV01 Dollar Value Impact Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Test": "Pass",
-      "Value (BC) % of Nav": 0,
-      "Value (BC) % of GMV": 0,
-      "Value (BC) Limit % of Nav": 0,
-      "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-      "Value (BC) Utilization % of Nav": 0,
-      "Value (BC) Color Test": "#C5E1A5",
-      "Value (BC) Test": "Pass",
-      "Capital Gain/ Loss since Inception (Live Position)": 0,
-      "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-      "Accrued Int. Since Inception": 0,
-      "Total Gain/ Loss (USD)": 0,
-      "% of Total Gain/ Loss since Inception (Live Position)": 0,
-      "Notional Amount": 0,
-    },
-    Total: {
-      DayPL: 0,
-      MTDPL: 0,
-      DV01Sum: 0,
-      groupUSDMarketValue: 0,
-      oasSum: 0,
-      zSpreadSum: 0,
-      oasWChangeSum: 0,
-      "DV01 Dollar Value Impact": 0,
-      "DV01 Dollar Value Impact % of Nav": 0,
-      "DV01 Dollar Value Impact Limit % of Nav": 0,
-      "DV01 Dollar Value Impact Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Test": "Pass",
-      "Value (BC) % of Nav": 0,
-      "Value (BC) % of GMV": 0,
-      "Value (BC) Limit % of Nav": 0,
-
-      "Value (BC) Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-      "Value (BC) Color Test": "#C5E1A5",
-      "Value (BC) Test": "Pass",
-      "Capital Gain/ Loss since Inception (Live Position)": 0,
-      "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-      "Accrued Int. Since Inception": 0,
-      "Total Gain/ Loss (USD)": 0,
-      "% of Total Gain/ Loss since Inception (Live Position)": 0,
-      "Notional Amount": 0,
-    },
+    "Corps Perps Aggregated": new AggregatedData(),
+    Total: new AggregatedData(),
   };
   let hyTable: any = {
     Bonds: [],
-    "Bonds Aggregated": {
-      DayPL: 0,
-      MTDPL: 0,
-      DV01Sum: 0,
-      groupUSDMarketValue: 0,
-      oasSum: 0,
-      zSpreadSum: 0,
-      oasWChangeSum: 0,
-      "DV01 Dollar Value Impact": 0,
-      "DV01 Dollar Value Impact % of Nav": 0,
-      "DV01 Dollar Value Impact Limit % of Nav": 0,
-      "DV01 Dollar Value Impact Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Test": "Pass",
-      "Value (BC) % of Nav": 0,
-      "Value (BC) % of GMV": 0,
-      "Value (BC) Limit % of Nav": 0,
-
-      "Value (BC) Utilization % of Nav": 0,
-
-      "Value (BC) Test": "Pass",
-      "Capital Gain/ Loss since Inception (Live Position)": 0,
-      "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-      "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-      "Value (BC) Color Test": "#C5E1A5",
-      "Accrued Int. Since Inception": 0,
-      "Total Gain/ Loss (USD)": 0,
-      "% of Total Gain/ Loss since Inception (Live Position)": 0,
-      "Notional Amount": 0,
-    },
+    "Bonds Aggregated": new AggregatedData(),
     "FINS Perps": [],
-    "FINS Perps Aggregated": {
-      DayPL: 0,
-      MTDPL: 0,
-      DV01Sum: 0,
-      groupUSDMarketValue: 0,
-      oasSum: 0,
-      zSpreadSum: 0,
-      oasWChangeSum: 0,
-      "DV01 Dollar Value Impact": 0,
-      "DV01 Dollar Value Impact % of Nav": 0,
-      "DV01 Dollar Value Impact Limit % of Nav": 0,
-      "DV01 Dollar Value Impact Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Test": "Pass",
-      "Value (BC) % of Nav": 0,
-      "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-      "Value (BC) Color Test": "#C5E1A5",
-      "Value (BC) % of GMV": 0,
-      "Value (BC) Limit % of Nav": 0,
-
-      "Value (BC) Utilization % of Nav": 0,
-
-      "Value (BC) Test": "Pass",
-      "Capital Gain/ Loss since Inception (Live Position)": 0,
-      "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-      "Accrued Int. Since Inception": 0,
-      "Total Gain/ Loss (USD)": 0,
-      "% of Total Gain/ Loss since Inception (Live Position)": 0,
-      "Notional Amount": 0,
-    },
+    "FINS Perps Aggregated": new AggregatedData(),
     "Corps Perps": [],
-    "Corps Perps Aggregated": {
-      DayPL: 0,
-      MTDPL: 0,
-      DV01Sum: 0,
-      groupUSDMarketValue: 0,
-      oasSum: 0,
-      zSpreadSum: 0,
-      oasWChangeSum: 0,
-      "DV01 Dollar Value Impact": 0,
-      "DV01 Dollar Value Impact % of Nav": 0,
-      "DV01 Dollar Value Impact Limit % of Nav": 0,
-      "DV01 Dollar Value Impact Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Test": "Pass",
-      "Value (BC) % of Nav": 0,
-      "Value (BC) % of GMV": 0,
-      "Value (BC) Limit % of Nav": 0,
-
-      "Value (BC) Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-      "Value (BC) Color Test": "#C5E1A5",
-
-      "Value (BC) Test": "Pass",
-      "Capital Gain/ Loss since Inception (Live Position)": 0,
-      "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-      "Accrued Int. Since Inception": 0,
-      "Total Gain/ Loss (USD)": 0,
-      "% of Total Gain/ Loss since Inception (Live Position)": 0,
-      "Notional Amount": 0,
-    },
-    Total: {
-      DayPL: 0,
-      MTDPL: 0,
-      DV01Sum: 0,
-      groupUSDMarketValue: 0,
-      oasSum: 0,
-      zSpreadSum: 0,
-      oasWChangeSum: 0,
-      "DV01 Dollar Value Impact": 0,
-      "DV01 Dollar Value Impact % of Nav": 0,
-      "DV01 Dollar Value Impact Limit % of Nav": 0,
-      "DV01 Dollar Value Impact Utilization % of Nav": 0,
-
-      "DV01 Dollar Value Impact Test": "Pass",
-      "Value (BC) % of Nav": 0,
-      "Value (BC) % of GMV": 0,
-      "Value (BC) Limit % of Nav": 0,
-
-      "Value (BC) Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-      "Value (BC) Color Test": "#C5E1A5",
-
-      "Value (BC) Test": "Pass",
-      "Capital Gain/ Loss since Inception (Live Position)": 0,
-      "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-      "Accrued Int. Since Inception": 0,
-      "Total Gain/ Loss (USD)": 0,
-      "% of Total Gain/ Loss since Inception (Live Position)": 0,
-      "Notional Amount": 0,
-    },
+    "Corps Perps Aggregated": new AggregatedData(),
+    Total: new AggregatedData(),
   };
   let currTable: any = {
-    Total: {
-      DayPL: 0,
-      MTDPL: 0,
-      DV01Sum: 0,
-      groupUSDMarketValue: 0,
-      oasSum: 0,
-      zSpreadSum: 0,
-      oasWChangeSum: 0,
-      "DV01 Dollar Value Impact": 0,
-      "DV01 Dollar Value Impact % of Nav": 0,
-      "DV01 Dollar Value Impact Limit % of Nav": 0,
-      "DV01 Dollar Value Impact Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Test": "Pass",
-      "Value (BC) % of Nav": 0,
-      "Value (BC) % of GMV": 0,
-      "Value (BC) Limit % of Nav": 0,
-
-      "Value (BC) Utilization % of Nav": 0,
-
-      "Value (BC) Test": "Pass",
-      "Capital Gain/ Loss since Inception (Live Position)": 0,
-      "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-      "Accrued Int. Since Inception": 0,
-      "Total Gain/ Loss (USD)": 0,
-      "% of Total Gain/ Loss since Inception (Live Position)": 0,
-
-      "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-      "Value (BC) Color Test": "#C5E1A5",
-      "Notional Amount": 0,
-    },
+    Total: new AggregatedData(),
   };
   let issuerTable: any = {
-    Total: {
-      DayPL: 0,
-      MTDPL: 0,
-      DV01Sum: 0,
-      groupUSDMarketValue: 0,
-      oasSum: 0,
-      zSpreadSum: 0,
-      oasWChangeSum: 0,
-      "DV01 Dollar Value Impact": 0,
-      "DV01 Dollar Value Impact % of Nav": 0,
-      "DV01 Dollar Value Impact Limit % of Nav": 0,
-      "DV01 Dollar Value Impact Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Test": "Pass",
-      "Value (BC) % of Nav": 0,
-      "Value (BC) % of GMV": 0,
-      "Value (BC) Limit % of Nav": 0,
-
-      "Value (BC) Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-      "Value (BC) Color Test": "#C5E1A5",
-      "Value (BC) Test": "Pass",
-      "Capital Gain/ Loss since Inception (Live Position)": 0,
-      "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-      "Accrued Int. Since Inception": 0,
-      "Total Gain/ Loss (USD)": 0,
-      "% of Total Gain/ Loss since Inception (Live Position)": 0,
-      "Notional Amount": 0,
-    },
+    Total: new AggregatedData(),
   };
 
   let rvPairTable: any = {
-    Total: {
-      DayPL: 0,
-      MTDPL: 0,
-      DV01Sum: 0,
-      groupUSDMarketValue: 0,
-      oasSum: 0,
-      zSpreadSum: 0,
-      oasWChangeSum: 0,
-      "DV01 Dollar Value Impact": 0,
-      "DV01 Dollar Value Impact % of Nav": 0,
-      "DV01 Dollar Value Impact Limit % of Nav": 0,
-      "DV01 Dollar Value Impact Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Test": "Pass",
-      "Value (BC) % of Nav": 0,
-      "Value (BC) % of GMV": 0,
-      "Value (BC) Limit % of Nav": 0,
-
-      "Value (BC) Utilization % of Nav": 0,
-      "DV01 Dollar Value Impact Color Test": "#C5E1A5",
-      "Value (BC) Color Test": "#C5E1A5",
-      "Value (BC) Test": "Pass",
-      "Capital Gain/ Loss since Inception (Live Position)": 0,
-      "% of Capital Gain/ Loss since Inception (Live Position)": 0,
-      "Accrued Int. Since Inception": 0,
-      "Total Gain/ Loss (USD)": 0,
-      "% of Total Gain/ Loss since Inception (Live Position)": 0,
-      "Notional Amount": 0,
-    },
+    Total: new AggregatedData(),
   };
   let tickerTable: any = {};
   const groupedByLocation = formattedPortfolio.reduce((group: any, item: any) => {
@@ -2157,105 +1525,60 @@ function sortSummary(locationCode: string, group: any) {
     return assetClassOrder.undefined;
   }
 }
-function sortObjectBasedOnKey(object: any) {
-  return Object.keys(object)
-    .sort((a, b) => object[b] - object[a])
-    .reduce((acc, key) => ({ ...acc, [key]: object[key] }), {});
-}
 
-function toTitleCase(str: string) {
-  return str
-    .toLowerCase()
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
+class AggregatedData {
+  DayPL: number;
+  MTDPL: number;
+  DV01Sum: number;
+  groupUSDMarketValue: number;
+  oasSum: number;
+  zSpreadSum: number;
+  oasWChangeSum: number;
+  "DV01 Dollar Value Impact": number;
+  "DV01 Dollar Value Impact % of Nav": number;
+  "DV01 Dollar Value Impact Limit % of Nav": number;
+  "DV01 Dollar Value Impact Utilization % of Nav": number;
+  "DV01 Dollar Value Impact Test": string;
 
-function areDatesInSameMonthAndYear(customDate: string, todaysDate: string) {
-  return new Date(customDate).getMonth() === new Date(todaysDate).getMonth() && new Date(customDate).getFullYear() === new Date(todaysDate).getFullYear();
-}
+  "Value (BC) % of Nav": number;
+  "Value (BC) % of GMV": number;
+  "Value (BC) Limit % of Nav": number;
 
-function isRatingHigherThanBBBMinus(rating: string) {
-  const ratingsOrder = [
-    "AAA",
-    "AA+",
-    "AA",
-    "AA-",
-    "A+",
-    "A",
-    "A-",
-    "BBB+",
-    "BBB",
-    "BBB-", // 'BBB-' is the benchmark
-    "BB+",
-    "BB",
-    "BB-",
-    "B+",
-    "B",
-    "B-",
-    "CCC+",
-    "CCC",
-    "CCC-",
-    // Add more if there are other ratings
-  ];
+  "Value (BC) Utilization % of Nav": number;
 
-  rating = rating.toUpperCase().trim();
+  "Value (BC) Test": string;
+  "Capital Gain/ Loss since Inception (Live Position)": number;
+  "% of Capital Gain/ Loss since Inception (Live Position)": number;
+  "Accrued Int. Since Inception": number;
+  "Total Gain/ Loss (USD)": number;
+  "% of Total Gain/ Loss since Inception (Live Position)": number;
+  "Notional Amount": number;
+  constructor() {
+    this.DayPL = 0;
+    this.MTDPL = 0;
+    this.DV01Sum = 0;
+    this.groupUSDMarketValue = 0;
+    this.oasSum = 0;
+    this.zSpreadSum = 0;
+    this.oasWChangeSum = 0;
+    this["DV01 Dollar Value Impact"] = 0;
+    this["DV01 Dollar Value Impact % of Nav"] = 0;
+    this["DV01 Dollar Value Impact Limit % of Nav"] = 0;
+    this["DV01 Dollar Value Impact Utilization % of Nav"] = 0;
+    this["DV01 Dollar Value Impact Test"] = "Pass";
 
-  const ratingIndex = ratingsOrder.indexOf(rating.toUpperCase().trim());
+    this["Value (BC) % of Nav"] = 0;
+    this["Value (BC) % of GMV"] = 0;
+    this["Value (BC) Limit % of Nav"] = 0;
 
-  const benchmarkIndex = ratingsOrder.indexOf("BBB-");
+    this["Value (BC) Utilization % of Nav"] = 0;
 
-  // Check if the rating is valid
-  if (ratingIndex === -1) {
-    return "";
+    this["Value (BC) Test"] = "Pass";
+    this["Capital Gain/ Loss since Inception (Live Position)"] = 0;
+    this["% of Capital Gain/ Loss since Inception (Live Position)"] = 0;
+    this["Accrued Int. Since Inception"] = 0;
+    this["Total Gain/ Loss (USD)"] = 0;
+    this["% of Total Gain/ Loss since Inception (Live Position)"] = 0;
+    this["Notional Amount"] = 0;
   }
-
-  // If the rating index is less than the benchmark index, it's higher (since the array is sorted from highest to lowest)
-  return ratingIndex < benchmarkIndex ? "IG" : "HY";
-}
-function bbgRating(rating: string) {
-  const ratingsOrder = [
-    "AAA",
-    "AA+",
-    "AA",
-    "AA-",
-    "A+",
-    "A",
-    "A-",
-    "BBB+",
-    "BBB",
-    "BBB-", // 'BBB-' is the benchmark
-    "BB+",
-    "BB",
-    "BB-",
-    "B+",
-    "B",
-    "B-",
-    "CCC+",
-    "CCC",
-    "CCC-",
-    // Add more if there are other ratings
-  ];
-
-  const ratingIndex = ratingsOrder.indexOf(rating.toUpperCase());
-  const benchmarkIndex = ratingsOrder.indexOf("BBB-");
-
-  // Check if the rating is valid
-  if (ratingIndex === -1) {
-    return "";
-  }
-
-  // If the rating index is less than the benchmark index, it's higher (since the array is sorted from highest to lowest)
-  return -benchmarkIndex;
-}
-
-function moodyRating(rating: string) {
-  const ratings = ["Aaa", "Aa1", "Aa2", "Aa3", "A1", "A2", "A3", "Baa1", "Baa2", "Baa3", "Ba1", "Ba2", "Ba3", "B1", "B2", "B3", "Caa1", "Caa2", "Caa3", "Ca", "C"];
-
-  const index = ratings.indexOf(rating);
-
-  if (index !== -1) {
-    return -index;
-  }
-  return "";
 }

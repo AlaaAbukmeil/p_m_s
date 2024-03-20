@@ -1,25 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.formatVconToNomuraBulkUpload = exports.readEmsxRawExcel = exports.formatEmsxTrades = exports.renderFx = exports.formatIbTrades = exports.formatCentralizedRawFiles = exports.getTriadaTrades = exports.uploadArrayAndReturnFilePath = exports.renderVcon = void 0;
+exports.formatEmsxTrades = exports.renderFx = exports.formatIbTrades = exports.formatCentralizedRawFiles = exports.getTriadaTrades = exports.renderVcon = void 0;
 require("dotenv").config();
 const mufgOperations_1 = require("./mufgOperations");
 const common_1 = require("./common");
 const tools_1 = require("./reports/tools");
 const graphApiConnect_1 = require("./graphApiConnect");
-const common_2 = require("./common");
-const readExcel_1 = require("./reports/readExcel");
+const readExcel_1 = require("./operations/readExcel");
+const auth_1 = require("./auth");
 const xlsx = require("xlsx");
 const { PassThrough } = require("stream");
-const { MongoClient, ServerApiVersion } = require("mongodb");
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
-const client = new MongoClient(common_2.uri, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: false,
-        deprecationErrors: true,
-    },
-});
 function extractValuesVcon(lines) {
     let variables = [
         "Broker Code",
@@ -121,23 +113,8 @@ function renderVcon(emailContent) {
     return vcon;
 }
 exports.renderVcon = renderVcon;
-async function uploadArrayAndReturnFilePath(data, pathName, folderName) {
-    // Create a new Workbook
-    var wb = xlsx.utils.book_new();
-    let binaryWS = xlsx.utils.json_to_sheet(data);
-    // Name your sheet
-    xlsx.utils.book_append_sheet(wb, binaryWS, "Binary values");
-    // export your excel
-    const stream = new PassThrough();
-    const buffer = xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
-    let randomString = (0, common_1.generateRandomString)(6);
-    let fileName = `${folderName}/${pathName.replace(/[!@#$%^&*(),.?":{}|<>\/\[\]\\;'\-=+`~]/g, "_")}_${randomString}.xlsx`;
-    (0, readExcel_1.uploadToGCloudBucket)(buffer, process.env.BUCKET, fileName).then().catch(console.error);
-    return "/" + fileName;
-}
-exports.uploadArrayAndReturnFilePath = uploadArrayAndReturnFilePath;
 async function getTriadaTrades(tradeType, fromTimestamp = 0, toTimestamp = 0) {
-    const database = client.db("trades_v_2");
+    const database = auth_1.client.db("trades_v_2");
     let options = [];
     // If both timestamps are provided, use them to filter the results
     if (fromTimestamp !== null && toTimestamp !== null) {
@@ -370,7 +347,7 @@ function formatIbTrades(data, ibTrades, portfolio) {
                     }
                 }
                 let identifier = trade["Symbol"];
-                let securityInPortfolioLocation = (0, graphApiConnect_1.getSecurityInPortfolioWithoutLocation)(portfolio, identifier);
+                let securityInPortfolioLocation = (0, graphApiConnect_1.getSecurityInPortfolioWithoutLocationForVcon)(portfolio, identifier);
                 if (existingTrade) {
                     id = existingTrade["Triada Trade Id"];
                     trade_status = "uploaded_to_app";
@@ -472,7 +449,7 @@ function formatEmsxTrades(data, emsxTrades, portfolio) {
             trade["Trade Date"] = tradeDate;
             trade["Trade Date Time"] = tradeDate;
             let identifier = trade["Security"];
-            let securityInPortfolioLocation = (0, graphApiConnect_1.getSecurityInPortfolioWithoutLocation)(portfolio, identifier);
+            let securityInPortfolioLocation = (0, graphApiConnect_1.getSecurityInPortfolioWithoutLocationForVcon)(portfolio, identifier);
             let trade_status = "new";
             if (existingTrade) {
                 id = existingTrade["Triada Trade Id"];
@@ -501,37 +478,3 @@ function formatEmsxTrades(data, emsxTrades, portfolio) {
     return trades;
 }
 exports.formatEmsxTrades = formatEmsxTrades;
-async function readEmsxRawExcel(path) {
-    try {
-        const response = await axios.get(path, { responseType: "arraybuffer" });
-        /* Parse the data */
-        const workbook = xlsx.read(response.data, { type: "buffer" });
-        /* Get first worksheet */
-        const worksheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[worksheetName];
-        /* Convert worksheet to JSON */
-        // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
-        // Read data
-        const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-        const headersFormat = ["News", "Create Time (As of)", "Status", "Security", "Side", "Qty", "LmtPr", "TIF", "FillQty", "AvgPr", "% Filled", "Working Qty", "Idle", "Data Export Restricted", "Data Export Restricted", "VWAP", "Data Export Restricted", "Last", "Bid", "Ask", "Volume", "%20d ADV"];
-        const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index + 2] ? true : console.log(value, headers[0][index + 2]), "excel values do not match"));
-        if (!arraysAreEqual) {
-            return {
-                error: "Incompatible format, please upload emsx e-blot xlsx/csv file",
-            };
-        }
-        else {
-            let data = xlsx.utils.sheet_to_json(worksheet, {
-                defval: "",
-                range: "D1:X300",
-            });
-            return data;
-        }
-    }
-    catch (error) {
-        return { error: error };
-    }
-}
-exports.readEmsxRawExcel = readEmsxRawExcel;
-function formatVconToNomuraBulkUpload(data) { }
-exports.formatVconToNomuraBulkUpload = formatVconToNomuraBulkUpload;

@@ -5,23 +5,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.changeMTDRlzd = exports.editDayRlzd = exports.editMTDRlzd = exports.appendLogs = void 0;
 const util_1 = __importDefault(require("util"));
-const reports_1 = require("./reports");
-const common_1 = require("./common");
-const reports_2 = require("./reports");
-const operations_1 = require("./operations");
-const common_2 = require("./reports/common");
+const operations_1 = require("./operations/operations");
+const common_1 = require("./reports/common");
+const positions_1 = require("./reports/positions");
 const fs = require("fs");
 const writeFile = util_1.default.promisify(fs.writeFile);
-const { MongoClient, ServerApiVersion } = require("mongodb");
-const ObjectId = require("mongodb").ObjectId;
-const client = new MongoClient(common_1.uri, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-    },
-});
-let month = (0, common_2.monthlyRlzdDate)(new Date(new Date().getTime() - 0 * 24 * 60 * 60 * 1000).toString());
 async function appendLogs(positions) {
     for (let obj of positions) {
         // Create a new object with only the _id and Day Rlzd properties
@@ -58,7 +46,7 @@ async function editMTDRlzd(collectionDate) {
         }
     }
     console.log(collectionDate);
-    await (0, reports_1.insertTradesInPortfolioAtASpecificDate)(portfolio, `portfolio-${collectionDate}`);
+    await (0, positions_1.insertTradesInPortfolioAtASpecificDate)(portfolio, `portfolio-${collectionDate}`);
     return;
 }
 exports.editMTDRlzd = editMTDRlzd;
@@ -75,20 +63,20 @@ async function editDayRlzd(collectionDate) {
         }
     }
     console.log(collectionDate);
-    await (0, reports_1.insertTradesInPortfolioAtASpecificDate)(portfolio, `portfolio-${collectionDate}`);
+    await (0, positions_1.insertTradesInPortfolioAtASpecificDate)(portfolio, `portfolio-${collectionDate}`);
     return;
 }
 exports.editDayRlzd = editDayRlzd;
 async function changeMTDRlzd() {
-    let portfolio = await (0, reports_1.getPortfolio)();
+    let portfolio = await (0, positions_1.getPortfolio)();
     for (let index = 0; index < portfolio.length; index++) {
         if (portfolio[index]["MTD Rlzd"]) {
             let object = portfolio[index]["MTD Rlzd"];
             portfolio[index]["MTD Rlzd"] = {};
-            portfolio[index]["MTD Rlzd"][(0, common_2.monthlyRlzdDate)(new Date().toString())] = object;
+            portfolio[index]["MTD Rlzd"][(0, common_1.monthlyRlzdDate)(new Date().toString())] = object;
         }
     }
-    await (0, reports_2.insertTradesInPortfolio)(portfolio);
+    await (0, positions_1.insertTradesInPortfolio)(portfolio);
     return;
 }
 exports.changeMTDRlzd = changeMTDRlzd;

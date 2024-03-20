@@ -1,32 +1,9 @@
-import { convertExcelDateToJSDate, convertBBGEmexDate, bucket } from "./common";
-import { settlementDatePassed } from "./reports/tools";
-import { getTradeDateYearTrades } from "./common";
-import { getSettlementDateYear } from "./reports/tools";
-import { generateRandomIntegers } from "./auth";
-import { uri } from "./common";
-import { uploadToGCloudBucket } from "./reports/readExcel";
+import { client } from "./auth";
+import { bucket } from "./common";
 
 const xlsx = require("xlsx");
 const axios = require("axios");
-const { Storage } = require("@google-cloud/storage");
-const storage = new Storage({ keyFilename: process.env.KEYPATHFILE });
-const { PassThrough } = require("stream");
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
-const mongoose = require("mongoose");
-const ObjectId = require("mongodb").ObjectId;
-
-const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
-});
-
-mongoose.connect(uri, {
-  useNewUrlParser: true,
-});
 export async function readBBGBlot(path: string) {
   path = bucket + path;
   const response = await axios.get(path, { responseType: "arraybuffer" });
@@ -298,24 +275,6 @@ export async function formatFxTradesToMufg(data: any) {
   return mufg;
 }
 
-export async function createExcelAndReturnPath(data: any, pathName: string) {
-  let binaryWS = xlsx.utils.json_to_sheet(data);
-
-  // Create a new Workbook
-  var wb = xlsx.utils.book_new();
-
-  // Name your sheet
-  xlsx.utils.book_append_sheet(wb, binaryWS, "Binary values");
-  // export your excel
-  const stream = new PassThrough();
-  const buffer = xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
-  let fileName = `after-excel/${generateRandomIntegers()}_mufg_output.xlsx`;
-  uploadToGCloudBucket(buffer, process.env.BUCKET, fileName).then().catch(console.error);
-
-  return fileName;
-}
-
-
 export async function tradesTriada() {
   try {
     const database = client.db("trades_v_2");
@@ -332,102 +291,7 @@ export async function tradesTriada() {
     return error;
   }
 }
-function getPositionInMUFG(mufgData: any, bbTicker: string, isin: string) {
-  for (let index = 0; index < mufgData.length; index++) {
-    let row = mufgData[index];
-    if (row["Investment"].includes(bbTicker) || row["Investment"].includes(isin)) {
-      return row;
-    }
-  }
-  return null;
-}
 
-export async function checkMUFGEndOfMonthWithPortfolio(MUFGData: any, portfolio: any) {
-  try {
-    portfolio = updatePortfolioBasedOnIsin(portfolio);
-    let formattedData: any = [];
-    if (MUFGData.error) {
-      return MUFGData;
-    }
-    for (let index = 0; index < portfolio.length; index++) {
-      let positionInPortfolio = portfolio[index];
-      let positionInMufg = getPositionInMUFG(MUFGData, positionInPortfolio["BB Ticker"], positionInPortfolio["ISIN"]);
-      if (!positionInPortfolio["Type"]) {
-        positionInPortfolio["Type"] = positionInPortfolio["BB Ticker"].split(" ")[0] == "T" || positionInPortfolio["Issuer"] == "US TREASURY N/B" ? "UST" : "BND";
-      }
-      let bondDivider = (positionInPortfolio["Type"] == "BND" || positionInPortfolio["Type"] == "UST")  ? 100 : 1;
 
-      let portfolioPositionQuantity = positionInPortfolio["ISIN"].includes("IB") ? positionInPortfolio["Notional Amount"] / positionInPortfolio["Original Face"] : positionInPortfolio["Notional Amount"];
-      let mufgPositionQuantity = positionInMufg ? parseFloat(positionInMufg["Quantity"]) : 0;
-      let portfolioAverageCost = parseFloat(positionInPortfolio["Average Cost"]);
-      let mufgAverageCost = positionInMufg ? parseFloat(positionInMufg["LocalCost"]) / mufgPositionQuantity : 0;
-      let portfolioPrice = Math.round(positionInPortfolio["Mid"] * 10000 * bondDivider) / 10000;
-      portfolioPrice = portfolioPrice ? portfolioPrice : 0;
-      let mufgPrice = positionInMufg ? parseFloat(positionInMufg["Price"]) : 0;
 
-      let formattedRow = {
-        "BB Ticker": positionInPortfolio["BB Ticker"],
-        ISIN: positionInPortfolio["ISIN"],
 
-        "Notional Amount (app)": portfolioPositionQuantity || 0,
-        "Notional Amount (mufg)": mufgPositionQuantity || 0,
-        "Difference Notional Amount": Math.round(portfolioPositionQuantity - mufgPositionQuantity) || 0,
-
-        "Average Cost (app)": portfolioAverageCost || 0,
-        "Average Cost (mufg)": mufgAverageCost || 0,
-        "Difference Average Cost": Math.round(portfolioAverageCost - mufgAverageCost) || 0,
-
-        "Price (app)": portfolioPrice || 0,
-        "Price (mufg)": mufgPrice || 0,
-        "Difference Price": portfolioPrice - mufgPrice || 0,
-      };
-      formattedData.push(formattedRow);
-    }
-    return formattedData;
-  } catch (error) {
-    console.log(error);
-    return { error: "unexpected error" };
-  }
-}
-
-export function updatePortfolioBasedOnIsin(portfolio: any) {
-  let updatedPortfolio: any = {};
-  let aggregatedPortfolio: any = [];
-
-  for (let index = 0; index < portfolio.length; index++) {
-    let position = portfolio[index];
-    let isin = position["ISIN"];
-    if (updatedPortfolio[isin]) {
-      updatedPortfolio[isin].push(position);
-    } else {
-      updatedPortfolio[isin] = [position];
-    }
-  }
-
-  let isins = Object.keys(updatedPortfolio);
-  for (let index = 0; index < isins.length; index++) {
-    let isin = isins[index];
-    let positions = updatedPortfolio[isin];
-    let updatedPosition = {
-      "Notional Amount": 0,
-      "Average Cost": 0,
-
-      "Original Face": positions[0]["Original Face"],
-      Mid: positions[0]["Mid"],
-      ISIN: isin,
-      "BB Ticker": positions[0]["BB Ticker"],
-    };
-
-    for (let positionIndex = 0; positionIndex < positions.length; positionIndex++) {
-      let data = positions[positionIndex];
-      let quantity = data["Notional Amount"];
-      let averageCost = data["Average Cost"];
-      updatedPosition["Notional Amount"] += quantity;
-      updatedPosition["Average Cost"] += data["Notional Amount"] * data["Average Cost"];
-    }
-    updatedPosition["Average Cost"] /= updatedPosition["Notional Amount"];
-    aggregatedPortfolio.push(updatedPosition);
-  }
-
-  return aggregatedPortfolio;
-}

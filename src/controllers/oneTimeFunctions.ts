@@ -1,22 +1,12 @@
 import util from "util";
-import { getPortfolio, insertTradesInPortfolioAtASpecificDate } from "./reports";
 import {  uri } from "./common";
-import { insertTradesInPortfolio } from "./reports";
-import { getPortfolioOnSpecificDate } from "./operations";
+import { getPortfolioOnSpecificDate } from "./operations/operations";
 import { monthlyRlzdDate } from "./reports/common";
+import { getPortfolio, insertTradesInPortfolio, insertTradesInPortfolioAtASpecificDate } from "./reports/positions";
 const fs = require("fs");
 const writeFile = util.promisify(fs.writeFile);
-const { MongoClient, ServerApiVersion } = require("mongodb");
-const ObjectId = require("mongodb").ObjectId;
 
-const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
-});
-let month = monthlyRlzdDate(new Date(new Date().getTime() - 0 * 24 * 60 * 60 * 1000).toString());
+
 
 export async function appendLogs(positions: any) {
   for (let obj of positions) {

@@ -338,7 +338,7 @@ function yearsUntil(dateString, dateInput) {
         return 0;
     }
     let dateComponents = dateString.split("/");
-    dateString = dateComponents[0] + "/" + dateComponents[1] + "/" + dateComponents[2];
+    dateString = dateComponents[1] + "/" + dateComponents[0] + "/" + dateComponents[2];
     let date = new Date(dateString).getTime();
     // Get the current date
     const now = new Date(dateInput).getTime();
@@ -1918,9 +1918,6 @@ function toTitleCase(str) {
         .split(" ")
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" ");
-}
-function areDatesInSameMonthAndYear(customDate, todaysDate) {
-    return new Date(customDate).getMonth() === new Date(todaysDate).getMonth() && new Date(customDate).getFullYear() === new Date(todaysDate).getFullYear();
 }
 function isRatingHigherThanBBBMinus(rating) {
     const ratingsOrder = [

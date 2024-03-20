@@ -1,9 +1,9 @@
 require("dotenv").config();
 
 import { renderVcon, renderFx } from "./excelFormat";
-import { getPortfolio } from "./reports";
 import { convertExcelDateToJSDate, getTime, getTradeDateYearTrades } from "./common";
 import { mergeSort } from "./reports/common";
+import { getPortfolio } from "./reports/positions";
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
 const FormData = require("form-data");
@@ -23,7 +23,7 @@ export async function getGraphToken() {
   }
 }
 
-export function getSecurityInPortfolioWithoutLocation(portfolio: any, identifier: string) {
+export function getSecurityInPortfolioWithoutLocationForVcon(portfolio: any, identifier: string) {
   let object = "";
   for (let index = 0; index < portfolio.length; index++) {
     let issue = portfolio[index];
@@ -69,7 +69,7 @@ export async function getVcons(token: string, start_time: any, end_time: any, tr
       vcon["BB Ticker"] = vcon["Issue"];
       vcon["Entry Time"] = tradeTime
       vcon["Notional Amount"] = vcon["Quantity"]
-      let securityInPortfolioLocation = getSecurityInPortfolioWithoutLocation(portfolio, identifier);
+      let securityInPortfolioLocation = getSecurityInPortfolioWithoutLocationForVcon(portfolio, identifier);
       let location = securityInPortfolioLocation.trim();
       let trade_status = "new";
       let triadaId = trades.find(function (trade: any) {

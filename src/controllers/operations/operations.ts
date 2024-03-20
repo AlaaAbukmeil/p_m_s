@@ -1,24 +1,13 @@
 const axios = require("axios");
-const { MongoClient, ServerApiVersion } = require("mongodb");
-const mongoose = require("mongoose");
 const ObjectId = require("mongodb").ObjectId;
 
-import { formatDateUS, getDate, getTradeDateYearTrades, uri } from "./common";
-import { getEarliestCollectionName, getSecurityInPortfolio, getPortfolio, insertTradesInPortfolio, tradesTriadaIds, returnPositionProgress, updateExisitingPosition, getHistoricalPortfolio, insertTradesInPortfolioAtASpecificDate } from "./reports";
-import { findTradeRecord, formatUpdatedPositions, getAverageCost, parseBondIdentifier } from "./reports/tools";
-import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "./reports/common";
-import { readEditInput } from "./reports/readExcel";
-const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
-});
+import { formatDateUS, getDate, uri } from "../common";
+import { findTradeRecord, formatUpdatedPositions, getAverageCost, getEarliestCollectionName, parseBondIdentifier } from "../reports/tools";
+import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../reports/common";
+import { readEditInput } from "./readExcel";
+import { getPortfolio, insertTradesInPortfolio, insertTradesInPortfolioAtASpecificDate, returnPositionProgress, updateExisitingPosition } from "../reports/positions";
+import { client } from "../auth";
 
-mongoose.connect(uri, {
-  useNewUrlParser: true,
-});
 const xlsx = require("xlsx");
 
 export async function getCollectionDays() {
@@ -38,130 +27,6 @@ export async function getCollectionDays() {
     return dates;
   } catch (error: any) {
     return error.toString();
-  }
-}
-
-export async function readMUFGPrices(path: string) {
-  const response = await axios.get(path, { responseType: "arraybuffer" });
-
-  /* Parse the data */
-  const workbook = xlsx.read(response.data, { type: "buffer" });
-
-  /* Get first worksheet */
-  const worksheetName = workbook.SheetNames[0];
-  const worksheet = workbook.Sheets[worksheetName];
-
-  /* Convert worksheet to JSON */
-  // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
-
-  // Read data
-
-  let data = xlsx.utils.sheet_to_json(worksheet, {
-    defval: "",
-    range: "A1:R300",
-  });
-
-  return data;
-}
-
-export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDate: string, path: string) {
-  try {
-    if (data.error) {
-      return data;
-    } else {
-      let updatedPricePortfolio = [];
-      let action: any = await getPortfolioOnSpecificDate(collectionDate);
-      let portfolio = action[0];
-      collectionDate = action[1];
-      console.log(collectionDate, "collection day used");
-
-      for (let index = 0; index < data.length; index++) {
-        let row = data[index];
-
-        let object: any = getSecurityInPortfolioWithoutLocation(portfolio, row["Investment"].trim());
-
-        if (object == 404) {
-          continue;
-        }
-
-        for (let index = 0; index < object.length; index++) {
-          let position = object[index];
-          let divider = position["Type"] == "BND" || position["Type"] == "UST" ? 100 : 1;
-          position["Mid"] = parseFloat(row["Price"]) / divider;
-          position["Last Price Update"] = new Date();
-          updatedPricePortfolio.push(position);
-        }
-      }
-
-      try {
-        let updatedPortfolio: any = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
-        let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-        await insertEditLogs([updatedPortfolio[1]], "Update Previous Prices based on MUFG", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio[1]).length, "Link: " + path);
-        let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio[0], collectionDate);
-        console.log(updatedPricePortfolio.length, "number of positions prices updated");
-        if (!Object.keys(updatedPortfolio[1]).length) {
-          return updatedPortfolio[1];
-        } else {
-          return { error: updatedPortfolio[1] };
-        }
-      } catch (error: any) {
-        console.log(error);
-        return { error: error.toString() };
-      }
-    }
-  } catch (error) {
-    return { error: "error" };
-  }
-}
-
-export async function insertPreviousPricesUpdatesInPortfolio(updatedPortfolio: any, collectionDate: string) {
-  const database = client.db("portfolios");
-  let portfolio = updatedPortfolio;
-  // Create an array of updateOne operations
-
-  // Execute the operations in bulk
-  let day = getDateTimeInMongoDBCollectionFormat(collectionDate);
-  console.log(day, "updated collection");
-  try {
-    //so the latest updated version portfolio profits will not be copied into a new instance
-    const updatedOperations = portfolio.map((position: any) => {
-      // Start with the known filters
-      const filters: any = [];
-      // Only add the "BB Ticker" filter if it's present in the trade object
-      if (position["ISIN"]) {
-        filters.push({
-          ISIN: position["ISIN"],
-          Location: position["Location"],
-          _id: new ObjectId(position["_id"]),
-        });
-      } else if (position["BB Ticker"]) {
-        filters.push({
-          "BB Ticker": position["BB Ticker"],
-          Location: position["Location"],
-          _id: new ObjectId(position["_id"]),
-        });
-      } else if (position["CUSIP"]) {
-        filters.push({
-          CUSIP: position["CUSIP"],
-          Location: position["Location"],
-          _id: new ObjectId(position["_id"]),
-        });
-      }
-
-      return {
-        updateOne: {
-          filter: { $or: filters },
-          update: { $set: position },
-        },
-      };
-    });
-
-    let updatedCollection = database.collection(`portfolio-${day}`);
-    let updatedResult = await updatedCollection.bulkWrite(updatedOperations);
-
-    return updatedResult;
-  } catch (error) {
-    return error;
   }
 }
 
@@ -212,128 +77,6 @@ export function getSecurityInPortfolioWithoutLocation(portfolio: any, identifier
   return document.length ? document : 404;
 }
 
-export async function updatePreviousPricesPortfolioBloomberg(data: any, collectionDate: string, path: string) {
-  try {
-    if (data.error) {
-      return data;
-    } else {
-      let updatedPricePortfolio = [];
-      let action: any = await getPortfolioOnSpecificDate(collectionDate);
-      let portfolio = action[0];
-      collectionDate = action[1];
-      let currencyInUSD: any = {};
-      currencyInUSD["USD"] = 1;
-      let divider = 1;
-      let currencyStart = true;
-      currencyInUSD["USD"] = 1;
-
-      for (let index = 0; index < data.length; index++) {
-        let row = data[index];
-        if (row["BB Ticker"] == "Bonds") {
-          currencyStart = false;
-          divider = 100;
-        } else if (row["BB Ticker"] == "CDS") {
-          divider = 1;
-        } else if (row["BB Ticker"] == "Futures") {
-          divider = 1;
-        }
-
-        if (!currencyStart) {
-          let positions: any = getSecurityInPortfolioWithoutLocation(portfolio, row["Bloomberg ID"]);
-
-          if (positions == 404) {
-            positions = getSecurityInPortfolioWithoutLocation(portfolio, row["ISIN"]);
-          }
-          if (positions == 404) {
-            positions = getSecurityInPortfolioWithoutLocation(portfolio, row["BB Ticker"]);
-          }
-          if (positions == 404) {
-            positions = getSecurityInPortfolioWithoutLocation(portfolio, row["CUSIP"]);
-          }
-
-          if (positions == 404) {
-            continue;
-          }
-
-          for (let index = 0; index < positions.length; index++) {
-            let object = positions[index];
-
-            object["Mid"] = parseFloat(row["Today's Mid"]) / divider;
-            object["Ask"] = parseFloat(row["Override Ask"]) > 0 ? parseFloat(row["Override Ask"]) / divider : parseFloat(row["Today's Ask (Broker)"]) > 0 ? parseFloat(row["Today's Ask (Broker)"]) / divider : parseFloat(row["Today's Ask"]) / divider;
-            object["Bid"] = parseFloat(row["Override Bid"]) > 0 ? parseFloat(row["Override Bid"]) / divider : parseFloat(row["Today's Bid (Broker)"]) > 0 ? parseFloat(row["Today's Bid (Broker)"]) / divider : parseFloat(row["Today's Bid"]) / divider;
-            object["YTM"] = row["Mid Yield call"].toString().includes("N/A") ? 0 : row["Mid Yield call"];
-            object["Broker"] = row["Broker"].toString().includes("N/A") ? "" : row["Broker"];
-
-            object["DV01"] = row["DV01"].toString().includes("N/A") ? 0 : row["DV01"];
-            object["YTW"] = row["Mid Yield Worst"].toString().includes("N/A") ? 0 : row["Mid Yield Worst"];
-            object["OAS"] = row["OAS Spread"].toString().includes("N/A") ? 0 : row["OAS Spread"];
-            object["Z Spread"] = row["Z Spread"].toString().includes("N/A") ? 0 : row["Z Spread"];
-            object["S&P Bond Rating"] = row["S&P Bond Rating"].toString().includes("N/A") ? "" : row["S&P Bond Rating"];
-            object["S&P Outlook"] = row["S&P Outlook"].toString().includes("N/A") ? "" : row["S&P Outlook"];
-            object["Moody's Bond Rating"] = row["Moody's Bond Rating"].toString().includes("N/A") ? "" : row["Moody's Bond Rating"];
-            object["Moody's Outlook"] = row["Moody's Outlook"].toString().includes("N/A") ? "" : row["Moody's Outlook"];
-            object["Fitch Bond Rating"] = row["Fitch Bond Rating"].toString().includes("N/A") ? "" : row["Fitch Bond Rating"];
-            object["Fitch Outlook"] = row["Fitch Outlook"].toString().includes("N/A") ? "" : row["Fitch Outlook"];
-            object["BBG Composite Rating"] = row["BBG Composite Rating"].toString().includes("N/A") ? "" : row["BBG Composite Rating"];
-            object["BB Ticker"] = row["BB Ticker"].toString().includes("N/A") ? "" : row["BB Ticker"];
-            object["Issuer"] = row["Issuer Name"].toString().includes("N/A") ? "" : row["Issuer Name"];
-            object["Bloomberg ID"] = row["Bloomberg ID"];
-            object["CUSIP"] = row["CUSIP"].toString().includes("N/A") ? "" : row["CUSIP"];
-
-            if (!row["Call Date"].includes("N/A") && !row["Call Date"].includes("#")) {
-              object["Call Date"] = row["Call Date"];
-            }
-            if (!row["Maturity"].includes("N/A") && !row["Maturity"].includes("#")) {
-              object["Maturity"] = row["Maturity"];
-            }
-            if (currencyInUSD[object["Currency"]]) {
-              object["FX Rate"] = currencyInUSD[object["Currency"]];
-            } else {
-              object["FX Rate"] = 1;
-            }
-
-            if (row["Country"] && !row["Country"].includes("N/A")) {
-              object["Country"] = row["Country"];
-            }
-            if (row["Sector"] && !row["Sector"].includes("N/A")) {
-              object["Sector"] = row["Sector"];
-            }
-
-            updatedPricePortfolio.push(object);
-          }
-        } else if (row["BB Ticker"].includes("Curncy") && currencyStart) {
-          let rate = row["Today's Mid"];
-          let currency = row["BB Ticker"].split(" ")[0];
-          if (currency == "USD") {
-            rate = 1 / rate;
-            currency = row["BB Ticker"].split(" ")[1];
-          }
-          currencyInUSD[currency] = rate;
-        }
-      }
-      console.log(currencyInUSD, "currency prices");
-      try {
-        let updatedPortfolio: any = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
-        let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-        await insertEditLogs([updatedPortfolio[1]], "Update Previous Prices based on bloomberg", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio[1]).length, "Link: " + path);
-        let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio[0], collectionDate);
-        console.log(updatedPricePortfolio.length, "number of positions prices updated");
-        if (!Object.keys(updatedPortfolio[1]).length) {
-          return updatedPortfolio[1];
-        } else {
-          return { error: updatedPortfolio[1] };
-        }
-      } catch (error) {
-        console.log(error);
-        return { error: "Template does not match" };
-      }
-    }
-  } catch (error) {
-    console.log(error);
-    return { error: "error" };
-  }
-}
-
 export async function insertEditLogs(changes: string[], type: string, dateTime: string, editNote: string, identifier: string) {
   let object = {
     changes: changes,
@@ -363,40 +106,6 @@ export async function getEditLogs(logsType: any) {
     return documents;
   } catch (error) {
     return error;
-  }
-}
-
-export async function readMUFGEndOfMonthFile(path: string) {
-  const response = await axios.get(path, { responseType: "arraybuffer" });
-
-  /* Parse the data */
-  const workbook = xlsx.read(response.data, { type: "buffer" });
-
-  /* Get first worksheet */
-  const worksheetName = workbook.SheetNames[0];
-
-  const worksheet = workbook.Sheets[worksheetName];
-
-  /* Convert worksheet to JSON */
-  // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
-
-  // Read data
-
-  const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-  const headersFormat = [`Sort1`, `Sort2`, `Sort3`, `Quantity`, `Investment`, `Description`, `CCY`, `LocalCost`, `BaseCost`, `Price`, `FXRate`, `LocalValue`, `BaseValue`, `UnrealizedMktGainLoss`, `UnrealizedFXGainLoss`, `TotalUnrealizedGainLoss`];
-
-  const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : console.log(value, headers[0][index])));
-  if (!arraysAreEqual) {
-    return {
-      error: "Incompatible format, please upload MUFG end of month xlsx/csv file",
-    };
-  } else {
-    const data = xlsx.utils.sheet_to_json(worksheet, {
-      defval: "",
-      range: "A1:P300",
-    });
-
-    return data;
   }
 }
 

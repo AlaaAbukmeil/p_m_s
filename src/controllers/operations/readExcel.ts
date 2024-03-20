@@ -1,4 +1,4 @@
-import { convertExcelDateToJSDate, getTradeDateYearTrades } from "../common";
+import { convertExcelDateToJSDate, generateRandomString, getTradeDateYearTrades } from "../common";
 
 const xlsx = require("xlsx");
 const axios = require("axios");
@@ -205,36 +205,39 @@ export async function readEmsxEBlot(path: string) {
     return { error: error };
   }
 }
+export async function readEmsxRawExcel(path: string) {
+  try {
+    const response = await axios.get(path, { responseType: "arraybuffer" });
 
-export async function readEditInput(path: string) {
-  const response = await axios.get(path, { responseType: "arraybuffer" });
+    /* Parse the data */
+    const workbook = xlsx.read(response.data, { type: "buffer" });
 
-  /* Parse the data */
-  const workbook = xlsx.read(response.data, { type: "buffer" });
+    /* Get first worksheet */
+    const worksheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[worksheetName];
 
-  /* Get first worksheet */
-  const worksheetName = workbook.SheetNames[0];
-  const worksheet = workbook.Sheets[worksheetName];
+    /* Convert worksheet to JSON */
+    // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
 
-  /* Convert worksheet to JSON */
-  // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
+    // Read data
 
-  // Read data
+    const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+    const headersFormat = ["News", "Create Time (As of)", "Status", "Security", "Side", "Qty", "LmtPr", "TIF", "FillQty", "AvgPr", "% Filled", "Working Qty", "Idle", "Data Export Restricted", "Data Export Restricted", "VWAP", "Data Export Restricted", "Last", "Bid", "Ask", "Volume", "%20d ADV"];
+    const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index + 2] ? true : console.log(value, headers[0][index + 2]), "excel values do not match"));
+    if (!arraysAreEqual) {
+      return {
+        error: "Incompatible format, please upload emsx e-blot xlsx/csv file",
+      };
+    } else {
+      let data = xlsx.utils.sheet_to_json(worksheet, {
+        defval: "",
+        range: "D1:X300",
+      });
 
-  const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-
-  const arraysAreEqual = true;
-  if (!arraysAreEqual) {
-    return {
-      error: "Incompatible format, please upload edit e-blot xlsx/csv file",
-    };
-  } else {
-    let data = xlsx.utils.sheet_to_json(worksheet, {
-      defval: "",
-      range: "A1:BZ300",
-    });
-
-    return data;
+      return data;
+    }
+  } catch (error) {
+    return { error: error };
   }
 }
 
@@ -333,4 +336,184 @@ export async function uploadToGCloudBucket(data: any, bucketName: any, fileName:
   stream.end();
 
   return new Promise((resolve, reject) => stream.on("error", reject).on("finish", resolve));
+}
+export async function uploadArrayAndReturnFilePath(data: any, pathName: string, folderName: string) {
+  // Create a new Workbook
+  var wb = xlsx.utils.book_new();
+
+  let binaryWS = xlsx.utils.json_to_sheet(data);
+  // Name your sheet
+  xlsx.utils.book_append_sheet(wb, binaryWS, "Binary values");
+  // export your excel
+  const stream = new PassThrough();
+  const buffer = xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
+  let randomString = generateRandomString(6);
+  let fileName = `${folderName}/${pathName.replace(/[!@#$%^&*(),.?":{}|<>\/\[\]\\;'\-=+`~]/g, "_")}_${randomString}.xlsx`;
+
+  uploadToGCloudBucket(buffer, process.env.BUCKET, fileName).then().catch(console.error);
+
+  return "/" + fileName;
+}
+export async function readEditInput(path: string) {
+  const response = await axios.get(path, { responseType: "arraybuffer" });
+
+  /* Parse the data */
+  const workbook = xlsx.read(response.data, { type: "buffer" });
+
+  /* Get first worksheet */
+  const worksheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[worksheetName];
+
+  /* Convert worksheet to JSON */
+  // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
+
+  // Read data
+
+  const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+
+  const arraysAreEqual = true;
+  if (!arraysAreEqual) {
+    return {
+      error: "Incompatible format, please upload edit e-blot xlsx/csv file",
+    };
+  } else {
+    let data = xlsx.utils.sheet_to_json(worksheet, {
+      defval: "",
+      range: "A1:BZ300",
+    });
+
+    return data;
+  }
+}
+
+export async function readMUFGPrices(path: string) {
+  const response = await axios.get(path, { responseType: "arraybuffer" });
+
+  /* Parse the data */
+  const workbook = xlsx.read(response.data, { type: "buffer" });
+
+  /* Get first worksheet */
+  const worksheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[worksheetName];
+
+  /* Convert worksheet to JSON */
+  // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
+
+  // Read data
+
+  let data = xlsx.utils.sheet_to_json(worksheet, {
+    defval: "",
+    range: "A1:R300",
+  });
+
+  return data;
+}
+
+export async function readMUFGReconcileFile(path: string) {
+  const response = await axios.get(path, { responseType: "arraybuffer" });
+
+  /* Parse the data */
+  const workbook = xlsx.read(response.data, { type: "buffer" });
+
+  /* Get first worksheet */
+  const worksheetName = workbook.SheetNames[0];
+
+  const worksheet = workbook.Sheets[worksheetName];
+
+  /* Convert worksheet to JSON */
+  // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
+
+  // Read data
+
+  const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+  const headersFormat = [`Sort1`, `Sort2`, `Sort3`, `Quantity`, `Investment`, `Description`, `CCY`, `LocalCost`, `BaseCost`, `Price`, `FXRate`, `LocalValue`, `BaseValue`, `UnrealizedMktGainLoss`, `UnrealizedFXGainLoss`, `TotalUnrealizedGainLoss`];
+
+  const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : console.log(value, headers[0][index])));
+  if (!arraysAreEqual) {
+    return {
+      error: "Incompatible format, please upload MUFG end of month xlsx/csv file",
+    };
+  } else {
+    const data = xlsx.utils.sheet_to_json(worksheet, {
+      defval: "",
+      range: "A1:P300",
+    });
+
+    return data;
+  }
+}
+
+export async function readNomuraReconcileFile(path: string) {
+  const response = await axios.get(path, { responseType: "arraybuffer" });
+
+  /* Parse the data */
+  const workbook = xlsx.read(response.data, { type: "buffer" });
+
+  /* Get first worksheet */
+  const worksheetName = workbook.SheetNames[0];
+
+  const worksheet = workbook.Sheets[worksheetName];
+
+  /* Convert worksheet to JSON */
+  // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
+
+  // Read data
+
+  const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+  const headersFormat = [
+    "Account ID",
+    "Account Name",
+    "Long/Short Indicator",
+    "Cusip",
+    "Quick Code",
+    "Sedol",
+    "Isin",
+    "Symbol",
+    "Security Name",
+    "Security Issue CCY",
+    "Base CCY",
+    "US Margin Ind",
+    "TD Quantity",
+    "SD Quantity",
+    "Price",
+    "TD Market Value Local",
+    "SD Market Value Local",
+    "TD Market Value Base",
+    "SD Market Value Base",
+    "Quantity Subject to Right of Use/Stock Loan",
+    "FX Rate",
+    "Last Activity Date",
+    "Business Date",
+    "Run Date",
+    "Run Time",
+    "OTC DerivativeType",
+    "Ticker",
+    "Ric Code",
+    "Preferred ID",
+    "Pricing Factor",
+    "Price Type",
+    "Product Type",
+    "Expiration Date",
+    "Option Contract Type",
+    "Td Accrued Interest",
+    "Sd Accrued Interest",
+    "Clean Price",
+    "Asset Class",
+    "Stock Loan Financed Positions Base Ccy",
+    "Stock Loan Financed Positions (USD)",
+  ];
+
+  const arraysAreEqual = headersFormat.every((value, index) => (value === headers[1][index] ? true : console.log(value, headers[1][index])));
+  if (!arraysAreEqual) {
+    return {
+      error: "Incompatible format, please upload MUFG end of month xlsx/csv file",
+    };
+  } else {
+    const data = xlsx.utils.sheet_to_json(worksheet, {
+      defval: "",
+      range: "A2:AP300",
+    });
+
+    return data;
+  }
 }

@@ -1,12 +1,12 @@
-import { getEarliestCollectionName, getHistoricalPortfolio } from "../reports";
 import { client } from "../auth";
 
 import { formatDateRlzdDaily, getAllDatesSinceLastMonthLastDay, getAllDatesSinceLastYearLastDay, getDateTimeInMongoDBCollectionFormat, getDaysBetween, getEarliestDateKeyAndValue, getLastDayOfMonth, monthlyRlzdDate } from "./common";
-import { getFundDetails, insertEditLogs } from "../operations";
-import { formatFrontEndSummaryTable, formatFrontEndTable } from "../tableFormatter";
+import { getFundDetails, insertEditLogs } from "../operations/operations";
+import { formatFrontEndSummaryTable, formatFrontEndTable } from "../analytics/tableFormatter";
 import { formatDateUS } from "../common";
-import { parseBondIdentifier } from "./tools";
+import { getEarliestCollectionName, parseBondIdentifier } from "./tools";
 import { tradesMTDRlzd } from "../../models/reports";
+import { getHistoricalPortfolio } from "./positions";
 export async function getPortfolioWithAnalytics(date: string, sort: any, sign: number, conditions = null, view: "front office" | "back office") {
   const database = client.db("portfolios");
   let earliestPortfolioName = await getEarliestCollectionName(date);
@@ -62,7 +62,8 @@ export async function getPortfolioWithAnalytics(date: string, sort: any, sign: n
   }
 
   documents = await getMTDURlzdInt(documents, new Date(date));
-  documents = await getDayURlzdInt(documents, new Date(date));
+  let dayParamsWithLatestUpdates = await getDayURlzdInt(documents, new Date(date));
+  documents = dayParamsWithLatestUpdates.portfolio;
   documents = await getYTDURlzdInt(documents, lastYearLastCollectionName.predecessorDate);
   documents = getPL(documents, latestCollectionDate, date, lastYearLastCollectionName.predecessorDate);
   let dates = {
@@ -70,6 +71,18 @@ export async function getPortfolioWithAnalytics(date: string, sort: any, sign: n
     yesterday: lastDayBeforeToday.predecessorDate,
     lastMonth: lastMonthLastCollectionName.predecessorDate,
   };
+
+  documents = documents.filter((position: any) => {
+    if (position["Notional Amount"] == 0) {
+      let monthsTrades = Object.keys(position["MTD Rlzd DC"] || {});
+
+      if (monthsTrades.includes(thisMonth)) {
+        return position;
+      }
+    } else {
+      return position;
+    }
+  });
   let fundDetailsInfo: any = await getFundDetails(thisMonth);
 
   if (fundDetailsInfo.length == 0) {
@@ -85,18 +98,8 @@ export async function getPortfolioWithAnalytics(date: string, sort: any, sign: n
   let fundDetails = portfolioFormattedSorted.fundDetails;
   documents = portfolioFormattedSorted.portfolio;
 
-  documents = documents.filter((position: any) => {
-    if (position["Notional Amount"] == 0) {
-      let monthsTrades = Object.keys(position["MTD Rlzd DC"] || {});
 
-      if (monthsTrades.includes(thisMonth)) {
-        return position;
-      }
-    } else {
-      return position;
-    }
-  });
-  return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: uploadTradesDate };
+  return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: dayParamsWithLatestUpdates.lastUploadTradesDate, updatePriceDate: dayParamsWithLatestUpdates.lastUpdatePricesDate };
 }
 
 export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInput: any) {
@@ -200,7 +203,8 @@ export function getYTDParams(portfolio: any, lastYearPortfolio: any, date: any) 
 }
 
 function getDayURlzdInt(portfolio: any, date: any) {
- let lastUploadTradesDate, lastUpdatePricesDate
+  let lastUploadTradesDate = 0,
+    lastUpdatePricesDate = 0;
   for (let index = 0; index < portfolio.length; index++) {
     let position = portfolio[index];
 
@@ -213,10 +217,22 @@ function getDayURlzdInt(portfolio: any, date: any) {
       yesterdayPrice = position["Mid"];
     }
 
+    if (new Date(position["Last Upload Trade"]).getTime() > lastUploadTradesDate) {
+      lastUploadTradesDate = new Date(position["Last Upload Trade"]).getTime();
+    }
+    if (new Date(position["Last Price Update"]).getTime() > lastUpdatePricesDate) {
+      lastUpdatePricesDate = new Date(position["Last Price Update"]).getTime();
+    }
+
     position["Previous Mark"] = yesterdayPrice;
     let todayPrice: any = parseFloat(position["Mid"]);
-    if(portfolio[index]["Day URlzd"])
     portfolio[index]["Day URlzd"] = portfolio[index]["Type"] == "CDS" ? ((parseFloat(todayPrice) - parseFloat(yesterdayPrice)) * portfolio[index]["Notional Amount"]) / portfolio[index]["Original Face"] : (parseFloat(todayPrice) - parseFloat(yesterdayPrice)) * portfolio[index]["Notional Amount"] || 0;
+    if (portfolio[index]["Day URlzd"] == 0) {
+      portfolio[index]["Day URlzd"] = 0;
+    } else if (!portfolio[index]["Day URlzd"]) {
+      portfolio[index]["Day URlzd"] = "0";
+    }
+
     let settlementDates = Object.keys(interestInfo);
     for (let indexSettlementDate = 0; indexSettlementDate < settlementDates.length; indexSettlementDate++) {
       let settlementDate = settlementDates[indexSettlementDate];
@@ -231,7 +247,7 @@ function getDayURlzdInt(portfolio: any, date: any) {
       portfolio[index]["Day Int."] = 0;
     }
   }
-  return portfolio;
+  return { portfolio: portfolio, lastUpdatePricesDate: lastUpdatePricesDate, lastUploadTradesDate: lastUploadTradesDate };
 }
 
 export function getMTDURlzdInt(portfolio: any, date: any) {
@@ -293,9 +309,10 @@ export function getYTDURlzdInt(portfolio: any, date: any) {
     }
 
     portfolio[index]["Coupon Rate"] = portfolio[index]["Coupon Rate"] ? portfolio[index]["Coupon Rate"] : parseBondIdentifier(portfolio[index]["BB Ticker"]).rate || 0;
+    
     portfolio[index]["Coupon Duration"] = portfolio[index]["Coupon Duration"] ? portfolio[index]["Coupon Duration"] : portfolio[index]["Type"] == "UST" ? 365.0 : 360.0;
 
-    portfolio[index]["YTD Int."] = calculateAccruedSinceLastYear(portfolio[index]["Interest"], portfolio[index]["Coupon Rate"] / 100, portfolio[index]["Coupon Duration"], date, portfolio[index]["ISIN"]);
+    portfolio[index]["YTD Int."] = calculateAccruedSinceLastYear(portfolio[index]["Interest"], portfolio[index]["Coupon Rate"] / 100, portfolio[index]["Coupon Duration"], date, portfolio[index]["ISIN"], date);
   }
 
   return portfolio;
@@ -347,11 +364,12 @@ function getYTDRlzd(rlzdTradesObject: any, ytdPrice: any, ytdDate: any, bbTicker
   return rlzd;
 }
 
-export function calculateAccruedSinceLastYear(interestInfo: any, couponRate: any, numOfDaysInAYear: any, lastYearDate: any, isin: string) {
+export function calculateAccruedSinceLastYear(interestInfo: any, couponRate: any, numOfDaysInAYear: any, lastYearDate: any, isin: string, dateInput: any) {
   try {
     let quantityDates = Object.keys(interestInfo).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
     lastYearDate = new Date(lastYearDate).getTime();
-    quantityDates.push(formatDateUS(new Date()));
+    quantityDates.push(formatDateUS(new Date(dateInput)));
+    dateInput = new Date(dateInput).getTime();
     couponRate = couponRate ? couponRate : 0;
     let quantity = interestInfo[quantityDates[0]];
     let interest = 0;
@@ -359,9 +377,15 @@ export function calculateAccruedSinceLastYear(interestInfo: any, couponRate: any
       if (quantityDates[index + 1]) {
         if (new Date(quantityDates[index]).getTime() < lastYearDate && new Date(quantityDates[index + 1]).getTime() > lastYearDate) {
           let numOfDays = getDaysBetween(lastYearDate, quantityDates[index + 1]);
+          
           interest += (couponRate / numOfDaysInAYear) * numOfDays * quantity;
-        } else if (new Date(quantityDates[index]).getTime() > lastYearDate) {
+        } else if (new Date(quantityDates[index]).getTime() > lastYearDate && new Date(quantityDates[index + 1]).getTime() < dateInput) {
           let numOfDays = getDaysBetween(quantityDates[index], quantityDates[index + 1]);
+          
+          interest += (couponRate / numOfDaysInAYear) * numOfDays * quantity;
+        } else if (new Date(quantityDates[index]).getTime() > lastYearDate && new Date(quantityDates[index + 1]).getTime() > dateInput) {
+          let numOfDays = getDaysBetween(quantityDates[index], dateInput);
+          
           interest += (couponRate / numOfDaysInAYear) * numOfDays * quantity;
         }
       }
@@ -388,4 +412,22 @@ export function calculateRlzd(trades: tradesMTDRlzd[], mark: number, issue: stri
   }
 
   return total;
+}
+
+
+export function calculateAccruedSinceInception(interestInfo: any, couponRate: any, numOfDaysInAYear: any, isin: string) {
+  let quantityDates = Object.keys(interestInfo).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  quantityDates.push(formatDateUS(new Date()));
+  couponRate = couponRate ? couponRate : 0;
+  let quantity = interestInfo[quantityDates[0]];
+  let interest = 0;
+  for (let index = 0; index < quantityDates.length; index++) {
+    if (quantityDates[index + 1]) {
+      let numOfDays = getDaysBetween(quantityDates[index], quantityDates[index + 1]);
+      interest += (couponRate / numOfDaysInAYear) * numOfDays * quantity;
+    }
+    quantity += interestInfo[quantityDates[index + 1]] ? interestInfo[quantityDates[index + 1]] : 0;
+  }
+ 
+  return interest;
 }
