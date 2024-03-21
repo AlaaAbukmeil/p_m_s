@@ -4,7 +4,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 //jshint esversion:6
-const router_1 = __importDefault(require("./routes/router"));
+const auth_1 = __importDefault(require("./routes/auth"));
+const formatter_1 = __importDefault(require("./routes/formatter"));
+const portfolio_1 = __importDefault(require("./routes/operations/portfolio"));
+const positions_1 = __importDefault(require("./routes/operations/positions"));
+const trades_1 = __importDefault(require("./routes/operations/trades"));
+const reconcile_1 = __importDefault(require("./routes/reconcile"));
 require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -32,7 +37,12 @@ app.use(bodyParser.urlencoded({
     extended: false,
 }));
 app.use(bodyParser.json());
-app.use("/api/web/", router_1.default);
+app.use("/api/web/", portfolio_1.default);
+app.use("/api/web/", auth_1.default);
+app.use("/api/web/", formatter_1.default);
+app.use("/api/web/", reconcile_1.default);
+app.use("/api/web/", trades_1.default);
+app.use("/api/web/", positions_1.default);
 app.use(apiLimiter);
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, function () { });

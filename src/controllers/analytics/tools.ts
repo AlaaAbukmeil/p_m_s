@@ -194,7 +194,7 @@ export function formatMarkDate(date: any) {
   
     let dateComponents = dateString.split("/");
     
-    dateString = dateComponents[0] + "/" + dateComponents[1] + "/" + dateComponents[2];
+    dateString = dateComponents[1] + "/" + dateComponents[0] + "/" + dateComponents[2];
     let date = new Date(dateString).getTime();
   
     // Get the current date

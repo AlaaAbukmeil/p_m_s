@@ -3,11 +3,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.changeMTDRlzd = exports.editDayRlzd = exports.editMTDRlzd = exports.appendLogs = void 0;
+exports.appendLogs = void 0;
 const util_1 = __importDefault(require("util"));
-const operations_1 = require("./operations/operations");
-const common_1 = require("./reports/common");
-const positions_1 = require("./reports/positions");
 const fs = require("fs");
 const writeFile = util_1.default.promisify(fs.writeFile);
 async function appendLogs(positions) {
@@ -34,49 +31,3 @@ let changes = {
         },
     },
 };
-async function editMTDRlzd(collectionDate) {
-    let action = await (0, operations_1.getPortfolioOnSpecificDate)(collectionDate);
-    let portfolio = action[0];
-    collectionDate = action[1];
-    let positionChanged = 0;
-    for (let index = 0; index < portfolio.length; index++) {
-        if (changes[portfolio[index]["_id"]]) {
-            portfolio[index]["MTD Rlzd"] = changes[portfolio[index]["_id"]]["MTD Rlzd"];
-            positionChanged++;
-        }
-    }
-    console.log(collectionDate);
-    await (0, positions_1.insertTradesInPortfolioAtASpecificDate)(portfolio, `portfolio-${collectionDate}`);
-    return;
-}
-exports.editMTDRlzd = editMTDRlzd;
-async function editDayRlzd(collectionDate) {
-    let action = await (0, operations_1.getPortfolioOnSpecificDate)(collectionDate);
-    let portfolio = action[0];
-    collectionDate = action[1];
-    let positionChanged = 0;
-    for (let index = 0; index < portfolio.length; index++) {
-        if (changes[portfolio[index]["_id"]]) {
-            portfolio[index]["Day Rlzd"] = {};
-            portfolio[index]["Day Rlzd"] = changes[portfolio[index]["_id"]]["Day Rlzd"];
-            positionChanged++;
-        }
-    }
-    console.log(collectionDate);
-    await (0, positions_1.insertTradesInPortfolioAtASpecificDate)(portfolio, `portfolio-${collectionDate}`);
-    return;
-}
-exports.editDayRlzd = editDayRlzd;
-async function changeMTDRlzd() {
-    let portfolio = await (0, positions_1.getPortfolio)();
-    for (let index = 0; index < portfolio.length; index++) {
-        if (portfolio[index]["MTD Rlzd"]) {
-            let object = portfolio[index]["MTD Rlzd"];
-            portfolio[index]["MTD Rlzd"] = {};
-            portfolio[index]["MTD Rlzd"][(0, common_1.monthlyRlzdDate)(new Date().toString())] = object;
-        }
-    }
-    await (0, positions_1.insertTradesInPortfolio)(portfolio);
-    return;
-}
-exports.changeMTDRlzd = changeMTDRlzd;

@@ -1,4 +1,3 @@
-import { tradesMTDRlzd } from "../../models/reports";
 const xlsx = require("xlsx");
 export function monthlyRlzdDate(dateInput: string) {
   let date = new Date(dateInput);
@@ -89,7 +88,7 @@ export function sortVconTrades(object: any) {
   return trades;
 }
 
-export function getAllDatesSinceLastMonthLastDay(date: string | null): string[] {
+export function getAllDatesSinceLastMonthLastDay(date: string | Date | null): string[] {
   const today = date == null ? new Date() : new Date(date);
   const lastDayOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
   const dates = [];
@@ -108,7 +107,7 @@ export function getAllDatesSinceLastMonthLastDay(date: string | null): string[] 
   return dates;
 }
 
-export function getAllDatesSinceLastYearLastDay(date: string | null): string {
+export function getAllDatesSinceLastYearLastDay(date: Date | null): string {
   const today = date == null ? new Date() : new Date(date);
   const lastDayOfLastYear = new Date(today.getFullYear() - 1, 11, 31); // December 31 of the previous year
 
@@ -194,8 +193,6 @@ export function getDaysBetween(startDate: any, endDate: any) {
   // Return the absolute value of the difference in days
   return Math.abs(Math.round(diffInDays)) || 0;
 }
-
-
 
 export function formatExcelDate(date: any) {
   if (typeof date === "number") {

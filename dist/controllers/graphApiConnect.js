@@ -5,7 +5,7 @@ require("dotenv").config();
 const excelFormat_1 = require("./excelFormat");
 const common_1 = require("./common");
 const common_2 = require("./reports/common");
-const positions_1 = require("./reports/positions");
+const positions_1 = require("./operations/positions");
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
 const FormData = require("form-data");

@@ -1,12 +1,11 @@
-import { tradesMTDRlzd } from "../../models/reports";
-import { formatDateWorld, isNotNullOrUndefined, parsePercentage, swapMonthDay } from "../common";
+import { FundMTD, PositionBeforeFormatting, PositionGeneralFormat, RlzdTrades } from "../../models/portfolio";
+import { formatDateWorld, parsePercentage } from "../common";
 import { calculateAccruedSinceInception } from "../reports/portfolios";
 import { parseBondIdentifier } from "../reports/tools";
 import { bbgRating, isRatingHigherThanBBBMinus, sortObjectBasedOnKey, toTitleCase, oasWithChange, checkPosition, formatMarkDate, yearsUntil, getDuration, getSectorAssetClass, moodyRating } from "./tools";
 
-export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: any, conditions = null) {
+export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: any, conditions = null): { portfolio: PositionGeneralFormat[]; fundDetails: FundMTD; currencies: any } {
   let currencies: any = {};
-  let formatted = [];
 
   let dv01Sum = 0;
   let mtdpl = 0,
@@ -29,6 +28,7 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     smv = 0;
   for (let index = 0; index < portfolio.length; index++) {
     let position: any = portfolio[index];
+
     let originalFace = position["Original Face"] || 1;
     let usdRatio = parseFloat(position["FX Rate"] || position["holdPortfXrate"]) || 1;
     let holdBackRatio = (position["Asset Class"] || position["Rating Class"]) == "Illiquid" ? parseFloat(fund.holdBackRatio) : 1;
@@ -88,7 +88,6 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     position["Average Cost"] = Math.round(position["Average Cost"] * 1000 * bondDivider) / 1000;
     position["YTM"] = (Math.round(position["YTM"] * 100) / 100 || 0) + " %" || "0 %";
     position["YTW"] = (Math.round(position["YTW"] * 100) / 100 || 0) + " %" || "0 %";
-    position["CR01"] = "0";
     position["MTD Rlzd"] = position["MTD Rlzd"] ? position["MTD Rlzd"] : 0;
     position["MTD Mark"] = Math.round(position["MTD Mark"] * 1000 * bondDivider) / 1000;
     position["Day Rlzd"] = position["Day Rlzd"] ? position["Day Rlzd"] : 0;
@@ -161,7 +160,7 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
 
     position["Maturity"] = position["Maturity"] ? position["Maturity"] : parseBondIdentifier(position["BB Ticker"]).date || 0;
 
-    position["Call Date"] = position["Call Date"] ? position["Call Date"] : 0;
+    position["Call Date"] = position["Call Date"] ? position["Call Date"] : "0";
 
     position["L/S"] = position["Notional Amount"] > 0 && position["Type"] != "CDS" ? "Long" : position["Notional Amount"] == 0 && position["Type"] != "CDS" ? "Rlzd" : "Short";
     position["Duration"] = yearsUntil(position["Call Date"] ? position["Call Date"] : position["Maturity"], date);
@@ -178,14 +177,14 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     position["Spread Change"] = oasWithChange(position["OAS"])[1];
     position["DV01 Dollar Value Impact"] = Math.round(position["OAS W Change"] * position["DV01"]);
     position["DV01 Dollar Value Impact % of Nav"] = Math.round(((position["DV01 Dollar Value Impact"] * position["OAS W Change"]) / fund.nav) * 10000) / 100 + " %";
-    position["DV01 Dollar Value Impact Limit % of Nav"] = position["Value (BC)"] / fund.nav > 10 ? 2 : 1.5 + " %";
+    position["DV01 Dollar Value Impact Limit % of Nav"] = position["Value (BC)"] / fund.nav > 10 ? 2 + " %" : 1.5 + " %";
     position["DV01 Dollar Value Impact Utilization % of Nav"] = Math.round((parsePercentage(position["DV01 Dollar Value Impact % of Nav"]) / parsePercentage(position["DV01 Dollar Value Impact Limit % of Nav"])) * 10000) / 100 + " %";
     position["DV01 Dollar Value Impact Test"] = Math.abs(parsePercentage(position["DV01 Dollar Value Impact Utilization % of Nav"])) < 100 ? "Pass" : "Fail";
     position["DV01 Dollar Value Impact Color Test"] = position["DV01 Dollar Value Impact Test"] == "Pass" ? "#C5E1A5" : "#FFAB91";
 
     position["Value (BC) % of Nav"] = Math.round((position["Value (BC)"] / fund.nav) * 10000) / 100 + " %";
 
-    position["Value (BC) Limit % of Nav"] = Math.abs(parsePercentage(position["Value (BC) % of Nav"])) > 10 ? 15 : 10 + " %";
+    position["Value (BC) Limit % of Nav"] = Math.abs(parsePercentage(position["Value (BC) % of Nav"])) > 10 ? 15 + " %" : 10 + " %";
     position["Value (BC) Utilization % of Nav"] = Math.round((parsePercentage(position["Value (BC) % of Nav"]) / parsePercentage(position["Value (BC) Limit % of Nav"])) * 10000) / 100 + " %";
 
     position["Value (BC) Test"] = Math.abs(parsePercentage(position["Value (BC) Utilization % of Nav"])) < 100 ? "Pass" : "Fail";
@@ -203,6 +202,7 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     position["Z Spread"] = Math.round(position["Z Spread"] * 1000000) / 1000000 || 0;
     position["Entry Yield"] = position["Entry Yield"] ? Math.round(position["Entry Yield"] * 100) / 100 + " %" : "0 %";
     position["Coupon Rate"] = position["Coupon Rate"] + " %";
+
     let latestDateKey;
 
     latestDateKey = Object.keys(position["Interest"]).sort((a, b) => {
@@ -318,14 +318,14 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
   return { portfolio: portfolio, fundDetails: fundDetails, currencies: currencies };
 }
 
-export function formatFrontEndTable(portfolio: any, date: any, fund: any, dates: any, sort: any, sign: number) {
+export function formatFrontEndTable(portfolio: PositionBeforeFormatting[], date: any, fund: any, dates: any, sort: any, sign: number) {
   let formattedPortfolio = formatGeneralTable(portfolio, date, fund, dates);
   let analyzedPortfolio = groupAndSortByLocationAndTypeDefineTables(formattedPortfolio.portfolio, formattedPortfolio.fundDetails.nav, sort, sign, "backOffice", formattedPortfolio.currencies, "summary");
 
   return { portfolio: analyzedPortfolio.portfolio, fundDetails: formattedPortfolio.fundDetails, analysis: analyzedPortfolio };
 }
 
-export function calculateMTDCost(trades: tradesMTDRlzd[], mark: number, issue: string) {
+export function calculateMTDCost(trades: RlzdTrades[], mark: number, issue: string) {
   let total = 0;
 
   for (let index = 0; index < trades.length; index++) {
@@ -522,7 +522,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
   return object;
 }
 
-export function formatFrontEndSummaryTable(portfolio: any, date: any, fund: any, dates: any, sort: any, sign: number, conditions = null) {
+export function formatFrontEndSummaryTable(portfolio: PositionBeforeFormatting[], date: any, fund: any, dates: any, sort: any, sign: number, conditions = null) {
   let formattedPortfolio: any = formatGeneralTable(portfolio, date, fund, dates, conditions);
 
   let formatted = [];
@@ -903,7 +903,6 @@ function assignColorAndSortParamsBasedOnAssetClass(
         let couponRate: any = groupedByLocation[locationCode].data[index]["Coupon Rate"];
         let notional = groupedByLocation[locationCode].data[index]["Notional Amount"];
         let issue: any = groupedByLocation[locationCode].data[index]["BB Ticker"];
-        // console.log(issue, couponRate, "table formamated")
         sumTable(rvPairTable, groupedByLocation[locationCode].data[index], view, locationCode);
         if (notional < 0) {
           sumTable(ustTableByCoupon, groupedByLocation[locationCode].data[index], view, couponRate);

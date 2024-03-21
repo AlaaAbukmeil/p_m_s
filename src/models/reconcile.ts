@@ -1,0 +1,61 @@
+export interface MufgReconcile {
+  Sort1: string;
+  Sort2: string;
+  Sort3: string;
+  Quantity: string;
+  Investment: string;
+  Description: string;
+  CCY: string;
+  LocalCost: string;
+  BaseCost: string;
+  Price: string;
+  FXRate: string;
+  LocalValue: string;
+  BaseValue: string;
+  UnrealizedMktGainLoss: string;
+  UnrealizedFXGainLoss: string;
+  TotalUnrealizedGainLoss: string;
+}
+
+export interface NomuraReconcile {
+  "Account ID": string;
+  "Account Name": string;
+  "Long/Short Indicator": string;
+  Cusip: string;
+  "Quick Code": string;
+  Sedol: string;
+  Isin: string;
+  Symbol: string;
+  "Security Name": string;
+  "Security Issue CCY": string;
+  "Base CCY": string;
+  "US Margin Ind": string;
+  "TD Quantity": string;
+  "SD Quantity": string;
+  Price: string;
+  "TD Market Value Local": string;
+  "SD Market Value Local": string;
+  "TD Market Value Base": string;
+  "SD Market Value Base": string;
+  "Quantity Subject to Right of Use/Stock Loan": string;
+  "FX Rate": string;
+  "Last Activity Date": string;
+  "Business Date": string;
+  "Run Date": string;
+  "Run Time": string;
+  "OTC DerivativeType": string;
+  Ticker: string;
+  "Ric Code": string;
+  "Preferred ID": string;
+  "Pricing Factor": string;
+  "Price Type": string;
+  "Product Type": string;
+  "Expiration Date": string;
+  "Option Contract Type": string;
+  "Td Accrued Interest": string;
+  "Sd Accrued Interest": string;
+  "Clean Price": string;
+  "Asset Class": string;
+  "Stock Loan Financed Positions Base Ccy": string;
+  "Stock Loan Financed Positions (USD)": string;
+}

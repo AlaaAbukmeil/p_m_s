@@ -1,4 +1,6 @@
 import { convertExcelDateToJSDate, generateRandomString, getTradeDateYearTrades } from "../common";
+import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
+import { insertEditLogs } from "./operations";
 
 const xlsx = require("xlsx");
 const axios = require("axios");
@@ -164,7 +166,12 @@ export async function readIBRawExcel(path: string) {
       range: `A${tradesRowIndex}:Q${tradesRowEndIndex}`,
     });
     return data;
-  } catch (error) {
+  } catch (error: any) {
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.log(error)
+
+    await insertEditLogs([error.toString], "Errors", dateTime, "readIBRawExcel", "controllers/operations/readExcel.ts");
+
     return [];
   }
 }

@@ -2,7 +2,7 @@ import util from "util";
 import {  uri } from "./common";
 import { getPortfolioOnSpecificDate } from "./operations/operations";
 import { monthlyRlzdDate } from "./reports/common";
-import { getPortfolio, insertTradesInPortfolio, insertTradesInPortfolioAtASpecificDate } from "./reports/positions";
+import { getPortfolio, insertTradesInPortfolio, insertTradesInPortfolioAtASpecificDate } from "./operations/positions";
 const fs = require("fs");
 const writeFile = util.promisify(fs.writeFile);
 
@@ -34,54 +34,6 @@ let changes: any = {
   },
 };
 
-export async function editMTDRlzd(collectionDate: string) {
- 
-  let action: any = await getPortfolioOnSpecificDate(collectionDate);
-  let portfolio = action[0];
-  collectionDate = action[1];
-  let positionChanged = 0;
-  for (let index = 0; index < portfolio.length; index++) {
-    if (changes[portfolio[index]["_id"]]) {
-      portfolio[index]["MTD Rlzd"] = changes[portfolio[index]["_id"]]["MTD Rlzd"];
 
-      positionChanged++;
-    }
-  }
-  console.log(collectionDate);
-  await insertTradesInPortfolioAtASpecificDate(portfolio, `portfolio-${collectionDate}`);
 
-  return;
-}
-export async function editDayRlzd(collectionDate: string) {
-  let action: any = await getPortfolioOnSpecificDate(collectionDate);
-  let portfolio = action[0];
-  collectionDate = action[1];
-
-  let positionChanged = 0;
-  for (let index = 0; index < portfolio.length; index++) {
-    if (changes[portfolio[index]["_id"]]) {
-      portfolio[index]["Day Rlzd"] = {};
-      portfolio[index]["Day Rlzd"] = changes[portfolio[index]["_id"]]["Day Rlzd"];
-      positionChanged++;
-    }
-  }
-  console.log(collectionDate);
-  await insertTradesInPortfolioAtASpecificDate(portfolio, `portfolio-${collectionDate}`);
-
-  return;
-}
-
-export async function changeMTDRlzd() {
-  let portfolio = await getPortfolio();
-  for (let index = 0; index < portfolio.length; index++) {
-    if (portfolio[index]["MTD Rlzd"]) {
-      let object = portfolio[index]["MTD Rlzd"];
-      portfolio[index]["MTD Rlzd"] = {};
-      portfolio[index]["MTD Rlzd"][monthlyRlzdDate(new Date().toString())] = object;
-    }
-  }
-  await insertTradesInPortfolio(portfolio);
-
-  return;
-}
 

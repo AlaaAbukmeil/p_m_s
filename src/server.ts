@@ -1,6 +1,10 @@
 //jshint esversion:6
-import router from "./routes/router";
-
+import authRouter from "./routes/auth";
+import formatterRouter from "./routes/formatter";
+import router from "./routes/operations/portfolio";
+import positionsRouter from "./routes/operations/positions";
+import tradesRouter from "./routes/operations/trades";
+import reconcileRouter from "./routes/reconcile";
 require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -34,6 +38,11 @@ app.use(
 app.use(bodyParser.json());
 
 app.use("/api/web/", router);
+app.use("/api/web/", authRouter);
+app.use("/api/web/", formatterRouter);
+app.use("/api/web/", reconcileRouter);
+app.use("/api/web/", tradesRouter);
+app.use("/api/web/", positionsRouter);
 
 app.use(apiLimiter);
 

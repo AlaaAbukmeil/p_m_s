@@ -1,10 +1,10 @@
-export async function reconcileMUFG(MUFGData: any, portfolio: any) {
+import { MufgReconcile, NomuraReconcile } from "../../models/reconcile";
+
+export async function reconcileMUFG(MUFGData: MufgReconcile[], portfolio: any) {
   try {
     portfolio = updatePortfolioBasedOnIsin(portfolio);
     let formattedData: any = [];
-    if (MUFGData.error) {
-      return MUFGData;
-    }
+
     for (let index = 0; index < portfolio.length; index++) {
       let positionInPortfolio = portfolio[index];
       let positionInMufg = getPositionInMUFG(MUFGData, positionInPortfolio["BB Ticker"], positionInPortfolio["ISIN"]);
@@ -46,13 +46,11 @@ export async function reconcileMUFG(MUFGData: any, portfolio: any) {
   }
 }
 
-export async function reconcileNomura(data: any, portfolio: any) {
+export async function reconcileNomura(data: NomuraReconcile[], portfolio: any) {
   try {
     portfolio = updatePortfolioBasedOnIsin(portfolio);
     let formattedData: any = [];
-    if (data.error) {
-      return data;
-    }
+
     let alreadyScanned: any = {};
 
     for (let index = 0; index < portfolio.length; index++) {
@@ -92,7 +90,7 @@ export async function reconcileNomura(data: any, portfolio: any) {
 
         let formattedRow = {
           "BB Ticker": positionInNomura["Security Name"],
-          ISIN: positionInNomura["ISIN"],
+          ISIN: positionInNomura["Isin"],
 
           "Notional Amount (app)": 0,
           "Notional Amount (nomura)": nomuraPositionQuantity || 0,
@@ -112,7 +110,8 @@ export async function reconcileNomura(data: any, portfolio: any) {
     return { error: "unexpected error" };
   }
 }
-function getPositionInMUFG(mufgData: any, bbTicker: string, isin: string) {
+
+function getPositionInMUFG(mufgData: MufgReconcile[], bbTicker: string, isin: string) {
   for (let index = 0; index < mufgData.length; index++) {
     let row = mufgData[index];
     if (row["Investment"].includes(bbTicker) || row["Investment"].includes(isin)) {
@@ -122,7 +121,7 @@ function getPositionInMUFG(mufgData: any, bbTicker: string, isin: string) {
   return null;
 }
 
-function getPositionInNomura(data: any, isin: string) {
+function getPositionInNomura(data: NomuraReconcile[], isin: string) {
   for (let index = 0; index < data.length; index++) {
     let row = data[index];
     if (row["Isin"].includes(isin)) {

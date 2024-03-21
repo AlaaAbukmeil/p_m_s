@@ -1,6 +1,7 @@
+import { CentralizedTrade } from "../../models/trades";
 import { client } from "../auth";
-
-
+import { insertEditLogs } from "../operations/operations";
+import { getDateTimeInMongoDBCollectionFormat } from "./common";
 
 export async function getTrades(tradeType: any) {
   try {
@@ -20,7 +21,6 @@ export async function getTrades(tradeType: any) {
   }
 }
 
-
 export async function insertTrade(trades: any, tradeType: any) {
   const database = client.db("trades_v_2");
   const reportCollection = database.collection(`${tradeType}`);
@@ -37,37 +37,17 @@ export async function insertTrade(trades: any, tradeType: any) {
   try {
     const result = await reportCollection.bulkWrite(operations);
     return result;
-  } catch (error) {
-    return error;
+  } catch (error: any) {
+    console.log(error);
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+
+    await insertEditLogs([error.toString], "Errors", dateTime, "insertTrade", "controllers/reports/trades.ts");
+
+    return;
   }
 }
 
-export async function tradesTriadaIds() {
-  try {
-    const database = client.db("trades_v_2");
-    const reportCollection1 = database.collection("vcons");
-    const reportCollection2 = database.collection("ib");
-    const reportCollection3 = database.collection("emsx");
-    const document1 = await reportCollection1.find().toArray();
-    const document2 = await reportCollection2.find().toArray();
-    const document3 = await reportCollection3.find().toArray();
-    let document = [...document1, ...document2, ...document3];
-    if (document) {
-      let sequalNumbers = [];
-      for (let index = 0; index < document.length; index++) {
-        let trade = document[index];
-        sequalNumbers.push(trade["Triada Trade Id"]);
-      }
-
-      return sequalNumbers;
-    } else {
-      return [];
-    }
-  } catch (error) {
-    return error;
-  }
-}
-export async function findTrade(tradeType: string, tradeTriadaId: string, seqNo = null) {
+export async function findTrade(tradeType: string, tradeTriadaId: string, seqNo = null): Promise<CentralizedTrade | {}> {
   try {
     const database = client.db("trades_v_2");
     const reportCollection = database.collection(tradeType);
@@ -83,15 +63,13 @@ export async function findTrade(tradeType: string, tradeTriadaId: string, seqNo 
     if (documents) {
       return documents[0];
     } else {
-      return [];
+      return {};
     }
-  } catch (error) {
-    return error;
+  } catch (error: any) {
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.log(error);
+
+    await insertEditLogs([error.toString], "Errors", dateTime, "findTrade", "controllers/reports/trades.ts");
+    return {};
   }
 }
-
-
-
-
-
-

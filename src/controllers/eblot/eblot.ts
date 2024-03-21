@@ -1,5 +1,9 @@
-import { client } from "./auth";
-export async function getAllTrades(from: number, to: number) {
+import { CentralizedTrade } from "../../models/trades";
+import { client } from "../auth";
+import { insertEditLogs } from "../operations/operations";
+import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
+
+export async function getAllTrades(from: number, to: number): Promise<CentralizedTrade[]> {
   try {
     const database = client.db("trades_v_2");
     const collections = [database.collection("vcons"), database.collection("ib"), database.collection("emsx")];
@@ -23,16 +27,19 @@ export async function getAllTrades(from: number, to: number) {
 
     for (let index = 0; index < allDocuments.length; index++) {
       let trade = allDocuments[index];
-      if(!trade["BB Ticker"] && trade["Issue"]){
-        trade["BB Ticker"] = trade["Issue"]
-        delete trade["Issue"]
+      if (!trade["BB Ticker"] && trade["Issue"]) {
+        trade["BB Ticker"] = trade["Issue"];
+        delete trade["Issue"];
       }
-      
     }
 
     return allDocuments;
-  } catch (error) {
+  } catch (error: any) {
     // Handle the error appropriately
-    return { error: error };
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.log(error);
+    await insertEditLogs([error.toString], "Errors", dateTime, "Get All Trades", "controllers/eblot/eblot.ts");
+
+    return [];
   }
 }

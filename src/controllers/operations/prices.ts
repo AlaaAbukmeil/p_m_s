@@ -4,25 +4,26 @@ import { formatUpdatedPositions } from "../reports/tools";
 import { client } from "../auth";
 const ObjectId = require("mongodb").ObjectId;
 export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDate: string, path: string) {
-    try {
-      if (data.error) {
-        return data;
-      } else {
-        let updatedPricePortfolio = [];
-        let action: any = await getPortfolioOnSpecificDate(collectionDate);
-        let portfolio = action[0];
-        collectionDate = action[1];
+  try {
+    if (data.error) {
+      return data;
+    } else {
+      let updatedPricePortfolio = [];
+      let action = await getPortfolioOnSpecificDate(collectionDate);
+      if (action.date) {
+        let portfolio = action.portfolio;
+        collectionDate = action.date;
         console.log(collectionDate, "collection day used");
-  
+
         for (let index = 0; index < data.length; index++) {
           let row = data[index];
-  
+
           let object: any = getSecurityInPortfolioWithoutLocation(portfolio, row["Investment"].trim());
-  
+
           if (object == 404) {
             continue;
           }
-  
+
           for (let index = 0; index < object.length; index++) {
             let position = object[index];
             let divider = position["Type"] == "BND" || position["Type"] == "UST" ? 100 : 1;
@@ -31,7 +32,7 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
             updatedPricePortfolio.push(position);
           }
         }
-  
+
         try {
           let updatedPortfolio: any = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
           let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
@@ -48,78 +49,84 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
           return { error: error.toString() };
         }
       }
-    } catch (error) {
-      return { error: "error" };
     }
+  } catch (error) {
+    return { error: "error" };
   }
-  
-  export async function insertPreviousPricesUpdatesInPortfolio(updatedPortfolio: any, collectionDate: string) {
-    const database = client.db("portfolios");
-    let portfolio = updatedPortfolio;
-    // Create an array of updateOne operations
-  
-    // Execute the operations in bulk
-    let day = getDateTimeInMongoDBCollectionFormat(collectionDate);
-    console.log(day, "updated collection");
-    try {
-      //so the latest updated version portfolio profits will not be copied into a new instance
-      const updatedOperations = portfolio.map((position: any) => {
-        // Start with the known filters
-        const filters: any = [];
-        // Only add the "BB Ticker" filter if it's present in the trade object
-        if (position["ISIN"]) {
-          filters.push({
-            ISIN: position["ISIN"],
-            Location: position["Location"],
-            _id: new ObjectId(position["_id"]),
-          });
-        } else if (position["BB Ticker"]) {
-          filters.push({
-            "BB Ticker": position["BB Ticker"],
-            Location: position["Location"],
-            _id: new ObjectId(position["_id"]),
-          });
-        } else if (position["CUSIP"]) {
-          filters.push({
-            CUSIP: position["CUSIP"],
-            Location: position["Location"],
-            _id: new ObjectId(position["_id"]),
-          });
-        }
-  
-        return {
-          updateOne: {
-            filter: { $or: filters },
-            update: { $set: position },
-          },
-        };
-      });
-  
-      let updatedCollection = database.collection(`portfolio-${day}`);
-      let updatedResult = await updatedCollection.bulkWrite(updatedOperations);
-  
-      return updatedResult;
-    } catch (error) {
-      return error;
-    }
+}
+
+export async function insertPreviousPricesUpdatesInPortfolio(updatedPortfolio: any, collectionDate: string) {
+  const database = client.db("portfolios");
+  let portfolio = updatedPortfolio;
+  // Create an array of updateOne operations
+
+  // Execute the operations in bulk
+  let day = getDateTimeInMongoDBCollectionFormat(collectionDate);
+  console.log(day, "updated collection");
+  try {
+    //so the latest updated version portfolio profits will not be copied into a new instance
+    const updatedOperations = portfolio.map((position: any) => {
+      // Start with the known filters
+      const filters: any = [];
+      // Only add the "BB Ticker" filter if it's present in the trade object
+      if (position["ISIN"]) {
+        filters.push({
+          ISIN: position["ISIN"],
+          Location: position["Location"],
+          _id: new ObjectId(position["_id"]),
+        });
+      } else if (position["BB Ticker"]) {
+        filters.push({
+          "BB Ticker": position["BB Ticker"],
+          Location: position["Location"],
+          _id: new ObjectId(position["_id"]),
+        });
+      } else if (position["CUSIP"]) {
+        filters.push({
+          CUSIP: position["CUSIP"],
+          Location: position["Location"],
+          _id: new ObjectId(position["_id"]),
+        });
+      }
+
+      return {
+        updateOne: {
+          filter: { $or: filters },
+          update: { $set: position },
+        },
+      };
+    });
+
+    let updatedCollection = database.collection(`portfolio-${day}`);
+    let updatedResult = await updatedCollection.bulkWrite(updatedOperations);
+
+    return updatedResult;
+  } catch (error: any) {
+    console.log(error);
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+
+    await insertEditLogs([error.toString], "Errors", dateTime, "insertPreviousPricesUpdatesInPortfolio", "controllers/operations/prices.ts");
+
+    return ;
   }
+}
 
-
-  export async function updatePreviousPricesPortfolioBloomberg(data: any, collectionDate: string, path: string) {
-    try {
-      if (data.error) {
-        return data;
-      } else {
-        let updatedPricePortfolio = [];
-        let action: any = await getPortfolioOnSpecificDate(collectionDate);
-        let portfolio = action[0];
-        collectionDate = action[1];
+export async function updatePreviousPricesPortfolioBloomberg(data: any, collectionDate: string, path: string) {
+  try {
+    if (data.error) {
+      return data;
+    } else {
+      let updatedPricePortfolio = [];
+      let action = await getPortfolioOnSpecificDate(collectionDate);
+      if (action.date) {
+        let portfolio = action.portfolio;
+        collectionDate = action.date;
         let currencyInUSD: any = {};
         currencyInUSD["USD"] = 1;
         let divider = 1;
         let currencyStart = true;
         currencyInUSD["USD"] = 1;
-  
+
         for (let index = 0; index < data.length; index++) {
           let row = data[index];
           if (row["BB Ticker"] == "Bonds") {
@@ -130,10 +137,10 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
           } else if (row["BB Ticker"] == "Futures") {
             divider = 1;
           }
-  
+
           if (!currencyStart) {
             let positions: any = getSecurityInPortfolioWithoutLocation(portfolio, row["Bloomberg ID"]);
-  
+
             if (positions == 404) {
               positions = getSecurityInPortfolioWithoutLocation(portfolio, row["ISIN"]);
             }
@@ -143,20 +150,20 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
             if (positions == 404) {
               positions = getSecurityInPortfolioWithoutLocation(portfolio, row["CUSIP"]);
             }
-  
+
             if (positions == 404) {
               continue;
             }
-  
+
             for (let index = 0; index < positions.length; index++) {
               let object = positions[index];
-  
+
               object["Mid"] = parseFloat(row["Today's Mid"]) / divider;
               object["Ask"] = parseFloat(row["Override Ask"]) > 0 ? parseFloat(row["Override Ask"]) / divider : parseFloat(row["Today's Ask (Broker)"]) > 0 ? parseFloat(row["Today's Ask (Broker)"]) / divider : parseFloat(row["Today's Ask"]) / divider;
               object["Bid"] = parseFloat(row["Override Bid"]) > 0 ? parseFloat(row["Override Bid"]) / divider : parseFloat(row["Today's Bid (Broker)"]) > 0 ? parseFloat(row["Today's Bid (Broker)"]) / divider : parseFloat(row["Today's Bid"]) / divider;
               object["YTM"] = row["Mid Yield call"].toString().includes("N/A") ? 0 : row["Mid Yield call"];
               object["Broker"] = row["Broker"].toString().includes("N/A") ? "" : row["Broker"];
-  
+
               object["DV01"] = row["DV01"].toString().includes("N/A") ? 0 : row["DV01"];
               object["YTW"] = row["Mid Yield Worst"].toString().includes("N/A") ? 0 : row["Mid Yield Worst"];
               object["OAS"] = row["OAS Spread"].toString().includes("N/A") ? 0 : row["OAS Spread"];
@@ -172,7 +179,7 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
               object["Issuer"] = row["Issuer Name"].toString().includes("N/A") ? "" : row["Issuer Name"];
               object["Bloomberg ID"] = row["Bloomberg ID"];
               object["CUSIP"] = row["CUSIP"].toString().includes("N/A") ? "" : row["CUSIP"];
-  
+
               if (!row["Call Date"].includes("N/A") && !row["Call Date"].includes("#")) {
                 object["Call Date"] = row["Call Date"];
               }
@@ -184,14 +191,14 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
               } else {
                 object["FX Rate"] = 1;
               }
-  
+
               if (row["Country"] && !row["Country"].includes("N/A")) {
                 object["Country"] = row["Country"];
               }
               if (row["Sector"] && !row["Sector"].includes("N/A")) {
                 object["Sector"] = row["Sector"];
               }
-  
+
               updatedPricePortfolio.push(object);
             }
           } else if (row["BB Ticker"].includes("Curncy") && currencyStart) {
@@ -221,8 +228,9 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
           return { error: "Template does not match" };
         }
       }
-    } catch (error) {
-      console.log(error);
-      return { error: "error" };
     }
+  } catch (error) {
+    console.log(error);
+    return { error: "error" };
   }
+}

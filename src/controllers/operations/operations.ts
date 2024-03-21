@@ -5,12 +5,14 @@ import { formatDateUS, getDate, uri } from "../common";
 import { findTradeRecord, formatUpdatedPositions, getAverageCost, getEarliestCollectionName, parseBondIdentifier } from "../reports/tools";
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../reports/common";
 import { readEditInput } from "./readExcel";
-import { getPortfolio, insertTradesInPortfolio, insertTradesInPortfolioAtASpecificDate, returnPositionProgress, updateExisitingPosition } from "../reports/positions";
+import { getPortfolio, insertTradesInPortfolio, insertTradesInPortfolioAtASpecificDate, returnPositionProgress, updateExisitingPosition } from "./positions";
 import { client } from "../auth";
+import { FundDetails } from "../../models/portfolio";
+import { Position } from "../../models/position";
 
 const xlsx = require("xlsx");
 
-export async function getCollectionDays() {
+export async function getCollectionDays(): Promise<string[]> {
   try {
     const database = client.db("portfolios");
     let collections = await database.listCollections().toArray();
@@ -26,11 +28,16 @@ export async function getCollectionDays() {
 
     return dates;
   } catch (error: any) {
-    return error.toString();
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.log(error);
+
+    await insertEditLogs([error.toString], "Errors", dateTime, "getCollectionDays", "controllers/operations/operations.ts");
+
+    return [];
   }
 }
 
-export async function getPortfolioOnSpecificDate(collectionDate: string): Promise<[any, string] | string> {
+export async function getPortfolioOnSpecificDate(collectionDate: string): Promise<{ portfolio: Position[] | null; date: string | null }> {
   try {
     const database = client.db("portfolios");
     let date = getDateTimeInMongoDBCollectionFormat(new Date(collectionDate)).split(" ")[0] + " 23:59";
@@ -42,13 +49,16 @@ export async function getPortfolioOnSpecificDate(collectionDate: string): Promis
       documents[index]["Notional Amount"] = documents[index]["Notional Amount"] || parseFloat(documents[index]["Notional Amount"]) == 0 ? documents[index]["Notional Amount"] : documents[index]["Quantity"];
     }
 
-    return [documents, earliestCollectionName.predecessorDate];
+    return { portfolio: documents, date: earliestCollectionName.predecessorDate };
   } catch (error: any) {
-    return error.toString();
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.log(error);
+    await insertEditLogs([error.toString], "Errors", dateTime, "getPortfolioOnSpecificDate", "controllers/operations/operations.ts");
+    return { portfolio: null, date: null };
   }
 }
 
-export function getSecurityInPortfolioWithoutLocation(portfolio: any, identifier: string) {
+export function getSecurityInPortfolioWithoutLocation(portfolio: any, identifier: string): Position | 404 {
   let document: any = [];
   if (identifier == "" || !identifier) {
     return document;
@@ -104,8 +114,13 @@ export async function getEditLogs(logsType: any) {
     const reportCollection = database.collection(`${logsType}`);
     let documents = await reportCollection.find().sort({ dateTime: -1 }).toArray();
     return documents;
-  } catch (error) {
-    return error;
+  } catch (error: any) {
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.log(error);
+
+    await insertEditLogs([error.toString], "Errors", dateTime, "getEditLogs", "controllers/operations/operations.ts");
+
+    return [];
   }
 }
 
@@ -163,7 +178,7 @@ export function getSecurityInPortfolioById(portfolio: any, id: string) {
   return document;
 }
 
-export async function getFundDetails(date: string) {
+export async function getFundDetails(date: string): Promise<FundDetails | {}> {
   try {
     const database = client.db("fund");
     const reportCollection = database.collection("details");
@@ -171,8 +186,13 @@ export async function getFundDetails(date: string) {
 
     let documents = await reportCollection.find({ month: test }).toArray();
     return documents;
-  } catch (error) {
-    return error;
+  } catch (error: any) {
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.log(error);
+
+    await insertEditLogs([error.toString], "Errors", dateTime, "getFundDetails", "controllers/operations/operations.ts");
+
+    return {};
   }
 }
 
@@ -230,14 +250,19 @@ function getMonthInFundDetailsFormat(date: any) {
   return `${year}/${month}`;
 }
 
-export async function getAllFundDetails(date: string) {
+export async function getAllFundDetails(date: string): Promise<FundDetails[]> {
   try {
     const database = client.db("fund");
     const reportCollection = database.collection("details");
     let documents = await reportCollection.find().toArray();
     return documents.sort(compareMonths);
-  } catch (error) {
-    return { error: error };
+  } catch (error: any) {
+    console.log(error);
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+
+    await insertEditLogs([error.toString], "Errors", dateTime, "getAllFundDetails", "controllers/operations/operations.ts");
+
+    return [];
   }
 }
 
@@ -784,7 +809,12 @@ export async function modifyTradesDueToRecalculate(trades: any, tradeType: any) 
     let action = await historicalReportCollection.bulkWrite(operations);
     console.log(action);
     return action;
-  } catch (error) {
-    return error;
+  } catch (error: any) {
+    console.log(error);
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+
+    await insertEditLogs([error.toString], "Errors", dateTime, "modifyTradesDueToRecalculate", "controllers/operations/operations.ts");
+
+    return "";
   }
 }

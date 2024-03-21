@@ -1,5 +1,6 @@
 import { client } from "../auth";
 import { formatDateWorld } from "../common";
+import { insertEditLogs } from "../operations/operations";
 import { getAllDatesSinceLastMonthLastDay, getDateTimeInMongoDBCollectionFormat } from "./common";
 
 export function getAverageCost(currentQuantity: number, previousQuantity: number, currentPrice: any, previousAverageCost: any) {
@@ -74,8 +75,13 @@ export function parseBondIdentifier(identifier: any): any {
           date = formatDateWorld(date);
         }
         return { rate: rate, date: date };
-      } catch (error) {
-        return error;
+      } catch (error:any) {
+        console.log(error);
+        let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    
+        insertEditLogs([error.toString], "Errors", dateTime, "parseBondIdentifier", "controllers/reports/tools.ts");
+        
+        return ;
       }
     } else {
       return ["", "Invalid Date"];
@@ -147,6 +153,7 @@ export function formatUpdatedPositions(positions: any, portfolio: any, lastUpdat
 
     return data;
   } catch (error) {
+    
     return error;
   }
 }

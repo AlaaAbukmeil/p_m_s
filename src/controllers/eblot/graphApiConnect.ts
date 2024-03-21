@@ -1,14 +1,16 @@
 require("dotenv").config();
 
+import { getTime } from "../common";
+import { getPortfolio } from "../operations/positions";
+import { getDateTimeInMongoDBCollectionFormat, mergeSort } from "../reports/common";
 import { renderVcon, renderFx } from "./excelFormat";
-import { convertExcelDateToJSDate, getTime, getTradeDateYearTrades } from "./common";
-import { mergeSort } from "./reports/common";
-import { getPortfolio } from "./reports/positions";
+import { Vcon } from "../../models/trades";
+import { insertEditLogs } from "../operations/operations";
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
 const FormData = require("form-data");
 
-export async function getGraphToken() {
+export async function getGraphToken(): Promise<string> {
   try {
     let form = new FormData();
     form.append("grant_type", "client_credentials");
@@ -19,7 +21,8 @@ export async function getGraphToken() {
     let action = await axios.post(url, form);
     return action.data["access_token"];
   } catch (error) {
-    return error;
+    console.log(error);
+    return "access denied";
   }
 }
 
@@ -41,11 +44,11 @@ export function getSecurityInPortfolioWithoutLocationForVcon(portfolio: any, ide
   return object;
 }
 
-function format_date_ISO(date: string) {
+function format_date_ISO(date: string): string {
   return new Date(date).toISOString();
 }
 
-export async function getVcons(token: string, start_time: any, end_time: any, trades: any) {
+export async function getVcons(token: string, start_time: any, end_time: any, trades: any): Promise<Vcon[]> {
   let portfolio = await getPortfolio();
   try {
     let url = `https://graph.microsoft.com/v1.0/users/vcons@triadacapital.com/messages?$filter=contains(subject,'New BB') and receivedDateTime ge ${format_date_ISO(start_time)} and receivedDateTime le ${format_date_ISO(end_time)}&$top=1000000`;
@@ -56,19 +59,19 @@ export async function getVcons(token: string, start_time: any, end_time: any, tr
     });
     let vcons = action.data.value;
 
-    let object = [];
+    let object: Vcon[] = [];
 
     let id;
-  
+
     for (let index = 0; index < vcons.length; index++) {
-      let tradeTime = getTime((new Date(vcons[index]["receivedDateTime"]).toISOString()));
-      let vcon = vcons[index].body.content;
-     
-      vcon = renderVcon(vcon);
+      let tradeTime = getTime(new Date(vcons[index]["receivedDateTime"]).toISOString());
+      let content = vcons[index].body.content;
+      let vcon: Vcon = renderVcon(content);
+
       let identifier = vcon["ISIN"];
       vcon["BB Ticker"] = vcon["Issue"];
-      vcon["Entry Time"] = tradeTime
-      vcon["Notional Amount"] = vcon["Quantity"]
+      vcon["Entry Time"] = tradeTime;
+      vcon["Notional Amount"] = vcon["Quantity"];
       let securityInPortfolioLocation = getSecurityInPortfolioWithoutLocationForVcon(portfolio, identifier);
       let location = securityInPortfolioLocation.trim();
       let trade_status = "new";
@@ -95,8 +98,13 @@ export async function getVcons(token: string, start_time: any, end_time: any, tr
       }
     }
     return object;
-  } catch (error) {
-    return error;
+  } catch (error: any) {
+    console.log(error);
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+
+    await insertEditLogs([error.toString], "Errors", dateTime, "Get Vcons", "controllers/eblot/graphApiConnect.ts");
+
+    return [];
   }
 }
 
@@ -111,8 +119,6 @@ export async function getFxTrades(token: string, start_time: string, end_time: s
     let fxTrades = action.data.value;
 
     let object = [];
-    let count = trades.length + 1;
-    let id;
     for (let index = 0; index < fxTrades.length; index++) {
       let fxTrade = fxTrades[index].body.content;
       fxTrade = renderFx(fxTrade);
@@ -121,7 +127,12 @@ export async function getFxTrades(token: string, start_time: string, end_time: s
       }
     }
     return object;
-  } catch (error) {
-    return error;
+  } catch (error: any) {
+    console.log(error);
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+
+    await insertEditLogs([error.toString], "Errors", dateTime, "getFxTrades", "controllers/eblot/graphApiConnect.ts");
+
+    return [];
   }
 }

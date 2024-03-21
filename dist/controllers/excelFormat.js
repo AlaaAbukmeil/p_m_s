@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.formatEmsxTrades = exports.renderFx = exports.formatIbTrades = exports.formatCentralizedRawFiles = exports.getTriadaTrades = exports.renderVcon = void 0;
 require("dotenv").config();
-const mufgOperations_1 = require("./mufgOperations");
+const mufgOperations_1 = require("./operations/mufgOperations");
 const common_1 = require("./common");
 const tools_1 = require("./reports/tools");
 const graphApiConnect_1 = require("./graphApiConnect");

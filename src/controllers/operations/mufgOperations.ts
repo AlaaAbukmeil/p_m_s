@@ -1,5 +1,9 @@
-import { client } from "./auth";
-import { bucket } from "./common";
+import { MufgTrade } from "../../models/mufg";
+import { CentralizedTrade } from "../../models/trades";
+import { client } from "../auth";
+import { bucket } from "../common";
+import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
+import { insertEditLogs } from "./operations";
 
 const xlsx = require("xlsx");
 const axios = require("axios");
@@ -64,7 +68,12 @@ export async function readIB(path: string) {
     }
     data = xlsx.utils.sheet_to_json(worksheet, { defval: "", range: `A${tradesRowIndex}:Q${tradesRowEndIndex}` });
     return data;
-  } catch (error) {
+  } catch (error: any) {
+    console.log(error);
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+
+    await insertEditLogs([error.toString], "Errors", dateTime, "Get Vcons", "controllers/operations/mufgOperations.ts");
+
     return [];
   }
 }
@@ -107,7 +116,7 @@ export async function readFxTrades(path: string) {
   return data;
 }
 
-export async function formatMufg(trades: any, start: string, end: string) {
+export function formatMufg(trades: any, start: string, end: string): MufgTrade[] {
   let startTimestamp = new Date(start).getTime();
   let endTimestamp = new Date(end).getTime();
   trades = trades.filter((trade: any, index: any) => new Date(trade["Trade Date"]).getTime() > startTimestamp && new Date(trade["Trade Date"]).getTime() < endTimestamp);
@@ -275,7 +284,7 @@ export async function formatFxTradesToMufg(data: any) {
   return mufg;
 }
 
-export async function tradesTriada() {
+export async function tradesTriada(): Promise<CentralizedTrade[]> {
   try {
     const database = client.db("trades_v_2");
     const reportCollection1 = database.collection("vcons");
@@ -287,11 +296,11 @@ export async function tradesTriada() {
     let document = [...document1.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime()), ...document2.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime()), ...document3.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime())];
 
     return document;
-  } catch (error) {
-    return error;
+  } catch (error: any) {
+    console.log(error);
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+
+    await insertEditLogs([error.toString], "Errors", dateTime, "Get Vcons", "controllers/operations/mufgOperations.ts");
+    return [];
   }
 }
-
-
-
-

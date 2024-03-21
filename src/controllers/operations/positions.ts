@@ -1,13 +1,14 @@
 import { client } from "../auth";
 import { formatDateUS, getDate } from "../common";
-import { getSecurityInPortfolioWithoutLocation, insertEditLogs } from "../operations/operations";
-import { findTrade, insertTrade } from "./trades";
-import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "./common";
-import { readCentralizedEBlot, readPricingSheet } from "../operations/readExcel";
-import { findTradeRecord, formatUpdatedPositions, getAverageCost, getEarliestCollectionName, parseBondIdentifier } from "./tools";
+import { getSecurityInPortfolioWithoutLocation, insertEditLogs } from "./operations";
+import { findTrade, insertTrade } from "../reports/trades";
+import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../reports/common";
+import { readCentralizedEBlot, readPricingSheet } from "./readExcel";
+import { findTradeRecord, formatUpdatedPositions, getAverageCost, getEarliestCollectionName, parseBondIdentifier } from "../reports/tools";
+import { Position } from "../../models/position";
 const ObjectId = require("mongodb").ObjectId;
 
-export async function getPortfolio() {
+export async function getPortfolio(): Promise<Position[]> {
   try {
     let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 0 * 24 * 60 * 60 * 1000));
     const database = client.db("portfolios");
@@ -21,8 +22,12 @@ export async function getPortfolio() {
     }
 
     return documents;
-  } catch (error) {
-    return error;
+  } catch (error: any) {
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.log(error)
+
+    await insertEditLogs([error.toString], "Errors", dateTime, "getPortfolio", "controllers/operations/positions.ts");
+    return [];
   }
 }
 
@@ -373,8 +378,13 @@ export async function insertTradesInPortfolio(trades: any) {
     let action = await historicalReportCollection.bulkWrite(operations);
 
     return action;
-  } catch (error) {
-    return error;
+  } catch (error:any) {
+    console.log(error);
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+
+    await insertEditLogs([error.toString], "Errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts");
+    
+    return [];
   }
 }
 
@@ -538,235 +548,247 @@ export async function insertPricesUpdatesInPortfolio(updatedPortfolio: any) {
     let updatedResult = await updatedCollection.bulkWrite(updatedOperations);
 
     return updatedResult;
-  } catch (error) {
-    return error;
+  } catch (error: any) {
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+console.log(error)
+    await insertEditLogs([error.toString], "Errors", dateTime, "insertPricesUpdatesInPortfolio", "controllers/operations/positions.ts");
+    return "update prices error";
   }
 }
 
 export async function editPosition(editedPosition: any, date: string) {
-    try {
-      const database = client.db("portfolios");
-      let earliestPortfolioName = await getEarliestCollectionName(date);
-  
-      console.log(earliestPortfolioName.predecessorDate, "get edit portfolio");
-      const reportCollection = database.collection(`portfolio-${earliestPortfolioName.predecessorDate}`);
-  
-      let portfolio = await reportCollection
-        .aggregate([
-          {
-            $sort: {
-              "BB Ticker": 1, // replace 'BB Ticker' with the name of the field you want to sort alphabetically
-            },
+  try {
+    const database = client.db("portfolios");
+    let earliestPortfolioName = await getEarliestCollectionName(date);
+
+    console.log(earliestPortfolioName.predecessorDate, "get edit portfolio");
+    const reportCollection = database.collection(`portfolio-${earliestPortfolioName.predecessorDate}`);
+
+    let portfolio = await reportCollection
+      .aggregate([
+        {
+          $sort: {
+            "BB Ticker": 1, // replace 'BB Ticker' with the name of the field you want to sort alphabetically
           },
-        ])
-        .toArray();
-      delete editedPosition["Quantity"];
-  
-      let positionInPortfolio: any = {};
-  
-      let editedPositionTitles = Object.keys(editedPosition);
-  
-      let id = editedPosition["_id"];
-      let unEditableParams: any =[
-        "Value",
-        "Duration",
-        "MTD Mark",
-        "Previous Mark",
-        "Day P&L (BC)",
-        "MTD Rlzd (BC)",
-        "MTD URlzd (BC)",
-        "MTD Int.Income (BC)",
-        "MTD P&L (BC)",
-        "Cost (LC)",
-        "Day Accrual",
-        "_id",
-        "Value (BC)",
-        "Value (LC)",
-        "MTD Int. (BC)",
-        "Day URlzd (BC)",
-        "Day Rlzd (BC)",
-        "Day Int. (LC)",
-        "Day Accrual (LC)",
-        "Cost MTD (LC)",
-        "Quantity",
-        "Day Int. (BC)",
-        "S&P Outlook",
-        "Moody's Bond Rating",
-        "Moody's Outlook",
-        "Fitch Bond Rating",
-        "Fitch Outlook",
-        // "BBG Composite Rating",
-        "Day P&L FX",
-        "MTD P&L FX",
-        "S&P Bond Rating",
-        "MTD FX",
-        "Day URlzd",
-      
-        "Day P&L (LC)",
-        "MTD Rlzd (LC)",
-        "MTD URlzd (LC)",
-        "MTD Int.Income (LC)",
-        "MTD P&L (LC)",
-        "Previous FX",
-        "Day Rlzd",
-        "Spread Change",
-        "OAS W Change",
-        "Last Day Since Realizd",
-        "Day Rlzd (LC)",
-        "Day URlzd (LC)",
-        "MTD Int. (LC)",
-        "Currency)	Day Int. (LC)",
-        "YTD P&L (LC)",
-        "YTD Rlzd (LC)",
-        "YTD URlzd (LC)",
-        "YTD Int. (LC)",
-      
-        "YTD P&L (BC)",
-        "YTD Rlzd (BC)",
-        "YTD URlzd (BC)",
-        "YTD Int. (BC)",
-        "YTD FX",
-        "Total Gain/ Loss (USD)",
-        "Accrued Int. Since Inception",
-      ];
-      // these keys are made up by the function frontend table, it reverts keys to original keys
-  
-      let positionIndex = null;
-  
-      for (let index = 0; index < portfolio.length; index++) {
-        let position = portfolio[index];
-        if (position["_id"].toString() == id) {
-          positionInPortfolio = position;
-          positionIndex = index;
-        }
+        },
+      ])
+      .toArray();
+    delete editedPosition["Quantity"];
+
+    let positionInPortfolio: any = {};
+
+    let editedPositionTitles = Object.keys(editedPosition);
+
+    let id = editedPosition["_id"];
+    let unEditableParams: any = [
+      "Value",
+      "Duration",
+      "MTD Mark",
+      "Previous Mark",
+      "Day P&L (BC)",
+      "MTD Rlzd (BC)",
+      "MTD URlzd (BC)",
+      "MTD Int.Income (BC)",
+      "MTD P&L (BC)",
+      "Cost (LC)",
+      "Day Accrual",
+      "_id",
+      "Value (BC)",
+      "Value (LC)",
+      "MTD Int. (BC)",
+      "Day URlzd (BC)",
+      "Day Rlzd (BC)",
+      "Day Int. (LC)",
+      "Day Accrual (LC)",
+      "Cost MTD (LC)",
+      "Quantity",
+      "Day Int. (BC)",
+      "S&P Outlook",
+      "Moody's Bond Rating",
+      "Moody's Outlook",
+      "Fitch Bond Rating",
+      "Fitch Outlook",
+      // "BBG Composite Rating",
+      "Day P&L FX",
+      "MTD P&L FX",
+      "S&P Bond Rating",
+      "MTD FX",
+      "Day URlzd",
+
+      "Day P&L (LC)",
+      "MTD Rlzd (LC)",
+      "MTD URlzd (LC)",
+      "MTD Int.Income (LC)",
+      "MTD P&L (LC)",
+      "Previous FX",
+      "Day Rlzd",
+      "Spread Change",
+      "OAS W Change",
+      "Last Day Since Realizd",
+      "Day Rlzd (LC)",
+      "Day URlzd (LC)",
+      "MTD Int. (LC)",
+      "Currency)	Day Int. (LC)",
+      "YTD P&L (LC)",
+      "YTD Rlzd (LC)",
+      "YTD URlzd (LC)",
+      "YTD Int. (LC)",
+
+      "YTD P&L (BC)",
+      "YTD Rlzd (BC)",
+      "YTD URlzd (BC)",
+      "YTD Int. (BC)",
+      "YTD FX",
+      "Total Gain/ Loss (USD)",
+      "Accrued Int. Since Inception",
+    ];
+    // these keys are made up by the function frontend table, it reverts keys to original keys
+
+    let positionIndex = null;
+
+    for (let index = 0; index < portfolio.length; index++) {
+      let position = portfolio[index];
+      if (position["_id"].toString() == id) {
+        positionInPortfolio = position;
+        positionIndex = index;
       }
-      if (!positionIndex && positionIndex != 0) {
-        return { error: "Fatal Error" };
-      }
-      let changes = [];
-  
-      for (let indexTitle = 0; indexTitle < editedPositionTitles.length; indexTitle++) {
-        let title = editedPositionTitles[indexTitle];
-        let todayDate = formatDateUS(new Date().toString());
-        let monthDate = monthlyRlzdDate(new Date().toString());
-        if (!unEditableParams.includes(title) && editedPosition[title] != "") {
-          if (title == "Notional Amount") {
-            positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
-            positionInPortfolio["Interest"][todayDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Notional Amount"]);
-            changes.push(`Notional Amount changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]}`);
-            positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
-            console.log(editedPosition[title], title);
-            positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
-          } else if ((title == "Mid" || title == "Ask" || title == "Bid" || title == "Average Cost") && editedPosition[title] != "") {
-            if (!positionInPortfolio["Type"]) {
-              positionInPortfolio["Type"] = positionInPortfolio["BB Ticker"].split(" ")[0] == "T" || positionInPortfolio["Issuer"] == "US TREASURY N/B" ? "UST" : "BND";
-            }
-  
-            if (positionInPortfolio["Type"] == "BND" || positionInPortfolio["Type"] == "UST") {
-              positionInPortfolio[title] = parseFloat(editedPosition[title]) / 100;
-            } else {
-              positionInPortfolio[title] = parseFloat(editedPosition[title]);
-            }
-          } else {
-            changes.push(`${title} changed from ${positionInPortfolio[title] || "''"} to ${editedPosition[title]}`);
-  
-            positionInPortfolio[title] = editedPosition[title];
+    }
+    if (!positionIndex && positionIndex != 0) {
+      return { error: "Fatal Error" };
+    }
+    let changes = [];
+
+    for (let indexTitle = 0; indexTitle < editedPositionTitles.length; indexTitle++) {
+      let title = editedPositionTitles[indexTitle];
+      let todayDate = formatDateUS(new Date().toString());
+      let monthDate = monthlyRlzdDate(new Date().toString());
+      if (!unEditableParams.includes(title) && editedPosition[title] != "") {
+        if (title == "Notional Amount") {
+          positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
+          positionInPortfolio["Interest"][todayDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Notional Amount"]);
+          changes.push(`Notional Amount changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]}`);
+          positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
+          console.log(editedPosition[title], title);
+          positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
+        } else if ((title == "Mid" || title == "Ask" || title == "Bid" || title == "Average Cost") && editedPosition[title] != "") {
+          if (!positionInPortfolio["Type"]) {
+            positionInPortfolio["Type"] = positionInPortfolio["BB Ticker"].split(" ")[0] == "T" || positionInPortfolio["Issuer"] == "US TREASURY N/B" ? "UST" : "BND";
           }
+
+          if (positionInPortfolio["Type"] == "BND" || positionInPortfolio["Type"] == "UST") {
+            positionInPortfolio[title] = parseFloat(editedPosition[title]) / 100;
+          } else {
+            positionInPortfolio[title] = parseFloat(editedPosition[title]);
+          }
+        } else {
+          changes.push(`${title} changed from ${positionInPortfolio[title] || "''"} to ${editedPosition[title]}`);
+
+          positionInPortfolio[title] = editedPosition[title];
         }
       }
-      let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-      portfolio[positionIndex] = positionInPortfolio;
-  
-      // console.log(positionInPortfolio, `portfolio-${earliestPortfolioName.predecessorDate}`, "portfolio edited name");
-      await insertEditLogs(changes, editedPosition["Event Type"], dateTime, editedPosition["Edit Note"], positionInPortfolio["BB Ticker"] + " " + positionInPortfolio["Location"]);
-  
-      let action = await insertTradesInPortfolioAtASpecificDateBasedOnID(portfolio, `portfolio-${earliestPortfolioName.predecessorDate}`);
-      if (action) {
-        return { status: 200 };
-      } else {
-        return { error: "fatal error" };
+    }
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    portfolio[positionIndex] = positionInPortfolio;
+
+    // console.log(positionInPortfolio, `portfolio-${earliestPortfolioName.predecessorDate}`, "portfolio edited name");
+    await insertEditLogs(changes, editedPosition["Event Type"], dateTime, editedPosition["Edit Note"], positionInPortfolio["BB Ticker"] + " " + positionInPortfolio["Location"]);
+
+    let action = await insertTradesInPortfolioAtASpecificDateBasedOnID(portfolio, `portfolio-${earliestPortfolioName.predecessorDate}`);
+    if (action) {
+      return { status: 200 };
+    } else {
+      return { error: "fatal error" };
+    }
+  } catch (error: any) {
+    console.log(error);
+    return { error: error.toString() };
+  }
+}
+
+export async function insertTradesInPortfolioAtASpecificDateBasedOnID(trades: any, date: string) {
+  const database = client.db("portfolios");
+
+  let operations = trades
+    .filter((trade: any) => trade["Location"])
+    .map((trade: any) => {
+      // Start with the known filters
+      let filters: any = [];
+
+      // If "ISIN", "BB Ticker", or "Issue" exists, check for both the field and "Location"
+      if (trade["ISIN"]) {
+        filters.push({
+          _id: new ObjectId(trade["_id"].toString()),
+        });
       }
-    } catch (error: any) {
-      console.log(error);
-      return { error: error.toString() };
-    }
+
+      return {
+        updateOne: {
+          filter: { $or: filters },
+          update: { $set: trade },
+          upsert: true,
+        },
+      };
+    });
+
+  // Execute the operations in bulk
+  try {
+    const historicalReportCollection = database.collection(date);
+    let action = await historicalReportCollection.bulkWrite(operations);
+    console.log(action);
+    return action;
+  } catch (error:any) {
+    console.log(error);
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+
+    await insertEditLogs([error.toString], "Errors", dateTime, "insertTradesInPortfolioAtASpecificDateBasedOnID", "controllers/operations/positions.ts");
+    
+    return [];
   }
-  
-  export async function insertTradesInPortfolioAtASpecificDateBasedOnID(trades: any, date: string) {
-    const database = client.db("portfolios");
-  
-    let operations = trades
-      .filter((trade: any) => trade["Location"])
-      .map((trade: any) => {
-        // Start with the known filters
-        let filters: any = [];
-  
-        // If "ISIN", "BB Ticker", or "Issue" exists, check for both the field and "Location"
-        if (trade["ISIN"]) {
-          filters.push({
-            _id: new ObjectId(trade["_id"].toString()),
-          });
-        }
-  
-        return {
-          updateOne: {
-            filter: { $or: filters },
-            update: { $set: trade },
-            upsert: true,
-          },
-        };
-      });
-  
-    // Execute the operations in bulk
-    try {
-      const historicalReportCollection = database.collection(date);
-      let action = await historicalReportCollection.bulkWrite(operations);
-      console.log(action);
-      return action;
-    } catch (error) {
-      return error;
-    }
+}
+
+export async function insertTradesInPortfolioAtASpecificDate(trades: any, date: string) {
+  const database = client.db("portfolios");
+
+  let operations = trades
+    .filter((trade: any) => trade["Location"])
+    .map((trade: any) => {
+      // Start with the known filters
+      let filters: any = [];
+
+      // If "ISIN", "BB Ticker", or "Issue" exists, check for both the field and "Location"
+      if (trade["ISIN"]) {
+        filters.push({
+          ISIN: trade["ISIN"],
+          Location: trade["Location"],
+        });
+      } else if (trade["BB Ticker"]) {
+        filters.push({
+          "BB Ticker": trade["BB Ticker"],
+          Location: trade["Location"],
+        });
+      }
+
+      return {
+        updateOne: {
+          filter: { $or: filters },
+          update: { $set: trade },
+          upsert: true,
+        },
+      };
+    });
+
+  // Execute the operations in bulk
+  try {
+    const historicalReportCollection = database.collection(date);
+    let action = await historicalReportCollection.bulkWrite(operations);
+
+    return action;
+  } catch (error:any) {
+    console.log(error);
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+
+    await insertEditLogs([error.toString], "Errors", dateTime, "insertTradesInPortfolioAtASpecificDate", "controllers/operations/positions.ts");
+    
+    return [];
   }
-  
-  export async function insertTradesInPortfolioAtASpecificDate(trades: any, date: string) {
-    const database = client.db("portfolios");
-  
-    let operations = trades
-      .filter((trade: any) => trade["Location"])
-      .map((trade: any) => {
-        // Start with the known filters
-        let filters: any = [];
-  
-        // If "ISIN", "BB Ticker", or "Issue" exists, check for both the field and "Location"
-        if (trade["ISIN"]) {
-          filters.push({
-            ISIN: trade["ISIN"],
-            Location: trade["Location"],
-          });
-        } else if (trade["BB Ticker"]) {
-          filters.push({
-            "BB Ticker": trade["BB Ticker"],
-            Location: trade["Location"],
-          });
-        }
-  
-        return {
-          updateOne: {
-            filter: { $or: filters },
-            update: { $set: trade },
-            upsert: true,
-          },
-        };
-      });
-  
-    // Execute the operations in bulk
-    try {
-      const historicalReportCollection = database.collection(date);
-      let action = await historicalReportCollection.bulkWrite(operations);
-  
-      return action;
-    } catch (error) {
-      return error;
-    }
-  }
-  
+}
