@@ -2,12 +2,14 @@ import { Router } from "express";
 import { bucket, verifyToken } from "../../controllers/common";
 import { uploadToBucket } from "./portfolio";
 import { Request, Response, NextFunction } from "express";
-import { addFund, deleteFund, deletePosition, deleteTrade, editFund, editPositionPortfolio, editTrade, getAllFundDetails, getAllTradesForSpecificPosition, getCollectionDays, getEditLogs, readCalculatePosition } from "../../controllers/operations/operations";
+import { addFund, deleteFund, deletePosition, editFund, editPositionPortfolio, getAllFundDetails, getCollectionDays, getEditLogs, readCalculatePosition } from "../../controllers/operations/portfolio";
 import { editPosition, updatePositionPortfolio, updatePricesPortfolio } from "../../controllers/operations/positions";
-import { readMUFGPrices, readPricingSheet } from "../../controllers/operations/readExcel";
+import { readCentralizedEBlot, readMUFGPrices, readPricingSheet } from "../../controllers/operations/readExcel";
 import { updatePreviousPricesPortfolioBloomberg, updatePreviousPricesPortfolioMUFG } from "../../controllers/operations/prices";
 import { monthlyRlzdDate } from "../../controllers/reports/common";
 import { FundDetails } from "../../models/portfolio";
+import { CentralizedTrade } from "../../models/trades";
+import { getAllTradesForSpecificPosition } from "../../controllers/operations/trades";
 
 const positionsRouter = Router();
 
@@ -99,14 +101,18 @@ positionsRouter.post("/upload-trades", verifyToken, uploadToBucket.any(), async 
     let files = req.files;
     const fileName = files[0].filename;
     const path = bucket + fileName;
+    let allTrades: any = await readCentralizedEBlot(path);
 
-    let action: any = await updatePositionPortfolio(path);
-
-    console.log(action);
-    if (action?.error) {
-      res.send({ error: action.error });
+    if (allTrades?.error) {
+      res.send({ error: allTrades.error });
     } else {
-      res.send(action);
+      let action: any = await updatePositionPortfolio(allTrades, path);
+      if (action?.error) {
+        res.send({ error: allTrades.error });
+      } else {
+        console.log(action);
+        res.send(action);
+      }
     }
   } catch (error) {
     console.log(error);

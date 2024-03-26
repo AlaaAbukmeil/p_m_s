@@ -1,11 +1,12 @@
 import { client } from "../auth";
 import { formatDateUS, getDate } from "../common";
-import { getSecurityInPortfolioWithoutLocation, insertEditLogs } from "./operations";
+import { getSecurityInPortfolioWithoutLocation, insertEditLogs } from "./portfolio";
 import { findTrade, insertTrade } from "../reports/trades";
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../reports/common";
 import { readCentralizedEBlot, readPricingSheet } from "./readExcel";
 import { findTradeRecord, formatUpdatedPositions, getAverageCost, getEarliestCollectionName, parseBondIdentifier } from "../reports/tools";
 import { Position } from "../../models/position";
+import { CentralizedTrade } from "../../models/trades";
 const ObjectId = require("mongodb").ObjectId;
 
 export async function getPortfolio(): Promise<Position[]> {
@@ -24,9 +25,10 @@ export async function getPortfolio(): Promise<Position[]> {
     return documents;
   } catch (error: any) {
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    console.log(error)
+    console.log(error);
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([error.toString], "Errors", dateTime, "getPortfolio", "controllers/operations/positions.ts");
+    await insertEditLogs([errorMessage], "Errors", dateTime, "getPortfolio", "controllers/operations/positions.ts");
     return [];
   }
 }
@@ -85,252 +87,285 @@ export function updateExisitingPosition(positions: any, identifier: any, locatio
   return positions;
 }
 
-export async function updatePositionPortfolio(path: string) {
-  let allTrades: any = await readCentralizedEBlot(path);
+export async function updatePositionPortfolio(
+  trades: {
+    vconTrades: CentralizedTrade[];
+    ibTrades: CentralizedTrade[];
+    emsxTrades: CentralizedTrade[];
+    gsTrades: CentralizedTrade[];
+    allTrades: CentralizedTrade[];
+  },
+  path: string
+) {
+  try {
+    let data = trades.allTrades;
 
-  if (allTrades.error) {
-    return { error: allTrades.error };
-  } else {
+    let positions: any = [];
+    let portfolio = await getPortfolio();
+    let triadaIds: any = [];
+
+    for (let index = 0; index < data.length; index++) {
+      let row = data[index];
+      let originalFace = parseFloat(row["Original Face"]);
+      let identifier = row["ISIN"].trim();
+      let object: any = {};
+      let location = row["Location"].trim();
+      let securityInPortfolio: any = getSecurityInPortfolio(portfolio, identifier, location);
+      let type = row["Trade Type"] == "vcon" ? "vcons" : row["Trade Type"].trim();
+
+      if (securityInPortfolio !== 404) {
+        object = securityInPortfolio;
+        securityInPortfolio["Notional Amount"] = securityInPortfolio["Notional Amount"] ? securityInPortfolio["Notional Amount"] : securityInPortfolio["Quantity"];
+      }
+      let couponDaysYear = securityInPortfolio !== 404 ? securityInPortfolio["Coupon Duration"] : row["BB Ticker"].split(" ")[0] == "T" || row["BB Ticker"].includes("U.S") ? 365.0 : 360.0;
+      let previousQuantity = securityInPortfolio["Notional Amount"];
+      let previousAverageCost = securityInPortfolio["Average Cost"] ? securityInPortfolio["Average Cost"] : 0;
+      let tradeType = row["B/S"];
+      let operation = tradeType == "B" ? 1 : -1;
+      let currentPrice: any = parseFloat(row["Price"]) / (type == "vcons" ? 100 : 1);
+      let currentQuantity: any = parseFloat(row["Notional Amount"].toString().replace(/,/g, "")) * operation;
+      let currentNet = parseFloat(row["Settlement Amount"].toString().replace(/,/g, "")) * operation;
+
+      let currentPrincipal: any = parseFloat(row["Principal"].toString().replace(/,/g, ""));
+
+      let currency = row["Currency"];
+      let bondCouponMaturity: any = parseBondIdentifier(row["BB Ticker"]);
+      let tradeDB = await findTrade(type, row["Triada Trade Id"], row["Seq No"]);
+
+      let tradeExistsAlready = tradeDB || triadaIds.includes(row["Triada Trade Id"]);
+
+      let updatingPosition = returnPositionProgress(positions, identifier, location);
+      let tradeDate: any = new Date(row["Trade Date"]);
+      let thisMonth = monthlyRlzdDate(tradeDate);
+      let thisDay = getDate(tradeDate);
+
+      let rlzdOperation = -1;
+      if (updatingPosition) {
+        let accumlatedQuantityState = updatingPosition["Notional Amount"] > 0 ? 1 : -1;
+
+        if (operation == -1 * accumlatedQuantityState && updatingPosition["Notional Amount"] != 0) {
+          rlzdOperation = 1;
+        }
+      } else {
+        let accumlatedQuantityState = previousQuantity > 0 ? 1 : -1;
+        if (operation == -1 * accumlatedQuantityState && previousQuantity) {
+          rlzdOperation = 1;
+        }
+      }
+
+      if (tradeExistsAlready) {
+        console.log(row["BB Ticker"], row["Trade Date"], row["Triada Trade Id"], " already exists", tradeDB, triadaIds.includes(row["Triada Trade Id"]));
+        if (trades.vconTrades) {
+          trades.vconTrades = trades.vconTrades.filter((trade: any, index: any) => trade["Triada Trade Id"] != row["Triada Trade Id"]);
+        }
+        if (trades.ibTrades) {
+          trades.ibTrades = trades.ibTrades.filter((trade: any, index: any) => trade["Triada Trade Id"] != row["Triada Trade Id"]);
+        }
+        if (trades.emsxTrades) {
+          trades.emsxTrades = trades.emsxTrades.filter((trade: any, index: any) => trade["Triada Trade Id"] != row["Triada Trade Id"]);
+        }
+        return { error: "Trade: " + row["BB Ticker"] + " on date: " + row["Trade Date"] + " with id: " + row["Triada Trade Id"] + " already exists" };
+      }
+      if (!tradeExistsAlready && identifier !== "") {
+        triadaIds.push(row["Triada Trade Id"]);
+        if (!updatingPosition) {
+          let shortLongType = securityInPortfolio !== 404 ? (securityInPortfolio["Notional Amount"] >= 0 ? 1 : -1) : currentQuantity >= 0 ? 1 : -1;
+
+          let settlementDate = row["Settle Date"];
+
+          object["Location"] = row["Location"].trim();
+          object["Last Modified Date"] = new Date();
+          if (securityInPortfolio == 404) {
+            object["Entry Yield"] = row["Yield"] || 0;
+          }
+          object["BB Ticker"] = row["BB Ticker"];
+
+          object["ISIN"] = row["ISIN"].trim();
+          object["CUSIP"] = row["Cuisp"].trim() || "";
+          object["Notional Amount"] = securityInPortfolio !== 404 ? securityInPortfolio["Notional Amount"] + currentQuantity : currentQuantity;
+          let tradeRecord = null;
+          let updated = false;
+          if (!tradeRecord) {
+            tradeRecord = findTradeRecord(trades.vconTrades, row["Triada Trade Id"]);
+            if (tradeRecord != null && tradeRecord != undefined) {
+              trades.vconTrades[tradeRecord]["Updated Notional"] = object["Notional Amount"];
+              updated = true;
+            }
+          }
+
+          // Attempt to find the trade record in trades.ibTrades, if not found previously
+          if (!updated || (tradeRecord != null && tradeRecord != undefined)) {
+            tradeRecord = findTradeRecord(trades.ibTrades, row["Triada Trade Id"]);
+            if (tradeRecord != null && tradeRecord != undefined) {
+              trades.ibTrades[tradeRecord]["Updated Notional"] = object["Notional Amount"];
+              updated = true;
+            }
+          }
+
+          // Attempt to find the trade record in trades.emsxTrades, if not found previously
+          if (!updated || (tradeRecord != null && tradeRecord != undefined)) {
+            tradeRecord = findTradeRecord(trades.emsxTrades, row["Triada Trade Id"]);
+            if (tradeRecord != null && tradeRecord != undefined) {
+              trades.emsxTrades[tradeRecord]["Updated Notional"] = object["Notional Amount"];
+              updated = true;
+            }
+          }
+          if (!tradeRecord) {
+            tradeRecord = findTradeRecord(trades.gsTrades, row["Triada Trade Id"]);
+            if (tradeRecord != null && tradeRecord != undefined) {
+              trades.gsTrades[tradeRecord]["Updated Notional"] = object["Notional Amount"];
+            }
+          }
+
+          object["Net"] = securityInPortfolio !== 404 ? securityInPortfolio["Net"] + currentNet : currentNet;
+          object["Currency"] = currency;
+          object["Average Cost"] = rlzdOperation == -1 ? (securityInPortfolio !== 404 ? getAverageCost(currentQuantity, previousQuantity, currentPrice, previousAverageCost) : currentPrice) : securityInPortfolio["Average Cost"];
+
+          object["Coupon Rate"] = bondCouponMaturity.rate || 0;
+          object["Maturity"] = bondCouponMaturity.date || 0;
+          object["Interest"] = securityInPortfolio !== 404 ? (securityInPortfolio["Interest"] ? securityInPortfolio["Interest"] : {}) : {};
+          object["Interest"][settlementDate] = object["Interest"][settlementDate] ? object["Interest"][settlementDate] + currentQuantity : currentQuantity;
+
+          object["MTD Rlzd"] = securityInPortfolio !== 404 ? (securityInPortfolio["MTD Rlzd"] ? securityInPortfolio["MTD Rlzd"] : {}) : {};
+
+          object["MTD Rlzd"][thisMonth] = securityInPortfolio !== 404 ? (securityInPortfolio["MTD Rlzd"] ? (securityInPortfolio["MTD Rlzd"][thisMonth] ? securityInPortfolio["MTD Rlzd"][thisMonth] : []) : []) : [];
+
+          let MTDRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
+          if (rlzdOperation == 1) {
+            object["MTD Rlzd"][thisMonth].push(MTDRlzdForThisTrade);
+          }
+
+          object["Day Rlzd"] = securityInPortfolio !== 404 ? (securityInPortfolio["Day Rlzd"] ? securityInPortfolio["Day Rlzd"] : {}) : {};
+
+          object["Day Rlzd"][thisDay] = securityInPortfolio !== 404 ? (securityInPortfolio["Day Rlzd"] ? (securityInPortfolio["Day Rlzd"][thisDay] ? securityInPortfolio["Day Rlzd"][thisDay] : []) : []) : [];
+
+          let dayRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
+          if (rlzdOperation == 1) {
+            object["Day Rlzd"][thisDay].push(dayRlzdForThisTrade);
+          }
+
+          if (securityInPortfolio !== 404) {
+            securityInPortfolio["Cost MTD"] = {};
+          }
+          object["Cost MTD"] = securityInPortfolio !== 404 ? securityInPortfolio["Cost MTD"] : {};
+          let curentMonthCost = securityInPortfolio !== 404 ? (parseFloat(securityInPortfolio["Cost MTD"][thisMonth]) ? parseFloat(securityInPortfolio["Cost MTD"][thisMonth]) : 0) : 0;
+          object["Cost MTD"][thisMonth] = operation == 1 ? (securityInPortfolio !== 404 ? curentMonthCost + parseFloat(currentPrincipal) : parseFloat(currentPrincipal)) : 0;
+          object["Original Face"] = originalFace;
+
+          if (!object["Entry Price"]) {
+            object["Entry Price"] = {};
+          }
+          if (!object["Entry Price"][thisMonth]) {
+            object["Entry Price"][thisMonth] = currentPrice;
+          }
+          object["Last Individual Upload Trade"] = new Date();
+
+          positions.push(object);
+        } else if (returnPositionProgress(positions, identifier, location)) {
+          let shortLongType = securityInPortfolio !== 404 ? (securityInPortfolio["Notional Amount"] + updatingPosition["Notional Amount"] >= 0 ? 1 : -1) : updatingPosition["Notional Amount"] >= 0 ? 1 : -1;
+
+          let settlementDate = row["Settle Date"];
+          object["Location"] = row["Location"].trim();
+          object["Last Modified Date"] = new Date();
+          object["BB Ticker"] = row["BB Ticker"];
+
+          object["ISIN"] = row["ISIN"];
+          object["Currency"] = currency;
+          object["Notional Amount"] = currentQuantity + updatingPosition["Notional Amount"];
+
+          let tradeRecord = null;
+          if (!tradeRecord) {
+            tradeRecord = findTradeRecord(trades.vconTrades, row["Triada Trade Id"]);
+            if (tradeRecord != null && tradeRecord != undefined) {
+              trades.vconTrades[tradeRecord]["Updated Notional"] = object["Notional Amount"];
+            }
+          }
+          if (!tradeRecord) {
+            tradeRecord = findTradeRecord(trades.ibTrades, row["Triada Trade Id"]);
+            if (tradeRecord != null && tradeRecord != undefined) {
+              trades.ibTrades[tradeRecord]["Updated Notional"] = object["Notional Amount"];
+            }
+          }
+          if (!tradeRecord) {
+            tradeRecord = findTradeRecord(trades.emsxTrades, row["Triada Trade Id"]);
+            if (tradeRecord != null && tradeRecord != undefined) {
+              trades.emsxTrades[tradeRecord]["Updated Notional"] = object["Notional Amount"];
+            }
+          }
+          if (!tradeRecord) {
+            tradeRecord = findTradeRecord(trades.gsTrades, row["Triada Trade Id"]);
+            if (tradeRecord != null && tradeRecord != undefined) {
+              trades.gsTrades[tradeRecord]["Updated Notional"] = object["Notional Amount"];
+            }
+          }
+
+          object["Net"] = currentNet + updatingPosition["Net"];
+          object["Average Cost"] = rlzdOperation == -1 ? getAverageCost(currentQuantity, updatingPosition["Notional Amount"], currentPrice, parseFloat(updatingPosition["Average Cost"])) : updatingPosition["Average Cost"];
+          // this is reversed because the quantity is negated
+
+          object["Cost MTD"] = updatingPosition["Cost MTD"];
+          object["Cost MTD"][thisMonth] += operation == 1 ? currentPrincipal : 0;
+
+          object["Coupon Rate"] = bondCouponMaturity.rate || 0;
+          object["Maturity"] = bondCouponMaturity.date || 0;
+          object["Interest"] = updatingPosition["Interest"];
+          object["Interest"][settlementDate] = object["Interest"][settlementDate] ? object["Interest"][settlementDate] + currentQuantity : currentQuantity;
+          object["Original Face"] = originalFace;
+
+          object["Coupon Duration"] = object["Coupon Rate"] ? couponDaysYear : "";
+          object["Entry Price"] = updatingPosition["Entry Price"];
+
+          object["MTD Rlzd"] = updatingPosition["MTD Rlzd"];
+
+          let MTDRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
+          if (rlzdOperation == 1) {
+            object["MTD Rlzd"][thisMonth] = object["MTD Rlzd"][thisMonth] ? object["MTD Rlzd"][thisMonth] : [];
+            object["MTD Rlzd"][thisMonth].push(MTDRlzdForThisTrade);
+          }
+          object["Day Rlzd"] = updatingPosition["Day Rlzd"];
+
+          let dayRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
+
+          if (rlzdOperation == 1) {
+            object["Day Rlzd"][thisDay] = object["Day Rlzd"][thisDay] ? object["Day Rlzd"][thisDay] : [];
+            object["Day Rlzd"][thisDay].push(dayRlzdForThisTrade);
+          }
+          object["Last Individual Upload Trade"] = new Date();
+          positions = updateExisitingPosition(positions, identifier, location, object);
+        }
+      }
+    }
+
     try {
-      let data = allTrades[3];
+      let updatedPortfolio: any = formatUpdatedPositions(positions, portfolio, "Last Upload Trade");
+      let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
+      let action1 = await insertTrade(trades.vconTrades, "vcons");
+      let action2 = await insertTrade(trades.ibTrades, "ib");
+      let action3 = await insertTrade(trades.emsxTrades, "emsx");
 
-      let positions: any = [];
-      let portfolio = await getPortfolio();
-      let triadaIds: any = [];
+      let action4 = await insertTrade(trades.gsTrades, "gs");
 
-      for (let index = 0; index < data.length; index++) {
-        let row = data[index];
-        let originalFace = parseFloat(row["Original Face"]);
-        let identifier = row["ISIN"] !== "" ? row["ISIN"].trim() : row["BB Ticker"].trim();
-        let object: any = {};
-        let location = row["Location"].trim();
-        let securityInPortfolio: any = getSecurityInPortfolio(portfolio, identifier, location);
-        let type = row["Trade Type"] == "vcon" ? "vcons" : row["Trade Type"].trim();
+      let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+      await insertEditLogs([positions], "Upload Trades", dateTime, "Num of updated/created positions: " + Object.keys(positions).length, "Link: " + path);
 
-        if (securityInPortfolio !== 404) {
-          object = securityInPortfolio;
-          securityInPortfolio["Notional Amount"] = securityInPortfolio["Notional Amount"] ? securityInPortfolio["Notional Amount"] : securityInPortfolio["Quantity"];
-        }
-        let couponDaysYear = securityInPortfolio !== 404 ? securityInPortfolio["Coupon Duration"] : row["BB Ticker"].split(" ")[0] == "T" || row["BB Ticker"].includes("U.S") ? 365.0 : 360.0;
-        let previousQuantity = securityInPortfolio["Notional Amount"];
-        let previousAverageCost = securityInPortfolio["Average Cost"] ? securityInPortfolio["Average Cost"] : 0;
-        let tradeType = row["B/S"];
-        let operation = tradeType == "B" ? 1 : -1;
-        let currentPrice: any = row["Price"] / (type == "vcons" ? 100 : 1);
-        let currentQuantity: any = parseFloat(row["Notional Amount"].toString().replace(/,/g, "")) * operation;
-        let currentNet = parseFloat(row["Settlement Amount"].toString().replace(/,/g, "")) * operation;
-
-        let currentPrincipal: any = parseFloat(row["Principal"].toString().replace(/,/g, ""));
-
-        let currency = row["Currency"];
-        let bondCouponMaturity: any = parseBondIdentifier(row["BB Ticker"]);
-        let tradeDB = await findTrade(type, row["Triada Trade Id"], row["Seq No"] && row["Seq No"] != "" ? row["Seq No"] : null);
-
-        let tradeExistsAlready = tradeDB || triadaIds.includes(row["Triada Trade Id"]);
-
-        let updatingPosition = returnPositionProgress(positions, identifier, location);
-        let tradeDate: any = new Date(row["Trade Date"]);
-        let thisMonth = monthlyRlzdDate(tradeDate);
-        let thisDay = getDate(tradeDate);
-
-        let rlzdOperation = -1;
-        if (updatingPosition) {
-          let accumlatedQuantityState = updatingPosition["Notional Amount"] > 0 ? 1 : -1;
-
-          if (operation == -1 * accumlatedQuantityState && updatingPosition["Notional Amount"] != 0) {
-            rlzdOperation = 1;
-          }
-        } else {
-          let accumlatedQuantityState = previousQuantity > 0 ? 1 : -1;
-          if (operation == -1 * accumlatedQuantityState && previousQuantity) {
-            rlzdOperation = 1;
-          }
-        }
-
-        if (tradeExistsAlready) {
-          console.log(row["BB Ticker"], row["Trade Date"], row["Triada Trade Id"], " already exists", tradeDB, triadaIds.includes(row["Triada Trade Id"]));
-          if (allTrades[0]) {
-            allTrades[0] = allTrades[0].filter((trade: any, index: any) => trade["Triada Trade Id"] != row["Triada Trade Id"]);
-          }
-          if (allTrades[1]) {
-            allTrades[1] = allTrades[1].filter((trade: any, index: any) => trade["Triada Trade Id"] != row["Triada Trade Id"]);
-          }
-          if (allTrades[2]) {
-            allTrades[2] = allTrades[2].filter((trade: any, index: any) => trade["Triada Trade Id"] != row["Triada Trade Id"]);
-          }
-          return { error: "Trade: " + row["BB Ticker"] + " on date: " + row["Trade Date"] + " with id: " + row["Triada Trade Id"] + " already exists" };
-        }
-        if (!tradeExistsAlready && identifier !== "") {
-          triadaIds.push(row["Triada Trade Id"]);
-          if (!updatingPosition) {
-            let shortLongType = securityInPortfolio !== 404 ? (securityInPortfolio["Notional Amount"] >= 0 ? 1 : -1) : currentQuantity >= 0 ? 1 : -1;
-
-            let settlementDate = row["Settle Date"];
-
-            object["Location"] = row["Location"].trim();
-            object["Last Modified Date"] = new Date();
-            if (securityInPortfolio == 404) {
-              object["Entry Yield"] = row["Yield"] || 0;
-            }
-            object["BB Ticker"] = row["BB Ticker"];
-
-            object["ISIN"] = row["ISIN"].trim();
-            object["CUSIP"] = row["Cuisp"].trim() || "";
-            object["Notional Amount"] = securityInPortfolio !== 404 ? securityInPortfolio["Notional Amount"] + currentQuantity : currentQuantity;
-            let tradeRecord = null;
-            if (!tradeRecord) {
-              tradeRecord = findTradeRecord(allTrades[0], row["Triada Trade Id"]);
-              if (tradeRecord.length > 0) {
-                tradeRecord[0]["Updated Notional"] = object["Notional Amount"];
-              }
-            }
-
-            // Attempt to find the trade record in allTrades[1], if not found previously
-            if (!tradeRecord || tradeRecord.length === 0) {
-              tradeRecord = findTradeRecord(allTrades[1], row["Triada Trade Id"]);
-              if (tradeRecord.length > 0) {
-                tradeRecord[0]["Updated Notional"] = object["Notional Amount"];
-              }
-            }
-
-            // Attempt to find the trade record in allTrades[2], if not found previously
-            if (!tradeRecord || tradeRecord.length === 0) {
-              tradeRecord = findTradeRecord(allTrades[2], row["Triada Trade Id"]);
-              if (tradeRecord.length > 0) {
-                tradeRecord[0]["Updated Notional"] = object["Notional Amount"];
-              }
-            }
-
-            object["Net"] = securityInPortfolio !== 404 ? securityInPortfolio["Net"] + currentNet : currentNet;
-            object["Currency"] = currency;
-            object["Average Cost"] = rlzdOperation == -1 ? (securityInPortfolio !== 404 ? getAverageCost(currentQuantity, previousQuantity, currentPrice, previousAverageCost) : currentPrice) : securityInPortfolio["Average Cost"];
-
-            object["Coupon Rate"] = bondCouponMaturity.rate || 0;
-            object["Maturity"] = bondCouponMaturity.date || 0;
-            object["Interest"] = securityInPortfolio !== 404 ? (securityInPortfolio["Interest"] ? securityInPortfolio["Interest"] : {}) : {};
-            object["Interest"][settlementDate] = object["Interest"][settlementDate] ? object["Interest"][settlementDate] + currentQuantity : currentQuantity;
-
-            object["MTD Rlzd"] = securityInPortfolio !== 404 ? (securityInPortfolio["MTD Rlzd"] ? securityInPortfolio["MTD Rlzd"] : {}) : {};
-
-            object["MTD Rlzd"][thisMonth] = securityInPortfolio !== 404 ? (securityInPortfolio["MTD Rlzd"] ? (securityInPortfolio["MTD Rlzd"][thisMonth] ? securityInPortfolio["MTD Rlzd"][thisMonth] : []) : []) : [];
-
-            let MTDRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
-            if (rlzdOperation == 1) {
-              object["MTD Rlzd"][thisMonth].push(MTDRlzdForThisTrade);
-            }
-
-            object["Day Rlzd"] = securityInPortfolio !== 404 ? (securityInPortfolio["Day Rlzd"] ? securityInPortfolio["Day Rlzd"] : {}) : {};
-
-            object["Day Rlzd"][thisDay] = securityInPortfolio !== 404 ? (securityInPortfolio["Day Rlzd"] ? (securityInPortfolio["Day Rlzd"][thisDay] ? securityInPortfolio["Day Rlzd"][thisDay] : []) : []) : [];
-
-            let dayRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
-            if (rlzdOperation == 1) {
-              object["Day Rlzd"][thisDay].push(dayRlzdForThisTrade);
-            }
-
-            if (securityInPortfolio !== 404) {
-              securityInPortfolio["Cost MTD"] = {};
-            }
-            object["Cost MTD"] = securityInPortfolio !== 404 ? securityInPortfolio["Cost MTD"] : {};
-            let curentMonthCost = securityInPortfolio !== 404 ? (parseFloat(securityInPortfolio["Cost MTD"][thisMonth]) ? parseFloat(securityInPortfolio["Cost MTD"][thisMonth]) : 0) : 0;
-            object["Cost MTD"][thisMonth] = operation == 1 ? (securityInPortfolio !== 404 ? curentMonthCost + parseFloat(currentPrincipal) : parseFloat(currentPrincipal)) : 0;
-            object["Original Face"] = originalFace;
-
-            if (!object["Entry Price"]) {
-              object["Entry Price"] = {};
-            }
-            if (!object["Entry Price"][thisMonth]) {
-              object["Entry Price"][thisMonth] = currentPrice;
-            }
-            object["Last Individual Upload Trade"] = new Date();
-
-            positions.push(object);
-          } else if (returnPositionProgress(positions, identifier, location)) {
-            let shortLongType = securityInPortfolio !== 404 ? (securityInPortfolio["Notional Amount"] + updatingPosition["Notional Amount"] >= 0 ? 1 : -1) : updatingPosition["Notional Amount"] >= 0 ? 1 : -1;
-
-            let settlementDate = row["Settle Date"];
-            object["Location"] = row["Location"].trim();
-            object["Last Modified Date"] = new Date();
-            object["BB Ticker"] = row["BB Ticker"];
-
-            object["ISIN"] = row["ISIN"];
-            object["Currency"] = currency;
-            object["Notional Amount"] = currentQuantity + updatingPosition["Notional Amount"];
-
-            let tradeRecord = null;
-            if (!tradeRecord) {
-              tradeRecord = findTradeRecord(allTrades[0], row["Triada Trade Id"]);
-              if (tradeRecord.length > 0) {
-                tradeRecord[0]["Updated Notional"] = object["Notional Amount"];
-              }
-            }
-            if (!tradeRecord) {
-              tradeRecord = findTradeRecord(allTrades[1], row["Triada Trade Id"]);
-              if (tradeRecord.length > 0) {
-                tradeRecord[0]["Updated Notional"] = object["Notional Amount"];
-              }
-            }
-            if (!tradeRecord) {
-              tradeRecord = findTradeRecord(allTrades[2], row["Triada Trade Id"]);
-              if (tradeRecord.length > 0) {
-                tradeRecord[0]["Updated Notional"] = object["Notional Amount"];
-              }
-            }
-
-            object["Net"] = currentNet + updatingPosition["Net"];
-            object["Average Cost"] = rlzdOperation == -1 ? getAverageCost(currentQuantity, updatingPosition["Notional Amount"], currentPrice, parseFloat(updatingPosition["Average Cost"])) : updatingPosition["Average Cost"];
-            // this is reversed because the quantity is negated
-
-            object["Cost MTD"] = updatingPosition["Cost MTD"];
-            object["Cost MTD"][thisMonth] += operation == 1 ? currentPrincipal : 0;
-
-            object["Coupon Rate"] = bondCouponMaturity.rate || 0;
-            object["Maturity"] = bondCouponMaturity.date || 0;
-            object["Interest"] = updatingPosition["Interest"];
-            object["Interest"][settlementDate] = object["Interest"][settlementDate] ? object["Interest"][settlementDate] + currentQuantity : currentQuantity;
-            object["Original Face"] = originalFace;
-
-            object["Coupon Duration"] = object["Coupon Rate"] ? couponDaysYear : "";
-            object["Entry Price"] = updatingPosition["Entry Price"];
-
-            object["MTD Rlzd"] = updatingPosition["MTD Rlzd"];
-
-            let MTDRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
-            if (rlzdOperation == 1) {
-              object["MTD Rlzd"][thisMonth] = object["MTD Rlzd"][thisMonth] ? object["MTD Rlzd"][thisMonth] : [];
-              object["MTD Rlzd"][thisMonth].push(MTDRlzdForThisTrade);
-            }
-            object["Day Rlzd"] = updatingPosition["Day Rlzd"];
-
-            let dayRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
-
-            if (rlzdOperation == 1) {
-              object["Day Rlzd"][thisDay] = object["Day Rlzd"][thisDay] ? object["Day Rlzd"][thisDay] : [];
-              object["Day Rlzd"][thisDay].push(dayRlzdForThisTrade);
-            }
-            object["Last Individual Upload Trade"] = new Date();
-            positions = updateExisitingPosition(positions, identifier, location, object);
-          }
-        }
-      }
-
-      try {
-        let updatedPortfolio: any = formatUpdatedPositions(positions, portfolio, "Last Upload Trade");
-        let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
-        let action3 = await insertTrade(allTrades[2], "emsx");
-        let action2 = await insertTrade(allTrades[1], "ib");
-
-        let action1 = await insertTrade(allTrades[0], "vcons");
-        let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-        await insertEditLogs([insertion], "Upload Trades", dateTime, "Num of updated/created positions: " + Object.keys(positions).length, "Link: " + path);
-
-        return insertion;
-      } catch (error) {
-        return { error: error };
-      }
+      return insertion;
     } catch (error) {
+      console.log(error);
+      let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+      let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+      await insertEditLogs([errorMessage], "Errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts");
+
       return { error: error };
     }
+  } catch (error) {
+    console.log(error);
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    await insertEditLogs([errorMessage], "Errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts");
+
+    return { error: error };
   }
 }
 
@@ -360,30 +395,32 @@ export async function insertTradesInPortfolio(trades: any) {
           _id: new ObjectId(trade["_id"]),
         });
       }
-
-      return {
-        updateOne: {
-          filter: { $or: filters },
-          update: { $set: trade },
-          upsert: true,
-        },
-      };
+      if (filters.length > 0) {
+        return {
+          updateOne: {
+            filter: { $or: filters },
+            update: { $set: trade },
+            upsert: true,
+          },
+        };
+      }
     });
 
   // Execute the operations in bulk
   try {
     const date = day;
-    console.log(date, "inserted date");
+    console.log(operations, "operations inserted date");
     const historicalReportCollection = database.collection(`portfolio-${date}`);
     let action = await historicalReportCollection.bulkWrite(operations);
 
     return action;
-  } catch (error:any) {
+  } catch (error: any) {
     console.log(error);
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([error.toString], "Errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts");
-    
+    await insertEditLogs([errorMessage], "Errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts");
+
     return [];
   }
 }
@@ -409,6 +446,9 @@ export async function updatePricesPortfolio(path: string) {
         } else if (row["BB Ticker"] == "CDS") {
           divider = 1;
         } else if (row["BB Ticker"] == "Futures") {
+          divider = 1;
+        } else if (row["BB Ticker"] == "Equity") {
+          console.log(row);
           divider = 1;
         }
 
@@ -503,7 +543,9 @@ export async function updatePricesPortfolio(path: string) {
     }
   } catch (error: any) {
     console.log(error);
-    return { error: error.toString() };
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    return { error: errorMessage };
   }
 }
 
@@ -550,8 +592,10 @@ export async function insertPricesUpdatesInPortfolio(updatedPortfolio: any) {
     return updatedResult;
   } catch (error: any) {
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-console.log(error)
-    await insertEditLogs([error.toString], "Errors", dateTime, "insertPricesUpdatesInPortfolio", "controllers/operations/positions.ts");
+    console.log(error);
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    await insertEditLogs([errorMessage], "Errors", dateTime, "insertPricesUpdatesInPortfolio", "controllers/operations/positions.ts");
     return "update prices error";
   }
 }
@@ -574,6 +618,7 @@ export async function editPosition(editedPosition: any, date: string) {
       ])
       .toArray();
     delete editedPosition["Quantity"];
+    delete editedPosition["date"];
 
     let positionInPortfolio: any = {};
 
@@ -701,7 +746,9 @@ export async function editPosition(editedPosition: any, date: string) {
     }
   } catch (error: any) {
     console.log(error);
-    return { error: error.toString() };
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    return { error: errorMessage };
   }
 }
 
@@ -736,12 +783,13 @@ export async function insertTradesInPortfolioAtASpecificDateBasedOnID(trades: an
     let action = await historicalReportCollection.bulkWrite(operations);
     console.log(action);
     return action;
-  } catch (error:any) {
+  } catch (error: any) {
     console.log(error);
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([error.toString], "Errors", dateTime, "insertTradesInPortfolioAtASpecificDateBasedOnID", "controllers/operations/positions.ts");
-    
+    await insertEditLogs([errorMessage], "Errors", dateTime, "insertTradesInPortfolioAtASpecificDateBasedOnID", "controllers/operations/positions.ts");
+
     return [];
   }
 }
@@ -783,12 +831,13 @@ export async function insertTradesInPortfolioAtASpecificDate(trades: any, date: 
     let action = await historicalReportCollection.bulkWrite(operations);
 
     return action;
-  } catch (error:any) {
+  } catch (error: any) {
     console.log(error);
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([error.toString], "Errors", dateTime, "insertTradesInPortfolioAtASpecificDate", "controllers/operations/positions.ts");
-    
+    await insertEditLogs([errorMessage], "Errors", dateTime, "insertTradesInPortfolioAtASpecificDate", "controllers/operations/positions.ts");
+
     return [];
   }
 }

@@ -1,4 +1,3 @@
-const axios = require("axios");
 const ObjectId = require("mongodb").ObjectId;
 
 import { formatDateUS, getDate, uri } from "../common";
@@ -9,8 +8,9 @@ import { getPortfolio, insertTradesInPortfolio, insertTradesInPortfolioAtASpecif
 import { client } from "../auth";
 import { FundDetails } from "../../models/portfolio";
 import { Position } from "../../models/position";
+import { CentralizedTrade } from "../../models/trades";
+import { modifyTradesDueToRecalculate } from "./trades";
 
-const xlsx = require("xlsx");
 
 export async function getCollectionDays(): Promise<string[]> {
   try {
@@ -30,8 +30,9 @@ export async function getCollectionDays(): Promise<string[]> {
   } catch (error: any) {
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     console.log(error);
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([error.toString], "Errors", dateTime, "getCollectionDays", "controllers/operations/operations.ts");
+    await insertEditLogs([errorMessage], "Errors", dateTime, "getCollectionDays", "controllers/operations/operations.ts");
 
     return [];
   }
@@ -53,7 +54,9 @@ export async function getPortfolioOnSpecificDate(collectionDate: string): Promis
   } catch (error: any) {
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     console.log(error);
-    await insertEditLogs([error.toString], "Errors", dateTime, "getPortfolioOnSpecificDate", "controllers/operations/operations.ts");
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    await insertEditLogs([errorMessage], "Errors", dateTime, "getPortfolioOnSpecificDate", "controllers/operations/operations.ts");
     return { portfolio: null, date: null };
   }
 }
@@ -117,8 +120,9 @@ export async function getEditLogs(logsType: any) {
   } catch (error: any) {
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     console.log(error);
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([error.toString], "Errors", dateTime, "getEditLogs", "controllers/operations/operations.ts");
+    await insertEditLogs([errorMessage], "Errors", dateTime, "getEditLogs", "controllers/operations/operations.ts");
 
     return [];
   }
@@ -189,8 +193,9 @@ export async function getFundDetails(date: string): Promise<FundDetails | {}> {
   } catch (error: any) {
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     console.log(error);
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([error.toString], "Errors", dateTime, "getFundDetails", "controllers/operations/operations.ts");
+    await insertEditLogs([errorMessage], "Errors", dateTime, "getFundDetails", "controllers/operations/operations.ts");
 
     return {};
   }
@@ -259,8 +264,9 @@ export async function getAllFundDetails(date: string): Promise<FundDetails[]> {
   } catch (error: any) {
     console.log(error);
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([error.toString], "Errors", dateTime, "getAllFundDetails", "controllers/operations/operations.ts");
+    await insertEditLogs([errorMessage], "Errors", dateTime, "getAllFundDetails", "controllers/operations/operations.ts");
 
     return [];
   }
@@ -355,116 +361,6 @@ export async function addFund(data: any): Promise<any> {
   }
 }
 
-export async function getTrade(tradeType: string, tradeId: string) {
-  try {
-    // Connect to the MongoDB client
-    await client.connect();
-
-    // Access the 'structure' database
-    const database = client.db("trades_v_2");
-
-    // Access the collection named by the 'customerId' parameter
-    const collection = database.collection(tradeType);
-
-    // Perform your operations, such as find documents in the collection
-    // This is an example operation that fetches all documents in the collection
-    // Empty query object means "match all documents"
-    const options = {}; // You can set options for the find operation if needed
-    const query = { _id: new ObjectId(tradeId) }; // Replace yourIdValue with the actual ID you're querying
-    const results = await collection.find(query, options).toArray();
-
-    // The 'results' variable now contains an array of documents from the collection
-    return results[0];
-  } catch (error) {
-    // Handle any errors that occurred during the operation
-    console.error("An error occurred while retrieving data from MongoDB:", error);
-  }
-}
-
-export async function editTrade(editedTrade: any, tradeType: any) {
-  try {
-    let tradeInfo = await getTrade(tradeType, editedTrade["_id"]);
-    let beforeModify = JSON.parse(JSON.stringify(tradeInfo));
-    beforeModify["_id"] = new ObjectId(beforeModify["_id"]);
-
-    if (tradeInfo) {
-      let centralizedBlotKeys: any = ["B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Edit Note"];
-      let changes = 0;
-      let changesText = [];
-      for (let index = 0; index < centralizedBlotKeys.length; index++) {
-        let key: any = centralizedBlotKeys[index];
-        if (editedTrade[key] != "") {
-          changesText.push(`${key} changed from ${tradeInfo[key]} to ${editedTrade[key]} `);
-          tradeInfo[key] = editedTrade[key];
-
-          changes++;
-        }
-      }
-
-      if (!changes) {
-        return { error: "The trade is still the same." };
-      }
-
-      await client.connect();
-
-      // Access the 'structure' database
-      const database = client.db("trades_v_2");
-
-      // Access the collection named by the 'customerId' parameter
-      const collection = database.collection(tradeType);
-
-      let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-      await insertEditLogs(changesText, "Edit Trade", dateTime, tradeInfo["Edit Note"], tradeInfo["BB Ticker"] + " " + tradeInfo["Location"]);
-
-      let action = await collection.updateOne(
-        { _id: tradeInfo["_id"] }, // Filter to match the document
-        { $set: tradeInfo } // Update operation
-      );
-
-      if (action) {
-        return { error: null };
-      } else {
-        return {
-          error: "unexpected error, please contact Triada team",
-        };
-      }
-    } else {
-      return { error: "Trade does not exist, please referesh the page!" };
-    }
-  } catch (error: any) {
-    console.log(error);
-    return { error: "unexpected error, please contact PWWP team" };
-  }
-}
-
-export async function deleteTrade(tradeType: string, tradeId: string, tradeIssue: string, location: string) {
-  try {
-    // Connect to the MongoDB client
-    await client.connect();
-
-    // Get the database and the specific collection
-    const database = client.db("trades_v_2");
-    const collection = database.collection(tradeType);
-
-    let query = { _id: new ObjectId(tradeId) };
-
-    // Delete the document with the specified _id
-    const result = await collection.deleteOne(query);
-
-    if (result.deletedCount === 0) {
-      return { error: `Trade does not exist!` };
-    } else {
-      let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-      await insertEditLogs(["deleted"], "Edit Trade", dateTime, "deleted", tradeIssue + " " + location);
-      console.log("deleted");
-      return { error: null };
-    }
-  } catch (error) {
-    console.error(`An error occurred while deleting the document: ${error}`);
-    return { error: "Unexpected error 501" };
-  }
-}
-
 export async function reformatCentralizedData(data: any) {
   let filtered = data.filter((trade: any, index: any) => trade["Trade App Status"] != "new");
   filtered.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
@@ -537,34 +433,7 @@ export async function deletePosition(data: any, dateInput: any): Promise<any> {
   }
 }
 
-export async function getAllTradesForSpecificPosition(tradeType: string, isin: string, location: string, date: string) {
-  try {
-    // Connect to the MongoDB client
-    await client.connect();
-    let timestamp = new Date(date).getTime();
-
-    // Access the 'structure' database
-    const database = client.db("trades_v_2");
-
-    // Access the collection named by the 'customerId' parameter
-    const collection = database.collection(tradeType);
-
-    // Perform your operations, such as find documents in the collection
-    // This is an example operation that fetches all documents in the collection
-    // Empty query object means "match all documents"
-    const options = {}; // You can set options for the find operation if needed
-    const query = { ISIN: isin, Location: location, timestamp: { $lt: timestamp } }; // Replace yourIdValue with the actual ID you're querying
-    const results = await collection.find(query, options).toArray();
-
-    // The 'results' variable now contains an array of documents from the collection
-    return results;
-  } catch (error) {
-    // Handle any errors that occurred during the operation
-    console.error("An error occurred while retrieving data from MongoDB:", error);
-  }
-}
-
-export async function readCalculatePosition(data: any, date: string, isin: any, location: any, tradeType: string) {
+export async function readCalculatePosition(data: CentralizedTrade[], date: string, isin: any, location: any, tradeType: string) {
   try {
     let positions: any = [];
     const database = client.db("portfolios");
@@ -587,8 +456,7 @@ export async function readCalculatePosition(data: any, date: string, isin: any, 
 
     for (let index = 0; index < data.length; index++) {
       let row = data[index];
-      row["BB Ticker"] = row["BB Ticker"] ? row["BB Ticker"] : row["Issue"];
-
+      row["BB Ticker"] = row["BB Ticker"];
       let originalFace = parseFloat(row["Original Face"]);
       let identifier = row["ISIN"] !== "" ? row["ISIN"].trim() : row["BB Ticker"].trim();
       let object: any = {};
@@ -596,12 +464,11 @@ export async function readCalculatePosition(data: any, date: string, isin: any, 
 
       let couponDaysYear = row["BB Ticker"].split(" ")[0] == "T" || row["BB Ticker"].includes("U.S") ? 365.0 : 360.0;
       let previousQuantity = 0;
-      let previousAverageCost = 0;
       let tradeType = row["B/S"];
       let operation = tradeType == "B" ? 1 : -1;
       let divider = row["Trade Type"] == "vcon" ? 100 : 1;
 
-      let currentPrice: any = row["Price"] / divider;
+      let currentPrice: any = parseFloat(row["Price"]) / divider;
       let currentQuantity: any = parseFloat(row["Notional Amount"].toString().replace(/,/g, "")) * operation;
       let currentNet = parseFloat(row["Settlement Amount"].toString().replace(/,/g, "")) * operation;
 
@@ -634,7 +501,7 @@ export async function readCalculatePosition(data: any, date: string, isin: any, 
       if (!tradeExistsAlready && identifier !== "") {
         triadaIds.push(row["Triada Trade Id"]);
         if (!updatingPosition) {
-          let divider = row["tradeType"] == "vcon" ? 100 : 1;
+          let divider = row["Trade Type"] == "vcon" ? 100 : 1;
           let shortLongType = currentQuantity >= 0 ? 1 : -1;
 
           let settlementDate = row["Settle Date"];
@@ -692,8 +559,8 @@ export async function readCalculatePosition(data: any, date: string, isin: any, 
           let tradeRecord = null;
           if (!tradeRecord) {
             tradeRecord = findTradeRecord(data, row["Triada Trade Id"]);
-            if (tradeRecord.length > 0) {
-              tradeRecord[0]["Updated Notional"] = object["Notional Amount"];
+            if (tradeRecord != null && tradeRecord != undefined) {
+              data[tradeRecord]["Updated Notional"] = object["Notional Amount"];
             }
           }
 
@@ -745,8 +612,8 @@ export async function readCalculatePosition(data: any, date: string, isin: any, 
           let tradeRecord = null;
           if (!tradeRecord) {
             tradeRecord = findTradeRecord(data, row["Triada Trade Id"]);
-            if (tradeRecord.length > 0) {
-              tradeRecord[0]["Updated Notional"] = object["Notional Amount"];
+            if (tradeRecord != null && tradeRecord != undefined) {
+              data[tradeRecord]["Updated Notional"] = object["Notional Amount"];
             }
           }
           positions = updateExisitingPosition(positions, identifier, location, object);
@@ -781,40 +648,4 @@ export async function readCalculatePosition(data: any, date: string, isin: any, 
   }
 }
 
-export async function modifyTradesDueToRecalculate(trades: any, tradeType: any) {
-  const database = client.db("trades_v_2");
 
-  let operations = trades.map((trade: any) => {
-    // Start with the known filters
-    let filters: any = [];
-
-    // If "ISIN", "BB Ticker", or "Issue" exists, check for both the field and "Location"
-
-    filters.push({
-      _id: new ObjectId(trade["_id"].toString()),
-    });
-
-    return {
-      updateOne: {
-        filter: { $or: filters },
-        update: { $set: trade },
-        upsert: false,
-      },
-    };
-  });
-
-  // Execute the operations in bulk
-  try {
-    const historicalReportCollection = database.collection(tradeType);
-    let action = await historicalReportCollection.bulkWrite(operations);
-    console.log(action);
-    return action;
-  } catch (error: any) {
-    console.log(error);
-    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-
-    await insertEditLogs([error.toString], "Errors", dateTime, "modifyTradesDueToRecalculate", "controllers/operations/operations.ts");
-
-    return "";
-  }
-}

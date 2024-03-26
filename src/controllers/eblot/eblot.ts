@@ -1,6 +1,6 @@
 import { CentralizedTrade } from "../../models/trades";
 import { client } from "../auth";
-import { insertEditLogs } from "../operations/operations";
+import { insertEditLogs } from "../operations/portfolio";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 
 export async function getAllTrades(from: number, to: number): Promise<CentralizedTrade[]> {
@@ -38,7 +38,9 @@ export async function getAllTrades(from: number, to: number): Promise<Centralize
     // Handle the error appropriately
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     console.log(error);
-    await insertEditLogs([error.toString], "Errors", dateTime, "Get All Trades", "controllers/eblot/eblot.ts");
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    await insertEditLogs([errorMessage], "Errors", dateTime, "Get All Trades", "controllers/eblot/eblot.ts");
 
     return [];
   }

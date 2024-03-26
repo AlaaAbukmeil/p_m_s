@@ -1,9 +1,9 @@
 import { client } from "../auth";
 
 import { formatDateRlzdDaily, getAllDatesSinceLastMonthLastDay, getAllDatesSinceLastYearLastDay, getDateTimeInMongoDBCollectionFormat, getDaysBetween, getEarliestDateKeyAndValue, getLastDayOfMonth, monthlyRlzdDate } from "./common";
-import { getFundDetails, insertEditLogs } from "../operations/operations";
+import { getFundDetails, insertEditLogs } from "../operations/portfolio";
 import { formatFrontEndSummaryTable, formatFrontEndTable } from "../analytics/tableFormatter";
-import { formatDateUS } from "../common";
+import { formatDateUS, getDate } from "../common";
 import { getEarliestCollectionName, parseBondIdentifier } from "./tools";
 import { getHistoricalPortfolio } from "../operations/positions";
 import { RlzdTrades } from "../../models/portfolio";
@@ -98,6 +98,13 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   }
   let fundDetails = portfolioFormattedSorted.fundDetails;
   documents = portfolioFormattedSorted.portfolio;
+  let count = 1;
+  for (let index = 0; index < documents.length; index++) {
+    if (documents[index]["L/S"] != "Total" && documents[index]["Type"] != "Total") {
+      documents[index]["Rank"] = count;
+      count++;
+    }
+  }
 
   return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: dayParamsWithLatestUpdates.lastUploadTradesDate, updatePriceDate: dayParamsWithLatestUpdates.lastUpdatePricesDate };
 }
@@ -169,34 +176,37 @@ export function getMTDParams(portfolio: any, lastMonthPortfolio: any, dateInput:
 
 export function getYTDParams(portfolio: any, lastYearPortfolio: any, date: any) {
   try {
+    let currencies: any = {};
     for (let index = 0; index < portfolio.length; index++) {
-      let position = portfolio[index];
       let lastYearPosition;
-      let currencies: any = {};
       for (let lastMonthIndex = 0; lastMonthIndex < lastYearPortfolio.length; lastMonthIndex++) {
         lastYearPosition = lastYearPortfolio[lastMonthIndex];
         portfolio[index]["Notes"] = "";
 
-        if (((lastYearPosition["ISIN"] == position["ISIN"] && position["ISIN"] && lastYearPosition["ISIN"]) || (lastYearPosition["BB Ticker"] == position["BB Ticker"] && position["BB Ticker"] && lastYearPosition["BB Ticker"])) && lastYearPosition["Mid"]) {
+        if (lastYearPosition["ISIN"] == portfolio[index]["ISIN"] && lastYearPosition["Mid"]) {
           portfolio[index]["YTD Mark"] = lastYearPosition["Mid"];
+          portfolio[index]["YTD Mark Ref.D"] = formatDateUS(date);
+
           portfolio[index]["YTD FX"] = lastYearPosition["FX Rate"] ? lastYearPosition["FX Rate"] : portfolio[index]["MTD FX"] || 1;
 
           currencies[portfolio[index]["Currency"]] = portfolio[index]["YTD FX"];
         }
       }
-
-      for (let index = 0; index < portfolio.length; index++) {
-        if (!parseFloat(portfolio[index]["YTD Mark"]) && parseFloat(portfolio[index]["YTD Mark"]) != 0 && portfolio[index]["Entry Price"]) {
-          portfolio[index]["YTD Mark"] = getEarliestDateKeyAndValue(portfolio[index]["Entry Price"], date);
-          portfolio[index]["Notes"] = "YTD Mark X";
-        }
-        if (!portfolio[index]["YTD FX"]) {
-          portfolio[index]["YTD FX"] = currencies[portfolio[index]["Currency"]] || portfolio[index]["MTD FX"];
-        }
-      }
-
-      return portfolio;
     }
+
+    for (let index = 0; index < portfolio.length; index++) {
+      if (!parseFloat(portfolio[index]["YTD Mark"]) && parseFloat(portfolio[index]["YTD Mark"]) != 0 && portfolio[index]["Entry Price"]) {
+        let ytdMarkInfo = getEarliestDateKeyAndValue(portfolio[index]["Entry Price"], date);
+        portfolio[index]["YTD Mark"] = ytdMarkInfo.value;
+        portfolio[index]["YTD Mark Ref.D"] = formatDateUS(ytdMarkInfo.date);
+        portfolio[index]["Notes"] = "YTD Mark X";
+      }
+      if (!portfolio[index]["YTD FX"]) {
+        portfolio[index]["YTD FX"] = currencies[portfolio[index]["Currency"]] || portfolio[index]["MTD FX"];
+      }
+    }
+
+    return portfolio;
   } catch (error) {
     return portfolio;
   }
@@ -251,7 +261,7 @@ function getDayURlzdInt(portfolio: any, date: any) {
 }
 
 export function getMTDURlzdInt(portfolio: any, date: any) {
-  let currentDayDate:string = new Date(date).toISOString().slice(0, 10);
+  let currentDayDate: string = new Date(date).toISOString().slice(0, 10);
   let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate);
   let monthlyInterest: any = {};
 
@@ -333,22 +343,22 @@ function getPL(portfolio: any, latestPortfolioThisMonth: any, date: any, lastYea
       positionUpToDateThisMonth = portfolio[index];
     }
     // ytd depends on mtd object
-    portfolio[index]["YTD Rlzd"] = getYTDRlzd(portfolio[index]["MTD Rlzd"], portfolio[index]["YTD Mark"], lastYearDate, portfolio[index]["BB Ticker"]);
-    portfolio[index]["Day Rlzd"] = positionUpToDateThisMonth["Day Rlzd"] ? (positionUpToDateThisMonth["Day Rlzd"][thisDay] ? calculateRlzd(positionUpToDateThisMonth["Day Rlzd"][thisDay], portfolio[index]["Previous Mark"], portfolio[index]["BB Ticker"]) : 0) : 0;
+    portfolio[index]["YTD Rlzd"] = getYTDRlzd(portfolio[index]["MTD Rlzd"], portfolio[index]["YTD Mark"], lastYearDate, portfolio[index]["BB Ticker"],portfolio[index]["Asset Class"]);
+    portfolio[index]["Day Rlzd"] = positionUpToDateThisMonth["Day Rlzd"] ? (positionUpToDateThisMonth["Day Rlzd"][thisDay] ? calculateRlzd(positionUpToDateThisMonth["Day Rlzd"][thisDay], portfolio[index]["Previous Mark"], portfolio[index]["BB Ticker"], portfolio[index]["Asset Class"]) : 0) : 0;
     //deep copy
     portfolio[index]["MTD Rlzd DC"] = portfolio[index]["MTD Rlzd"];
-    portfolio[index]["MTD Rlzd"] = portfolio[index]["MTD Rlzd"] ? (portfolio[index]["MTD Rlzd"][thisMonth] ? calculateRlzd(portfolio[index]["MTD Rlzd"][thisMonth], portfolio[index]["MTD Mark"], portfolio[index]["BB Ticker"]) : 0) : 0;
+    portfolio[index]["MTD Rlzd"] = portfolio[index]["MTD Rlzd"] ? (portfolio[index]["MTD Rlzd"][thisMonth] ? calculateRlzd(portfolio[index]["MTD Rlzd"][thisMonth], portfolio[index]["MTD Mark"], portfolio[index]["BB Ticker"], portfolio[index]["Asset Class"]) : 0) : 0;
 
     portfolio[index]["Cost MTD"] = portfolio[index]["Cost MTD"] ? portfolio[index]["Cost MTD"][thisMonth] || 0 : 0;
     portfolio[index]["Day P&L"] = parseFloat(portfolio[index]["Day Int."]) + parseFloat(portfolio[index]["Day Rlzd"]) + parseFloat(portfolio[index]["Day URlzd"]) ? parseFloat(portfolio[index]["Day Int."]) + parseFloat(portfolio[index]["Day Rlzd"]) + parseFloat(portfolio[index]["Day URlzd"]) : 0;
     portfolio[index]["MTD P&L"] = parseFloat(portfolio[index]["MTD Rlzd"]) + (parseFloat(portfolio[index]["MTD URlzd"]) || 0) + parseFloat(portfolio[index]["MTD Int."]) || 0;
     portfolio[index]["YTD P&L"] = (parseFloat(portfolio[index]["YTD Rlzd"]) || 0) + (parseFloat(portfolio[index]["YTD URlzd"]) || 0) + parseFloat(portfolio[index]["YTD Int."]) || 0;
-    portfolio[index]["Entry Price"] = portfolio[index]["Entry Price"] ? getEarliestDateKeyAndValue(portfolio[index]["Entry Price"]) : 0;
+    portfolio[index]["Entry Price"] = portfolio[index]["Entry Price"] ? getEarliestDateKeyAndValue(portfolio[index]["Entry Price"]).value : 0;
   }
   return portfolio;
 }
 
-function getYTDRlzd(rlzdTradesObject: any, ytdPrice: any, ytdDate: any, bbTicker: string) {
+function getYTDRlzd(rlzdTradesObject: any, ytdPrice: any, ytdDate: any, bbTicker: string, assetClass = "") {
   let rlzd = 0;
   let rlzdTrades = [];
   ytdDate = new Date(ytdDate).getTime();
@@ -359,7 +369,7 @@ function getYTDRlzd(rlzdTradesObject: any, ytdPrice: any, ytdDate: any, bbTicker
       rlzdTrades.push(...rlzdTradesObject[month]);
     }
   }
-  rlzd = calculateRlzd(rlzdTrades, ytdPrice, bbTicker);
+  rlzd = calculateRlzd(rlzdTrades, ytdPrice, bbTicker, assetClass);
 
   return rlzd;
 }
@@ -398,17 +408,23 @@ export function calculateAccruedSinceLastYear(interestInfo: any, couponRate: any
   }
 }
 
-export function calculateRlzd(trades: RlzdTrades[], mark: number, issue: string) {
+export function calculateRlzd(trades: RlzdTrades[], mark: number, issue: string, assetClass = "") {
   let total = 0;
 
   for (let index = 0; index < trades.length; index++) {
     let trade = trades[index];
     let price = trade.price;
     let quantity = trade.quantity;
+    if (assetClass.toString().includes("CDS")) {
+      quantity = quantity / 10000000;
+    }
 
     let rlzdTrade = (price - mark) * quantity;
 
     total += rlzdTrade;
+    if (issue.includes("ITRX")) {
+      console.log(assetClass + " mark: + " + mark + "\n", "total: + " + total + "\n", "price: + " + price + "\n", "quantity: + " + quantity + "\n");
+    }
   }
 
   return total;

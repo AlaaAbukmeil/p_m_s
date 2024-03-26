@@ -1,11 +1,10 @@
 require("dotenv").config();
 
-import { readBBGBlot } from "../operations/mufgOperations";
 import { getTradeDateYearTrades, formatDateUS, convertExcelDateToJSDate, convertExcelDateToJSDateTime, generateRandomString, bucket } from "../common";
 import { getSettlementDateYear } from "../reports/tools";
 import { getSecurityInPortfolioWithoutLocationForVcon } from "./graphApiConnect";
 import { uri } from "../common";
-import { readEmsxEBlot, readIBEblot, uploadToGCloudBucket } from "../operations/readExcel";
+import { readBBGBlot, readEmsxEBlot, readIBEblot, uploadToGCloudBucket } from "../operations/readExcel";
 import { client } from "../auth";
 import { CentralizedTrade, Vcon } from "../../models/trades";
 const xlsx = require("xlsx");

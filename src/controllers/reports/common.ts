@@ -123,9 +123,10 @@ export function getAllDatesSinceLastYearLastDay(date: Date | null): string {
 
   return lastYearDate;
 }
-export function getEarliestDateKeyAndValue(obj: any, dateLimit: any = 0) {
+export function getEarliestDateKeyAndValue(obj: any, dateLimit: any = 0): { value: string; date: string } {
   try {
     let earliestDate: any;
+
     let earliestKey: any;
     if (dateLimit) {
       dateLimit = new Date(dateLimit).getTime();
@@ -140,10 +141,10 @@ export function getEarliestDateKeyAndValue(obj: any, dateLimit: any = 0) {
       }
     });
 
-    return obj[earliestKey];
+    return { value: obj[earliestKey], date: earliestKey };
   } catch (error) {
     console.log(error);
-    return 0;
+    return { value: "", date: "" };
   }
 }
 export function mergeSort(array: any[]): any {

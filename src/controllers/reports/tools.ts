@@ -1,6 +1,7 @@
+import { CentralizedTrade } from "../../models/trades";
 import { client } from "../auth";
 import { formatDateWorld } from "../common";
-import { insertEditLogs } from "../operations/operations";
+import { insertEditLogs } from "../operations/portfolio";
 import { getAllDatesSinceLastMonthLastDay, getDateTimeInMongoDBCollectionFormat } from "./common";
 
 export function getAverageCost(currentQuantity: number, previousQuantity: number, currentPrice: any, previousAverageCost: any) {
@@ -53,41 +54,43 @@ export function parseBondIdentifier(identifier: any): any {
         "⅞": 0.875,
       };
       try {
-        let rate = parseFloat(components[1].replace("V", "").trim()) ? parseFloat(components[1].replace("V", "").trim()) : "";
-        if (rate) {
-          let fractions = Object.keys(fractionMap);
-          for (let index = 0; index < fractions.length; index++) {
-            let fraction = fractions[index];
-            if (components.includes(fraction)) {
-              rate += fractionMap[fraction];
-              dateIndex += 1;
+        let rate;
+        if (components.length > 2) {
+          rate = parseFloat(components[1].replace("V", "").trim()) ? parseFloat(components[1].replace("V", "").trim()) : "";
+          if (rate) {
+            let fractions = Object.keys(fractionMap);
+            for (let index = 0; index < fractions.length; index++) {
+              let fraction = fractions[index];
+              if (components.includes(fraction)) {
+                rate += fractionMap[fraction];
+                dateIndex += 1;
+              }
             }
           }
-        }
-        let dateComponents = components[dateIndex].split("/");
-        let date: any = new Date(`${dateComponents[0]}/${dateComponents[1]}/${"20" + dateComponents[2]}`);
-        if (identifier.toString().toLowerCase().includes("perp")) {
-          date = null;
-        }
-        // let date: any = new Date(components[2])
+          while (dateIndex < components.length && components[dateIndex].split("/").length <= 2) {
+            dateIndex++;
+          }
+          let dateComponents = components[dateIndex].split("/");
+          let date: any = new Date(`${dateComponents[0]}/${dateComponents[1]}/${"20" + dateComponents[2]}`);
+          if (identifier.toString().toLowerCase().includes("perp")) {
+            date = null;
+          }
 
-        if (date) {
-          date = formatDateWorld(date);
+          if (date) {
+            date = formatDateWorld(date);
+          }
+          return { rate: rate, date: date };
+        } else {
+          return { rate: 0, date: 0 };
         }
-        return { rate: rate, date: date };
-      } catch (error:any) {
-        console.log(error);
-        let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    
-        insertEditLogs([error.toString], "Errors", dateTime, "parseBondIdentifier", "controllers/reports/tools.ts");
-        
-        return ;
+      } catch (error: any) {
+        return { rate: 0, date: 0 };
       }
     } else {
-      return ["", "Invalid Date"];
+      return { rate: 0, date: 0 };
     }
   } catch (error) {
-    return ["", ""];
+    return { rate: 0, date: 0 };
   }
 }
 
@@ -111,8 +114,9 @@ export function getSettlementDateYear(date1: string, date2: string) {
   return `${month2}/${day2}/${year2}`;
 }
 
-export function findTradeRecord(trades: any, rowId: any) {
-  return trades.filter((trade: any) => trade["Triada Trade Id"] === rowId);
+export function findTradeRecord(trades: CentralizedTrade[], rowId: any): number | null {
+  const index = trades.findIndex((trade: any) => trade["Triada Trade Id"] === rowId);
+  return index !== -1 ? index : null;
 }
 
 export function formatUpdatedPositions(positions: any, portfolio: any, lastUpdatedDescription: string) {
@@ -153,7 +157,6 @@ export function formatUpdatedPositions(positions: any, portfolio: any, lastUpdat
 
     return data;
   } catch (error) {
-    
     return error;
   }
 }

@@ -6,9 +6,10 @@ import { CookieOptions, NextFunction, Router } from "express";
 import { Request, Response } from "express";
 import { readEmsxRawExcel, readIBRawExcel, uploadArrayAndReturnFilePath } from "../controllers/operations/readExcel";
 import { getPortfolio } from "../controllers/operations/positions";
-import { formatFxMufg, formatMufg, tradesTriada } from "../controllers/operations/mufgOperations";
+import { formatFxMufg, formatMufg } from "../controllers/operations/mufgOperations";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/eblot/graphApiConnect";
 import { MufgTrade } from "../models/mufg";
+import { allTrades } from "../controllers/operations/trades";
 
 const formatterRouter = Router();
 
@@ -41,7 +42,7 @@ formatterRouter.post("/ib-excel", verifyToken, uploadToBucket.any(), async (req:
 formatterRouter.post("/mufg-excel", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   let data = req.body;
   let pathName = "mufg_" + formatDateFile(data.timestamp_start) + "_" + formatDateFile(data.timestamp_end) + "_";
-  let trades = await tradesTriada();
+  let trades = await allTrades();
 
   let array: MufgTrade[] =  formatMufg(trades, data.timestamp_start, data.timestamp_end);
 

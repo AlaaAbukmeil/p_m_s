@@ -1,4 +1,4 @@
-import { getPortfolioOnSpecificDate, getSecurityInPortfolioWithoutLocation, insertEditLogs } from "./operations";
+import { getPortfolioOnSpecificDate, getSecurityInPortfolioWithoutLocation, insertEditLogs } from "./portfolio";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { formatUpdatedPositions } from "../reports/tools";
 import { client } from "../auth";
@@ -104,10 +104,11 @@ export async function insertPreviousPricesUpdatesInPortfolio(updatedPortfolio: a
   } catch (error: any) {
     console.log(error);
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([error.toString], "Errors", dateTime, "insertPreviousPricesUpdatesInPortfolio", "controllers/operations/prices.ts");
+    await insertEditLogs([errorMessage], "Errors", dateTime, "insertPreviousPricesUpdatesInPortfolio", "controllers/operations/prices.ts");
 
-    return ;
+    return;
   }
 }
 
@@ -135,6 +136,8 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
           } else if (row["BB Ticker"] == "CDS") {
             divider = 1;
           } else if (row["BB Ticker"] == "Futures") {
+            divider = 1;
+          } else if (row["BB Ticker"] == "Equity") {
             divider = 1;
           }
 

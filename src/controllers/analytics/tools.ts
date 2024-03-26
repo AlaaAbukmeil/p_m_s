@@ -186,7 +186,7 @@ export function formatMarkDate(date: any) {
     return `${month}/${day}/${year}`;
   }
 
-  export function yearsUntil(dateString: any, dateInput: any) {
+  export function yearsUntil(dateString: any, dateInput: any, bbTicker:string) {
     // Parse the date string and create a new Date object
     if (dateString == 0 || dateString == "0") {
       return 0;

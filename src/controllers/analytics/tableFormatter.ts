@@ -37,6 +37,7 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     if (!position["BB Ticker"]) {
       position["BB Ticker"] = position["Issue"];
     }
+   
     if (!position["Strategy"]) {
       position["Strategy"] = position["BB Ticker"].toLowerCase().includes("perp") ? "CE" : "VI";
     }
@@ -163,7 +164,7 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     position["Call Date"] = position["Call Date"] ? position["Call Date"] : "0";
 
     position["L/S"] = position["Notional Amount"] > 0 && position["Type"] != "CDS" ? "Long" : position["Notional Amount"] == 0 && position["Type"] != "CDS" ? "Rlzd" : "Short";
-    position["Duration"] = yearsUntil(position["Call Date"] ? position["Call Date"] : position["Maturity"], date);
+    position["Duration"] = yearsUntil(position["Call Date"] && position["Call Date"]  != "0"? position["Call Date"] : position["Maturity"], date, position["BB Ticker"]);
 
     position["Issuer"] = position["Issuer"] == "0" ? "" : position["Issuer"];
 
@@ -343,6 +344,7 @@ export function calculateMTDCost(trades: RlzdTrades[], mark: number, issue: stri
 
 export function formatSummaryPosition(position: any, fundDetails: any, dates: any) {
   let titles = [
+    "Rank",
     "Type",
     "L/S",
     "Strategy",
@@ -356,6 +358,8 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "% of NAV",
     "Bid",
     "Ask",
+    // "Delta",
+    // "Previous Mark",
     `Last Mid ${formatMarkDate(dates.today)}`,
     "Spread (Z/T)",
     "YTW",
@@ -414,6 +418,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Total Gain/ Loss (USD)",
     "% of Total Gain/ Loss since Inception (Live Position)",
     "Coupon Rate",
+
     // "Notional Amount",
   ];
 
@@ -425,7 +430,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Call Date": "Call Date",
     Location: "Location",
     "Entry Price": "Entry Price",
-
+    "Previous Mark":"Previous Mark",
     "BB Ticker": "BB Ticker",
     "Notional Amount": "Notional Amount",
     Notional: "Notional Amount",
@@ -481,9 +486,10 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Total Gain/ Loss (USD)": "Total Gain/ Loss (USD)",
     "% of Total Gain/ Loss since Inception (Live Position)": "% of Total Gain/ Loss since Inception (Live Position)",
     "Coupon Rate": "Coupon Rate",
+    "Rank":"L/S",
   };
 
-  let twoDigits = [`${formatMarkDate(dates.lastMonth)}`, `${formatMarkDate(dates.yesterday)}`, `Last Mid ${formatMarkDate(dates.today)}`, "Bid", "Ask", "Duration", "Average Cost", "Entry Price"];
+  let twoDigits = [`${formatMarkDate(dates.lastMonth)}`, `${formatMarkDate(dates.yesterday)}`, `Last Mid ${formatMarkDate(dates.today)}`, "Bid", "Ask", "Duration", "Average Cost", "Entry Price","Previous Mark"];
 
   // titlesValues[formatMarkDate(dates.lastMonth)] = "MTD Mark";
   // titlesValues[formatMarkDate(dates.yesterday)] = "Previous Mark";
@@ -519,6 +525,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
   object["Value (BC) % of GMV"] = Math.abs(Math.round((position["Value (BC)"] / fundDetails.gmv) * 10000) / 100) + " %";
   object[`BBG / S&P / Moody / Fitch Rating`] = (position["BBG Composite Rating"] || "NR") + " " + (position["S&P Bond Rating"] || "NR") + " " + (position["Moody's Bond Rating"] || "NR") + " " + (position["Fitch Bond Rating"] || "NR") + " ";
   object["Spread (Z/T)"] = position["Z Spread"].toFixed(0);
+  // object["Delta"] = Math.round((object[`Last Mid ${formatMarkDate(dates.today)}`] - object["Previous Mark"])/object[`Last Mid ${formatMarkDate(dates.today)}`] * 10000)/100 + " %"
   return object;
 }
 

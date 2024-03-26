@@ -4,9 +4,9 @@ import { formatCentralizedRawFiles, getTriadaTrades } from "../../controllers/eb
 import { getTrades } from "../../controllers/reports/trades";
 import { uploadToBucket } from "./portfolio";
 import { Request, Response, NextFunction } from "express";
-import { deleteTrade, editTrade } from "../../controllers/operations/operations";
 import { getGraphToken, getVcons } from "../../controllers/eblot/graphApiConnect";
 import { getAllTrades } from "../../controllers/eblot/eblot";
+import { deleteTrade, editTrade } from "../../controllers/operations/trades";
 
 const tradesRouter = Router();
 

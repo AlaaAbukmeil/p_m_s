@@ -1,6 +1,7 @@
-import { convertExcelDateToJSDate, generateRandomString, getTradeDateYearTrades } from "../common";
+import { CentralizedTrade } from "../../models/trades";
+import { bucket, convertExcelDateToJSDate, generateRandomString, getTradeDateYearTrades } from "../common";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
-import { insertEditLogs } from "./operations";
+import { insertEditLogs } from "./portfolio";
 
 const xlsx = require("xlsx");
 const axios = require("axios");
@@ -8,89 +9,112 @@ const { Storage } = require("@google-cloud/storage");
 const storage = new Storage({ keyFilename: process.env.KEYPATHFILE });
 const { PassThrough } = require("stream");
 
-export async function readCentralizedEBlot(path: string) {
-  const response = await axios.get(path, { responseType: "arraybuffer" });
-
-  /* Parse the data */
-  const workbook = xlsx.read(response.data, { type: "buffer" });
-
-  /* Get first worksheet */
-  const worksheetName = workbook.SheetNames[0];
-  const worksheet = workbook.Sheets[worksheetName];
-
-  /* Convert worksheet to JSON */
-  // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
-
-  // Read data
-
-  const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-  const headersFormat = ["B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Trade App Status"];
-  const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : console.log(value, headers[0][index], "excel value are wrong")));
-  if (!arraysAreEqual) {
-    return {
-      error: "Incompatible format, please upload centralized e-blot xlsx/csv file",
-    };
-  } else {
-    let data = xlsx.utils.sheet_to_json(worksheet, {
-      defval: "",
-      range: "A1:V300",
-    });
-
-    let filtered = data.filter((trade: any, index: any) => trade["Trade App Status"] == "new");
-    filtered.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
-
-    let missingLocation = data.filter((trade: any, index: any) => trade["Location"] == "" || (trade["ISIN"] == "" && trade["Trade Type"] == "vcon") || !trade["Location"] || trade["Location"].trim().split(" ").length > 1);
-    if (missingLocation.length) {
-      let issueMissing = "";
-      for (let indexMissingIssue = 0; indexMissingIssue < missingLocation.length; indexMissingIssue++) {
-        let issueName = missingLocation[indexMissingIssue]["BB Ticker"];
-        issueMissing += issueName + " //";
-      }
-      return { error: `BB Ticker ${issueMissing} has missing or more than one location/ISIN` };
+export async function readCentralizedEBlot(path: string): Promise<
+  | {
+      vconTrades: CentralizedTrade[];
+      ibTrades: CentralizedTrade[];
+      emsxTrades: CentralizedTrade[];
+      gsTrades: CentralizedTrade[];
+      allTrades: CentralizedTrade[];
     }
-    let vconTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "vcon");
-    let ibTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "ib");
-    let emsxTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "emsx");
+  | { error: string }
+> {
+  try {
+    const response = await axios.get(path, { responseType: "arraybuffer" });
 
-    for (let rowIndex = 0; rowIndex < vconTrades.length; rowIndex++) {
-      vconTrades[rowIndex]["Triada Trade Id"] = vconTrades[rowIndex]["Triada Trade Id"];
+    /* Parse the data */
+    const workbook = xlsx.read(response.data, { type: "buffer" });
 
-      if (!vconTrades[rowIndex]["Trade Date"].includes("/")) {
-        vconTrades[rowIndex]["Trade Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(vconTrades[rowIndex]["Trade Date"]));
+    /* Get first worksheet */
+    const worksheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[worksheetName];
+
+    /* Convert worksheet to JSON */
+    // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
+
+    // Read data
+
+    const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+    const headersFormat = ["B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Trade App Status"];
+    const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : console.log(value, headers[0][index], "excel value are wrong")));
+    if (!arraysAreEqual) {
+      return {
+        error: "Incompatible format, please upload centralized e-blot xlsx/csv file",
+      };
+    } else {
+      let data = xlsx.utils.sheet_to_json(worksheet, {
+        defval: "",
+        range: "A1:V300",
+      });
+
+      let filtered = data.filter((trade: any, index: any) => trade["Trade App Status"] == "new");
+      filtered.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
+
+      let missingLocation = data.filter((trade: any, index: any) => trade["Location"] == "" || (trade["ISIN"] == "" && trade["Trade Type"] == "vcon") || !trade["Location"] || trade["Location"].trim().split(" ").length > 1);
+      if (missingLocation.length) {
+        let issueMissing = "";
+        for (let indexMissingIssue = 0; indexMissingIssue < missingLocation.length; indexMissingIssue++) {
+          let issueName = missingLocation[indexMissingIssue]["BB Ticker"];
+          issueMissing += issueName + " //";
+        }
+        return { error: `BB Ticker ${issueMissing} has missing or more than one location/ISIN` };
       }
-      if (!vconTrades[rowIndex]["Settle Date"].includes("/")) {
-        vconTrades[rowIndex]["Settle Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(vconTrades[rowIndex]["Settle Date"]));
+      let vconTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "vcon");
+      let ibTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "ib");
+      let emsxTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "emsx");
+      let gsTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "gs");
+
+      for (let rowIndex = 0; rowIndex < vconTrades.length; rowIndex++) {
+        vconTrades[rowIndex]["Triada Trade Id"] = vconTrades[rowIndex]["Triada Trade Id"];
+
+        if (!vconTrades[rowIndex]["Trade Date"].includes("/")) {
+          vconTrades[rowIndex]["Trade Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(vconTrades[rowIndex]["Trade Date"]));
+        }
+        if (!vconTrades[rowIndex]["Settle Date"].includes("/")) {
+          vconTrades[rowIndex]["Settle Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(vconTrades[rowIndex]["Settle Date"]));
+        }
+        vconTrades[rowIndex]["timestamp"] = new Date(vconTrades[rowIndex]["Trade Date"]).getTime();
+        vconTrades[rowIndex]["Trade App Status"] = "uploaded_to_app";
       }
-      vconTrades[rowIndex]["timestamp"] = new Date(vconTrades[rowIndex]["Trade Date"]).getTime();
-      vconTrades[rowIndex]["Trade App Status"] = "uploaded_to_app";
+
+      for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
+        ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["BB Ticker"];
+        if (!ibTrades[ibTradesIndex]["Trade Date"].includes("/")) {
+          ibTrades[ibTradesIndex]["Trade Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(ibTrades[ibTradesIndex]["Trade Date"]));
+        }
+        if (!ibTrades[ibTradesIndex]["Settle Date"].includes("/")) {
+          ibTrades[ibTradesIndex]["Settle Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(ibTrades[ibTradesIndex]["Settle Date"]));
+        }
+        ibTrades[ibTradesIndex]["timestamp"] = new Date(ibTrades[ibTradesIndex]["Trade Date"]).getTime();
+        ibTrades[ibTradesIndex]["Trade App Status"] = "uploaded_to_app";
+      }
+
+      for (let gsTradesIndex = 0; gsTradesIndex < gsTrades.length; gsTradesIndex++) {
+        if (!gsTrades[gsTradesIndex]["Trade Date"].includes("/")) {
+          gsTrades[gsTradesIndex]["Trade Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(gsTrades[gsTradesIndex]["Trade Date"]));
+        }
+        if (!gsTrades[gsTradesIndex]["Settle Date"].includes("/")) {
+          gsTrades[gsTradesIndex]["Settle Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(gsTrades[gsTradesIndex]["Settle Date"]));
+        }
+        gsTrades[gsTradesIndex]["timestamp"] = new Date(gsTrades[gsTradesIndex]["Trade Date"]).getTime();
+        gsTrades[gsTradesIndex]["Trade App Status"] = "uploaded_to_app";
+      }
+
+      return {
+        vconTrades: vconTrades,
+        ibTrades: ibTrades,
+        emsxTrades: emsxTrades,
+        gsTrades: gsTrades,
+        allTrades: [...vconTrades, ...ibTrades, ...emsxTrades, ...gsTrades],
+      };
     }
+  } catch (error: any) {
+    console.log(error);
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
-      ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["BB Ticker"];
-      if (!ibTrades[ibTradesIndex]["Trade Date"].includes("/")) {
-        ibTrades[ibTradesIndex]["Trade Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(ibTrades[ibTradesIndex]["Trade Date"]));
-      }
-      if (!ibTrades[ibTradesIndex]["Settle Date"].includes("/")) {
-        ibTrades[ibTradesIndex]["Settle Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(ibTrades[ibTradesIndex]["Settle Date"]));
-      }
-      ibTrades[ibTradesIndex]["timestamp"] = new Date(ibTrades[ibTradesIndex]["Trade Date"]).getTime();
-      ibTrades[ibTradesIndex]["Trade App Status"] = "uploaded_to_app";
-    }
-
-    for (let emsxTradesIndex = 0; emsxTradesIndex < emsxTrades.length; emsxTradesIndex++) {
-      emsxTrades[emsxTradesIndex]["Notional Amount"] = emsxTrades[emsxTradesIndex]["Settlement Amount"];
-      emsxTrades[emsxTradesIndex]["ISIN"] = emsxTrades[emsxTradesIndex]["BB Ticker"];
-      if (!emsxTrades[emsxTradesIndex]["Trade Date"].includes("/")) {
-        emsxTrades[emsxTradesIndex]["Trade Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(emsxTrades[emsxTradesIndex]["Trade Date"]));
-      }
-      if (!emsxTrades[emsxTradesIndex]["Settle Date"].includes("/")) {
-        emsxTrades[emsxTradesIndex]["Settle Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(emsxTrades[emsxTradesIndex]["Settle Date"]));
-      }
-      emsxTrades[emsxTradesIndex]["timestamp"] = new Date(emsxTrades[emsxTradesIndex]["Trade Date"]).getTime();
-      emsxTrades[emsxTradesIndex]["Trade App Status"] = "uploaded_to_app";
-    }
-
-    return [vconTrades, ibTrades, emsxTrades, [...vconTrades, ...ibTrades, ...emsxTrades]];
+    await insertEditLogs([errorMessage], "Errors", dateTime, "readCentralizedEBlot", "src/controllers/operations/readExcel.ts");
+    return { error: errorMessage };
   }
 }
 
@@ -168,9 +192,10 @@ export async function readIBRawExcel(path: string) {
     return data;
   } catch (error: any) {
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    console.log(error)
+    console.log(error);
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([error.toString], "Errors", dateTime, "readIBRawExcel", "controllers/operations/readExcel.ts");
+    await insertEditLogs([errorMessage], "Errors", dateTime, "readIBRawExcel", "controllers/operations/readExcel.ts");
 
     return [];
   }
@@ -523,4 +548,113 @@ export async function readNomuraReconcileFile(path: string) {
 
     return data;
   }
+}
+
+export async function readBBGBlot(path: string) {
+  path = bucket + path;
+  const response = await axios.get(path, { responseType: "arraybuffer" });
+
+  /* Parse the data */
+  const workbook = xlsx.read(response.data, { type: "buffer" });
+
+  /* Get first worksheet */
+  const worksheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[worksheetName];
+
+  /* Convert worksheet to JSON */
+  // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
+
+  // Read data
+
+  let headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+  // headers = Object.keys(headers)
+
+  const data = xlsx.utils.sheet_to_json(worksheet, { defval: "", range: "A1:ZY500" });
+  return data;
+}
+
+export async function readIB(path: string) {
+  try {
+    path = bucket + path;
+    const response = await axios.get(path, { responseType: "arraybuffer" });
+
+    /* Parse the data */
+    const workbook = xlsx.read(response.data, { type: "buffer" });
+
+    /* Get first worksheet */
+    const worksheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[worksheetName];
+
+    let data = xlsx.utils.sheet_to_row_object_array(worksheet);
+    let headers = Object.keys(data[0]);
+    let tradesRowIndex = -1; // Will hold the index of the row where "Trades" is found
+    let tradesRowEndIndex = -1;
+    for (let index = 0; index < data.length; index++) {
+      let row = data[index];
+      // Assuming the first column is named 'A'
+      if (row[headers[0]] === "Trades") {
+        tradesRowIndex = index + 2;
+        break;
+      }
+    }
+    if (tradesRowIndex == -1) {
+      return [];
+    } else {
+      for (let tradesIndex = tradesRowIndex; tradesIndex < data.length; tradesIndex++) {
+        let trade = data[tradesIndex];
+        if (trade[headers[1]] !== "Data" && trade[headers[1]] != "SubTotal") {
+          tradesRowEndIndex = tradesIndex + 1;
+          break;
+        }
+      }
+    }
+    data = xlsx.utils.sheet_to_json(worksheet, { defval: "", range: `A${tradesRowIndex}:Q${tradesRowEndIndex}` });
+    return data;
+  } catch (error: any) {
+    console.log(error);
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    await insertEditLogs([errorMessage], "Errors", dateTime, "Get Vcons", "controllers/operations/mufgOperations.ts");
+
+    return [];
+  }
+}
+
+export async function readBBE(path: string) {
+  path = bucket + path;
+  const response = await axios.get(path, { responseType: "arraybuffer" });
+
+  /* Parse the data */
+  const workbook = xlsx.read(response.data, { type: "buffer" });
+
+  /* Get first worksheet */
+  const worksheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[worksheetName];
+
+  /* Convert worksheet to JSON */
+  // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
+
+  // Read data
+  const data = xlsx.utils.sheet_to_json(worksheet, { defval: "", range: "A1:Z300" });
+  return data;
+}
+
+export async function readFxTrades(path: string) {
+  path = bucket + path;
+  const response = await axios.get(path, { responseType: "arraybuffer" });
+
+  /* Parse the data */
+  const workbook = xlsx.read(response.data, { type: "buffer" });
+
+  /* Get first worksheet */
+  const worksheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[worksheetName];
+
+  /* Convert worksheet to JSON */
+  // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
+
+  // Read data
+  const data = xlsx.utils.sheet_to_json(worksheet, { defval: "", range: "A1:N100" });
+  return data;
 }

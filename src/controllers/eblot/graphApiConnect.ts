@@ -5,7 +5,7 @@ import { getPortfolio } from "../operations/positions";
 import { getDateTimeInMongoDBCollectionFormat, mergeSort } from "../reports/common";
 import { renderVcon, renderFx } from "./excelFormat";
 import { Vcon } from "../../models/trades";
-import { insertEditLogs } from "../operations/operations";
+import { insertEditLogs } from "../operations/portfolio";
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
 const FormData = require("form-data");
@@ -101,8 +101,9 @@ export async function getVcons(token: string, start_time: any, end_time: any, tr
   } catch (error: any) {
     console.log(error);
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([error.toString], "Errors", dateTime, "Get Vcons", "controllers/eblot/graphApiConnect.ts");
+    await insertEditLogs([errorMessage], "Errors", dateTime, "Get Vcons", "controllers/eblot/graphApiConnect.ts");
 
     return [];
   }
@@ -130,8 +131,9 @@ export async function getFxTrades(token: string, start_time: string, end_time: s
   } catch (error: any) {
     console.log(error);
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([error.toString], "Errors", dateTime, "getFxTrades", "controllers/eblot/graphApiConnect.ts");
+    await insertEditLogs([errorMessage], "Errors", dateTime, "getFxTrades", "controllers/eblot/graphApiConnect.ts");
 
     return [];
   }
