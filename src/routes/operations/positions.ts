@@ -52,7 +52,7 @@ positionsRouter.post("/recalculate-position", verifyToken, uploadToBucket.any(),
     let location = data["Location"];
     let date = data.date;
     let trades = await getAllTradesForSpecificPosition(tradeType, isin, location, date);
-    // console.log(tradeType, isin, location, date, trades);
+    console.log(tradeType, isin, location, date, trades);
     if (trades.length) {
       let action: any = await readCalculatePosition(trades, date, isin, location, tradeType);
       console.log(action);

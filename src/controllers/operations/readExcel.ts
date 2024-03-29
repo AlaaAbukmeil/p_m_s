@@ -463,7 +463,7 @@ export async function readMUFGReconcileFile(path: string) {
   const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : console.log(value, headers[0][index])));
   if (!arraysAreEqual) {
     return {
-      error: "Incompatible format, please upload MUFG end of month xlsx/csv file",
+      error: "Incompatible format, please upload MUFG xlsx/csv file",
     };
   } else {
     const data = xlsx.utils.sheet_to_json(worksheet, {
@@ -512,33 +512,33 @@ export async function readNomuraReconcileFile(path: string) {
     "SD Market Value Local",
     "TD Market Value Base",
     "SD Market Value Base",
-    "Quantity Subject to Right of Use/Stock Loan",
-    "FX Rate",
-    "Last Activity Date",
-    "Business Date",
-    "Run Date",
-    "Run Time",
-    "OTC DerivativeType",
-    "Ticker",
-    "Ric Code",
-    "Preferred ID",
-    "Pricing Factor",
-    "Price Type",
-    "Product Type",
-    "Expiration Date",
-    "Option Contract Type",
-    "Td Accrued Interest",
-    "Sd Accrued Interest",
-    "Clean Price",
-    "Asset Class",
-    "Stock Loan Financed Positions Base Ccy",
-    "Stock Loan Financed Positions (USD)",
+    // "Quantity Subject to Right of Use/Stock Loan",
+    // "FX Rate",
+    // "Last Activity Date",
+    // "Business Date",
+    // "Run Date",
+    // "Run Time",
+    // "OTC DerivativeType",
+    // "Ticker",
+    // "Ric Code",
+    // "Preferred ID",
+    // "Pricing Factor",
+    // "Price Type",
+    // "Product Type",
+    // "Expiration Date",
+    // "Option Contract Type",
+    // "Td Accrued Interest",
+    // "Sd Accrued Interest",
+    // "Clean Price",
+    // "Asset Class",
+    // "Stock Loan Financed Positions Base Ccy",
+    // "Stock Loan Financed Positions (USD)",
   ];
 
-  const arraysAreEqual = headersFormat.every((value, index) => (value === headers[1][index] ? true : console.log(value, headers[1][index])));
+  const arraysAreEqual = headersFormat.every((value, index) => (value === headers[1][index] ? true : console.log("app expects: " + value + " and got: " + headers[1][index])));
   if (!arraysAreEqual) {
     return {
-      error: "Incompatible format, please upload MUFG end of month xlsx/csv file",
+      error: "Incompatible format, please upload Reconcile xlsx/csv file",
     };
   } else {
     const data = xlsx.utils.sheet_to_json(worksheet, {

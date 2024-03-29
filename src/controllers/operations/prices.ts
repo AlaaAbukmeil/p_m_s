@@ -2,6 +2,8 @@ import { getPortfolioOnSpecificDate, getSecurityInPortfolioWithoutLocation, inse
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { formatUpdatedPositions } from "../reports/tools";
 import { client } from "../auth";
+import { Position } from "../../models/position";
+import { formatDateWorld } from "../common";
 const ObjectId = require("mongodb").ObjectId;
 export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDate: string, path: string) {
   try {
@@ -123,6 +125,8 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
         let portfolio = action.portfolio;
         collectionDate = action.date;
         let currencyInUSD: any = {};
+        let maturity: any = {};
+        let maturityType = "day/month";
         currencyInUSD["USD"] = 1;
         let divider = 1;
         let currencyStart = true;
@@ -187,7 +191,10 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
                 object["Call Date"] = row["Call Date"];
               }
               if (!row["Maturity"].includes("N/A") && !row["Maturity"].includes("#")) {
-                object["Maturity"] = row["Maturity"];
+                maturity[row["ISIN"]] = row["Maturity"];
+                if (parseFloat(row["Maturity"].split("/")[1]) > 12) {
+                  maturityType = "month/day";
+                }
               }
               if (currencyInUSD[object["Currency"]]) {
                 object["FX Rate"] = currencyInUSD[object["Currency"]];
@@ -204,6 +211,7 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
 
               updatedPricePortfolio.push(object);
             }
+
           } else if (row["BB Ticker"].includes("Curncy") && currencyStart) {
             let rate = row["Today's Mid"];
             let currency = row["BB Ticker"].split(" ")[0];
@@ -212,6 +220,15 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
               currency = row["BB Ticker"].split(" ")[1];
             }
             currencyInUSD[currency] = rate;
+          }
+        }
+        for (let index = 0; index < updatedPricePortfolio.length; index++) {
+          let position: Position = updatedPricePortfolio[index];
+          let positionMaturity = maturity[position["ISIN"]];
+          if (maturityType == "month/day" && positionMaturity) {
+            updatedPricePortfolio[index]["Maturity"] = formatDateWorld(positionMaturity);
+          } else {
+            updatedPricePortfolio[index]["Maturity"] = positionMaturity;
           }
         }
         console.log(currencyInUSD, "currency prices");

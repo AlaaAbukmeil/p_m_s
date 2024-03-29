@@ -1,5 +1,5 @@
 import { FundMTD, PositionBeforeFormatting, PositionGeneralFormat, RlzdTrades } from "../../models/portfolio";
-import { formatDateWorld, parsePercentage } from "../common";
+import { formatDateUS, formatDateWorld, parsePercentage } from "../common";
 import { calculateAccruedSinceInception } from "../reports/portfolios";
 import { parseBondIdentifier } from "../reports/tools";
 import { bbgRating, isRatingHigherThanBBBMinus, sortObjectBasedOnKey, toTitleCase, oasWithChange, checkPosition, formatMarkDate, yearsUntil, getDuration, getSectorAssetClass, moodyRating, AggregatedData, getTopWorst } from "./tools";
@@ -218,7 +218,7 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
 
     const latestDate = latestDateKey ? new Date(latestDateKey) : null;
 
-    position["Last Day Since Realizd"] = position["Notional Amount"] == 0 ? formatDateWorld(latestDate) : null;
+    position["Last Day Since Realizd"] = position["Notional Amount"] == 0 ? formatDateUS(latestDate) : null;
 
     if (conditions) {
       if (checkPosition(position, conditions)) {
@@ -1304,7 +1304,7 @@ function sortSummary(locationCode: string, group: any) {
 
   try {
     let rlzd = 0,
-      type = "";
+      assetClass = "";
     let unrlzdPositionsNum = group.filter((position: any) => position["Notional Amount"] != 0).length;
 
     for (let index = 0; index < group.length; index++) {
@@ -1336,11 +1336,11 @@ function sortSummary(locationCode: string, group: any) {
           return assetClassOrder.NON_USD;
         }
         if (position["Asset Class"] == "IG") {
-          type = "IG";
+          assetClass = "IG";
         }
 
-        if (position["Asset Class"] == "HY" && type != "IG") {
-          type = "HY";
+        if (position["Asset Class"] == "HY" && assetClass != "IG") {
+          assetClass = "HY";
         }
 
         //if one of them is not rlzd, then its not appliacable
@@ -1355,10 +1355,10 @@ function sortSummary(locationCode: string, group: any) {
     if (rlzd == 2) {
       return assetClassOrder.RLZD;
     }
-    if (type == "IG") {
+    if (assetClass == "IG") {
       return assetClassOrder.IG;
     }
-    if (type == "HY") {
+    if (assetClass == "HY") {
       return assetClassOrder.HY;
     }
     return assetClassOrder.undefined;

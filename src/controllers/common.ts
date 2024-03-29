@@ -180,7 +180,7 @@ export function formatDateWorld(inputDate: any) {
   let month = `${date.getMonth() + 1}`.padStart(2, "0"); // get the month (months are 0-indexed in JS, so add 1)
   let year = `${date.getFullYear()}`.slice(-2); // get the year and take the last two digits
 
-  return `${month}/${day}/${year}`;
+  return `${day}/${month}/${year}`;
 }
 export function swapMonthDay(dateStr: string) {
   // Split the string into components

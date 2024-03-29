@@ -161,7 +161,7 @@ function formatDateWorld(inputDate) {
     let day = `${date.getDate()}`.padStart(2, "0"); // get the day
     let month = `${date.getMonth() + 1}`.padStart(2, "0"); // get the month (months are 0-indexed in JS, so add 1)
     let year = `${date.getFullYear()}`.slice(-2); // get the year and take the last two digits
-    return `${month}/${day}/${year}`;
+    return `${day}/${month}/${year}`;
 }
 exports.formatDateWorld = formatDateWorld;
 function swapMonthDay(dateStr) {

@@ -192,7 +192,8 @@ export function getDaysBetween(startDate: any, endDate: any) {
   const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
 
   // Return the absolute value of the difference in days
-  return Math.abs(Math.round(diffInDays)) || 0;
+  //+1 because of settlement date
+  return Math.abs(Math.round(diffInDays + 1)) || 0;
 }
 
 export function formatExcelDate(date: any) {

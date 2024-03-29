@@ -1,5 +1,5 @@
 import { client } from "../auth";
-import { formatDateUS, getDate } from "../common";
+import { formatDateUS, formatDateWorld, getDate } from "../common";
 import { getSecurityInPortfolioWithoutLocation, insertEditLogs } from "./portfolio";
 import { findTrade, insertTrade } from "../reports/trades";
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../reports/common";
@@ -433,6 +433,8 @@ export async function updatePricesPortfolio(path: string) {
       return data;
     } else {
       let updatedPricePortfolio = [];
+      let maturity: any = {};
+      let maturityType = "day/month";
       let portfolio = await getPortfolio();
       let currencyInUSD: any = {};
       let currencyStart = true;
@@ -498,7 +500,10 @@ export async function updatePricesPortfolio(path: string) {
               object["Call Date"] = row["Call Date"];
             }
             if (!row["Maturity"].includes("N/A") && !row["Maturity"].includes("#")) {
-              object["Maturity"] = row["Maturity"];
+              maturity[row["ISIN"]] = row["Maturity"];
+              if (parseFloat(row["Maturity"].split("/")[1]) > 12) {
+                maturityType = "month/day";
+              }
             }
             if (currencyInUSD[object["Currency"]]) {
               object["FX Rate"] = currencyInUSD[object["Currency"]];
@@ -523,6 +528,15 @@ export async function updatePricesPortfolio(path: string) {
             currency = row["BB Ticker"].split(" ")[1];
           }
           currencyInUSD[currency] = rate;
+        }
+      }
+      for (let index = 0; index < updatedPricePortfolio.length; index++) {
+        let position: Position = updatedPricePortfolio[index];
+        let positionMaturity = maturity[position["ISIN"]];
+        if (maturityType == "month/day" && positionMaturity) {
+          updatedPricePortfolio[index]["Maturity"] = formatDateWorld(positionMaturity);
+        } else {
+          updatedPricePortfolio[index]["Maturity"] = positionMaturity;
         }
       }
       try {

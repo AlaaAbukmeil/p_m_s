@@ -1,6 +1,6 @@
 import { CentralizedTrade } from "../../models/trades";
 import { client } from "../auth";
-import { formatDateWorld } from "../common";
+import { formatDateUS, formatDateWorld } from "../common";
 import { insertEditLogs } from "../operations/portfolio";
 import { getAllDatesSinceLastMonthLastDay, getDateTimeInMongoDBCollectionFormat } from "./common";
 
@@ -77,7 +77,7 @@ export function parseBondIdentifier(identifier: any): any {
           }
 
           if (date) {
-            date = formatDateWorld(date);
+            date = formatDateUS(date);
           }
           return { rate: rate, date: date };
         } else {
