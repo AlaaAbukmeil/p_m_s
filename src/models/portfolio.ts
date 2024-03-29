@@ -153,7 +153,7 @@ export interface PositionGeneralFormat extends PositionBeforeFormatting {
   "DV01 Dollar Value Impact Test": string;
   "Capital Gain/ Loss since Inception (Live Position)": number;
   "% of Capital Gain/ Loss since Inception (Live Position)": string;
-  "Accrued Int. Since Inception": number;
+  "Accrued Int. Since Inception (BC)": number;
 
   "Total Gain/ Loss (USD)": number;
   "% of Total Gain/ Loss since Inception (Live Position)": string;

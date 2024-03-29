@@ -246,3 +246,92 @@ export function formatMarkDate(date: any) {
     }
   }
   
+  export class AggregatedData {
+    DayPL: number;
+    MTDPL: number;
+    DV01Sum: number;
+    groupUSDMarketValue: number;
+    oasSum: number;
+    zSpreadSum: number;
+    oasWChangeSum: number;
+    "DV01 Dollar Value Impact": number;
+    "DV01 Dollar Value Impact % of Nav": number;
+    "DV01 Dollar Value Impact Limit % of Nav": number;
+    "DV01 Dollar Value Impact Utilization % of Nav": number;
+    "DV01 Dollar Value Impact Test": string;
+  
+    "Value (BC) % of Nav": number;
+    "Value (BC) % of GMV": number;
+    "Value (BC) Limit % of Nav": number;
+  
+    "Value (BC) Utilization % of Nav": number;
+  
+    "Value (BC) Test": string;
+    "Capital Gain/ Loss since Inception (Live Position)": number;
+    "% of Capital Gain/ Loss since Inception (Live Position)": number;
+    "Accrued Int. Since Inception (BC)": number;
+    "Total Gain/ Loss (USD)": number;
+    "% of Total Gain/ Loss since Inception (Live Position)": number;
+    "Notional Amount": number;
+    "Day Change": number;
+    constructor() {
+      this.DayPL = 0;
+      this.MTDPL = 0;
+      this.DV01Sum = 0;
+      this.groupUSDMarketValue = 0;
+      this.oasSum = 0;
+      this.zSpreadSum = 0;
+      this.oasWChangeSum = 0;
+      this["DV01 Dollar Value Impact"] = 0;
+      this["DV01 Dollar Value Impact % of Nav"] = 0;
+      this["DV01 Dollar Value Impact Limit % of Nav"] = 0;
+      this["DV01 Dollar Value Impact Utilization % of Nav"] = 0;
+      this["DV01 Dollar Value Impact Test"] = "Pass";
+  
+      this["Value (BC) % of Nav"] = 0;
+      this["Value (BC) % of GMV"] = 0;
+      this["Value (BC) Limit % of Nav"] = 0;
+  
+      this["Value (BC) Utilization % of Nav"] = 0;
+  
+      this["Value (BC) Test"] = "Pass";
+      this["Capital Gain/ Loss since Inception (Live Position)"] = 0;
+      this["% of Capital Gain/ Loss since Inception (Live Position)"] = 0;
+      this["Accrued Int. Since Inception (BC)"] = 0;
+      this["Total Gain/ Loss (USD)"] = 0;
+      this["% of Total Gain/ Loss since Inception (Live Position)"] = 0;
+      this["Notional Amount"] = 0;
+      this["Day Change"] = 0;
+    }
+  }
+
+  export function getTopWorst(groupedByLocation: any) {
+    let entries = Object.entries(groupedByLocation).map(([key, value]: any) => ({
+      key,
+      groupDayPl: value.groupDayPl,
+      groupMonthlyPl: value.groupMonthlyPl,
+      data: value.data,
+    }));
+    // Step 2: Sort the array based on the `groupPL` property
+  
+    entries = entries.filter((object: any, index) => object["key"] != "Rlzd");
+    entries.sort((a, b) => b.groupDayPl - a.groupDayPl);
+  
+    // Step 3: Select the top 5 and worst 5 entries
+    const top5Day = entries.slice(0, 5);
+    let worst5Day = entries.slice(-5).sort((a, b) => a.groupDayPl - b.groupDayPl);
+    entries.sort((a, b) => b.groupMonthlyPl - a.groupMonthlyPl);
+    // Step 4: Map the selected entries to retrieve their `data` values
+  
+    const top5Monthly = entries.slice(0, 5);
+    let worst5Monthly = entries.slice(-5);
+    worst5Monthly = worst5Monthly.sort((a, b) => a.groupMonthlyPl - b.groupMonthlyPl);
+  
+    let topWorstPerformaners = {
+      top5Day: top5Day,
+      worst5Day: worst5Day,
+      top5Monthly: top5Monthly,
+      worst5Monthly: worst5Monthly,
+    };
+    return topWorstPerformaners;
+  }

@@ -7,6 +7,7 @@ import { Request, Response, NextFunction } from "express";
 import { getGraphToken, getVcons } from "../../controllers/eblot/graphApiConnect";
 import { getAllTrades } from "../../controllers/eblot/eblot";
 import { deleteTrade, editTrade } from "../../controllers/operations/trades";
+import { CentralizedTrade } from "../../models/trades";
 
 const tradesRouter = Router();
 
@@ -21,8 +22,7 @@ tradesRouter.get("/all-trades", verifyToken, async (req, res) => {
     let trades = await getAllTrades(start, end);
     trades.filter((trade: any, index: any) => new Date(trade["Trade Date"]).getTime() > start && new Date(trade["Trade Date"]).getTime() < end);
 
-    let vconTrades: [any[], number] | any = await getTriadaTrades("vcons", start, end);
-
+    let vconTrades: [CentralizedTrade[], number] | any = await getTriadaTrades("vcons", start, end) 
     let vcons: any = await getVcons(token, start + 2 * 24 * 60 * 60 * 1000, end - 2 * 24 * 60 * 60 * 1000, vconTrades);
 
     vcons = vcons.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app");

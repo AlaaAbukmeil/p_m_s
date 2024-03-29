@@ -6,7 +6,7 @@ import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 export async function getAllTrades(from: number, to: number): Promise<CentralizedTrade[]> {
   try {
     const database = client.db("trades_v_2");
-    const collections = [database.collection("vcons"), database.collection("ib"), database.collection("emsx")];
+    const collections = [database.collection("vcons"), database.collection("ib"), database.collection("emsx"),database.collection("gs")];
 
     // The query to be used on all collections
     const query = {

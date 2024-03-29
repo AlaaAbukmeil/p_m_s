@@ -685,7 +685,7 @@ export async function editPosition(editedPosition: any, date: string) {
       "YTD Int. (BC)",
       "YTD FX",
       "Total Gain/ Loss (USD)",
-      "Accrued Int. Since Inception",
+      "Accrued Int. Since Inception (BC)",
     ];
     // these keys are made up by the function frontend table, it reverts keys to original keys
 
@@ -833,10 +833,7 @@ export async function insertTradesInPortfolioAtASpecificDate(trades: any, date: 
     return action;
   } catch (error: any) {
     console.log(error);
-    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-
-    await insertEditLogs([errorMessage], "Errors", dateTime, "insertTradesInPortfolioAtASpecificDate", "controllers/operations/positions.ts");
+    //BULK error is expected
 
     return [];
   }
