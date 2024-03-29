@@ -4,9 +4,8 @@ import { calculateAccruedSinceInception } from "../reports/portfolios";
 import { parseBondIdentifier } from "../reports/tools";
 import { bbgRating, isRatingHigherThanBBBMinus, sortObjectBasedOnKey, toTitleCase, oasWithChange, checkPosition, formatMarkDate, yearsUntil, getDuration, getSectorAssetClass, moodyRating, AggregatedData, getTopWorst } from "./tools";
 
-export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: any, conditions = null): { portfolio: PositionGeneralFormat[]; fundDetails: FundMTD; currencies: any } {
+export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: any, conditions = null, fundDetailsYTD: any): { portfolio: PositionGeneralFormat[]; fundDetails: FundMTD; currencies: any } {
   let currencies: any = {};
-
   let dv01Sum = 0;
   let mtdpl = 0,
     mtdrlzd = 0,
@@ -270,13 +269,13 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     }
   }
 
-  let monthGross = Math.round((mtdpl / parseFloat(fund.nav)) * 100000) / 1000;
-  let yearGross = Math.round((ytdpl / parseFloat(fund.nav)) * 100000) / 1000;
   let dayGross = Math.round((daypl / parseFloat(fund.nav)) * 100000) / 1000;
-
   let dayFXGross = Math.round((dayfx / parseFloat(fund.nav)) * 100000) / 1000;
+  
   let mtdFXGross = Math.round((mtdfx / parseFloat(fund.nav)) * 100000) / 1000;
-  let ytdFXGross = Math.round((ytdfx / parseFloat(fund.nav)) * 100000) / 1000;
+  let monthGross = Math.round((mtdpl / parseFloat(fund.nav)) * 100000) / 1000;
+  let ytdFXGross = Math.round((ytdfx / parseFloat(fundDetailsYTD.nav)) * 100000) / 1000;
+  let yearGross = Math.round((ytdpl / parseFloat(fundDetailsYTD.nav)) * 100000) / 1000;
   let fundDetails = {
     nav: parseFloat(fund.nav),
     holdbackRatio: parseFloat(fund.holdBackRatio),
@@ -295,7 +294,7 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     ytdurlzd: Math.round(ytdurlzd * 1000) / 1000,
     ytdint: Math.round(ytdint * 1000) / 1000,
     ytdfx: Math.round(ytdfx * 1000) / 1000,
-    ytdintPercentage: Math.round((ytdint / parseFloat(fund.nav)) * 100000) / 1000,
+    ytdintPercentage: Math.round((ytdint / parseFloat(fundDetailsYTD.nav)) * 100000) / 1000,
     ytdFXGross: ytdFXGross,
 
     dayGross: dayGross,
@@ -320,8 +319,8 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
   return { portfolio: portfolio, fundDetails: fundDetails, currencies: currencies };
 }
 
-export function formatFrontEndTable(portfolio: PositionBeforeFormatting[], date: any, fund: any, dates: any, sort: any, sign: number) {
-  let formattedPortfolio = formatGeneralTable(portfolio, date, fund, dates);
+export function formatBackOfficeTable(portfolio: PositionBeforeFormatting[], date: any, fund: any, dates: any, sort: any, sign: number, fundDetailsYTD: any) {
+  let formattedPortfolio = formatGeneralTable(portfolio, date, fund, dates, null, fundDetailsYTD);
   let analyzedPortfolio = groupAndSortByLocationAndTypeDefineTables(formattedPortfolio.portfolio, formattedPortfolio.fundDetails.nav, sort, sign, "backOffice", formattedPortfolio.currencies, "summary");
 
   return { portfolio: analyzedPortfolio.portfolio, fundDetails: formattedPortfolio.fundDetails, analysis: analyzedPortfolio };
@@ -513,8 +512,8 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
   return object;
 }
 
-export function formatFrontEndSummaryTable(portfolio: PositionBeforeFormatting[], date: any, fund: any, dates: any, sort: any, sign: number, conditions = null) {
-  let formattedPortfolio: any = formatGeneralTable(portfolio, date, fund, dates, conditions);
+export function formatFrontOfficeTable(portfolio: PositionBeforeFormatting[], date: any, fund: any, dates: any, sort: any, sign: number, conditions = null, fundDetailsYTD: any) {
+  let formattedPortfolio: any = formatGeneralTable(portfolio, date, fund, dates, conditions, fundDetailsYTD);
 
   let formatted = [];
 

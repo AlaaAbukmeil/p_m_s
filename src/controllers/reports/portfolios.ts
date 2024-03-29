@@ -2,7 +2,7 @@ import { client } from "../auth";
 
 import { formatDateRlzdDaily, getAllDatesSinceLastMonthLastDay, getAllDatesSinceLastYearLastDay, getDateTimeInMongoDBCollectionFormat, getDaysBetween, getEarliestDateKeyAndValue, getLastDayOfMonth, monthlyRlzdDate } from "./common";
 import { getFundDetails, insertEditLogs } from "../operations/portfolio";
-import { formatFrontEndSummaryTable, formatFrontEndTable } from "../analytics/tableFormatter";
+import { formatBackOfficeTable, formatFrontOfficeTable } from "../analytics/tableFormatter";
 import { formatDateUS, getDate } from "../common";
 import { getEarliestCollectionName, parseBondIdentifier } from "./tools";
 import { getHistoricalPortfolio } from "../operations/positions";
@@ -32,9 +32,27 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
       },
     ])
     .toArray();
+  const lastDayOfLastYear = new Date(new Date().getFullYear(), 0, 0);
 
   for (let index = 0; index < documents.length; index++) {
     documents[index]["Notional Amount"] = documents[index]["Notional Amount"] || parseFloat(documents[index]["Notional Amount"]) == 0 ? documents[index]["Notional Amount"] : documents[index]["Quantity"];
+
+    let latestDateKey;
+
+    latestDateKey = Object.keys(documents[index]["Interest"]).sort((a, b) => {
+      // Parse the date strings into actual date objects
+      const dateA = new Date(a).getTime();
+      const dateB = new Date(b).getTime();
+
+      // Compare the dates to sort them
+      return dateB - dateA; // This will sort in descending order
+    })[0]; // Take the first item after sorting
+
+    const latestDate = latestDateKey ? new Date(latestDateKey) : null;
+    if (latestDate && latestDate <= lastDayOfLastYear && documents[index]["Notional Amount"] == 0) {
+      // If not, remove the document from the array
+      documents.splice(index, 1);
+    }
   }
   let latestCollectionDate = documents;
   if (earliestPortfolioName.predecessorDate != lastDayOfThisMonthCollectionName.predecessorDate) {
@@ -46,6 +64,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   let currentDayDate: Date = new Date(date);
   let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate);
   let previousYearDate = getAllDatesSinceLastYearLastDay(currentDayDate);
+  let lastYear = monthlyRlzdDate(previousYearDate);
   //+ 23:59 to make sure getEarliestcollectionname get the lastest date on last day of the month
   let lastMonthLastCollectionName = await getEarliestCollectionName(previousMonthDates[0] + " 23:59");
   let lastYearLastCollectionName = await getEarliestCollectionName(previousYearDate + " 23:59");
@@ -84,17 +103,22 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
       return position;
     }
   });
-  let fundDetailsInfo: any = await getFundDetails(thisMonth);
+  let fundDetailsMTD: any = await getFundDetails(thisMonth);
+  let fundDetailsYTD: any = await getFundDetails(lastYear);
 
-  if (fundDetailsInfo.length == 0) {
+  if (fundDetailsMTD.length == 0) {
     return { error: "Does not exist" };
   }
-  let fund = fundDetailsInfo[0];
+  if (!fundDetailsYTD) {
+    fundDetailsYTD = fundDetailsMTD;
+  }
+  fundDetailsYTD = fundDetailsYTD[0];
+  let fund = fundDetailsMTD[0];
   let portfolioFormattedSorted;
   if (view == "front office") {
-    portfolioFormattedSorted = formatFrontEndSummaryTable(documents, date, fund, dates, sort, sign, conditions);
+    portfolioFormattedSorted = formatFrontOfficeTable(documents, date, fund, dates, sort, sign, conditions, fundDetailsYTD);
   } else {
-    portfolioFormattedSorted = formatFrontEndTable(documents, date, fund, dates, sort, sign);
+    portfolioFormattedSorted = formatBackOfficeTable(documents, date, fund, dates, sort, sign, fundDetailsYTD);
   }
   let fundDetails = portfolioFormattedSorted.fundDetails;
   documents = portfolioFormattedSorted.portfolio;

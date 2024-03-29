@@ -126,6 +126,7 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
         collectionDate = action.date;
         let currencyInUSD: any = {};
         let maturity: any = {};
+        let callDate: any = {};
         let maturityType = "day/month";
         currencyInUSD["USD"] = 1;
         let divider = 1;
@@ -188,7 +189,10 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
               object["CUSIP"] = row["CUSIP"].toString().includes("N/A") ? "" : row["CUSIP"];
 
               if (!row["Call Date"].includes("N/A") && !row["Call Date"].includes("#")) {
-                object["Call Date"] = row["Call Date"];
+                callDate[row["ISIN"]] = row["Call Date"];
+                if (parseFloat(row["Call Date"].split("/")[1]) > 12) {
+                  maturityType = "month/day";
+                }
               }
               if (!row["Maturity"].includes("N/A") && !row["Maturity"].includes("#")) {
                 maturity[row["ISIN"]] = row["Maturity"];
@@ -211,7 +215,6 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
 
               updatedPricePortfolio.push(object);
             }
-
           } else if (row["BB Ticker"].includes("Curncy") && currencyStart) {
             let rate = row["Today's Mid"];
             let currency = row["BB Ticker"].split(" ")[0];
@@ -225,10 +228,17 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
         for (let index = 0; index < updatedPricePortfolio.length; index++) {
           let position: Position = updatedPricePortfolio[index];
           let positionMaturity = maturity[position["ISIN"]];
+          let positionCallDate = callDate[position["ISIN"]];
+
           if (maturityType == "month/day" && positionMaturity) {
             updatedPricePortfolio[index]["Maturity"] = formatDateWorld(positionMaturity);
           } else {
             updatedPricePortfolio[index]["Maturity"] = positionMaturity;
+          }
+          if (maturityType == "month/day" && positionCallDate) {
+            updatedPricePortfolio[index]["Call Date"] = formatDateWorld(positionCallDate);
+          } else {
+            updatedPricePortfolio[index]["Call Date"] = positionCallDate;
           }
         }
         console.log(currencyInUSD, "currency prices");

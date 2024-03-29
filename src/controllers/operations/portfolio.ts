@@ -11,7 +11,6 @@ import { Position } from "../../models/position";
 import { CentralizedTrade } from "../../models/trades";
 import { modifyTradesDueToRecalculate } from "./trades";
 
-
 export async function getCollectionDays(): Promise<string[]> {
   try {
     const database = client.db("portfolios");
@@ -187,7 +186,7 @@ export async function getFundDetails(date: string): Promise<FundDetails | {}> {
     const database = client.db("fund");
     const reportCollection = database.collection("details");
     let test = await getEarliestCollectionNameFund(date);
-
+    // console.log(test, date);
     let documents = await reportCollection.find({ month: test }).toArray();
     return documents;
   } catch (error: any) {
@@ -647,5 +646,3 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
     return { error: error };
   }
 }
-
-
