@@ -1,11 +1,9 @@
 import { MufgTrade } from "../../models/mufg";
 import { readFxTrades } from "./readExcel";
 
-
-
 export function formatMufg(trades: any, start: string, end: string): MufgTrade[] {
-  let startTimestamp = new Date(start).getTime();
-  let endTimestamp = new Date(end).getTime();
+  let startTimestamp = new Date(start).getTime() - 1 * 24 * 60 * 60 * 1000;
+  let endTimestamp = new Date(end).getTime() + 1 * 24 * 60 * 60 * 1000;
   trades = trades.filter((trade: any, index: any) => new Date(trade["Trade Date"]).getTime() > startTimestamp && new Date(trade["Trade Date"]).getTime() < endTimestamp);
   let mufgTrades = [];
   for (let index = 0; index < trades.length; index++) {
@@ -74,6 +72,68 @@ export function formatMufg(trades: any, start: string, end: string): MufgTrade[]
     obj["Underlying_UGC"] = "";
     obj["Underlying_Desc"] = "";
     obj["Underlying_Country"] = "";
+    obj["Location"] = trade["Location"].toUpperCase();
+    mufgTrades.push(obj);
+  }
+  return mufgTrades;
+}
+export function formatMufgCDS(trades: any, start: string, end: string): MufgTrade[] {
+  let startTimestamp = new Date(start).getTime() - 1 * 24 * 60 * 60 * 1000;
+  let endTimestamp = new Date(end).getTime() + 1 * 24 * 60 * 60 * 1000;
+  trades = trades.filter((trade: any, index: any) => new Date(trade["Trade Date"]).getTime() > startTimestamp && new Date(trade["Trade Date"]).getTime() < endTimestamp);
+  let mufgTrades = [];
+  for (let index = 0; index < trades.length; index++) {
+    let trade = trades[index];
+    let obj: any = {};
+    obj["File_Type"] = "CDS";
+    obj["Fund"] = "90104";
+    obj["Transaction_Event"] = "N";
+    obj["Transaction_Type"] = trade["B/S"];
+    obj["Security_ID_Client"] =  trade["BB Ticker"] 
+    obj["Security_ID_UGC"] = "";
+    obj["Security_Description"] = trade["BB Ticker"];
+    obj["Trade_ID_Client"] = trade["Triada Trade Id"];
+    obj["Price"] = trade["Price"];
+    obj["Accrued_Interest"] = trade["Accrued Interest"] || 0;
+    obj["Net_Money_Settlement"] = Math.abs(parseFloat(trade["Settlement Amount"]));
+    obj["Currency_Settlement"] = trade["Currency"];
+    obj["Trade_Date"] = trade["Trade Date"];
+    obj["Accrued_Through_Date"] = "";
+    obj["Settle_Date"] = trade["Settle Date"];
+    obj["Effective_Date"] = trade["Settle Date"];
+    obj["Expiration_Date"] = "";
+    obj["Notional"] = Math.abs(trade["Notional Amount"]);
+    obj["Underlying_ID"] = trade["BB Ticker"];
+    obj["Custodian_Account_Client"] = "NOM_PB";
+    obj["Custodian_Account_UGC"] = "90104-GSCO-INTL";
+    obj["Counterparty_Client"] = "";
+    obj["Counterparty_UGC"] = "";
+    obj["Rate"] = "";
+    obj["Accrual_Month"] = "";
+    obj["Accrual_Year"] = "";
+    obj["Frequency"] = "";
+    obj["First_Coupon"] = "";
+    obj["Fund_Structure"] = "";
+    obj["Strategy_Client"] = "";
+    obj["Strategy_UGC"] = "";
+    obj["Comments"] = "";
+    obj["Commission"] = "";
+    obj["Trader_Client"] = "";
+    obj["Trader_UGC"] = "";
+    obj["Manager_Client"] = "";
+    obj["Manager_UGC"] = "";
+    obj["Analyst_Client"] = "";
+    obj["Analyst_UGC"] = "";
+    obj["Industry_Client"] = "";
+    obj["Industry_UGC"] = "";
+    obj["Trade_Expense_1_Net"] = "";
+    obj["Trade_Expense_1_Type"] = "";
+    obj["Trade_Expense_2_Net"] = "";
+    obj["Trade_Expense_2_Type"] = "";
+    obj["Trade_Expense_3_Net"] = "";
+    obj["Trade_Expense_3_Type"] = "";
+    obj["Pricing Currency"] = "";
+
     obj["Location"] = trade["Location"].toUpperCase();
     mufgTrades.push(obj);
   }
@@ -170,5 +230,3 @@ export async function formatFxTradesToMufg(data: any) {
 
   return mufg;
 }
-
-

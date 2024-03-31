@@ -190,16 +190,52 @@ export async function modifyTradesDueToRecalculate(trades: any, tradeType: any) 
     return "";
   }
 }
-export async function allTrades(): Promise<CentralizedTrade[]> {
+export async function allTrades(start: any, end: any): Promise<CentralizedTrade[]> {
   try {
     const database = client.db("trades_v_2");
     const reportCollection1 = database.collection("vcons");
     const reportCollection2 = database.collection("ib");
     const reportCollection3 = database.collection("emsx");
-    const document1 = await reportCollection1.find().toArray();
-    const document2 = await reportCollection2.find().toArray();
-    const document3 = await reportCollection3.find().toArray();
+    const query = {
+      timestamp: {
+        $gte: new Date(start).getTime() - 5 * 24 * 60 * 60 * 1000, // Greater than or equal to "from" timestamp
+        $lte: new Date(end).getTime() + 5 * 24 * 60 * 60 * 1000, // Less than or equal to "to" timestamp
+      },
+    };
+    const document1 = await reportCollection1.find(query).toArray();
+    const document2 = await reportCollection2.find(query).toArray();
+    const document3 = await reportCollection3.find(query).toArray();
     let document = [...document1.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime()), ...document2.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime()), ...document3.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime())];
+    for (let index = 0; index < document.length; index++) {
+      let trade = document[index];
+      if (!trade["BB Ticker"] && trade["Issue"]) {
+        trade["BB Ticker"] = trade["Issue"];
+        delete trade["Issue"];
+      }
+    }
+    return document;
+  } catch (error: any) {
+    console.log(error);
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    await insertEditLogs([errorMessage], "Errors", dateTime, "Get Vcons", "controllers/operations/mufgOperations.ts");
+    return [];
+  }
+}
+
+export async function allTradesCDS(start: any, end: any): Promise<CentralizedTrade[]> {
+  try {
+    const database = client.db("trades_v_2");
+    const reportCollection1 = database.collection("gs");
+    const query = {
+      timestamp: {
+        $gte: new Date(start).getTime() - 5 * 24 * 60 * 60 * 1000, // Greater than or equal to "from" timestamp
+        $lte: new Date(end).getTime() + 5 * 24 * 60 * 60 * 1000, // Less than or equal to "to" timestamp
+      },
+    };
+    const document1 = await reportCollection1.find(query).toArray();
+    let document = [...document1.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime())];
     for (let index = 0; index < document.length; index++) {
       let trade = document[index];
       if (!trade["BB Ticker"] && trade["Issue"]) {

@@ -1,15 +1,15 @@
 import { checkIfUserExists, registerUser, resetPassword, sendResetPasswordRequest } from "../controllers/auth";
 import { bucket, formatDateFile, verifyToken } from "../controllers/common";
 import { formatCentralizedRawFiles, formatEmsxTrades, formatIbTrades, getTriadaTrades } from "../controllers/eblot/excelFormat";
-import { uploadToBucket } from "./operations/portfolio";
+import { uploadToBucket } from "./reports/portfolio";
 import { CookieOptions, NextFunction, Router } from "express";
 import { Request, Response } from "express";
 import { readEmsxRawExcel, readIBRawExcel, uploadArrayAndReturnFilePath } from "../controllers/operations/readExcel";
 import { getPortfolio } from "../controllers/operations/positions";
-import { formatFxMufg, formatMufg } from "../controllers/operations/mufgOperations";
+import { formatFxMufg, formatMufg, formatMufgCDS } from "../controllers/operations/mufgOperations";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/eblot/graphApiConnect";
 import { MufgTrade } from "../models/mufg";
-import { allTrades } from "../controllers/operations/trades";
+import { allTrades, allTradesCDS } from "../controllers/operations/trades";
 
 const formatterRouter = Router();
 
@@ -42,9 +42,24 @@ formatterRouter.post("/ib-excel", verifyToken, uploadToBucket.any(), async (req:
 formatterRouter.post("/mufg-excel", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   let data = req.body;
   let pathName = "mufg_" + formatDateFile(data.timestamp_start) + "_" + formatDateFile(data.timestamp_end) + "_";
-  let trades = await allTrades();
+  let trades = await allTrades(data.timestamp_start, data.timestamp_end);
 
   let array: MufgTrade[] =  formatMufg(trades, data.timestamp_start, data.timestamp_end);
+
+  if (array.length == 0) {
+    res.send({ error: "No Trades" });
+  } else {
+    let mufgTrades = await uploadArrayAndReturnFilePath(array, pathName, "mufg");
+    let downloadEBlotName = bucket + mufgTrades;
+    res.send(downloadEBlotName);
+  }
+});
+formatterRouter.post("/mufg-excel-cds", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  let data = req.body;
+  let pathName = "mufg_cds_" + formatDateFile(data.timestamp_start) + "_" + formatDateFile(data.timestamp_end) + "_";
+  let trades = await allTradesCDS(data.timestamp_start, data.timestamp_end);
+
+  let array: MufgTrade[] =  formatMufgCDS(trades, data.timestamp_start, data.timestamp_end);
 
   if (array.length == 0) {
     res.send({ error: "No Trades" });

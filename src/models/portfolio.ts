@@ -96,6 +96,9 @@ export interface PositionBeforeFormatting {
   "Rating Class": string;
   "Asset Class": string;
   "YTD Rate": any;
+  "Delta": string;
+  "MTD Delta": string;
+  Gamma: string;
 }
 
 export interface PositionGeneralFormat extends PositionBeforeFormatting {

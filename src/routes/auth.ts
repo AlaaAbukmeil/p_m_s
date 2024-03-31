@@ -1,6 +1,6 @@
 import { checkIfUserExists, registerUser, resetPassword, sendResetPasswordRequest } from "../controllers/auth";
 import { verifyToken } from "../controllers/common";
-import { uploadToBucket } from "./operations/portfolio";
+import { uploadToBucket } from "./reports/portfolio";
 import { CookieOptions, NextFunction, Router } from "express";
 import { Request, Response } from "express";
 

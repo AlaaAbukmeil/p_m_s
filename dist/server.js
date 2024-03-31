@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 //jshint esversion:6
 const auth_1 = __importDefault(require("./routes/auth"));
 const formatter_1 = __importDefault(require("./routes/formatter"));
-const portfolio_1 = __importDefault(require("./routes/operations/portfolio"));
+const portfolio_1 = __importDefault(require("./routes/reports/portfolio"));
 const positions_1 = __importDefault(require("./routes/operations/positions"));
 const trades_1 = __importDefault(require("./routes/operations/trades"));
 const reconcile_1 = __importDefault(require("./routes/reconcile"));

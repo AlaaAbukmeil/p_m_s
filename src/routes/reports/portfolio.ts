@@ -1,5 +1,4 @@
-import { NextFunction, Router } from "express";
-import { Request, Response } from "express";
+import { NextFunction, Router, Response, Request } from "express";
 import { verifyToken, generateRandomString, bucket } from "../../controllers/common";
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../../controllers/reports/common";
 import { getPortfolioWithAnalytics } from "../../controllers/reports/portfolios";
@@ -32,7 +31,7 @@ router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: 
     let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMonthlyPl" | "groupDV01Sum" | any = req.query.sort || "order";
     let sign: any = req.query.sign || 1;
     let conditions: any = req.query || {};
-    let report: any = await getPortfolioWithAnalytics(date, sort, sign, conditions, "back office");
+    let report: any = await getPortfolioWithAnalytics(date, sort, sign, conditions, "back office", null);
 
     if (report.error) {
       res.send({ error: report.error });
@@ -58,7 +57,7 @@ router.get("/summary-portfolio", verifyToken, async (req: Request, res: Response
     }
 
     date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
-    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, "front office");
+    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, "front office", null);
     if (report.error) {
       res.send({ error: report.error });
     } else {
@@ -74,7 +73,9 @@ router.get("/performers-portfolio", verifyToken, async (req: Request, res: Respo
   try {
     let date: any = req.query.date;
     let conditions: any = req.query || {};
-    let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMonthlyPl" | "groupDV01Sum" | "groupDuration" | any = req.query.sort || "order";
+    let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMonthlyPl" | "groupDV01Sum" | "groupDuration" | "groupRating" | "groupDelta" | "groupGamma" | "groupMTDDelta" | any = req.query.sort || "order";
+    let type: null | "pl" | "delta" | "gamma" | any = req.query.type;
+    let view: "front office" | "back office" | any = req.query.view;
     let sign: any = req.query.sign || 1;
 
     if (date.includes("NaN")) {
@@ -82,7 +83,7 @@ router.get("/performers-portfolio", verifyToken, async (req: Request, res: Respo
     }
 
     date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
-    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, "front office");
+    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, view, type);
     if (report.error) {
       res.send({ error: report.error });
     } else {
@@ -105,7 +106,7 @@ router.get("/risk-report", verifyToken, async (req: Request, res: Response, next
     }
 
     date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
-    let report = await getPortfolioWithAnalytics(date, sort, sign, null, "front office");
+    let report = await getPortfolioWithAnalytics(date, sort, sign, null, "front office", null);
 
     res.send(report);
   } catch (error: any) {

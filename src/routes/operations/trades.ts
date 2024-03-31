@@ -2,7 +2,7 @@ import { Router } from "express";
 import { verifyToken } from "../../controllers/common";
 import { formatCentralizedRawFiles, getTriadaTrades } from "../../controllers/eblot/excelFormat";
 import { getTrades } from "../../controllers/reports/trades";
-import { uploadToBucket } from "./portfolio";
+import { uploadToBucket } from "../reports/portfolio";
 import { Request, Response, NextFunction } from "express";
 import { getGraphToken, getVcons } from "../../controllers/eblot/graphApiConnect";
 import { getAllTrades } from "../../controllers/eblot/eblot";

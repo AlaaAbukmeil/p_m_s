@@ -2,13 +2,15 @@ import { client } from "../auth";
 
 import { formatDateRlzdDaily, getAllDatesSinceLastMonthLastDay, getAllDatesSinceLastYearLastDay, getDateTimeInMongoDBCollectionFormat, getDaysBetween, getEarliestDateKeyAndValue, getLastDayOfMonth, monthlyRlzdDate } from "./common";
 import { getFundDetails, insertEditLogs } from "../operations/portfolio";
-import { formatBackOfficeTable, formatFrontOfficeTable } from "../analytics/tableFormatter";
-import { formatDateUS, getDate } from "../common";
+
+import { formatDateUS, getDate, parsePercentage } from "../common";
 import { getEarliestCollectionName, parseBondIdentifier } from "./tools";
 import { getHistoricalPortfolio } from "../operations/positions";
 import { RlzdTrades } from "../../models/portfolio";
 import { Position } from "../../models/position";
-export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions = null, view: "front office" | "back office") {
+import { formatFrontOfficeTable } from "../analytics/tableFormatter/frontOffice";
+import { formatBackOfficeTable } from "../analytics/tableFormatter/backOffice";
+export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions = null, view: "front office" | "back office", sortBy: "pl" | "delta" | "gamma" | null) {
   const database = client.db("portfolios");
   let earliestPortfolioName = await getEarliestCollectionName(date);
 
@@ -16,6 +18,8 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   let yesterdayPortfolioName = getDateTimeInMongoDBCollectionFormat(new Date(new Date(earliestPortfolioName.predecessorDate).getTime() - 1 * 24 * 60 * 60 * 1000)).split(" ")[0] + " 23:59";
   let lastDayBeforeToday = await getEarliestCollectionName(yesterdayPortfolioName);
   let lastDayOfThisMonth = getLastDayOfMonth(date);
+  let yesterdayYesterdayPortfolioName = getDateTimeInMongoDBCollectionFormat(new Date(new Date(lastDayBeforeToday.predecessorDate).getTime() - 1 * 24 * 60 * 60 * 1000)).split(" ")[0] + " 23:59";
+  let lastDayBeforeYesterday = await getEarliestCollectionName(yesterdayYesterdayPortfolioName);
 
   let lastDayOfThisMonthCollectionName = await getEarliestCollectionName(lastDayOfThisMonth);
   console.log(lastDayOfThisMonthCollectionName.predecessorDate, "get rlzd dyanmic date");
@@ -72,9 +76,10 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   try {
     let lastMonthPortfolio = await getHistoricalPortfolio(lastMonthLastCollectionName.predecessorDate);
     let previousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeToday.predecessorDate);
+    let previousPreviousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeYesterday.predecessorDate);
     let previousYearPortfolio = await getHistoricalPortfolio(lastYearLastCollectionName.predecessorDate);
-
-    documents = getDayParams(documents, previousDayPortfolio, lastDayBeforeToday.predecessorDate);
+    previousDayPortfolio = getDayParams(previousDayPortfolio, previousPreviousDayPortfolio, lastDayBeforeYesterday.predecessorDate);
+    documents = getDayParams(documents, previousDayPortfolio, lastDayBeforeToday.predecessorDate, true);
     documents = getMTDParams(documents, lastMonthPortfolio, earliestPortfolioName.predecessorDate);
     documents = getYTDParams(documents, previousYearPortfolio, lastYearLastCollectionName.predecessorDate);
   } catch (error) {
@@ -116,9 +121,9 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   let fund = fundDetailsMTD[0];
   let portfolioFormattedSorted;
   if (view == "front office") {
-    portfolioFormattedSorted = formatFrontOfficeTable(documents, date, fund, dates, sort, sign, conditions, fundDetailsYTD);
+    portfolioFormattedSorted = formatFrontOfficeTable(documents, date, fund, dates, sort, sign, conditions, fundDetailsYTD, sortBy);
   } else {
-    portfolioFormattedSorted = formatBackOfficeTable(documents, date, fund, dates, sort, sign, fundDetailsYTD);
+    portfolioFormattedSorted = formatBackOfficeTable(documents, date, fund, dates, sort, sign, conditions, fundDetailsYTD, sortBy);
   }
   let fundDetails = portfolioFormattedSorted.fundDetails;
   documents = portfolioFormattedSorted.portfolio;
@@ -127,7 +132,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: dayParamsWithLatestUpdates.lastUploadTradesDate, updatePriceDate: dayParamsWithLatestUpdates.lastUpdatePricesDate };
 }
 
-export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInput: any) {
+export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInput: any, gamma = false) {
   // try {
 
   for (let index = 0; index < portfolio.length; index++) {
@@ -143,7 +148,7 @@ export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInpu
     if (!previousDayPosition) {
       previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue: any) => previousDayIssue["BB Ticker"] == position["BB Ticker"] && previousDayIssue["BB Ticker"] && position["BB Ticker"]) : null;
     }
-    let previousMark = previousDayPosition ? previousDayPosition["Mid"] : "0";
+    let previousMark = previousDayPosition ? previousDayPosition["Mid"] : null;
     let previousFxRate = previousDayPosition ? (previousDayPosition["FX Rate"] ? previousDayPosition["FX Rate"] : previousDayPosition["holdPortfXrate"] ? previousDayPosition["holdPortfXrate"] : portfolio[index]["FX Rate"]) : portfolio[index]["FX Rate"];
 
     portfolio[index]["Previous FX"] = previousFxRate;
@@ -151,9 +156,21 @@ export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInpu
 
     if (portfolio[index]["Previous Mark"] == 0) {
       portfolio[index]["Previous Mark"] = 0;
-    } else if (portfolio[index]["Previous Mark"] == "0") {
+    } else if (!portfolio[index]["Previous Mark"]) {
       portfolio[index]["Previous Mark"] = portfolio[index]["Mid"];
       portfolio[index]["Notes"] += " Previous Mark X";
+    }
+    let notional = portfolio[index]["Type"] == "CDS" ? -1 : portfolio[index]["Notional Amount"] < 0 ? -1 : 1;
+    let todayPrice: any = parseFloat(position["Mid"]);
+    let yesterdayPrice: any = parseFloat(position["Previous Mark"]);
+
+    portfolio[index]["Delta"] = (Math.round(((parseFloat(todayPrice) - parseFloat(yesterdayPrice)) / todayPrice) * notional * 10000) / 100 || 0) + " %";
+    if (gamma) {
+      if (previousDayPosition) {
+        portfolio[index]["Gamma"] = Math.round((parsePercentage(portfolio[index]["Delta"]) - parsePercentage(previousDayPosition["Delta"]) || 0) * 1000) / 100 + " %";
+      } else {
+        portfolio[index]["Gamma"] = "0 %";
+      }
     }
   }
 
@@ -239,7 +256,7 @@ function getDayURlzdInt(portfolio: any, date: any) {
     let quantityGeneratingInterest = position["Notional Amount"];
     let interestInfo = position["Interest"];
     let yesterdayPrice;
-    if (position["Previous Mark"] && position["Previous Mark"] != "0") {
+    if (position["Previous Mark"]) {
       yesterdayPrice = position["Previous Mark"];
     } else {
       yesterdayPrice = position["Mid"];
@@ -255,7 +272,6 @@ function getDayURlzdInt(portfolio: any, date: any) {
     position["Previous Mark"] = yesterdayPrice;
     let todayPrice: any = parseFloat(position["Mid"]);
     portfolio[index]["Day URlzd"] = portfolio[index]["Type"] == "CDS" ? ((parseFloat(todayPrice) - parseFloat(yesterdayPrice)) * portfolio[index]["Notional Amount"]) / portfolio[index]["Original Face"] : (parseFloat(todayPrice) - parseFloat(yesterdayPrice)) * portfolio[index]["Notional Amount"] || 0;
-    portfolio[index]["Day Change"] = Math.round(((parseFloat(todayPrice) - parseFloat(yesterdayPrice)) / todayPrice) * 10000) / 100 || 0;
 
     if (portfolio[index]["Day URlzd"] == 0) {
       portfolio[index]["Day URlzd"] = 0;
@@ -287,13 +303,17 @@ export function getMTDURlzdInt(portfolio: any, date: any) {
 
   for (let index = 0; index < portfolio.length; index++) {
     let position = portfolio[index];
+    let todayPrice = parseFloat(portfolio[index]["Mid"]);
+    let mtdPrice = parseFloat(portfolio[index]["MTD Mark"]);
+    let notional = portfolio[index]["Type"] == "CDS" ? -1 : portfolio[index]["Notional Amount"] < 0 ? -1 : 1;
 
-    portfolio[index]["MTD URlzd"] = portfolio[index]["Type"] == "CDS" ? ((parseFloat(portfolio[index]["Mid"]) - parseFloat(portfolio[index]["MTD Mark"])) * portfolio[index]["Notional Amount"]) / portfolio[index]["Original Face"] : (parseFloat(portfolio[index]["Mid"]) - parseFloat(portfolio[index]["MTD Mark"])) * portfolio[index]["Notional Amount"];
+    portfolio[index]["MTD URlzd"] = portfolio[index]["Type"] == "CDS" ? ((todayPrice - mtdPrice) * portfolio[index]["Notional Amount"]) / portfolio[index]["Original Face"] : (todayPrice - mtdPrice) * portfolio[index]["Notional Amount"];
     if (portfolio[index]["MTD URlzd"] == 0) {
       portfolio[index]["MTD URlzd"] = 0;
     } else if (!portfolio[index]["MTD URlzd"]) {
-      portfolio[index]["MTD URlzd"] = "0";
+      portfolio[index]["MTD URlzd"] = 0;
     }
+    portfolio[index]["MTD Delta"] = (Math.round(((todayPrice - mtdPrice) / todayPrice) * 10000 * notional) / 100 || 0) + " %";
 
     let quantityGeneratingInterest = position["Notional Amount"];
     let interestInfo = position["Interest"];

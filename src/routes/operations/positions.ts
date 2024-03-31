@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { bucket, verifyToken } from "../../controllers/common";
-import { uploadToBucket } from "./portfolio";
+import { uploadToBucket } from "../reports/portfolio";
 import { Request, Response, NextFunction } from "express";
 import { addFund, deleteFund, deletePosition, editFund, editPositionPortfolio, getAllFundDetails, getCollectionDays, getEditLogs, readCalculatePosition } from "../../controllers/operations/portfolio";
 import { editPosition, updatePositionPortfolio, updatePricesPortfolio } from "../../controllers/operations/positions";
