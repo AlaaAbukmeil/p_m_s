@@ -175,7 +175,7 @@ export async function updatePositionPortfolio(
 
           object["Location"] = row["Location"].trim();
           object["Last Modified Date"] = new Date();
-          if (securityInPortfolio == 404) {
+          if (securityInPortfolio == 404 || securityInPortfolio["Notional Amount"] <= 0) {
             object["Entry Yield"] = row["Yield"] || 0;
           }
           object["BB Ticker"] = row["BB Ticker"];
@@ -297,6 +297,10 @@ export async function updatePositionPortfolio(
             if (tradeRecord != null && tradeRecord != undefined) {
               trades.gsTrades[tradeRecord]["Updated Notional"] = object["Notional Amount"];
             }
+          }
+
+          if (updatingPosition["Notional Amount"] <= 0) {
+            updatingPosition["Entry Yield"] = row["Yield"] || 0;
           }
 
           object["Net"] = currentNet + updatingPosition["Net"];

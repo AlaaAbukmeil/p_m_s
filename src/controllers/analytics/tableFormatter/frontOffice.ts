@@ -2,7 +2,7 @@ import { PositionBeforeFormatting } from "../../../models/portfolio";
 import { formatGeneralTable, groupAndSortByLocationAndTypeDefineTables } from "./formatter";
 import { bbgRating, formatMarkDate, moodyRating } from "../tools";
 
-export function formatSummaryPosition(position: any, fundDetails: any, dates: any, sortBy:"pl" | null | "delta" | "gamma") {
+export function formatSummaryPosition(position: any, fundDetails: any, dates: any, sortBy: "pl" | null | "delta" | "gamma") {
   let titles = [
     "Type",
     "L/S",
@@ -19,11 +19,13 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Ask",
     // "Delta",
     // "Previous Mark",
+    "Current Spread (T)",
     `Last Mid ${formatMarkDate(dates.today)}`,
-    "Spread (Z/T)",
     "YTW",
-    "Entry Yield",
+    "Entry Spread (T)",
     "Entry Price",
+    "Spread (Z)",
+    "Entry Yield",
     "Day P&L (USD)",
     "Delta",
     "Gamma",
@@ -187,7 +189,11 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
   object["Rating Score"] = position["BBG Composite Rating"] && position["BBG Composite Rating"] !== "NR" ? bbgRating(position["BBG Composite Rating"]) : position["Moody's Bond Rating"] ? moodyRating(position["Moody's Bond Rating"]) : -99;
   object["Value (BC) % of GMV"] = Math.abs(Math.round((position["Value (BC)"] / fundDetails.gmv) * 10000) / 100) + " %";
   object[`BBG / S&P / Moody / Fitch Rating`] = (position["BBG Composite Rating"] || "NR") + " " + (position["S&P Bond Rating"] || "NR") + " " + (position["Moody's Bond Rating"] || "NR") + " " + (position["Fitch Bond Rating"] || "NR") + " ";
-  object["Spread (Z/T)"] = position["Z Spread"].toFixed(0);
+  object["Spread (Z)"] = position["Z Spread"].toFixed(0);
+  object["Current Spread (T)"] = "";
+
+  object["Entry Spread (T)"] = "";
+
   // object["Delta"] = Math.round((object[`Last Mid ${formatMarkDate(dates.today)}`] - object["Previous Mark"])/object[`Last Mid ${formatMarkDate(dates.today)}`] * 10000)/100 + " %"
   return object;
 }
@@ -209,7 +215,7 @@ export function formatFrontOfficeTable(portfolio: PositionBeforeFormatting[], da
 
   return { portfolio: analyzedPortfolio.portfolio, fundDetails: formattedPortfolio.fundDetails, analysis: analyzedPortfolio };
 }
-export function getTopWorst(groupedByLocation: any, sortBy:"pl" | null | "delta" | "gamma") {
+export function getTopWorst(groupedByLocation: any, sortBy: "pl" | null | "delta" | "gamma") {
   let entries = Object.entries(groupedByLocation).map(([key, value]: any) => ({
     key,
     groupDayPl: value.groupDayPl,
@@ -247,7 +253,7 @@ export function getTopWorst(groupedByLocation: any, sortBy:"pl" | null | "delta"
     top5MTD = entries.slice(0, 5);
     worst5MTD = entries.slice(-5);
     worst5MTD = worst5MTD.sort((a, b) => a.groupMTDDelta - b.groupMTDDelta);
-  }else if (sortBy == "gamma") {
+  } else if (sortBy == "gamma") {
     entries = entries.filter((object: any, index) => !object["key"].includes("Rlzd"));
     entries.sort((a, b) => b.groupGamma - a.groupGamma);
 

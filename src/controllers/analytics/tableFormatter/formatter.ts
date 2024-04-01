@@ -663,7 +663,9 @@ export function assignColorAndSortParamsBasedOnAssetClass(
       groupDelta = 0,
       groupGamma = 0,
       groupMTDDelta = 0,
-      groupSpreadTZ;
+      groupSpreadTZ,
+      groupEntrySpreadTZ;
+
     groupedByLocation[locationCode]["DV01 Dollar Value Impact"] = 0;
     groupedByLocation[locationCode]["DV01 Dollar Value Impact % of Nav"] = 0;
     groupedByLocation[locationCode]["DV01 Dollar Value Impact Limit % of Nav"] = 0;
@@ -693,6 +695,7 @@ export function assignColorAndSortParamsBasedOnAssetClass(
       let dv01DollarValueLimitOfNav = parseFloat(groupedByLocation[locationCode].data[index]["DV01 Dollar Value Impact Limit % of Nav"]);
       let dv01DollarValueLimitUtilization = parseFloat(groupedByLocation[locationCode].data[index]["DV01 Dollar Value Impact Utilization % of Nav"]);
       let ytw = parseFloat(groupedByLocation[locationCode].data[index]["YTW"]);
+      let entryYtw = parsePercentage(groupedByLocation[locationCode].data[index]["Entry Yield"]);
       let type = groupedByLocation[locationCode].data[index]["Type"];
       if (view == "frontOffice") {
         usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["USD Market Value"]) || 0;
@@ -720,11 +723,20 @@ export function assignColorAndSortParamsBasedOnAssetClass(
           groupSpreadTZ = 0;
         }
         groupSpreadTZ += ytw;
+        if (!groupEntrySpreadTZ) {
+          groupEntrySpreadTZ = 0;
+        }
+        groupEntrySpreadTZ += entryYtw;
+
       } else if (type == "UST" && strategy == "RV") {
         if (!groupSpreadTZ) {
           groupSpreadTZ = 0;
         }
         groupSpreadTZ -= ytw;
+        if (!groupEntrySpreadTZ) {
+          groupEntrySpreadTZ = 0;
+        }
+        groupEntrySpreadTZ -= entryYtw;
       }
 
       groupDayPl += dayPl;
@@ -785,6 +797,7 @@ export function assignColorAndSortParamsBasedOnAssetClass(
     groupedByLocation[locationCode].groupZSpread = groupZSpread;
 
     groupedByLocation[locationCode].groupSpreadTZ = groupSpreadTZ;
+    groupedByLocation[locationCode].groupEntrySpreadTZ = groupEntrySpreadTZ;
   }
 }
 
@@ -908,7 +921,10 @@ export function assignBorderAndCustomSortAggregateGroup(portfolio: any, groupedB
           "Rating Score": groupedByLocation[locationCode].groupRating,
         };
         if (groupedByLocation[locationCode].groupSpreadTZ || groupedByLocation[locationCode].groupSpreadTZ == 0) {
-          newObject["Spread (Z/T)"] = Math.round(groupedByLocation[locationCode].groupSpreadTZ * 100) / 100 + " %";
+          newObject["Current Spread (T)"] = Math.round(groupedByLocation[locationCode].groupSpreadTZ * 100) / 100 + " %";
+        }
+        if (groupedByLocation[locationCode].groupEntrySpreadTZ || groupedByLocation[locationCode].groupEntrySpreadTZ == 0) {
+          newObject["Entry Spread (T)"] = Math.round(groupedByLocation[locationCode].groupEntrySpreadTZ * 100) / 100 + " %";
         }
       } else {
         newObject = {
@@ -932,7 +948,10 @@ export function assignBorderAndCustomSortAggregateGroup(portfolio: any, groupedB
           "Rating Score": groupedByLocation[locationCode].groupRating,
         };
         if (groupedByLocation[locationCode].groupSpreadTZ || groupedByLocation[locationCode].groupSpreadTZ == 0) {
-          newObject["Spread (Z/T)"] = Math.round(groupedByLocation[locationCode].groupSpreadTZ * 100) / 100 + " %";
+          newObject["Current Spread (T)"] = Math.round(groupedByLocation[locationCode].groupSpreadTZ * 100) / 100 + " %";
+        }
+        if (groupedByLocation[locationCode].groupEntrySpreadTZ || groupedByLocation[locationCode].groupEntrySpreadTZ == 0) {
+          newObject["Entry Spread (T)"] = Math.round(groupedByLocation[locationCode].groupEntrySpreadTZ * 100) / 100 + " %";
         }
       }
 
