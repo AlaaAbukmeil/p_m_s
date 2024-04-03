@@ -441,7 +441,6 @@ export async function updatePricesPortfolio(path: string) {
       let callDate: any = {};
       let maturityType = "day/month";
       let portfolio = await getPortfolio();
-      let portfolioActive = portfolio?.filter((position: Position) => position["Notional Amount"] != 0);
 
       let currencyInUSD: any = {};
       let currencyStart = true;
@@ -462,15 +461,14 @@ export async function updatePricesPortfolio(path: string) {
         }
 
         if (!currencyStart) {
-          let positions: any = getSecurityInPortfolioWithoutLocation(portfolioActive, row["Bloomberg ID"]);
+          let positions: any = getSecurityInPortfolioWithoutLocation(portfolio, row["Bloomberg ID"]);
 
           if (positions == 404) {
-            positions = getSecurityInPortfolioWithoutLocation(portfolioActive, row["ISIN"]);
+            positions = getSecurityInPortfolioWithoutLocation(portfolio, row["ISIN"]);
           }
           if (positions == 404) {
-            positions = getSecurityInPortfolioWithoutLocation(portfolioActive, row["BB Ticker"]);
+            positions = getSecurityInPortfolioWithoutLocation(portfolio, row["BB Ticker"]);
           }
-         
 
           if (positions == 404) {
             continue;
@@ -555,15 +553,11 @@ export async function updatePricesPortfolio(path: string) {
       }
       try {
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-        console.log(currencyInUSD);
-        let updatedPortfolio = formatUpdatedPositions(updatedPricePortfolio, portfolioActive, "Last Price Update");
+        let updatedPortfolio = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
         let insertion = await insertPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio);
         await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "Update Prices", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length, "Link: " + path);
-        if (!Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length) {
-          return updatedPortfolio.positionsThatDoNotExistsNames;
-        } else {
-          return { error: updatedPortfolio.positionsThatDoNotExistsNames };
-        }
+
+        return { error: updatedPortfolio.positionsThatDoNotExistsNames };
       } catch (error) {
         console.log(error);
         return { error: "Template does not match" };

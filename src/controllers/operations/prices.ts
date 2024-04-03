@@ -14,14 +14,13 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
       let action = await getPortfolioOnSpecificDate(collectionDate);
       if (action.date) {
         let portfolio = action.portfolio;
-        let portfolioActive = portfolio?.filter((position: Position) => position["Notional Amount"] != 0);
         collectionDate = action.date;
         console.log(collectionDate, "collection day used");
 
         for (let index = 0; index < data.length; index++) {
           let row = data[index];
 
-          let object: any = getSecurityInPortfolioWithoutLocation(portfolioActive, row["Investment"].trim());
+          let object: any = getSecurityInPortfolioWithoutLocation(portfolio, row["Investment"].trim());
 
           if (object == 404) {
             continue;
@@ -42,19 +41,14 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
         }
 
         try {
-          let updatedPortfolio = formatUpdatedPositions(updatedPricePortfolio, portfolioActive, "Last Price Update");
-         
+          let updatedPortfolio = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
+
           let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
           await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "Update Previous Prices based on MUFG", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExists).length, "Link: " + path);
           let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio, collectionDate);
           console.log(updatedPricePortfolio.length, "number of positions prices updated");
-          if (!Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length) {
-            return updatedPortfolio.positionsThatDoNotExistsNames;
-          } else {
-            console.log(updatedPortfolio.positionsThatDoNotExistsNames);
 
-            return { error: updatedPortfolio.positionsThatDoNotExistsNames };
-          }
+          return { error: updatedPortfolio.positionsThatDoNotExistsNames };
         } catch (error: any) {
           console.log(error);
           return { error: error.toString() };
@@ -128,7 +122,6 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
       let action = await getPortfolioOnSpecificDate(collectionDate);
       if (action.date) {
         let portfolio = action.portfolio;
-        let portfolioActive = portfolio?.filter((position: Position) => position["Notional Amount"] != 0);
 
         collectionDate = action.date;
         let currencyInUSD: any = {};
@@ -154,13 +147,13 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
           }
 
           if (!currencyStart) {
-            let positions: any = getSecurityInPortfolioWithoutLocation(portfolioActive, row["Bloomberg ID"]);
+            let positions: any = getSecurityInPortfolioWithoutLocation(portfolio, row["Bloomberg ID"]);
 
             if (positions == 404) {
-              positions = getSecurityInPortfolioWithoutLocation(portfolioActive, row["ISIN"]);
+              positions = getSecurityInPortfolioWithoutLocation(portfolio, row["ISIN"]);
             }
             if (positions == 404) {
-              positions = getSecurityInPortfolioWithoutLocation(portfolioActive, row["BB Ticker"]);
+              positions = getSecurityInPortfolioWithoutLocation(portfolio, row["BB Ticker"]);
             }
 
             if (positions == 404) {
@@ -247,16 +240,13 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
         }
         console.log(currencyInUSD, "currency prices");
         try {
-          let updatedPortfolio = formatUpdatedPositions(updatedPricePortfolio, portfolioActive, "Last Price Update");
+          let updatedPortfolio = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
           let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
           await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "Update Previous Prices based on bloomberg", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExists).length, "Link: " + path);
           let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio, collectionDate);
           console.log(updatedPricePortfolio.length, "number of positions prices updated");
-          if (!Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length) {
-            return updatedPortfolio.positionsThatDoNotExistsNames;
-          } else {
-            return { error: updatedPortfolio.positionsThatDoNotExistsNames };
-          }
+
+          return { error: updatedPortfolio.positionsThatDoNotExistsNames };
         } catch (error) {
           console.log(error);
           return { error: "Template does not match" };

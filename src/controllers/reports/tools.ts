@@ -147,10 +147,11 @@ export function formatUpdatedPositions(positions: any, portfolio: any, lastUpdat
   }
 
   for (let indexPositions = 0; indexPositions < portfolio.length; indexPositions++) {
-    if (!positionsThatGotUpdated.includes(`${portfolio[indexPositions]["BB Ticker"]} ${portfolio[indexPositions]["Location"]}\n`)) {
+    if (!positionsThatGotUpdated.includes(`${portfolio[indexPositions]["BB Ticker"]} ${portfolio[indexPositions]["Location"]}\n`) && portfolio[indexPositions]["Notional Amount"] != 0) {
       positionsThatDoNotExistsNames[portfolio[indexPositions]["BB Ticker"]] = { location: portfolio[indexPositions]["Location"], notional: portfolio[indexPositions]["Notional Amount"] };
     }
   }
+  // let data = [[...portfolio, ...positionsThatDoNotExists], positionsThatDoNotExistsNames, positionsThatGotUpdated, positionsThatDoNotExists, positionsIndexThatExists];
   let data = { updatedPortfolio: [...portfolio, ...positionsThatDoNotExists], positionsThatDoNotExistsNames: positionsThatDoNotExistsNames, positionsThatGotUpdated: positionsThatGotUpdated, positionsThatDoNotExists: positionsThatDoNotExists };
 
   return data;
