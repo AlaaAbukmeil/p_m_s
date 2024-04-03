@@ -79,17 +79,13 @@ export function getSecurityInPortfolioWithoutLocation(portfolio: any, identifier
       if (issue["Bloomber ID"] != "") {
         document.push(issue);
       }
-    } else if (identifier.includes(issue["CUSIP"])) {
-      if (issue["CUSIP"] != "") {
-        document.push(issue);
-      }
     }
   }
   // If a matching document was found, return it. Otherwise, return a message indicating that no match was found.
   return document.length ? document : 404;
 }
 
-export async function insertEditLogs(changes: string[], type: string, dateTime: string, editNote: string, identifier: string) {
+export async function insertEditLogs(changes: any[], type: string, dateTime: string, editNote: string, identifier: string) {
   let object = {
     changes: changes,
     type: type,
@@ -127,7 +123,7 @@ export async function getEditLogs(logsType: any) {
   }
 }
 
-export async function editPositionPortfolio(path: string) {
+export async function editPositionBulkPortfolio(path: string) {
   let data: any = await readEditInput(path);
 
   if (data.error) {
@@ -151,8 +147,8 @@ export async function editPositionPortfolio(path: string) {
         }
       }
       try {
-        let updatedPortfolio: any = formatUpdatedPositions(positions, portfolio, "Last edit operation");
-        let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
+        let updatedPortfolio = formatUpdatedPositions(positions, portfolio, "Last edit operation");
+        let insertion = await insertTradesInPortfolio(updatedPortfolio.updatedPortfolio);
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
         await insertEditLogs(["bulk edit"], "Bulk Edit", dateTime, "Bulk Edit E-blot", "Link: " + path);
 

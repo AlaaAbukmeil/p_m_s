@@ -2,8 +2,23 @@ import { FundMTD, PositionBeforeFormatting, PositionGeneralFormat, RlzdTrades } 
 import { formatDateUS, formatDateWorld, parsePercentage } from "../../common";
 import { calculateAccruedSinceInception } from "../../reports/portfolios";
 import { parseBondIdentifier } from "../../reports/tools";
-import { bbgRating, isRatingHigherThanBBBMinus, sortObjectBasedOnKey, toTitleCase, oasWithChange, checkPosition, formatMarkDate, yearsUntil, getDuration, getSectorAssetClass, moodyRating, AggregatedData } from "../tools";
+import { getCountrySectorStrategySum } from "./statistics";
+import { bbgRating, isRatingHigherThanBBBMinus, sortObjectBasedOnKey, toTitleCase, oasWithChange, checkPosition, formatMarkDate, yearsUntil, getDuration, getSectorAssetClass, moodyRating, AggregatedData, assignAssetClass } from "../tools";
 import { getTopWorst } from "./frontOffice";
+export let assetClassOrder: any = {
+  //hedge UST and hedge
+  UST_HEDGE: 1,
+  IG: 2,
+  HY: 3,
+  CURR_HEDGE: 4,
+  NON_USD: 5,
+  FUT: 6,
+  CDS: 7,
+  UST_GLOBAL: 8,
+  Illiquid: 9,
+  undefined: 10,
+  RLZD: 11,
+};
 
 export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: any, conditions = null, fundDetailsYTD: any): { portfolio: PositionGeneralFormat[]; fundDetails: FundMTD; currencies: any } {
   let currencies: any = {};
@@ -34,6 +49,7 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     let holdBackRatio = (position["Asset Class"] || position["Rating Class"]) == "Illiquid" ? parseFloat(fund.holdBackRatio) : 1;
 
     position["Quantity"] = position["Notional Amount"] / originalFace;
+
     if (!position["BB Ticker"]) {
       position["BB Ticker"] = position["Issue"];
     }
@@ -531,6 +547,7 @@ function sumTable(table: any, data: any, view: any, param: any, subtotal = false
   }
 }
 
+
 export function assignColorAndSortParamsBasedOnAssetClass(
   pairHedgeNotional: any,
   pairIGNotional: any,
@@ -563,7 +580,7 @@ export function assignColorAndSortParamsBasedOnAssetClass(
 ) {
   for (let locationCode in groupedByLocation) {
     groupedByLocation[locationCode].order = assignAssetClass(locationCode, groupedByLocation[locationCode].data);
-    if (groupedByLocation[locationCode].order == 1) {
+    if (groupedByLocation[locationCode].order == assetClassOrder.UST_HEDGE) {
       groupedByLocation[locationCode].color = "#FEEBED";
 
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
@@ -576,8 +593,9 @@ export function assignColorAndSortParamsBasedOnAssetClass(
           sumTable(ustTableByCoupon, groupedByLocation[locationCode].data[index], view, couponRate);
           sumTable(ustTable, groupedByLocation[locationCode].data[index], view, duration, true, issue);
         }
+        groupedByLocation[locationCode].data[index]["Strategy"] = "RV";
       }
-    } else if (groupedByLocation[locationCode].order == 2) {
+    } else if (groupedByLocation[locationCode].order == assetClassOrder.IG) {
       groupedByLocation[locationCode].color = "#E1BEE7";
 
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
@@ -585,14 +603,14 @@ export function assignColorAndSortParamsBasedOnAssetClass(
         singleIGDV01Sum += groupedByLocation[locationCode].data[index]["DV01"] || 0;
         sumTable(igTable, groupedByLocation[locationCode].data[index], view, null);
       }
-    } else if (groupedByLocation[locationCode].order == 3) {
+    } else if (groupedByLocation[locationCode].order == assetClassOrder.HY) {
       groupedByLocation[locationCode].color = "#C5CAE9";
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
         HYNotional += groupedByLocation[locationCode].data[index]["Notional Amount"] || 0;
         HYDV01Sum += groupedByLocation[locationCode].data[index]["DV01"] || 0;
         sumTable(hyTable, groupedByLocation[locationCode].data[index], view, null);
       }
-    } else if (groupedByLocation[locationCode].order == 4) {
+    } else if (groupedByLocation[locationCode].order == assetClassOrder.CURR_HEDGE) {
       groupedByLocation[locationCode].color = "#FFF9C4";
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
         hedgeCurrencyNotional += groupedByLocation[locationCode].data[index]["Notional Amount"] || 0;
@@ -602,7 +620,7 @@ export function assignColorAndSortParamsBasedOnAssetClass(
         }
         sumTable(currTable, groupedByLocation[locationCode].data[index], view, currency);
       }
-    } else if (groupedByLocation[locationCode].order == 5) {
+    } else if (groupedByLocation[locationCode].order == assetClassOrder.NON_USD) {
       groupedByLocation[locationCode].color = "#FFF9C4";
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
         hedgeCurrencyNotional += groupedByLocation[locationCode].data[index]["Notional Amount"] || 0;
@@ -612,7 +630,7 @@ export function assignColorAndSortParamsBasedOnAssetClass(
         }
         sumTable(currTable, groupedByLocation[locationCode].data[index], view, currency);
       }
-    } else if (groupedByLocation[locationCode].order == 6) {
+    } else if (groupedByLocation[locationCode].order == assetClassOrder.FUT) {
       groupedByLocation[locationCode].color = "#FFF9C4";
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
         hedgeCurrencyNotional += groupedByLocation[locationCode].data[index]["Notional Amount"] || 0;
@@ -622,12 +640,12 @@ export function assignColorAndSortParamsBasedOnAssetClass(
         }
         sumTable(currTable, groupedByLocation[locationCode].data[index], view, currency);
       }
-    } else if (groupedByLocation[locationCode].order == 7) {
+    } else if (groupedByLocation[locationCode].order == assetClassOrder.CDS) {
       groupedByLocation[locationCode].color = "#CE93D8";
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
         cdsNotional += groupedByLocation[locationCode].data[index]["Notional Amount"] || 0;
       }
-    } else if (groupedByLocation[locationCode].order == 8) {
+    } else if (groupedByLocation[locationCode].order == assetClassOrder.UST_GLOBAL) {
       groupedByLocation[locationCode].color = "#E8F5E9";
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
         let duration: any = getDuration(groupedByLocation[locationCode].data[index]["Duration"]);
@@ -640,13 +658,13 @@ export function assignColorAndSortParamsBasedOnAssetClass(
           sumTable(ustTable, groupedByLocation[locationCode].data[index], view, duration, true, issue);
         }
       }
-    } else if (groupedByLocation[locationCode].order == 9) {
+    } else if (groupedByLocation[locationCode].order == assetClassOrder.Illiquid) {
       groupedByLocation[locationCode].color = "#9FA8DA";
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {}
-    } else if (groupedByLocation[locationCode].order == 10) {
+    } else if (groupedByLocation[locationCode].order == assetClassOrder.undefined) {
       groupedByLocation[locationCode].color = "#E5D1B4";
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {}
-    } else if (groupedByLocation[locationCode].order == 11) {
+    } else if (groupedByLocation[locationCode].order == assetClassOrder.RLZD) {
       groupedByLocation[locationCode].color = "#C5E1A5";
     }
 
@@ -727,7 +745,6 @@ export function assignColorAndSortParamsBasedOnAssetClass(
           groupEntrySpreadTZ = 0;
         }
         groupEntrySpreadTZ += entryYtw;
-
       } else if (type == "UST" && strategy == "RV") {
         if (!groupSpreadTZ) {
           groupSpreadTZ = 0;
@@ -801,62 +818,8 @@ export function assignColorAndSortParamsBasedOnAssetClass(
   }
 }
 
-export function getCountrySectorStrategySum(countryNAVPercentage: any, sectorNAVPercentage: any, strategyNAVPercentage: any, issuerNAVPercentage: any, nav: any) {
-  let countries = Object.keys(countryNAVPercentage);
-  let sectors = Object.keys(sectorNAVPercentage);
-  let strategies = Object.keys(strategyNAVPercentage);
-  let issuers = Object.keys(issuerNAVPercentage);
-  let sumCountryLong = 0,
-    sumStrategy = 0,
-    sumSectorLong = 0,
-    sumIssuer = 0;
 
-  for (let index = 0; index < countries.length; index++) {
-    if (countryNAVPercentage[countries[index]]) {
-      countryNAVPercentage[toTitleCase(countries[index])] = Math.round((countryNAVPercentage[countries[index]] / nav) * 10000) / 100;
-      sumCountryLong += countryNAVPercentage[toTitleCase(countries[index])];
-      delete countryNAVPercentage[countries[index]];
-    } else {
-      delete countryNAVPercentage[countries[index]];
-    }
-  }
-
-  for (let index = 0; index < sectors.length; index++) {
-    if (sectorNAVPercentage[sectors[index]]) {
-      sectorNAVPercentage[toTitleCase(sectors[index])] = Math.round((sectorNAVPercentage[sectors[index]] / nav) * 10000) / 100;
-      sumSectorLong += sectorNAVPercentage[toTitleCase(sectors[index])];
-      delete sectorNAVPercentage[sectors[index]];
-    } else {
-      delete sectorNAVPercentage[sectors[index]];
-    }
-  }
-
-  for (let index = 0; index < strategies.length; index++) {
-    if (strategyNAVPercentage[strategies[index]]) {
-      strategyNAVPercentage[strategies[index]] = Math.round((strategyNAVPercentage[strategies[index]] / nav) * 10000) / 100;
-      sumStrategy += strategyNAVPercentage[strategies[index]];
-    } else {
-      delete strategyNAVPercentage[strategies[index]];
-    }
-  }
-
-  for (let index = 0; index < issuers.length; index++) {
-    if (issuerNAVPercentage[issuers[index]]) {
-      issuerNAVPercentage[issuers[index]] = Math.round((issuerNAVPercentage[issuers[index]] / nav) * 10000) / 100;
-      sumIssuer += issuerNAVPercentage[issuers[index]];
-    } else {
-      delete issuerNAVPercentage[issuers[index]];
-    }
-  }
-  return {
-    sumCountryLong: sumCountryLong,
-    sumStrategy: sumStrategy,
-    sumSectorLong: sumSectorLong,
-    sumIssuer: sumIssuer,
-  };
-}
-
-export function assignBorderAndCustomSortAggregateGroup(portfolio: any, groupedByLocation: any, sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDuration" | "groupRating" | "groupDelta"| "groupGamma" | "groupMTDDelta", sign: any) {
+export function assignBorderAndCustomSortAggregateGroup(portfolio: any, groupedByLocation: any, sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDuration" | "groupRating" | "groupDelta" | "groupGamma" | "groupMTDDelta", sign: any) {
   sign = parseFloat(sign);
   if (sort == "order") {
     //because order should be descending
@@ -1118,84 +1081,4 @@ export function groupAndSortByLocationAndTypeDefineTables(formattedPortfolio: an
   };
 }
 
-export function assignAssetClass(locationCode: string, group: any) {
-  let assetClassOrder: any = {
-    //hedge UST and hedge
-    UST_HEDGE: 1,
-    IG: 2,
-    HY: 3,
-    CURR_HEDGE: 4,
-    NON_USD: 5,
-    FUT: 6,
-    CDS: 7,
-    UST_GLOBAL: 8,
-    Illiquid: 9,
-    undefined: 10,
-    RLZD: 11,
-  };
 
-  try {
-    let rlzd = 0,
-      assetClass = "";
-    let unrlzdPositionsNum = group.filter((position: any) => position["Notional Amount"] != 0).length;
-
-    for (let index = 0; index < group.length; index++) {
-      let position = group[index];
-      if (position["Notional Amount"] != 0) {
-        if (!position["Type"]) {
-          return assetClassOrder.undefined;
-        }
-        if ((position["Type"].includes("UST") || position["Strategy"] == "RV") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
-          return assetClassOrder.UST_HEDGE;
-        }
-        if (position["Type"].includes("FUT") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
-          return assetClassOrder.CURR_HEDGE;
-        }
-        if (position["Type"].includes("UST") && position["Notional Amount"] <= 0 && unrlzdPositionsNum == 1) {
-          return assetClassOrder.UST_GLOBAL;
-        }
-
-        if (position["Type"] == "FUT" && position["Notional Amount"] <= 0) {
-          return assetClassOrder.FUT;
-        }
-        if (position["Asset Class"] == "Illiquid") {
-          return assetClassOrder.Illiquid;
-        }
-        if (position["Type"] == "CDS") {
-          return assetClassOrder.CDS;
-        }
-        if (position["Currency"] != "USD") {
-          return assetClassOrder.NON_USD;
-        }
-        if (position["Asset Class"] == "IG") {
-          assetClass = "IG";
-        }
-
-        if (position["Asset Class"] == "HY" && assetClass != "IG") {
-          assetClass = "HY";
-        }
-
-        //if one of them is not rlzd, then its not appliacable
-        rlzd = 1;
-      } else {
-        if (rlzd == 0 || rlzd == 2) {
-          rlzd = 2;
-        }
-      }
-    }
-
-    if (rlzd == 2) {
-      return assetClassOrder.RLZD;
-    }
-    if (assetClass == "IG") {
-      return assetClassOrder.IG;
-    }
-    if (assetClass == "HY") {
-      return assetClassOrder.HY;
-    }
-    return assetClassOrder.undefined;
-  } catch (error) {
-    console.log(error);
-    return assetClassOrder.undefined;
-  }
-}

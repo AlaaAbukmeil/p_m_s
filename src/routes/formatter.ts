@@ -18,7 +18,7 @@ formatterRouter.post("/ib-excel", verifyToken, uploadToBucket.any(), async (req:
     const fileName = req.files[0].filename;
     const path = bucket + fileName;
     // to be modified
-    let beforeMonth = new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
+    let beforeMonth = new Date().getTime() - 6 * 30 * 24 * 60 * 60 * 1000;
     let now = new Date().getTime() + 5 * 24 * 60 * 60 * 1000;
     let trades = await getTriadaTrades("ib", beforeMonth, now);
     let data = await readIBRawExcel(path);
@@ -44,7 +44,7 @@ formatterRouter.post("/mufg-excel", verifyToken, uploadToBucket.any(), async (re
   let pathName = "mufg_" + formatDateFile(data.timestamp_start) + "_" + formatDateFile(data.timestamp_end) + "_";
   let trades = await allTrades(data.timestamp_start, data.timestamp_end);
 
-  let array: MufgTrade[] =  formatMufg(trades, data.timestamp_start, data.timestamp_end);
+  let array: MufgTrade[] = formatMufg(trades, data.timestamp_start, data.timestamp_end);
 
   if (array.length == 0) {
     res.send({ error: "No Trades" });
@@ -59,7 +59,7 @@ formatterRouter.post("/mufg-excel-cds", verifyToken, uploadToBucket.any(), async
   let pathName = "mufg_cds_" + formatDateFile(data.timestamp_start) + "_" + formatDateFile(data.timestamp_end) + "_";
   let trades = await allTradesCDS(data.timestamp_start, data.timestamp_end);
 
-  let array: MufgTrade[] =  formatMufgCDS(trades, data.timestamp_start, data.timestamp_end);
+  let array: MufgTrade[] = formatMufgCDS(trades, data.timestamp_start, data.timestamp_end);
 
   if (array.length == 0) {
     res.send({ error: "No Trades" });

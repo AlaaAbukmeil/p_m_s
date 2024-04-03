@@ -1,4 +1,5 @@
 import { isNotNullOrUndefined } from "../common";
+import { assetClassOrder } from "./tables/formatter";
 
 export function sortObjectBasedOnKey(object: any) {
   return Object.keys(object)
@@ -303,5 +304,71 @@ export class AggregatedData {
     this["Notional Amount"] = 0;
     this["Delta"] = 0;
     this["Gamma"] = 0;
+  }
+}
+export function assignAssetClass(locationCode: string, group: any) {
+  try {
+    let rlzd = 0,
+      assetClass = "";
+    let unrlzdPositionsNum = group.filter((position: any) => position["Notional Amount"] != 0).length;
+
+    for (let index = 0; index < group.length; index++) {
+      let position = group[index];
+      if (position["Notional Amount"] != 0) {
+        if (!position["Type"]) {
+          return assetClassOrder.undefined;
+        }
+        if ((position["Type"].includes("UST") || position["Strategy"] == "RV") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
+          return assetClassOrder.UST_HEDGE;
+        }
+        if (position["Type"].includes("FUT") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
+          return assetClassOrder.CURR_HEDGE;
+        }
+        if (position["Type"].includes("UST") && position["Notional Amount"] <= 0 && unrlzdPositionsNum == 1) {
+          return assetClassOrder.UST_GLOBAL;
+        }
+
+        if (position["Type"] == "FUT" && position["Notional Amount"] <= 0) {
+          return assetClassOrder.FUT;
+        }
+        if (position["Asset Class"] == "Illiquid") {
+          return assetClassOrder.Illiquid;
+        }
+        if (position["Type"] == "CDS") {
+          return assetClassOrder.CDS;
+        }
+        if (position["Currency"] != "USD") {
+          return assetClassOrder.NON_USD;
+        }
+        if (position["Asset Class"] == "IG") {
+          assetClass = "IG";
+        }
+
+        if (position["Asset Class"] == "HY" && assetClass != "IG") {
+          assetClass = "HY";
+        }
+
+        //if one of them is not rlzd, then its not appliacable
+        rlzd = 1;
+      } else {
+        if (rlzd == 0 || rlzd == 2) {
+          rlzd = 2;
+        }
+      }
+    }
+
+    if (rlzd == 2) {
+      return assetClassOrder.RLZD;
+    }
+    if (assetClass == "IG") {
+      return assetClassOrder.IG;
+    }
+    if (assetClass == "HY") {
+      return assetClassOrder.HY;
+    }
+    return assetClassOrder.undefined;
+  } catch (error) {
+    console.log(error);
+    return assetClassOrder.undefined;
   }
 }

@@ -119,46 +119,41 @@ export function findTradeRecord(trades: CentralizedTrade[], rowId: any): number 
   return index !== -1 ? index : null;
 }
 
-export function formatUpdatedPositions(positions: any, portfolio: any, lastUpdatedDescription: string) {
-  try {
-    let positionsIndexThatExists = [];
-    let positionsThatGotUpdated = [];
-    let positionsThatDoNotExists = [];
-    let positionsThatDoNotExistsNames: any = {};
-    for (let indexPositions = 0; indexPositions < positions.length; indexPositions++) {
-      const position = positions[indexPositions];
-      for (let indexPortfolio = 0; indexPortfolio < portfolio.length; indexPortfolio++) {
-        const portfolioPosition = portfolio[indexPortfolio];
+export function formatUpdatedPositions(positions: any, portfolio: any, lastUpdatedDescription: string): { updatedPortfolio: any[]; positionsThatDoNotExistsNames: any[]; positionsThatGotUpdated: any[]; positionsThatDoNotExists: any[] } {
+  let positionsIndexThatExists = [];
+  let positionsThatGotUpdated = [];
+  let positionsThatDoNotExists = [];
+  let positionsThatDoNotExistsNames: any = {};
+  for (let indexPositions = 0; indexPositions < positions.length; indexPositions++) {
+    const position = positions[indexPositions];
+    for (let indexPortfolio = 0; indexPortfolio < portfolio.length; indexPortfolio++) {
+      const portfolioPosition = portfolio[indexPortfolio];
 
-        if ((position["ISIN"] == portfolioPosition["ISIN"] || position["BB Ticker"] == portfolioPosition["BB Ticker"]) && position["Location"].trim() == portfolioPosition["Location"].trim()) {
-          portfolio[indexPortfolio] = position;
-          positionsThatGotUpdated.push(`${position["BB Ticker"]} ${position["Location"]}\n`);
+      if ((position["ISIN"] == portfolioPosition["ISIN"] || position["BB Ticker"] == portfolioPosition["BB Ticker"]) && position["Location"].trim() == portfolioPosition["Location"].trim()) {
+        portfolio[indexPortfolio] = position;
+        positionsThatGotUpdated.push(`${position["BB Ticker"]} ${position["Location"]}\n`);
 
-          positionsIndexThatExists.push(indexPositions);
-        }
-        portfolio[indexPortfolio][lastUpdatedDescription] = new Date();
+        positionsIndexThatExists.push(indexPositions);
       }
+      portfolio[indexPortfolio][lastUpdatedDescription] = new Date();
     }
-
-    for (let indexPositionsExists = 0; indexPositionsExists < positions.length; indexPositionsExists++) {
-      if (!positionsIndexThatExists.includes(indexPositionsExists)) {
-        positionsThatGotUpdated.push(`${positions[indexPositionsExists]["BB Ticker"]} ${positions[indexPositionsExists]["Location"]}\n`);
-        positionsThatDoNotExists.push(positions[indexPositionsExists]);
-      }
-    }
-
-    for (let indexPositions = 0; indexPositions < portfolio.length; indexPositions++) {
-      if (!positionsThatGotUpdated.includes(`${portfolio[indexPositions]["BB Ticker"]} ${portfolio[indexPositions]["Location"]}\n`)) {
-        positionsThatDoNotExistsNames[portfolio[indexPositions]["BB Ticker"]] = { location: portfolio[indexPositions]["Location"], notional: portfolio[indexPositions]["Notional Amount"] };
-      }
-    }
-
-    let data = [[...portfolio, ...positionsThatDoNotExists], positionsThatDoNotExistsNames, positionsThatGotUpdated, positionsThatDoNotExists, positionsIndexThatExists];
-
-    return data;
-  } catch (error) {
-    return error;
   }
+
+  for (let indexPositionsExists = 0; indexPositionsExists < positions.length; indexPositionsExists++) {
+    if (!positionsIndexThatExists.includes(indexPositionsExists)) {
+      positionsThatGotUpdated.push(`${positions[indexPositionsExists]["BB Ticker"]} ${positions[indexPositionsExists]["Location"]}\n`);
+      positionsThatDoNotExists.push(positions[indexPositionsExists]);
+    }
+  }
+
+  for (let indexPositions = 0; indexPositions < portfolio.length; indexPositions++) {
+    if (!positionsThatGotUpdated.includes(`${portfolio[indexPositions]["BB Ticker"]} ${portfolio[indexPositions]["Location"]}\n`)) {
+      positionsThatDoNotExistsNames[portfolio[indexPositions]["BB Ticker"]] = { location: portfolio[indexPositions]["Location"], notional: portfolio[indexPositions]["Notional Amount"] };
+    }
+  }
+  let data = { updatedPortfolio: [...portfolio, ...positionsThatDoNotExists], positionsThatDoNotExistsNames: positionsThatDoNotExistsNames, positionsThatGotUpdated: positionsThatGotUpdated, positionsThatDoNotExists: positionsThatDoNotExists };
+
+  return data;
 }
 
 export async function getEarliestCollectionName(originalDate: string): Promise<{ predecessorDate: string; collectionNames: string[] }> {

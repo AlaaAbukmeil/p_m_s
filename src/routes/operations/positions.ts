@@ -2,7 +2,7 @@ import { Router } from "express";
 import { bucket, verifyToken } from "../../controllers/common";
 import { uploadToBucket } from "../reports/portfolio";
 import { Request, Response, NextFunction } from "express";
-import { addFund, deleteFund, deletePosition, editFund, editPositionPortfolio, getAllFundDetails, getCollectionDays, getEditLogs, readCalculatePosition } from "../../controllers/operations/portfolio";
+import { addFund, deleteFund, deletePosition, editFund, editPositionBulkPortfolio, getAllFundDetails, getCollectionDays, getEditLogs, readCalculatePosition } from "../../controllers/operations/portfolio";
 import { editPosition, updatePositionPortfolio, updatePricesPortfolio } from "../../controllers/operations/positions";
 import { readCentralizedEBlot, readMUFGPrices, readPricingSheet } from "../../controllers/operations/readExcel";
 import { updatePreviousPricesPortfolioBloomberg, updatePreviousPricesPortfolioMUFG } from "../../controllers/operations/prices";
@@ -140,7 +140,7 @@ positionsRouter.post("/bulk-edit", verifyToken, uploadToBucket.any(), async (req
   try {
     const fileName = req.files[0].filename;
     const path = bucket + fileName;
-    let action: any = await editPositionPortfolio(path);
+    let action: any = await editPositionBulkPortfolio(path);
     console.log(action);
     if (action?.error) {
       res.send({ error: action.error });

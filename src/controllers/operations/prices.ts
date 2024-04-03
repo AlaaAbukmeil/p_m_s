@@ -14,13 +14,14 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
       let action = await getPortfolioOnSpecificDate(collectionDate);
       if (action.date) {
         let portfolio = action.portfolio;
+        let portfolioActive = portfolio?.filter((position: Position) => position["Notional Amount"] != 0);
         collectionDate = action.date;
         console.log(collectionDate, "collection day used");
 
         for (let index = 0; index < data.length; index++) {
           let row = data[index];
 
-          let object: any = getSecurityInPortfolioWithoutLocation(portfolio, row["Investment"].trim());
+          let object: any = getSecurityInPortfolioWithoutLocation(portfolioActive, row["Investment"].trim());
 
           if (object == 404) {
             continue;
@@ -28,7 +29,12 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
 
           for (let index = 0; index < object.length; index++) {
             let position = object[index];
-            let divider = position["Type"] == "BND" || position["Type"] == "UST" ? 100 : 1;
+            let divider;
+            try {
+              divider = position["ISIN"].includes("IB") || position["Type"].includes("CDS") || position["Type"].includes("EQT") ? 1 : 100;
+            } catch (error) {
+              divider = 100;
+            }
             position["Mid"] = parseFloat(row["Price"]) / divider;
             position["Last Price Update"] = new Date();
             updatedPricePortfolio.push(position);
@@ -36,15 +42,18 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
         }
 
         try {
-          let updatedPortfolio: any = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
+          let updatedPortfolio = formatUpdatedPositions(updatedPricePortfolio, portfolioActive, "Last Price Update");
+         
           let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-          await insertEditLogs([updatedPortfolio[1]], "Update Previous Prices based on MUFG", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio[1]).length, "Link: " + path);
-          let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio[0], collectionDate);
+          await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "Update Previous Prices based on MUFG", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExists).length, "Link: " + path);
+          let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio, collectionDate);
           console.log(updatedPricePortfolio.length, "number of positions prices updated");
-          if (!Object.keys(updatedPortfolio[1]).length) {
-            return updatedPortfolio[1];
+          if (!Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length) {
+            return updatedPortfolio.positionsThatDoNotExistsNames;
           } else {
-            return { error: updatedPortfolio[1] };
+            console.log(updatedPortfolio.positionsThatDoNotExistsNames);
+
+            return { error: updatedPortfolio.positionsThatDoNotExistsNames };
           }
         } catch (error: any) {
           console.log(error);
@@ -53,6 +62,8 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
       }
     }
   } catch (error) {
+    console.log(error);
+
     return { error: "error" };
   }
 }
@@ -80,12 +91,6 @@ export async function insertPreviousPricesUpdatesInPortfolio(updatedPortfolio: a
       } else if (position["BB Ticker"]) {
         filters.push({
           "BB Ticker": position["BB Ticker"],
-          Location: position["Location"],
-          _id: new ObjectId(position["_id"]),
-        });
-      } else if (position["CUSIP"]) {
-        filters.push({
-          CUSIP: position["CUSIP"],
           Location: position["Location"],
           _id: new ObjectId(position["_id"]),
         });
@@ -123,6 +128,8 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
       let action = await getPortfolioOnSpecificDate(collectionDate);
       if (action.date) {
         let portfolio = action.portfolio;
+        let portfolioActive = portfolio?.filter((position: Position) => position["Notional Amount"] != 0);
+
         collectionDate = action.date;
         let currencyInUSD: any = {};
         let maturity: any = {};
@@ -147,16 +154,13 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
           }
 
           if (!currencyStart) {
-            let positions: any = getSecurityInPortfolioWithoutLocation(portfolio, row["Bloomberg ID"]);
+            let positions: any = getSecurityInPortfolioWithoutLocation(portfolioActive, row["Bloomberg ID"]);
 
             if (positions == 404) {
-              positions = getSecurityInPortfolioWithoutLocation(portfolio, row["ISIN"]);
+              positions = getSecurityInPortfolioWithoutLocation(portfolioActive, row["ISIN"]);
             }
             if (positions == 404) {
-              positions = getSecurityInPortfolioWithoutLocation(portfolio, row["BB Ticker"]);
-            }
-            if (positions == 404) {
-              positions = getSecurityInPortfolioWithoutLocation(portfolio, row["CUSIP"]);
+              positions = getSecurityInPortfolioWithoutLocation(portfolioActive, row["BB Ticker"]);
             }
 
             if (positions == 404) {
@@ -243,15 +247,15 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
         }
         console.log(currencyInUSD, "currency prices");
         try {
-          let updatedPortfolio: any = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
+          let updatedPortfolio = formatUpdatedPositions(updatedPricePortfolio, portfolioActive, "Last Price Update");
           let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-          await insertEditLogs([updatedPortfolio[1]], "Update Previous Prices based on bloomberg", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio[1]).length, "Link: " + path);
-          let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio[0], collectionDate);
+          await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "Update Previous Prices based on bloomberg", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExists).length, "Link: " + path);
+          let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio, collectionDate);
           console.log(updatedPricePortfolio.length, "number of positions prices updated");
-          if (!Object.keys(updatedPortfolio[1]).length) {
-            return updatedPortfolio[1];
+          if (!Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length) {
+            return updatedPortfolio.positionsThatDoNotExistsNames;
           } else {
-            return { error: updatedPortfolio[1] };
+            return { error: updatedPortfolio.positionsThatDoNotExistsNames };
           }
         } catch (error) {
           console.log(error);

@@ -8,8 +8,8 @@ import { getEarliestCollectionName, parseBondIdentifier } from "./tools";
 import { getHistoricalPortfolio } from "../operations/positions";
 import { RlzdTrades } from "../../models/portfolio";
 import { Position } from "../../models/position";
-import { formatFrontOfficeTable } from "../analytics/tableFormatter/frontOffice";
-import { formatBackOfficeTable } from "../analytics/tableFormatter/backOffice";
+import { formatFrontOfficeTable } from "../analytics/tables/frontOffice";
+import { formatBackOfficeTable } from "../analytics/tables/backOffice";
 export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions = null, view: "front office" | "back office", sortBy: "pl" | "delta" | "gamma" | null) {
   const database = client.db("portfolios");
   let earliestPortfolioName = await getEarliestCollectionName(date);
@@ -188,8 +188,8 @@ export function getMTDParams(portfolio: any, lastMonthPortfolio: any, dateInput:
       for (let lastMonthIndex = 0; lastMonthIndex < lastMonthPortfolio.length; lastMonthIndex++) {
         lastMonthPosition = lastMonthPortfolio[lastMonthIndex];
         portfolio[index]["Notes"] = "";
-
-        if (((lastMonthPosition["ISIN"] == position["ISIN"] && position["ISIN"] && lastMonthPosition["ISIN"]) || (lastMonthPosition["BB Ticker"] == position["BB Ticker"] && position["BB Ticker"] && lastMonthPosition["BB Ticker"])) && lastMonthPosition["Mid"]) {
+       
+        if (lastMonthPosition["ISIN"] == position["ISIN"] && lastMonthPosition["Mid"]) {
           portfolio[index]["MTD Mark"] = lastMonthPosition["Mid"];
           portfolio[index]["MTD FX"] = lastMonthPosition["FX Rate"] ? lastMonthPosition["FX Rate"] : lastMonthPosition["holdPortfXrate"] ? lastMonthPosition["holdPortfXrate"] : portfolio[index]["Previous Rate"];
         }
@@ -205,6 +205,7 @@ export function getMTDParams(portfolio: any, lastMonthPortfolio: any, dateInput:
 
     return portfolio;
   } catch (error) {
+    console.log(error);
     return portfolio;
   }
 }
@@ -252,7 +253,7 @@ function getDayURlzdInt(portfolio: any, date: any) {
     lastUpdatePricesDate = 0;
   for (let index = 0; index < portfolio.length; index++) {
     let position = portfolio[index];
-
+    portfolio[index]["Principal"] = 0;
     let quantityGeneratingInterest = position["Notional Amount"];
     let interestInfo = position["Interest"];
     let yesterdayPrice;
@@ -283,6 +284,8 @@ function getDayURlzdInt(portfolio: any, date: any) {
     for (let indexSettlementDate = 0; indexSettlementDate < settlementDates.length; indexSettlementDate++) {
       let settlementDate = settlementDates[indexSettlementDate];
       let settlementDateTimestamp = new Date(settlementDate).getTime();
+      portfolio[index]["Principal"] += interestInfo[settlementDate];
+
       if (settlementDateTimestamp >= new Date(date).getTime()) {
         quantityGeneratingInterest -= interestInfo[settlementDate];
       }

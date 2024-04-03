@@ -1,5 +1,5 @@
 import { client } from "../auth";
-import { formatDateUS, formatDateWorld, getDate } from "../common";
+import { formatDateUS, formatDateWorld, getDate, getTradeDateYearTrades } from "../common";
 import { getSecurityInPortfolioWithoutLocation, insertEditLogs } from "./portfolio";
 import { findTrade, insertTrade } from "../reports/trades";
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../reports/common";
@@ -341,8 +341,8 @@ export async function updatePositionPortfolio(
     }
 
     try {
-      let updatedPortfolio: any = formatUpdatedPositions(positions, portfolio, "Last Upload Trade");
-      let insertion = await insertTradesInPortfolio(updatedPortfolio[0]);
+      let updatedPortfolio = formatUpdatedPositions(positions, portfolio, "Last Upload Trade");
+      let insertion = await insertTradesInPortfolio(updatedPortfolio.updatedPortfolio);
       let action1 = await insertTrade(trades.vconTrades, "vcons");
       let action2 = await insertTrade(trades.ibTrades, "ib");
       let action3 = await insertTrade(trades.emsxTrades, "emsx");
@@ -441,6 +441,8 @@ export async function updatePricesPortfolio(path: string) {
       let callDate: any = {};
       let maturityType = "day/month";
       let portfolio = await getPortfolio();
+      let portfolioActive = portfolio?.filter((position: Position) => position["Notional Amount"] != 0);
+
       let currencyInUSD: any = {};
       let currencyStart = true;
       currencyInUSD["USD"] = 1;
@@ -460,17 +462,15 @@ export async function updatePricesPortfolio(path: string) {
         }
 
         if (!currencyStart) {
-          let positions: any = getSecurityInPortfolioWithoutLocation(portfolio, row["Bloomberg ID"]);
+          let positions: any = getSecurityInPortfolioWithoutLocation(portfolioActive, row["Bloomberg ID"]);
 
           if (positions == 404) {
-            positions = getSecurityInPortfolioWithoutLocation(portfolio, row["ISIN"]);
+            positions = getSecurityInPortfolioWithoutLocation(portfolioActive, row["ISIN"]);
           }
           if (positions == 404) {
-            positions = getSecurityInPortfolioWithoutLocation(portfolio, row["BB Ticker"]);
+            positions = getSecurityInPortfolioWithoutLocation(portfolioActive, row["BB Ticker"]);
           }
-          if (positions == 404) {
-            positions = getSecurityInPortfolioWithoutLocation(portfolio, row["CUSIP"]);
-          }
+         
 
           if (positions == 404) {
             continue;
@@ -556,13 +556,13 @@ export async function updatePricesPortfolio(path: string) {
       try {
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
         console.log(currencyInUSD);
-        let updatedPortfolio: any = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
-        let insertion = await insertPricesUpdatesInPortfolio(updatedPortfolio[0]);
-        await insertEditLogs([updatedPortfolio[1]], "Update Prices", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio[1]).length, "Link: " + path);
-        if (!Object.keys(updatedPortfolio[1]).length) {
-          return updatedPortfolio[1];
+        let updatedPortfolio = formatUpdatedPositions(updatedPricePortfolio, portfolioActive, "Last Price Update");
+        let insertion = await insertPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio);
+        await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "Update Prices", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length, "Link: " + path);
+        if (!Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length) {
+          return updatedPortfolio.positionsThatDoNotExistsNames;
         } else {
-          return { error: updatedPortfolio[1] };
+          return { error: updatedPortfolio.positionsThatDoNotExistsNames };
         }
       } catch (error) {
         console.log(error);
@@ -665,7 +665,10 @@ export async function editPosition(editedPosition: any, date: string) {
       "MTD P&L (BC)",
       "Cost (LC)",
       "Day Accrual",
+      "YTD Mark Ref.D",
+      "Gamma",
       "_id",
+      "Delta",
       "Value (BC)",
       "Value (LC)",
       "MTD Int. (BC)",
@@ -713,7 +716,9 @@ export async function editPosition(editedPosition: any, date: string) {
       "YTD Int. (BC)",
       "YTD FX",
       "Total Gain/ Loss (USD)",
+
       "Accrued Int. Since Inception (BC)",
+      "Notes",
     ];
     // these keys are made up by the function frontend table, it reverts keys to original keys
 
@@ -737,12 +742,21 @@ export async function editPosition(editedPosition: any, date: string) {
       let monthDate = monthlyRlzdDate(new Date().toString());
       if (!unEditableParams.includes(title) && editedPosition[title] != "") {
         if (title == "Notional Amount") {
-          positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
-          positionInPortfolio["Interest"][todayDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Notional Amount"]);
-          changes.push(`Notional Amount changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]}`);
-          positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
-          console.log(editedPosition[title], title);
-          positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
+          if (editedPosition["Event Type"] == "Sink Factor") {
+            let sinkFactorDate = formatDateUS(new Date(editedPosition["Sink Factor Date (if any)"]));
+
+            positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
+            positionInPortfolio["Interest"][sinkFactorDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Notional Amount"]);
+
+            changes.push(`Notional Amount Sunk from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]} on ${sinkFactorDate}`);
+            positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
+          } else {
+            positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
+            positionInPortfolio["Interest"][todayDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Notional Amount"]);
+            changes.push(`Notional Amount changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]}`);
+            positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
+            positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
+          }
         } else if ((title == "Mid" || title == "Ask" || title == "Bid" || title == "Average Cost") && editedPosition[title] != "") {
           if (!positionInPortfolio["Type"]) {
             positionInPortfolio["Type"] = positionInPortfolio["BB Ticker"].split(" ")[0] == "T" || positionInPortfolio["Issuer"] == "US TREASURY N/B" ? "UST" : "BND";
@@ -762,7 +776,6 @@ export async function editPosition(editedPosition: any, date: string) {
     }
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     portfolio[positionIndex] = positionInPortfolio;
-
     // console.log(positionInPortfolio, `portfolio-${earliestPortfolioName.predecessorDate}`, "portfolio edited name");
     await insertEditLogs(changes, editedPosition["Event Type"], dateTime, editedPosition["Edit Note"], positionInPortfolio["BB Ticker"] + " " + positionInPortfolio["Location"]);
 

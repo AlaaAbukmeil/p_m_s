@@ -2,6 +2,7 @@ import { NextFunction, Router, Response, Request } from "express";
 import { verifyToken, generateRandomString, bucket } from "../../controllers/common";
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../../controllers/reports/common";
 import { getPortfolioWithAnalytics } from "../../controllers/reports/portfolios";
+import { getPortfolio } from "../../controllers/operations/positions";
 
 require("dotenv").config();
 
@@ -116,6 +117,8 @@ router.get("/risk-report", verifyToken, async (req: Request, res: Response, next
 });
 
 router.post("/one-time", uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  let portfolio = await getPortfolio()
+  console.log(portfolio)
   res.send(200);
 });
 
