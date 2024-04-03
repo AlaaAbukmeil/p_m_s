@@ -49,18 +49,7 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
     let holdBackRatio = (position["Asset Class"] || position["Rating Class"]) == "Illiquid" ? parseFloat(fund.holdBackRatio) : 1;
 
     position["Quantity"] = position["Notional Amount"] / originalFace;
-
-    if (!position["BB Ticker"]) {
-      position["BB Ticker"] = position["Issue"];
-    }
-
-    if (!position["Strategy"]) {
-      position["Strategy"] = position["BB Ticker"].toLowerCase().includes("perp") ? "CE" : "VI";
-    }
-
-    if (!position["Type"]) {
-      position["Type"] = position["BB Ticker"].split(" ")[0] == "T" || position["Issuer"] == "US TREASURY N/B" ? "UST" : "BND";
-    }
+   
     let bondDivider = position["Type"] == "BND" || position["Type"] == "UST" ? 100 : 1;
 
     let currency = position["Currency"];
@@ -74,16 +63,7 @@ export function formatGeneralTable(portfolio: any, date: any, fund: any, dates: 
       }
     }
     position["FX Rate"] = usdRatio;
-    position["Asset Class"] = position["Asset Class"] ? position["Asset Class"] : position["Rating Class"] ? position["Rating Class"] : "";
-    if ((!position["Asset Class"] || position["Asset Class"] == "") && position["BBG Composite Rating"]) {
-      position["Asset Class"] = isRatingHigherThanBBBMinus(position["BBG Composite Rating"]);
-    }
-    if (position["Notional Amount"] < 0) {
-      position["Asset Class"] = "Hedge";
-    }
-    if (position["Type"] == "BND" && position["Strategy"] == "RV") {
-      position["Asset Class"] = "IG";
-    }
+
 
     position["Cost (BC)"] = position["Type"] == "CDS" ? Math.round((position["Average Cost"] * position["Notional Amount"] * usdRatio) / position["Original Face"]) : Math.round(position["Average Cost"] * position["Notional Amount"] * usdRatio);
     position["FX Rate"] = Math.round(position["FX Rate"] * 1000) / 1000;

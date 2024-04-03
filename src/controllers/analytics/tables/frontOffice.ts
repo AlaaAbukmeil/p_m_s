@@ -17,8 +17,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "% of NAV",
     "Bid",
     "Ask",
-    // "Delta",
-    // "Previous Mark",
+
     "Current Spread (T)",
     `Last Mid ${formatMarkDate(dates.today)}`,
     "YTW",
@@ -28,6 +27,8 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Entry Yield",
     "Day P&L (USD)",
     "Delta",
+    "Delta (BP)",
+
     "Gamma",
     "Day P&L % (NAV)",
     "Duration",
@@ -36,6 +37,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "BBG / S&P / Moody / Fitch Rating",
     "MTD P&L (USD)",
     "MTD Delta",
+    "MTD Delta (BP)",
     "MTD P&L % (NAV)",
     "Rlzd MTD P&L (USD)",
     "Rlzd MTD P&L (USD) %",
@@ -88,6 +90,10 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
   let titlesValues: any = {
     Type: "Type",
     "L/S": "L/S",
+    "MTD Delta (BP)": "MTD Delta (BP)",
+    "Delta (BP)": "Delta (BP)",
+
+
     Strategy: "Strategy",
     "Asset Class": "Asset Class",
     "Call Date": "Call Date",
@@ -154,7 +160,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     Gamma: "Gamma",
   };
 
-  let twoDigits = [`${formatMarkDate(dates.lastMonth)}`, `${formatMarkDate(dates.yesterday)}`, `Last Mid ${formatMarkDate(dates.today)}`, "Bid", "Ask", "Duration", "Average Cost", "Entry Price", "Previous Mark"];
+  let twoDigits = [`${formatMarkDate(dates.lastMonth)}`, `${formatMarkDate(dates.yesterday)}`, `Last Mid ${formatMarkDate(dates.today)}`, "Bid", "Ask", "Duration", "Average Cost", "Entry Price", "Previous Mark", "Delta (BP)", "MTD Delta (BP)"];
 
   // titlesValues[formatMarkDate(dates.lastMonth)] = "MTD Mark";
   // titlesValues[formatMarkDate(dates.yesterday)] = "Previous Mark";

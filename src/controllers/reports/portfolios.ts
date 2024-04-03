@@ -10,6 +10,7 @@ import { RlzdTrades } from "../../models/portfolio";
 import { Position } from "../../models/position";
 import { formatFrontOfficeTable } from "../analytics/tables/frontOffice";
 import { formatBackOfficeTable } from "../analytics/tables/backOffice";
+import { isRatingHigherThanBBBMinus } from "../analytics/tools";
 export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions = null, view: "front office" | "back office", sortBy: "pl" | "delta" | "gamma" | null) {
   const database = client.db("portfolios");
   let earliestPortfolioName = await getEarliestCollectionName(date);
@@ -153,6 +154,26 @@ export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInpu
 
     portfolio[index]["Previous FX"] = previousFxRate;
     portfolio[index]["Previous Mark"] = previousMark;
+    if (!portfolio[index]["Type"]) {
+      portfolio[index]["Type"] = portfolio[index]["BB Ticker"].split(" ")[0] == "T" || portfolio[index]["Issuer"] == "US TREASURY N/B" ? "UST" : portfolio[index]["ISIN"].includes(" IB") ? "FUT" : "BND";
+    }
+    if (!portfolio[index]["BB Ticker"]) {
+      portfolio[index]["BB Ticker"] = portfolio[index]["Issue"];
+    }
+
+    if (!portfolio[index]["Strategy"]) {
+      portfolio[index]["Strategy"] = portfolio[index]["BB Ticker"].toLowerCase().includes("perp") ? "CE" : "VI";
+    }
+    portfolio[index]["Asset Class"] = portfolio[index]["Asset Class"] ? portfolio[index]["Asset Class"] : portfolio[index]["Rating Class"] ? portfolio[index]["Rating Class"] : "";
+    if ((!portfolio[index]["Asset Class"] || portfolio[index]["Asset Class"] == "") && portfolio[index]["BBG Composite Rating"]) {
+      portfolio[index]["Asset Class"] = isRatingHigherThanBBBMinus(position["BBG Composite Rating"]);
+    }
+    if (portfolio[index]["Notional Amount"] < 0) {
+      portfolio[index]["Asset Class"] = "Hedge";
+    }
+    if (portfolio[index]["Type"] == "BND" && portfolio[index]["Strategy"] == "RV") {
+      portfolio[index]["Asset Class"] = "IG";
+    }
 
     if (portfolio[index]["Previous Mark"] == 0) {
       portfolio[index]["Previous Mark"] = 0;
@@ -160,11 +181,17 @@ export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInpu
       portfolio[index]["Previous Mark"] = portfolio[index]["Mid"];
       portfolio[index]["Notes"] += " Previous Mark X";
     }
-    let notional = portfolio[index]["Type"] == "CDS" ? -1 : portfolio[index]["Notional Amount"] < 0 ? -1 : 1;
+    let type = portfolio[index]["Type"] == "CDS" ? -1 : portfolio[index]["Notional Amount"] < 0 ? -1 : 1;
     let todayPrice: any = parseFloat(position["Mid"]);
     let yesterdayPrice: any = parseFloat(position["Previous Mark"]);
 
-    portfolio[index]["Delta"] = (Math.round(((parseFloat(todayPrice) - parseFloat(yesterdayPrice)) / todayPrice) * notional * 10000) / 100 || 0) + " %";
+    if (portfolio[index]["Type"] == "BND" || portfolio[index]["Type"] == "UST") {
+      portfolio[index]["Delta (BP)"] = Math.round((todayPrice - yesterdayPrice) * 10000 * type) / 100 || 0;
+      portfolio[index]["Delta"] = (Math.round(((parseFloat(todayPrice) - parseFloat(yesterdayPrice)) / todayPrice) * type * 10000) / 100 || 0) + " %";
+    } else {
+      portfolio[index]["Delta"] = 0;
+      portfolio[index]["Delta (BP)"] = 0;
+    }
     if (gamma) {
       if (previousDayPosition) {
         portfolio[index]["Gamma"] = Math.round((parsePercentage(portfolio[index]["Delta"]) - parsePercentage(previousDayPosition["Delta"]) || 0) * 1000) / 100 + " %";
@@ -188,7 +215,7 @@ export function getMTDParams(portfolio: any, lastMonthPortfolio: any, dateInput:
       for (let lastMonthIndex = 0; lastMonthIndex < lastMonthPortfolio.length; lastMonthIndex++) {
         lastMonthPosition = lastMonthPortfolio[lastMonthIndex];
         portfolio[index]["Notes"] = "";
-       
+
         if (lastMonthPosition["ISIN"] == position["ISIN"] && lastMonthPosition["Mid"]) {
           portfolio[index]["MTD Mark"] = lastMonthPosition["Mid"];
           portfolio[index]["MTD FX"] = lastMonthPosition["FX Rate"] ? lastMonthPosition["FX Rate"] : lastMonthPosition["holdPortfXrate"] ? lastMonthPosition["holdPortfXrate"] : portfolio[index]["Previous Rate"];
@@ -308,7 +335,7 @@ export function getMTDURlzdInt(portfolio: any, date: any) {
     let position = portfolio[index];
     let todayPrice = parseFloat(portfolio[index]["Mid"]);
     let mtdPrice = parseFloat(portfolio[index]["MTD Mark"]);
-    let notional = portfolio[index]["Type"] == "CDS" ? -1 : portfolio[index]["Notional Amount"] < 0 ? -1 : 1;
+    let type = portfolio[index]["Type"] == "CDS" ? -1 : portfolio[index]["Notional Amount"] < 0 ? -1 : 1;
 
     portfolio[index]["MTD URlzd"] = portfolio[index]["Type"] == "CDS" ? ((todayPrice - mtdPrice) * portfolio[index]["Notional Amount"]) / portfolio[index]["Original Face"] : (todayPrice - mtdPrice) * portfolio[index]["Notional Amount"];
     if (portfolio[index]["MTD URlzd"] == 0) {
@@ -316,8 +343,14 @@ export function getMTDURlzdInt(portfolio: any, date: any) {
     } else if (!portfolio[index]["MTD URlzd"]) {
       portfolio[index]["MTD URlzd"] = 0;
     }
-    portfolio[index]["MTD Delta"] = (Math.round(((todayPrice - mtdPrice) / todayPrice) * 10000 * notional) / 100 || 0) + " %";
 
+    if (portfolio[index]["Type"] == "BND" || portfolio[index]["Type"] == "UST") {
+      portfolio[index]["MTD Delta (BP)"] = Math.round((todayPrice - mtdPrice) * 10000 * type) / 100 || 0;
+      portfolio[index]["MTD Delta"] = (Math.round(((todayPrice - mtdPrice) / todayPrice) * 10000 * type) / 100 || 0) + " %";
+    } else {
+      portfolio[index]["MTD Delta (BP)"] = 0;
+      portfolio[index]["MTD Delta"] = 0;
+    }
     let quantityGeneratingInterest = position["Notional Amount"];
     let interestInfo = position["Interest"];
     portfolio[index]["MTD Int."] = 0;
