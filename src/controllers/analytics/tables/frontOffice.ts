@@ -85,6 +85,11 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Coupon Rate",
     "Pin",
     // "Notional Amount",
+    "Asset Class",
+    "Sector",
+    "Country",
+    "Duration",
+    "Base Margin",
   ];
 
   let titlesValues: any = {
@@ -158,6 +163,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "MTD Delta": "MTD Delta",
     Gamma: "Gamma",
     Pin: "Pin",
+    "Base Margin": "Base Margin",
   };
 
   let twoDigits = [`${formatMarkDate(dates.lastMonth)}`, `${formatMarkDate(dates.yesterday)}`, `Last Mid ${formatMarkDate(dates.today)}`, "Bid", "Ask", "Duration", "Average Cost", "Entry Price", "Previous Mark", "Delta (BP)", "MTD Delta (BP)"];

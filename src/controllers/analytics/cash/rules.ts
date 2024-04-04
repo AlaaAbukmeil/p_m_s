@@ -196,7 +196,7 @@ export function adjustMarginMultiplier(portfolio: PositionGeneralFormat[], secto
     }
     let positionMargin = 1 - positionBaseMargin * issuerMultiplier * sectorMultiplier;
     let amountCapacity = positionMargin * positionUSDValue;
-    if (amountCapacity) {
+    if (amountCapacity && (position["L/S"] == "Long"||position["L/S"] == "Short"||position["L/S"] == "")) {
       capacity.amount += amountCapacity;
       if (assetClass == "IG") {
         capacity.amountIG += amountCapacity;
