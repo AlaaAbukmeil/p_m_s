@@ -5,7 +5,7 @@ import { findTrade, insertTrade } from "../reports/trades";
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../reports/common";
 import { readCentralizedEBlot, readPricingSheet } from "./readExcel";
 import { findTradeRecord, formatUpdatedPositions, getAverageCost, getEarliestCollectionName, parseBondIdentifier } from "../reports/tools";
-import { Position } from "../../models/position";
+import { PinnedPosition, Position } from "../../models/position";
 import { CentralizedTrade } from "../../models/trades";
 const ObjectId = require("mongodb").ObjectId;
 
@@ -784,6 +784,71 @@ export async function editPosition(editedPosition: any, date: string) {
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
     return { error: errorMessage };
+  }
+}
+
+export async function pinPosition(position: PinnedPosition) {
+  try {
+    const database = client.db("positions");
+
+    const reportCollection = database.collection("pinned");
+    position["Pin Timestamp"] = new Date().getTime();
+    const query = { ISIN: position.ISIN, Location: position.Location };
+
+    // Find the document
+    const existingPosition = await reportCollection.findOne(query);
+    if (existingPosition) {
+      // If found, update the Pin property
+      const updateResult = await reportCollection.updateOne(query, { $set: { Pin: position.Pin } });
+
+      if (updateResult.matchedCount === 1) {
+        return { status: 200, message: "Position updated successfully." };
+      } else {
+        throw new Error("Position update failed.");
+      }
+    } else {
+      // If not found, insert a new document
+      const insertResult = await reportCollection.insertOne(position);
+
+      if (insertResult.insertedId) {
+        return { status: 200, message: "Position inserted successfully." };
+      } else {
+        return { error: "fatal error" };
+      }
+    }
+  } catch (error: any) {
+    console.log(error);
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    await insertEditLogs([errorMessage], "Errors", dateTime, "pinPosition", "controllers/operations/positions.ts");
+
+    return { error: errorMessage };
+  }
+}
+
+export async function getPinnedPositions() {
+  try {
+    const database = client.db("positions");
+
+    const reportCollection = database.collection("pinned");
+    const query = { Pin: "pinned" };
+
+    const pinnedPositions = await reportCollection.find(query).toArray();
+
+    if (pinnedPositions.length) {
+      return pinnedPositions;
+    } else {
+      return [];
+    }
+  } catch (error: any) {
+    console.log(error);
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    await insertEditLogs([errorMessage], "Errors", dateTime, "getPinnedPositions", "controllers/operations/positions.ts");
+
+    return [];
   }
 }
 

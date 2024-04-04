@@ -1,56 +1,56 @@
 import { toTitleCase } from "../tools";
 
-export function getCountrySectorStrategySum(countryNAVPercentage: any, sectorNAVPercentage: any, strategyNAVPercentage: any, issuerNAVPercentage: any, nav: any) {
-    let countries = Object.keys(countryNAVPercentage);
-    let sectors = Object.keys(sectorNAVPercentage);
-    let strategies = Object.keys(strategyNAVPercentage);
-    let issuers = Object.keys(issuerNAVPercentage);
-    let sumCountryLong = 0,
+export function getCountrySectorStrategySum(countryPercentage: any, sectorPercentage: any, strategyPercentage: any, issuerPercentage: any, nav: any) {
+    let countries = Object.keys(countryPercentage);
+    let sectors = Object.keys(sectorPercentage);
+    let strategies = Object.keys(strategyPercentage);
+    let issuers = Object.keys(issuerPercentage);
+    let sumCountry = 0,
       sumStrategy = 0,
-      sumSectorLong = 0,
+      sumSector = 0,
       sumIssuer = 0;
   
     for (let index = 0; index < countries.length; index++) {
-      if (countryNAVPercentage[countries[index]]) {
-        countryNAVPercentage[toTitleCase(countries[index])] = Math.round((countryNAVPercentage[countries[index]] / nav) * 10000) / 100;
-        sumCountryLong += countryNAVPercentage[toTitleCase(countries[index])];
-        delete countryNAVPercentage[countries[index]];
+      if (countryPercentage[countries[index]]) {
+        countryPercentage[toTitleCase(countries[index])] = Math.round((countryPercentage[countries[index]] / nav) * 10000) / 100;
+        sumCountry += countryPercentage[toTitleCase(countries[index])];
+        delete countryPercentage[countries[index]];
       } else {
-        delete countryNAVPercentage[countries[index]];
+        delete countryPercentage[countries[index]];
       }
     }
   
     for (let index = 0; index < sectors.length; index++) {
-      if (sectorNAVPercentage[sectors[index]]) {
-        sectorNAVPercentage[toTitleCase(sectors[index])] = Math.round((sectorNAVPercentage[sectors[index]] / nav) * 10000) / 100;
-        sumSectorLong += sectorNAVPercentage[toTitleCase(sectors[index])];
-        delete sectorNAVPercentage[sectors[index]];
+      if (sectorPercentage[sectors[index]]) {
+        sectorPercentage[toTitleCase(sectors[index])] = Math.round((sectorPercentage[sectors[index]] / nav) * 10000) / 100;
+        sumSector += sectorPercentage[toTitleCase(sectors[index])];
+        delete sectorPercentage[sectors[index]];
       } else {
-        delete sectorNAVPercentage[sectors[index]];
+        delete sectorPercentage[sectors[index]];
       }
     }
   
     for (let index = 0; index < strategies.length; index++) {
-      if (strategyNAVPercentage[strategies[index]]) {
-        strategyNAVPercentage[strategies[index]] = Math.round((strategyNAVPercentage[strategies[index]] / nav) * 10000) / 100;
-        sumStrategy += strategyNAVPercentage[strategies[index]];
+      if (strategyPercentage[strategies[index]]) {
+        strategyPercentage[strategies[index]] = Math.round((strategyPercentage[strategies[index]] / nav) * 10000) / 100;
+        sumStrategy += strategyPercentage[strategies[index]];
       } else {
-        delete strategyNAVPercentage[strategies[index]];
+        delete strategyPercentage[strategies[index]];
       }
     }
   
     for (let index = 0; index < issuers.length; index++) {
-      if (issuerNAVPercentage[issuers[index]]) {
-        issuerNAVPercentage[issuers[index]] = Math.round((issuerNAVPercentage[issuers[index]] / nav) * 10000) / 100;
-        sumIssuer += issuerNAVPercentage[issuers[index]];
+      if (issuerPercentage[issuers[index]]) {
+        issuerPercentage[issuers[index]] = Math.round((issuerPercentage[issuers[index]] / nav) * 10000) / 100;
+        sumIssuer += issuerPercentage[issuers[index]];
       } else {
-        delete issuerNAVPercentage[issuers[index]];
+        delete issuerPercentage[issuers[index]];
       }
     }
     return {
-      sumCountryLong: sumCountryLong,
+      sumCountry: sumCountry,
       sumStrategy: sumStrategy,
-      sumSectorLong: sumSectorLong,
+      sumSector: sumSector,
       sumIssuer: sumIssuer,
     };
   }

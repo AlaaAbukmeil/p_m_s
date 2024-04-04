@@ -3,13 +3,14 @@ import { bucket, verifyToken } from "../../controllers/common";
 import { uploadToBucket } from "../reports/portfolio";
 import { Request, Response, NextFunction } from "express";
 import { addFund, deleteFund, deletePosition, editFund, editPositionBulkPortfolio, getAllFundDetails, getCollectionDays, getEditLogs, readCalculatePosition } from "../../controllers/operations/portfolio";
-import { editPosition, updatePositionPortfolio, updatePricesPortfolio } from "../../controllers/operations/positions";
+import { editPosition, pinPosition, updatePositionPortfolio, updatePricesPortfolio } from "../../controllers/operations/positions";
 import { readCentralizedEBlot, readMUFGPrices, readPricingSheet } from "../../controllers/operations/readExcel";
 import { updatePreviousPricesPortfolioBloomberg, updatePreviousPricesPortfolioMUFG } from "../../controllers/operations/prices";
 import { monthlyRlzdDate } from "../../controllers/reports/common";
 import { FundDetails } from "../../models/portfolio";
 import { CentralizedTrade } from "../../models/trades";
 import { getAllTradesForSpecificPosition } from "../../controllers/operations/trades";
+import { consumers } from "stream";
 
 const positionsRouter = Router();
 
@@ -70,6 +71,15 @@ positionsRouter.post("/edit-position", verifyToken, uploadToBucket.any(), async 
   try {
     let action = await editPosition(req.body, req.body.date);
 
+    res.sendStatus(200);
+  } catch (error) {
+    console.log(error);
+    res.send({ error: "Template is not correct" });
+  }
+});
+positionsRouter.post("/pin-position", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let action = await pinPosition(req.body);
     res.sendStatus(200);
   } catch (error) {
     console.log(error);

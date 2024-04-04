@@ -83,7 +83,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Total Gain/ Loss (USD)",
     "% of Total Gain/ Loss since Inception (Live Position)",
     "Coupon Rate",
-
+    "Pin",
     // "Notional Amount",
   ];
 
@@ -92,7 +92,6 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "L/S": "L/S",
     "MTD Delta (BP)": "MTD Delta (BP)",
     "Delta (BP)": "Delta (BP)",
-
 
     Strategy: "Strategy",
     "Asset Class": "Asset Class",
@@ -158,6 +157,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     Delta: "Delta",
     "MTD Delta": "MTD Delta",
     Gamma: "Gamma",
+    Pin: "Pin",
   };
 
   let twoDigits = [`${formatMarkDate(dates.lastMonth)}`, `${formatMarkDate(dates.yesterday)}`, `Last Mid ${formatMarkDate(dates.today)}`, "Bid", "Ask", "Duration", "Average Cost", "Entry Price", "Previous Mark", "Delta (BP)", "MTD Delta (BP)"];
@@ -205,7 +205,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
 }
 
 export function formatFrontOfficeTable(portfolio: PositionBeforeFormatting[], date: any, fund: any, dates: any, sort: any, sign: number, conditions = null, fundDetailsYTD: any, sortBy: "pl" | null | "delta" | "gamma") {
-  let formattedPortfolio: any = formatGeneralTable(portfolio, date, fund, dates, conditions, fundDetailsYTD);
+  let formattedPortfolio: any = formatGeneralTable({ portfolio: portfolio, date: date, fund: fund, dates: dates, conditions: conditions, fundDetailsYTD: fundDetailsYTD });
 
   let formatted = [];
 
@@ -217,8 +217,7 @@ export function formatFrontOfficeTable(portfolio: PositionBeforeFormatting[], da
     }
   }
 
-  let analyzedPortfolio = groupAndSortByLocationAndTypeDefineTables(formatted, formattedPortfolio.fundDetails.nav, sort, sign, "frontOffice", formattedPortfolio.currencies, "summary", sortBy);
-
+  let analyzedPortfolio = groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio: formatted, nav: formattedPortfolio.fundDetails.nav, sort: sort, sign: sign, view: "frontOffice", currencies: formattedPortfolio.currencies, format: "summary", sortBy: sortBy, fundDetails: formattedPortfolio.fundDetails });
   return { portfolio: analyzedPortfolio.portfolio, fundDetails: formattedPortfolio.fundDetails, analysis: analyzedPortfolio };
 }
 export function getTopWorst(groupedByLocation: any, sortBy: "pl" | null | "delta" | "gamma") {

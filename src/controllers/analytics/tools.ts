@@ -1,3 +1,4 @@
+import { PinnedPosition } from "../../models/position";
 import { isNotNullOrUndefined } from "../common";
 import { assetClassOrder } from "./tables/formatter";
 
@@ -313,7 +314,8 @@ export function assignAssetClass(locationCode: string, group: any) {
     let unrlzdPositionsNum = group.filter((position: any) => position["Notional Amount"] != 0).length;
 
     for (let index = 0; index < group.length; index++) {
-      let position = group[index];
+      let position: PinnedPosition = group[index];
+
       if (position["Notional Amount"] != 0) {
         if (!position["Type"]) {
           return assetClassOrder.undefined;
@@ -370,5 +372,13 @@ export function assignAssetClass(locationCode: string, group: any) {
   } catch (error) {
     console.log(error);
     return assetClassOrder.undefined;
+  }
+}
+
+export function parseStringWithNoSpecialCharacters(word: string): string {
+  if (typeof word == "string") {
+    return word.toLowerCase().replace(/[^a-z0-9]/gi, "");
+  } else {
+    return ""
   }
 }

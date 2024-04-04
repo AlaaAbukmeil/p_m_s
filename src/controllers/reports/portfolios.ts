@@ -5,7 +5,7 @@ import { getFundDetails, insertEditLogs } from "../operations/portfolio";
 
 import { formatDateUS, getDate, parsePercentage } from "../common";
 import { getEarliestCollectionName, parseBondIdentifier } from "./tools";
-import { getHistoricalPortfolio } from "../operations/positions";
+import { getHistoricalPortfolio, getPinnedPositions } from "../operations/positions";
 import { RlzdTrades } from "../../models/portfolio";
 import { Position } from "../../models/position";
 import { formatFrontOfficeTable } from "../analytics/tables/frontOffice";
@@ -97,6 +97,8 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
     yesterday: lastDayBeforeToday.predecessorDate,
     lastMonth: lastMonthLastCollectionName.predecessorDate,
   };
+  let pinnedPositions = await getPinnedPositions();
+  documents = assignPinnedPositions(documents, pinnedPositions);
 
   documents = documents.filter((position: Position) => {
     if (position["Notional Amount"] == 0) {
@@ -198,6 +200,23 @@ export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInpu
       } else {
         portfolio[index]["Gamma"] = "0 %";
       }
+    }
+  }
+
+  return portfolio;
+}
+
+export function assignPinnedPositions(portfolio: Position[], pinnedPositions: any) {
+  // try {
+
+  for (let index = 0; index < portfolio.length; index++) {
+    let position = portfolio[index];
+
+    let pinnedPosition = pinnedPositions ? pinnedPositions.find((pinned: any) => pinned["ISIN"] == position["ISIN"] && pinned["Location"] == position["Location"]) : null;
+    if (pinnedPosition) {
+      portfolio[index]["Pin"] = pinnedPosition["Pin"];
+    } else {
+      portfolio[index]["Pin"] = "not pinned";
     }
   }
 

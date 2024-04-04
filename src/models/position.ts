@@ -56,4 +56,9 @@ export interface Position {
   "Z Spread": number;
   holdPortfXrate: number;
   "MTD Rlzd DC": Record<string, number>;
+  Pin: "pinned"|"not pinned";
+}
+
+export interface  PinnedPosition extends Position {
+  "Pin Timestamp": number
 }

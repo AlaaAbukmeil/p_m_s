@@ -96,7 +96,7 @@ export interface PositionBeforeFormatting {
   "Rating Class": string;
   "Asset Class": string;
   "YTD Rate": any;
-  "Delta": string;
+  Delta: string;
   "MTD Delta": string;
   Gamma: string;
 }
@@ -136,8 +136,9 @@ export interface PositionGeneralFormat extends PositionBeforeFormatting {
   "Day URlzd (BC)": number;
   "Day P&L (BC)": number;
   "L/S": string;
-  Duration: string | number;
-
+  Duration: string;
+  "USD Market Value": string;
+  Margin: string;
   "OAS W Change": number;
   "Spread Change": string;
   "DV01 Dollar Value Impact": number;
@@ -145,7 +146,7 @@ export interface PositionGeneralFormat extends PositionBeforeFormatting {
   "DV01 Dollar Value Impact Limit % of Nav": string;
   "DV01 Dollar Value Impact Utilization % of Nav": string;
   "DV01 Dollar Value Impact Color Test": string;
-
+  "Borrow Capacity": number;
   "Value (BC) % of Nav": string;
 
   "Value (BC) Limit % of Nav": string;
@@ -163,6 +164,7 @@ export interface PositionGeneralFormat extends PositionBeforeFormatting {
   "Cost (LC)": number;
   "Coupon Rate": any;
   "Last Day Since Realizd": string | null;
+  "Base Margin": string;
 }
 
 export interface FundMTD {
