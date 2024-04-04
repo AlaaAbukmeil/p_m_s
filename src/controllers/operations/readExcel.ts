@@ -88,8 +88,22 @@ export async function readCentralizedEBlot(path: string): Promise<
         ibTrades[ibTradesIndex]["timestamp"] = new Date(ibTrades[ibTradesIndex]["Trade Date"]).getTime();
         ibTrades[ibTradesIndex]["Trade App Status"] = "uploaded_to_app";
       }
+      for (let emsxTradesIndex = 0; emsxTradesIndex < emsxTrades.length; emsxTradesIndex++) {
+        emsxTrades[emsxTradesIndex]["Notional Amount"] = emsxTrades[emsxTradesIndex]["Settlement Amount"];
+        emsxTrades[emsxTradesIndex]["ISIN"] = emsxTrades[emsxTradesIndex]["BB Ticker"];
+        if (!emsxTrades[emsxTradesIndex]["Trade Date"].includes("/")) {
+          emsxTrades[emsxTradesIndex]["Trade Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(emsxTrades[emsxTradesIndex]["Trade Date"]));
+        }
+        if (!emsxTrades[emsxTradesIndex]["Settle Date"].includes("/")) {
+          emsxTrades[emsxTradesIndex]["Settle Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(emsxTrades[emsxTradesIndex]["Settle Date"]));
+        }
+        emsxTrades[emsxTradesIndex]["timestamp"] = new Date(emsxTrades[emsxTradesIndex]["Trade Date"]).getTime();
+        emsxTrades[emsxTradesIndex]["Trade App Status"] = "uploaded_to_app";
+      }
 
       for (let gsTradesIndex = 0; gsTradesIndex < gsTrades.length; gsTradesIndex++) {
+        gsTrades[gsTradesIndex]["ISIN"] = gsTrades[gsTradesIndex]["BB Ticker"];
+
         if (!gsTrades[gsTradesIndex]["Trade Date"].includes("/")) {
           gsTrades[gsTradesIndex]["Trade Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(gsTrades[gsTradesIndex]["Trade Date"]));
         }

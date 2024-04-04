@@ -84,11 +84,14 @@ formatterRouter.post("/centralized-blotter", verifyToken, uploadToBucket.any(), 
     let data = req.body;
     let token = await getGraphToken();
     // to be modified
-    let start = new Date(data.timestamp_start).getTime() - 5 * 24 * 60 * 60 * 1000;
-    let end = new Date(data.timestamp_end).getTime() + 5 * 24 * 60 * 60 * 1000;
+    let start = new Date(data.timestamp_start).getTime() - 2 * 24 * 60 * 60 * 1000;
+    let end = new Date(data.timestamp_end).getTime() + 2 * 24 * 60 * 60 * 1000;
     let vconTrades = await getTriadaTrades("vcons", start, end);
-
+    console.log(vconTrades, "1")
     let vcons: any = await getVcons(token, data.timestamp_start, data.timestamp_end, vconTrades);
+    vcons = vcons.filter((trade: any, index: any) => new Date(trade["Trade Date"]).getTime() > start && new Date(trade["Trade Date"]).getTime() < end);
+    console.log(vcons, "2")
+
     let ibTrades = await getTriadaTrades("ib", start, end);
     let emsxTrades = await getTriadaTrades("emsx", start, end);
     let action: any = await formatCentralizedRawFiles(req.files, vcons, vconTrades, ibTrades, emsxTrades);

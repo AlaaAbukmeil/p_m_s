@@ -25,7 +25,7 @@ tradesRouter.get("/all-trades", verifyToken, async (req, res) => {
     let vconTrades: [CentralizedTrade[], number] | any = await getTriadaTrades("vcons", start, end) 
     let vcons: any = await getVcons(token, start + 2 * 24 * 60 * 60 * 1000, end - 2 * 24 * 60 * 60 * 1000, vconTrades);
 
-    vcons = vcons.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app");
+    vcons = vcons.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app" && new Date(trade["Trade Date"]).getTime() > start && new Date(trade["Trade Date"]).getTime() < end);
     let action: any = await formatCentralizedRawFiles({}, vcons, [], [], []);
     // action = action.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app");
     let allTrades = action.concat(trades).sort((a: any, b: any) => new Date(b["Trade Date"]).getTime() - new Date(a["Trade Date"]).getTime());
