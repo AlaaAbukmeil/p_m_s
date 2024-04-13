@@ -72,20 +72,20 @@ async function checkIfUserExists(email, password) {
                     };
                 }
                 else {
-                    return { message: "wrong password", status: 401 };
+                    return { message: "wrong password", status: 401, token: null, email: null };
                 }
             }
             catch (error) {
-                return error;
+                return { message: "unexpected error", status: 401, token: null, email: null };
                 // handle error appropriately
             }
         }
         else {
-            return { message: "user does not exist", status: 401 };
+            return { message: "user does not exist", status: 401, token: null, email: null };
         }
     }
     catch (error) {
-        return error;
+        return { message: "unexpected error", status: 401, token: null, email: null };
     }
 }
 exports.checkIfUserExists = checkIfUserExists;

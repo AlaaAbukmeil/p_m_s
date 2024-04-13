@@ -382,3 +382,20 @@ export function parseStringWithNoSpecialCharacters(word: string): string {
     return ""
   }
 }
+
+
+export function getDurationBucket(duration:number){
+
+if(duration < 2){
+  return "0 To 2"
+}else if(duration >= 2 && duration < 5){
+  return "2 To 5"
+}else if(duration >= 5 && duration < 10){
+  return "5 To 10"
+}else if(duration >= 10 && duration < 30){
+  return "10 To 30"
+}else if(duration >= 30){
+  return "> 30"
+}
+
+}

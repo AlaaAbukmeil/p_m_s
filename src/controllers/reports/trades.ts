@@ -1,5 +1,6 @@
 import { CentralizedTrade } from "../../models/trades";
 import { client } from "../auth";
+import { getDate } from "../common";
 import { insertEditLogs } from "../operations/portfolio";
 import { getDateTimeInMongoDBCollectionFormat } from "./common";
 

@@ -25,8 +25,8 @@ authRouter.post("/login", uploadToBucket.any(), async (req: Request, res: Respon
     };
   
     res.cookie("triada.admin.cookie", user, cookie);
-  
-    res.send({ status: 200 });
+  console.log(user)
+    res.send(user);
   });
   
   authRouter.post("/sign-up", async (req: Request, res: Response, next: NextFunction) => {

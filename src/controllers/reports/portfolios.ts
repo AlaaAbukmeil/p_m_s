@@ -11,7 +11,7 @@ import { Position } from "../../models/position";
 import { formatFrontOfficeTable } from "../analytics/tables/frontOffice";
 import { formatBackOfficeTable } from "../analytics/tables/backOffice";
 import { isRatingHigherThanBBBMinus } from "../analytics/tools";
-export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions = null, view: "front office" | "back office", sortBy: "pl" | "delta" | "gamma" | null) {
+export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions = null, view: "front office" | "back office" | "exposure", sortBy: "pl" | "delta" | "gamma" | null) {
   const database = client.db("portfolios");
   let earliestPortfolioName = await getEarliestCollectionName(date);
 
@@ -123,8 +123,8 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   fundDetailsYTD = fundDetailsYTD[0];
   let fund = fundDetailsMTD[0];
   let portfolioFormattedSorted;
-  if (view == "front office") {
-    portfolioFormattedSorted = formatFrontOfficeTable(documents, date, fund, dates, sort, sign, conditions, fundDetailsYTD, sortBy);
+  if (view == "front office" || view == "exposure") {
+    portfolioFormattedSorted = formatFrontOfficeTable({ portfolio: documents, date: date, fund: fund, dates: dates, sort: sort, sign: sign, conditions: conditions, fundDetailsYTD: fundDetailsYTD, sortBy: sortBy });
   } else {
     portfolioFormattedSorted = formatBackOfficeTable(documents, date, fund, dates, sort, sign, conditions, fundDetailsYTD, sortBy);
   }

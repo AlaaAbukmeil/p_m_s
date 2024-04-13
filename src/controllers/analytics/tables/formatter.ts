@@ -70,6 +70,7 @@ export function formatGeneralTable(object: { portfolio: any; date: any; fund: an
     position["FX Rate"] = Math.round(position["FX Rate"] * 1000) / 1000;
     position["Value (LC)"] = position["Type"] == "CDS" ? Math.round((position["Notional Amount"] * position["Mid"]) / originalFace) || 0 : Math.round(position["Notional Amount"] * position["Mid"]) || 0;
     position["Value (BC)"] = position["Type"] == "CDS" ? Math.round((position["Notional Amount"] * position["Mid"] * usdRatio) / originalFace) || 0 : Math.round(position["Notional Amount"] * position["Mid"] * usdRatio) || 0;
+
     position["USD Market Value"] = position["Value (BC)"];
 
     if (position["Value (BC)"] > 0) {
@@ -97,16 +98,11 @@ export function formatGeneralTable(object: { portfolio: any; date: any; fund: an
     if (!position["Previous FX"]) {
       position["Previous FX"] = position["FX Rate"];
     }
-    if (position["BB Ticker"].includes("CDS")) {
-      position["Day P&L FX"] = Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["Previous FX"])) / parseFloat(position["Previous FX"])) * position["Notional Amount"] * holdBackRatio * 1000000) / 1000000 || 0;
-      position["MTD P&L FX"] = Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["MTD FX"] || position["FX Rate"])) / parseFloat(position["MTD FX"] || position["FX Rate"])) * position["Notional Amount"] * holdBackRatio * 1000000) / 1000000 || 0;
-      position["YTD P&L FX"] = Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["YTD FX"] || position["FX Rate"])) / parseFloat(position["YTD FX"] || position["YTD Rate"])) * position["Notional Amount"] * holdBackRatio * 1000000) / 1000000 || 0;
-    } else {
-      position["Day P&L FX"] = Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["Previous FX"])) / parseFloat(position["Previous FX"])) * position["Notional Amount"] * holdBackRatio * 1000000) / 1000000;
 
-      position["MTD P&L FX"] = (Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["MTD FX"] || position["FX Rate"])) / parseFloat(position["MTD FX"] || position["FX Rate"])) * position["Notional Amount"] * holdBackRatio) * 1000000) / 1000000 || 0;
-      position["YTD P&L FX"] = (Math.round(((parseFloat(position["FX Rate"]) - parseFloat(position["YTD FX"] || position["FX Rate"])) / parseFloat(position["YTD FX"] || position["FX Rate"])) * position["Notional Amount"] * holdBackRatio) * 1000000) / 1000000 || 0;
-    }
+    position["Day P&L FX"] = ((position["FX Rate"] - position["Previous FX"]) / position["FX Rate"]) * position["Value (BC)"];
+    position["MTD P&L FX"] = ((position["FX Rate"] - position["MTD FX"]) / position["FX Rate"]) * position["Value (BC)"];
+    position["YTD P&L FX"] = ((position["FX Rate"] - position["YTD FX"]) / position["FX Rate"]) * position["Value (BC)"];
+
     if (!position["Day P&L FX"]) {
       position["Day P&L FX"] = 0;
     }
@@ -317,7 +313,7 @@ export function formatGeneralTable(object: { portfolio: any; date: any; fund: an
   return { portfolio: object.portfolio, fundDetails: fundDetails, currencies: currencies };
 }
 
-function sumTable(object: { table: any; data: any; view: any; param: any; subtotal: boolean; subtotalParam: string }) {
+function sumTable(object: { table: any; data: any; view: "front office" | "back office" | "exposure"; param: any; subtotal: boolean; subtotalParam: string }) {
   try {
     let dv01DollarValueImpact = parseFloat(object.data["DV01 Dollar Value Impact"]);
 
@@ -329,7 +325,7 @@ function sumTable(object: { table: any; data: any; view: any; param: any; subtot
     let valueUSDOfNav = parsePercentage(object.data["Value (BC) % of Nav"]);
     //gmv only for front office
     let valueUSDOfGmv = 0;
-    if (object.view == "frontOffice") {
+    if (object.view == "front office" || object.view == "exposure") {
       valueUSDOfGmv = parsePercentage(object.data["Value (BC) % of GMV"]) || 0;
     }
     let valueUSDLimitOfNav = parsePercentage(object.data["Value (BC) Limit % of Nav"]);
@@ -360,7 +356,7 @@ function sumTable(object: { table: any; data: any; view: any; param: any; subtot
     let strategy = object.data["Strategy"];
     let location = object.data["Location"];
 
-    if (object.view == "frontOffice") {
+    if (object.view == "front office" || object.view == "exposure") {
       usdMarketValue = parseFloat(object.data["USD Market Value"]) || 0;
       dayPl = parseFloat(object.data["Day P&L (USD)"]);
       monthPl = parseFloat(object.data["MTD P&L (USD)"]);
@@ -548,7 +544,7 @@ export function assignColorAndSortParamsBasedOnAssetClass(object: {
   longShortDV01Sum: any;
   durationSummary: any;
   groupedByLocation: any;
-  view: string;
+  view: "front office" | "back office" | "exposure";
   ustTable: any;
   igTable: any;
   hyTable: any;
@@ -706,7 +702,7 @@ export function assignColorAndSortParamsBasedOnAssetClass(object: {
       let ytw = parseFloat(object.groupedByLocation[locationCode].data[index]["YTW"]);
       let entryYtw = parsePercentage(object.groupedByLocation[locationCode].data[index]["Entry Yield"]);
       let type = object.groupedByLocation[locationCode].data[index]["Type"];
-      if (object.view == "frontOffice") {
+      if (object.view == "front office" || object.view == "exposure") {
         usdMarketValue = parseFloat(object.groupedByLocation[locationCode].data[index]["USD Market Value"]) || 0;
         dayPl = parseFloat(object.groupedByLocation[locationCode].data[index]["Day P&L (USD)"]);
         monthPl = parseFloat(object.groupedByLocation[locationCode].data[index]["MTD P&L (USD)"]);
@@ -823,7 +819,7 @@ export function assignColorAndSortParamsBasedOnAssetClass(object: {
   }
 }
 
-export function assignBorderAndCustomSortAggregateGroup(object: { portfolio: any; groupedByLocation: any; sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDuration" | "groupRating" | "groupDelta" | "groupGamma" | "groupMTDDelta"; sign: any }) {
+export function assignBorderAndCustomSortAggregateGroup(object: { portfolio: any; groupedByLocation: any; sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDuration" | "groupRating" | "groupDelta" | "groupGamma" | "groupMTDDelta"; sign: any; view: "front office" | "back office" | "exposure" }) {
   object.sign = parseFloat(object.sign);
   if (object.sort == "order") {
     //because order should be descending
@@ -863,11 +859,11 @@ export function assignBorderAndCustomSortAggregateGroup(object: { portfolio: any
     }
 
     if (object.groupedByLocation[locationCode].data.length > 1) {
-      let portfolioViewType = object.groupedByLocation[locationCode].data[object.groupedByLocation[locationCode].data.length - 1]["_id"] ? "backOffice" : "frontOffice";
+      let portfolioViewType = object.view;
 
       let newObject: any = {};
 
-      if (portfolioViewType == "frontOffice") {
+      if (portfolioViewType == "front office" || portfolioViewType == "exposure") {
         newObject = {
           "L/S": "Total",
           Color: "white",
@@ -888,10 +884,10 @@ export function assignBorderAndCustomSortAggregateGroup(object: { portfolio: any
           "Rating Score": object.groupedByLocation[locationCode].groupRating,
         };
         if (object.groupedByLocation[locationCode].groupSpreadTZ || object.groupedByLocation[locationCode].groupSpreadTZ == 0) {
-          newObject["Current Spread (T)"] = Math.round(object.groupedByLocation[locationCode].groupSpreadTZ * 100) / 100 + " %";
+          newObject["Current Spread (T)"] = Math.round(object.groupedByLocation[locationCode].groupSpreadTZ * 100) / 100;
         }
         if (object.groupedByLocation[locationCode].groupEntrySpreadTZ || object.groupedByLocation[locationCode].groupEntrySpreadTZ == 0) {
-          newObject["Entry Spread (T)"] = Math.round(object.groupedByLocation[locationCode].groupEntrySpreadTZ * 100) / 100 + " %";
+          newObject["Entry Spread (T)"] = Math.round(object.groupedByLocation[locationCode].groupEntrySpreadTZ * 100) / 100;
         }
       } else {
         newObject = {
@@ -915,10 +911,10 @@ export function assignBorderAndCustomSortAggregateGroup(object: { portfolio: any
           "Rating Score": object.groupedByLocation[locationCode].groupRating,
         };
         if (object.groupedByLocation[locationCode].groupSpreadTZ || object.groupedByLocation[locationCode].groupSpreadTZ == 0) {
-          newObject["Current Spread (T)"] = Math.round(object.groupedByLocation[locationCode].groupSpreadTZ * 100) / 100 + " %";
+          newObject["Current Spread (T)"] = Math.round(object.groupedByLocation[locationCode].groupSpreadTZ * 100) / 100;
         }
         if (object.groupedByLocation[locationCode].groupEntrySpreadTZ || object.groupedByLocation[locationCode].groupEntrySpreadTZ == 0) {
-          newObject["Entry Spread (T)"] = Math.round(object.groupedByLocation[locationCode].groupEntrySpreadTZ * 100) / 100 + " %";
+          newObject["Entry Spread (T)"] = Math.round(object.groupedByLocation[locationCode].groupEntrySpreadTZ * 100) / 100;
         }
       }
 
@@ -929,7 +925,7 @@ export function assignBorderAndCustomSortAggregateGroup(object: { portfolio: any
   }
 }
 
-export function groupAndSortByLocationAndTypeDefineTables(object: { formattedPortfolio: PositionGeneralFormat[]; nav: number; sort: any; sign: number; view: string; currencies: any; format: "risk" | "summary"; sortBy: "pl" | null | "delta" | "gamma"; fundDetails: any }) {
+export function groupAndSortByLocationAndTypeDefineTables(object: { formattedPortfolio: PositionGeneralFormat[]; nav: number; sort: any; sign: number; view: "front office" | "exposure" | "back office"; currencies: any; format: "risk" | "summary"; sortBy: "pl" | null | "delta" | "gamma"; fundDetails: any }) {
   // Group objects by location
   let pairHedgeNotional = 0,
     pairIGNotional = 0,
@@ -1015,11 +1011,17 @@ export function groupAndSortByLocationAndTypeDefineTables(object: { formattedPor
   const groupedByLocation = object.formattedPortfolio.reduce((group: any, item: any) => {
     const { Location } = item;
     let notional = item["Notional Amount"];
+    let strategy = item["Strategy"];
+    let type = item["Type"];
+
     let rlzdTimestamp = new Date(item["Last Day Since Realizd"]).getTime();
-    if (notional != 0) {
+    if (notional != 0 && !(type == "UST" && strategy == "Global Hedge" && object.view == "exposure")) {
       group[Location] = group[Location] ? group[Location] : { data: [] };
       group[Location].data.push(item);
       return group;
+    } else if (notional != 0 && type == "UST" && strategy == "Global Hedge" && object.view == "exposure") {
+      group[Location] = group[Location] ? group[Location] : { data: [] };
+      group[Location].data.push(item);
     } else {
       group[Location + " Rlzd"] = group[Location + " Rlzd"] ? group[Location + " Rlzd"] : { data: [], "Last Day Since Realizd": 0 };
       if (rlzdTimestamp > group[Location + " Rlzd"]["Last Day Since Realizd"]) {
@@ -1069,7 +1071,7 @@ export function groupAndSortByLocationAndTypeDefineTables(object: { formattedPor
 
   let portfolio: any = [];
 
-  assignBorderAndCustomSortAggregateGroup({ portfolio: portfolio, groupedByLocation: groupedByLocation, sort: object.sort, sign: object.sign });
+  assignBorderAndCustomSortAggregateGroup({ portfolio: portfolio, groupedByLocation: groupedByLocation, sort: object.sort, sign: object.sign, view: object.view });
 
   let topWorstPerformaners = getTopWorst(groupedByLocation, object.sortBy);
 
@@ -1091,33 +1093,13 @@ export function groupAndSortByLocationAndTypeDefineTables(object: { formattedPor
     HYDV01Sum: HYDV01Sum,
     cdsNotional: -1 * cdsNotional,
   };
-  let paramsNAV = getCountrySectorStrategySum(countryNAVPercentage, sectorNAVPercentage, strategyNAVPercentage, issuerNAVPercentage, object.fundDetails.nav);
-  let sumCountryNAV = paramsNAV.sumCountry,
-    sumStrategyNAV = paramsNAV.sumStrategy,
-    sumSectorNAV = paramsNAV.sumSector,
-    sumIssuerNAV = paramsNAV.sumIssuer;
+  getCountrySectorStrategySum(countryNAVPercentage, sectorNAVPercentage, strategyNAVPercentage, issuerNAVPercentage, object.fundDetails.nav);
 
-  let paramsGMV = getCountrySectorStrategySum(countryGMVPercentage, sectorGMVPercentage, strategyGMVPercentage, issuerGMVPercentage, object.fundDetails.nav);
-  let sumCountryGMV = paramsGMV.sumCountry,
-    sumStrategyGMV = paramsGMV.sumStrategy,
-    sumSectorGMV = paramsGMV.sumSector,
-    sumIssuerGMV = paramsGMV.sumIssuer;
-
+  getCountrySectorStrategySum(countryGMVPercentage, sectorGMVPercentage, strategyGMVPercentage, issuerGMVPercentage, object.fundDetails.nav);
   let capacity = adjustMarginMultiplier(portfolio, sectorGMVPercentage, issuerNAVPercentage);
-
-  countryNAVPercentage["Total"] = Math.round(sumCountryNAV * 10) / 10;
-  sectorNAVPercentage["Total"] = Math.round(sumSectorNAV * 10) / 10;
-  strategyNAVPercentage["Total"] = Math.round(sumStrategyNAV * 10) / 10;
-  issuerNAVPercentage["Total"] = Math.round(sumIssuerNAV * 10) / 10;
-
-  countryGMVPercentage["Total"] = Math.round(sumCountryGMV * 10) / 10;
-  sectorGMVPercentage["Total"] = Math.round(sumSectorGMV * 10) / 10;
-  strategyGMVPercentage["Total"] = Math.round(sumStrategyGMV * 10) / 10;
-  issuerGMVPercentage["Total"] = Math.round(sumIssuerGMV * 10) / 10;
 
   durationSummary["Total"].dv01Sum = Math.round(durationSummary["0 To 2"].dv01Sum + durationSummary["2 To 5"].dv01Sum + durationSummary["5 To 10"].dv01Sum + durationSummary["10 To 30"].dv01Sum + durationSummary["> 30"].dv01Sum);
   longShortDV01Sum["Total"] = Math.round(longShortDV01Sum["Long"] + longShortDV01Sum["Short"]);
-
   return {
     portfolio: capacity.portfolio,
     duration: durationSummary,

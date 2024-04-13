@@ -200,7 +200,6 @@ function compareMonths(a: any, b: any) {
   // Reformat the month string to 'MM/01/YYYY' for comparison
   let reformattedMonthA = a.month.substring(5) + "/01/" + a.month.substring(0, 4);
   let reformattedMonthB = b.month.substring(5) + "/01/" + b.month.substring(0, 4);
-  console.log(reformattedMonthA, reformattedMonthB);
   // Convert the reformatted strings to date objects
   let dateA = new Date(reformattedMonthA).getTime();
   let dateB = new Date(reformattedMonthB).getTime();

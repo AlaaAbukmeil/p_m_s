@@ -70,6 +70,31 @@ router.get("/summary-portfolio", verifyToken, async (req: Request, res: Response
   }
 });
 
+router.get("/summary-exposure-portfolio", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    let date: any = req.query.date;
+    let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMonthlyPl" | "groupDV01Sum" | "groupDuration" | any = req.query.sort || "order";
+    let sign: any = req.query.sign || 1;
+    let conditions: any = req.query || {};
+    // console.log(conditions)
+
+    if (date.includes("NaN")) {
+      date = getDateTimeInMongoDBCollectionFormat(new Date());
+    }
+
+    date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
+    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, "exposure", null);
+    if (report.error) {
+      res.send({ error: report.error });
+    } else {
+      res.send(report);
+    }
+  } catch (error: any) {
+    console.log(error);
+    res.send({ error: error.toString() });
+  }
+});
+
 router.get("/performers-portfolio", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
     let date: any = req.query.date;
@@ -117,8 +142,8 @@ router.get("/risk-report", verifyToken, async (req: Request, res: Response, next
 });
 
 router.post("/one-time", uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  let portfolio = await getPortfolio()
-  console.log(portfolio)
+  let portfolio = await getPortfolio();
+  console.log(portfolio);
   res.send(200);
 });
 

@@ -210,7 +210,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
   return object;
 }
 
-export function formatFrontOfficeTable(portfolio: PositionBeforeFormatting[], date: any, fund: any, dates: any, sort: any, sign: number, conditions = null, fundDetailsYTD: any, sortBy: "pl" | null | "delta" | "gamma") {
+export function formatFrontOfficeTable({ portfolio, date, fund, dates, sort, sign, conditions, fundDetailsYTD, sortBy }: { portfolio: PositionBeforeFormatting[]; date: any; fund: any; dates: any; sort: any; sign: number; conditions: null | any; fundDetailsYTD: any; sortBy: "pl" | null | "delta" | "gamma" }) {
   let formattedPortfolio: any = formatGeneralTable({ portfolio: portfolio, date: date, fund: fund, dates: dates, conditions: conditions, fundDetailsYTD: fundDetailsYTD });
 
   let formatted = [];
@@ -223,7 +223,7 @@ export function formatFrontOfficeTable(portfolio: PositionBeforeFormatting[], da
     }
   }
 
-  let analyzedPortfolio = groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio: formatted, nav: formattedPortfolio.fundDetails.nav, sort: sort, sign: sign, view: "frontOffice", currencies: formattedPortfolio.currencies, format: "summary", sortBy: sortBy, fundDetails: formattedPortfolio.fundDetails });
+  let analyzedPortfolio = groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio: formatted, nav: formattedPortfolio.fundDetails.nav, sort: sort, sign: sign, view: "front office", currencies: formattedPortfolio.currencies, format: "summary", sortBy: sortBy, fundDetails: formattedPortfolio.fundDetails });
   return { portfolio: analyzedPortfolio.portfolio, fundDetails: formattedPortfolio.fundDetails, analysis: analyzedPortfolio };
 }
 export function getTopWorst(groupedByLocation: any, sortBy: "pl" | null | "delta" | "gamma") {

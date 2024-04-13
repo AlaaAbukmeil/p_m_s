@@ -53,7 +53,7 @@ export async function registerUser(email: string, password: string, verification
     return error;
   }
 }
-export async function checkIfUserExists(email: string, password: string) {
+export async function checkIfUserExists(email: string, password: string): Promise<{ status: 200 | 401; message: null | string; token: string | null, email:string|null }> {
   try {
     const database = client.db("auth");
     const usersCollection = database.collection("users");
@@ -72,17 +72,18 @@ export async function checkIfUserExists(email: string, password: string) {
             email: email,
           };
         } else {
-          return { message: "wrong password", status: 401 };
+          return { message: "wrong password", status: 401, token: null, email: null };
         }
       } catch (error) {
-        return error;
+        return { message: "unexpected error", status: 401, token: null, email: null };
+
         // handle error appropriately
       }
     } else {
-      return { message: "user does not exist", status: 401 };
+      return { message: "user does not exist", status: 401, token: null, email: null };
     }
   } catch (error) {
-    return error;
+    return { message: "unexpected error", status: 401, token: null, email: null };
   }
 }
 
