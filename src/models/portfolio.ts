@@ -96,9 +96,8 @@ export interface PositionBeforeFormatting {
   "Rating Class": string;
   "Asset Class": string;
   "YTD Rate": any;
-  Delta: string;
-  "MTD Delta": string;
-  Gamma: string;
+  "Day Price Move": string;
+  "MTD Price Move": string;
 }
 
 export interface PositionGeneralFormat extends PositionBeforeFormatting {
@@ -165,6 +164,7 @@ export interface PositionGeneralFormat extends PositionBeforeFormatting {
   "Coupon Rate": any;
   "Last Day Since Realizd": string | null;
   "Base Margin": string;
+  "Duration Bucket": "0 To 2" | "2 To 5" | "5 To 10" | "10 To 30" | "> 30";
 }
 
 export interface FundMTD {

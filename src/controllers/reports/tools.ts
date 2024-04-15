@@ -77,7 +77,7 @@ export function parseBondIdentifier(identifier: any): any {
           }
 
           if (date) {
-            date = formatDateUS(date);
+            date = formatDateWorld(date);
           }
           return { rate: rate, date: date };
         } else {

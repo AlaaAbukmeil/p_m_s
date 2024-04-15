@@ -1,6 +1,5 @@
 import { PinnedPosition } from "../../models/position";
-import { isNotNullOrUndefined } from "../common";
-import { assetClassOrder } from "./tables/formatter";
+import { isNotNullOrUndefined, parsePercentage } from "../common";
 
 export function sortObjectBasedOnKey(object: any) {
   return Object.keys(object)
@@ -194,6 +193,9 @@ export function yearsUntil(dateString: any, dateInput: any, bbTicker: string) {
   }
 
   let dateComponents = dateString.split("/");
+  if (dateComponents[2].length <= 2) {
+    dateComponents[2] = "20" + dateComponents[2];
+  }
 
   dateString = dateComponents[1] + "/" + dateComponents[0] + "/" + dateComponents[2];
   let date = new Date(dateString).getTime();
@@ -274,8 +276,7 @@ export class AggregatedData {
   "Total Gain/ Loss (USD)": number;
   "% of Total Gain/ Loss since Inception (Live Position)": number;
   "Notional Amount": number;
-  "Delta": number;
-  "Gamma": number;
+  "Day Price Move": number;
   constructor() {
     this["Day P&L (USD)"] = 0;
     this["MTD P&L (USD)"] = 0;
@@ -303,16 +304,14 @@ export class AggregatedData {
     this["Total Gain/ Loss (USD)"] = 0;
     this["% of Total Gain/ Loss since Inception (Live Position)"] = 0;
     this["Notional Amount"] = 0;
-    this["Delta"] = 0;
-    this["Gamma"] = 0;
+    this["Day Price Move"] = 0;
   }
 }
-export function assignAssetClass(locationCode: string, group: any) {
+export function assignAssetClass(locationCode: string, group: any, assetClassOrder: any, view: "front office" | "exposure" | "back office") {
   try {
     let rlzd = 0,
       assetClass = "";
     let unrlzdPositionsNum = group.filter((position: any) => position["Notional Amount"] != 0).length;
-
     for (let index = 0; index < group.length; index++) {
       let position: PinnedPosition = group[index];
 
@@ -320,38 +319,74 @@ export function assignAssetClass(locationCode: string, group: any) {
         if (!position["Type"]) {
           return assetClassOrder.undefined;
         }
-        if ((position["Type"].includes("UST") || position["Strategy"] == "RV") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
-          return assetClassOrder.UST_HEDGE;
-        }
-        if (position["Type"].includes("FUT") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
-          return assetClassOrder.CURR_HEDGE;
-        }
-        if (position["Type"].includes("UST") && position["Notional Amount"] <= 0 && unrlzdPositionsNum == 1) {
-          return assetClassOrder.UST_GLOBAL;
-        }
+        if (view != "exposure") {
+          if ((position["Type"].includes("UST") || position["Strategy"] == "RV") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
+            return assetClassOrder.UST_HEDGE;
+          }
+          if (position["Type"].includes("FUT") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
+            return assetClassOrder.CURR_HEDGE;
+          }
+          if (position["Type"].includes("UST") && position["Notional Amount"] <= 0 && (unrlzdPositionsNum == 1 || position["Strategy"] == "Global Hedge")) {
+            return assetClassOrder.UST_GLOBAL;
+          }
 
-        if (position["Type"] == "FUT" && position["Notional Amount"] <= 0) {
-          return assetClassOrder.FUT;
-        }
-        if (position["Asset Class"] == "Illiquid") {
-          return assetClassOrder.Illiquid;
-        }
-        if (position["Type"] == "CDS") {
-          return assetClassOrder.CDS;
-        }
-        if (position["Currency"] != "USD") {
-          return assetClassOrder.NON_USD;
-        }
-        if (position["Asset Class"] == "IG") {
-          assetClass = "IG";
-        }
+          if (position["Type"] == "FUT" && position["Notional Amount"] <= 0) {
+            return assetClassOrder.FUT;
+          }
+          if (position["Asset Class"] == "Illiquid") {
+            return assetClassOrder.Illiquid;
+          }
+          if (position["Type"] == "CDS") {
+            return assetClassOrder.CDS;
+          }
+          if (position["Currency"] != "USD") {
+            return assetClassOrder.NON_USD;
+          }
+          if (position["Asset Class"] == "IG") {
+            assetClass = "IG";
+          }
 
-        if (position["Asset Class"] == "HY" && assetClass != "IG") {
-          assetClass = "HY";
-        }
+          if (position["Asset Class"] == "HY" && assetClass != "IG") {
+            assetClass = "HY";
+          }
 
-        //if one of them is not rlzd, then its not appliacable
-        rlzd = 1;
+          //if one of them is not rlzd, then its not appliacable
+          rlzd = 1;
+        } else if (view == "exposure") {
+          if (locationCode == "Rate Sensitive" && view == "exposure") {
+            return assetClassOrder.R_S;
+          }
+          if (locationCode == "Rate Insensitive" && view == "exposure") {
+            return assetClassOrder.R_IS;
+          }
+          if (position["Strategy"] == "RV") {
+            return assetClassOrder.UST_HEDGE;
+          }
+
+          if (position["Type"].includes("UST") && position["Notional Amount"] <= 0 && (unrlzdPositionsNum == 1 || position["Strategy"] == "Global Hedge")) {
+            return assetClassOrder.UST_GLOBAL;
+          }
+
+          if (position["Type"].includes("FUT") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
+            return assetClassOrder.CURR_HEDGE;
+          }
+
+          if (position["Type"] == "FUT" && position["Notional Amount"] <= 0) {
+            return assetClassOrder.FUT;
+          }
+          if (position["Asset Class"] == "Illiquid") {
+            return assetClassOrder.Illiquid;
+          }
+          if (position["Type"] == "CDS") {
+            return assetClassOrder.CDS;
+          }
+          if (position["Currency"] != "USD") {
+            return assetClassOrder.NON_USD;
+          }
+
+          //if one of them is not rlzd, then its not appliacable
+          rlzd = 1;
+        }
       } else {
         if (rlzd == 0 || rlzd == 2) {
           rlzd = 2;
@@ -379,23 +414,67 @@ export function parseStringWithNoSpecialCharacters(word: string): string {
   if (typeof word == "string") {
     return word.toLowerCase().replace(/[^a-z0-9]/gi, "");
   } else {
-    return ""
+    return "";
   }
 }
 
+export function getDurationBucket(duration: string) {
+  let numDuration = parseFloat(duration);
 
-export function getDurationBucket(duration:number){
-
-if(duration < 2){
-  return "0 To 2"
-}else if(duration >= 2 && duration < 5){
-  return "2 To 5"
-}else if(duration >= 5 && duration < 10){
-  return "5 To 10"
-}else if(duration >= 10 && duration < 30){
-  return "10 To 30"
-}else if(duration >= 30){
-  return "> 30"
+  if (numDuration < 2) {
+    return "0 To 2";
+  } else if (numDuration >= 2 && numDuration < 5) {
+    return "2 To 5";
+  } else if (numDuration >= 5 && numDuration < 10) {
+    return "5 To 10";
+  } else if (numDuration >= 10 && numDuration < 30) {
+    return "10 To 30";
+  } else if (numDuration >= 30) {
+    return "> 30";
+  } else {
+    return "Error";
+  }
 }
+export let assetClassOrderFrontOffice: any = {
+  //hedge UST and hedge
 
+  UST_HEDGE: 1,
+  IG: 2,
+  HY: 3,
+  CURR_HEDGE: 4,
+  NON_USD: 5,
+  FUT: 6,
+  CDS: 7,
+  UST_GLOBAL: 8,
+  Illiquid: 9,
+  undefined: 10,
+  RLZD: 11,
+};
+
+export let assetClassOrderExposure: any = {
+  //hedge UST and hedge
+
+  UST_GLOBAL: 1,
+  R_S: 2,
+  R_IS: 3,
+  CURR_HEDGE: 4,
+  NON_USD: 5,
+  FUT: 6,
+  CDS: 7,
+  UST_HEDGE: 8,
+  Illiquid: 9,
+  undefined: 10,
+  RLZD: 11,
+};
+
+export function rateSensitive(yieldInput: string, coupon: string, duration: string) {
+  let yieldNum = parsePercentage(yieldInput);
+  let couponNum = parsePercentage(coupon);
+  let durationNum = parsePercentage(duration);
+
+  if (yieldNum > 7 && couponNum > 7 && durationNum > 2) {
+    return "Rate Insensitive";
+  } else {
+    return "Rate Sensitive";
+  }
 }

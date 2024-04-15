@@ -11,7 +11,7 @@ import { Position } from "../../models/position";
 import { formatFrontOfficeTable } from "../analytics/tables/frontOffice";
 import { formatBackOfficeTable } from "../analytics/tables/backOffice";
 import { isRatingHigherThanBBBMinus } from "../analytics/tools";
-export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions = null, view: "front office" | "back office" | "exposure", sortBy: "pl" | "delta" | "gamma" | null) {
+export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions = null, view: "front office" | "back office" | "exposure", sortBy: "pl" | "price move"  | null) {
   const database = client.db("portfolios");
   let earliestPortfolioName = await getEarliestCollectionName(date);
 
@@ -80,7 +80,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
     let previousPreviousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeYesterday.predecessorDate);
     let previousYearPortfolio = await getHistoricalPortfolio(lastYearLastCollectionName.predecessorDate);
     previousDayPortfolio = getDayParams(previousDayPortfolio, previousPreviousDayPortfolio, lastDayBeforeYesterday.predecessorDate);
-    documents = getDayParams(documents, previousDayPortfolio, lastDayBeforeToday.predecessorDate, true);
+    documents = getDayParams(documents, previousDayPortfolio, lastDayBeforeToday.predecessorDate);
     documents = getMTDParams(documents, lastMonthPortfolio, earliestPortfolioName.predecessorDate);
     documents = getYTDParams(documents, previousYearPortfolio, lastYearLastCollectionName.predecessorDate);
   } catch (error) {
@@ -124,18 +124,17 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   let fund = fundDetailsMTD[0];
   let portfolioFormattedSorted;
   if (view == "front office" || view == "exposure") {
-    portfolioFormattedSorted = formatFrontOfficeTable({ portfolio: documents, date: date, fund: fund, dates: dates, sort: sort, sign: sign, conditions: conditions, fundDetailsYTD: fundDetailsYTD, sortBy: sortBy });
+    portfolioFormattedSorted = formatFrontOfficeTable({ portfolio: documents, date: date, fund: fund, dates: dates, sort: sort, sign: sign, conditions: conditions, fundDetailsYTD: fundDetailsYTD, sortBy: sortBy, view: view });
   } else {
     portfolioFormattedSorted = formatBackOfficeTable(documents, date, fund, dates, sort, sign, conditions, fundDetailsYTD, sortBy);
   }
   let fundDetails = portfolioFormattedSorted.fundDetails;
   documents = portfolioFormattedSorted.portfolio;
-  let count = 1;
 
   return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: dayParamsWithLatestUpdates.lastUploadTradesDate, updatePriceDate: dayParamsWithLatestUpdates.lastUpdatePricesDate };
 }
 
-export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInput: any, gamma = false) {
+export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInput: any) {
   // try {
 
   for (let index = 0; index < portfolio.length; index++) {
@@ -188,19 +187,11 @@ export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInpu
     let yesterdayPrice: any = parseFloat(position["Previous Mark"]);
 
     if (portfolio[index]["Type"] == "BND" || portfolio[index]["Type"] == "UST") {
-      portfolio[index]["Delta (BP)"] = Math.round((todayPrice - yesterdayPrice) * 10000 * type) / 100 || 0;
-      portfolio[index]["Delta"] = (Math.round(((parseFloat(todayPrice) - parseFloat(yesterdayPrice)) / todayPrice) * type * 10000) / 100 || 0) + " %";
+      portfolio[index]["Day Price Move"] = Math.round((todayPrice - yesterdayPrice) * 10000 * type) / 100 || 0;
     } else {
-      portfolio[index]["Delta"] = 0;
-      portfolio[index]["Delta (BP)"] = 0;
+      portfolio[index]["Day Price Move"] = 0;
     }
-    if (gamma) {
-      if (previousDayPosition) {
-        portfolio[index]["Gamma"] = Math.round((parsePercentage(portfolio[index]["Delta"]) - parsePercentage(previousDayPosition["Delta"]) || 0) * 1000) / 100 + " %";
-      } else {
-        portfolio[index]["Gamma"] = "0 %";
-      }
-    }
+   
   }
 
   return portfolio;
@@ -364,11 +355,9 @@ export function getMTDURlzdInt(portfolio: any, date: any) {
     }
 
     if (portfolio[index]["Type"] == "BND" || portfolio[index]["Type"] == "UST") {
-      portfolio[index]["MTD Delta (BP)"] = Math.round((todayPrice - mtdPrice) * 10000 * type) / 100 || 0;
-      portfolio[index]["MTD Delta"] = (Math.round(((todayPrice - mtdPrice) / todayPrice) * 10000 * type) / 100 || 0) + " %";
+      portfolio[index]["MTD Price Move"] = Math.round((todayPrice - mtdPrice) * 10000 * type) / 100 || 0;
     } else {
-      portfolio[index]["MTD Delta (BP)"] = 0;
-      portfolio[index]["MTD Delta"] = 0;
+      portfolio[index]["MTD Price Move"] = 0;
     }
     let quantityGeneratingInterest = position["Notional Amount"];
     let interestInfo = position["Interest"];

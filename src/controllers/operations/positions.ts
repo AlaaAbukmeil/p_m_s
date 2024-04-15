@@ -660,9 +660,10 @@ export async function editPosition(editedPosition: any, date: string) {
       "Cost (LC)",
       "Day Accrual",
       "YTD Mark Ref.D",
-      "Gamma",
       "_id",
-      "Delta",
+      "Day Price Move",
+      "MTD Price Move",
+
       "Value (BC)",
       "Value (LC)",
       "MTD Int. (BC)",

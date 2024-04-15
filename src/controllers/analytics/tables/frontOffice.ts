@@ -2,7 +2,7 @@ import { PositionBeforeFormatting } from "../../../models/portfolio";
 import { formatGeneralTable, groupAndSortByLocationAndTypeDefineTables } from "./formatter";
 import { bbgRating, formatMarkDate, moodyRating } from "../tools";
 
-export function formatSummaryPosition(position: any, fundDetails: any, dates: any, sortBy: "pl" | null | "delta" | "gamma") {
+export function formatSummaryPosition(position: any, fundDetails: any, dates: any, sortBy: "pl" | null | "price move") {
   let titles = [
     "Type",
     "L/S",
@@ -17,34 +17,27 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "% of NAV",
     "Bid",
     "Ask",
+    "YTW",
+    `Last Mid ${formatMarkDate(dates.today)}`,
 
     "Current Spread (T)",
-    `Last Mid ${formatMarkDate(dates.today)}`,
-    "YTW",
+    "Spread (Z)",
     "Entry Spread (T)",
     "Entry Price",
-    "Spread (Z)",
     "Entry Yield",
     "Day P&L (USD)",
-    "Delta",
-    "Delta (BP)",
+    "Day Price Move",
 
-    "Gamma",
-    "Day P&L % (NAV)",
+    // "Day P&L % (NAV)",
     "Duration",
     "DV01",
     "Call Date",
     "BBG / S&P / Moody / Fitch Rating",
     "MTD P&L (USD)",
-    "MTD Delta",
-    "MTD Delta (BP)",
-    "MTD P&L % (NAV)",
-    "Rlzd MTD P&L (USD)",
-    "Rlzd MTD P&L (USD) %",
+    "MTD Price Move",
+    // "MTD P&L % (NAV)",
     "MTD Int. (USD)",
-    "MTD Int. (USD) %",
-    "URlzd MTD (USD)",
-    "URlzd MTD (USD) %",
+    "YTD Int. (USD)",
     "Average Cost",
     // `${formatMarkDate(dates.lastMonth)}`,
     // `${formatMarkDate(dates.yesterday)}`,
@@ -90,13 +83,15 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Country",
     "Duration",
     "Base Margin",
+    "Duration Bucket",
+    "Rate Sensitivity",
   ];
 
   let titlesValues: any = {
     Type: "Type",
     "L/S": "L/S",
-    "MTD Delta (BP)": "MTD Delta (BP)",
-    "Delta (BP)": "Delta (BP)",
+    "MTD Price Move": "MTD Price Move",
+    "Day Price Move": "Day Price Move",
 
     Strategy: "Strategy",
     "Asset Class": "Asset Class",
@@ -151,7 +146,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
 
     "Value (BC) Utilization % of Nav": "Value (BC) Utilization % of Nav",
     "Accrued Int. Since Inception (BC)": "Accrued Int. Since Inception (BC)",
-
+    "YTD Int. (USD)": "YTD Int. (USD)",
     "Value (BC) Test": "Value (BC) Test",
     "Value (BC) Color Test": "Value (BC) Color Test",
     "Capital Gain/ Loss since Inception (Live Position)": "Capital Gain/ Loss since Inception (Live Position)",
@@ -159,14 +154,13 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Total Gain/ Loss (USD)": "Total Gain/ Loss (USD)",
     "% of Total Gain/ Loss since Inception (Live Position)": "% of Total Gain/ Loss since Inception (Live Position)",
     "Coupon Rate": "Coupon Rate",
-    Delta: "Delta",
-    "MTD Delta": "MTD Delta",
-    Gamma: "Gamma",
     Pin: "Pin",
     "Base Margin": "Base Margin",
+    "Duration Bucket": "Duration Bucket",
+    "Rate Sensitivity": "Rate Sensitivity",
   };
 
-  let twoDigits = [`${formatMarkDate(dates.lastMonth)}`, `${formatMarkDate(dates.yesterday)}`, `Last Mid ${formatMarkDate(dates.today)}`, "Bid", "Ask", "Duration", "Average Cost", "Entry Price", "Previous Mark", "Delta (BP)", "MTD Delta (BP)"];
+  let twoDigits = [`${formatMarkDate(dates.lastMonth)}`, `${formatMarkDate(dates.yesterday)}`, `Last Mid ${formatMarkDate(dates.today)}`, "Bid", "Ask", "Duration", "Average Cost", "Entry Price", "Previous Mark", "Day Price Move", "MTD Price Move"];
 
   // titlesValues[formatMarkDate(dates.lastMonth)] = "MTD Mark";
   // titlesValues[formatMarkDate(dates.yesterday)] = "Previous Mark";
@@ -186,13 +180,8 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     }
   }
 
-  object["Day P&L % (NAV)"] = ((object["Day P&L (USD)"] / fundDetails.nav) * 100).toFixed(2) + " %";
-  object["MTD P&L % (NAV)"] = ((object["MTD P&L (USD)"] / fundDetails.nav) * 100).toFixed(2) + " %";
-  object["Rlzd MTD (USD) %"] = ((position["MTD Rlzd (BC)"] / fundDetails.nav) * 100).toFixed(2) + " %";
-  object["Rlzd MTD (USD)"] = Math.round(position["MTD Rlzd (BC)"]);
-  object["URlzd MTD (USD) %"] = ((position["MTD URlzd (BC)"] / fundDetails.nav) * 100).toFixed(2) + " %";
-  object["URlzd MTD (USD)"] = Math.round(position["MTD URlzd (BC)"]);
-  object["MTD Int. (USD) %"] = ((position["MTD Int. (BC)"] / fundDetails.nav) * 100).toFixed(2) + " %";
+  // object["Day P&L % (NAV)"] = ((object["Day P&L (USD)"] / fundDetails.nav) * 100).toFixed(2) + " %";
+  // object["MTD P&L % (NAV)"] = ((object["MTD P&L (USD)"] / fundDetails.nav) * 100).toFixed(2) + " %";
   object["% of NAV"] = ((object["USD Market Value"] / fundDetails.nav) * 100).toFixed(2) + " %";
   object["Color"] = object["Notional Amount"] == 0 ? "#E6F2FD" : "";
   object["ISIN"] = position["ISIN"];
@@ -205,12 +194,10 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
   object["Current Spread (T)"] = "";
 
   object["Entry Spread (T)"] = "";
-
-  // object["Delta"] = Math.round((object[`Last Mid ${formatMarkDate(dates.today)}`] - object["Previous Mark"])/object[`Last Mid ${formatMarkDate(dates.today)}`] * 10000)/100 + " %"
   return object;
 }
 
-export function formatFrontOfficeTable({ portfolio, date, fund, dates, sort, sign, conditions, fundDetailsYTD, sortBy }: { portfolio: PositionBeforeFormatting[]; date: any; fund: any; dates: any; sort: any; sign: number; conditions: null | any; fundDetailsYTD: any; sortBy: "pl" | null | "delta" | "gamma" }) {
+export function formatFrontOfficeTable({ portfolio, date, fund, dates, sort, sign, conditions, fundDetailsYTD, sortBy, view }: { portfolio: PositionBeforeFormatting[]; date: any; fund: any; dates: any; sort: any; sign: number; conditions: null | any; fundDetailsYTD: any; sortBy: "pl" | null | "price move"; view: "front office" | "back office" | "exposure" }) {
   let formattedPortfolio: any = formatGeneralTable({ portfolio: portfolio, date: date, fund: fund, dates: dates, conditions: conditions, fundDetailsYTD: fundDetailsYTD });
 
   let formatted = [];
@@ -223,17 +210,16 @@ export function formatFrontOfficeTable({ portfolio, date, fund, dates, sort, sig
     }
   }
 
-  let analyzedPortfolio = groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio: formatted, nav: formattedPortfolio.fundDetails.nav, sort: sort, sign: sign, view: "front office", currencies: formattedPortfolio.currencies, format: "summary", sortBy: sortBy, fundDetails: formattedPortfolio.fundDetails });
+  let analyzedPortfolio = groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio: formatted, nav: formattedPortfolio.fundDetails.nav, sort: sort, sign: sign, view: view, currencies: formattedPortfolio.currencies, format: "summary", sortBy: sortBy, fundDetails: formattedPortfolio.fundDetails });
   return { portfolio: analyzedPortfolio.portfolio, fundDetails: formattedPortfolio.fundDetails, analysis: analyzedPortfolio };
 }
-export function getTopWorst(groupedByLocation: any, sortBy: "pl" | null | "delta" | "gamma") {
+export function getTopWorst(groupedByLocation: any, sortBy: "pl" | null | "price move") {
   let entries = Object.entries(groupedByLocation).map(([key, value]: any) => ({
     key,
     groupDayPl: value.groupDayPl,
     groupMTDPl: value.groupMTDPl,
-    groupDelta: value.groupDelta,
-    groupGamma: value.groupGamma,
-    groupMTDDelta: value.groupMTDDelta,
+    groupDayPriceMoveSum: value.groupDayPriceMoveSum,
+    groupMTDPriceMoveSum: value.groupMTDPriceMoveSum,
     data: value.data,
   }));
   // Step 2: Sort the array based on the `groupPL` property
@@ -251,32 +237,19 @@ export function getTopWorst(groupedByLocation: any, sortBy: "pl" | null | "delta
     top5MTD = entries.slice(0, 5);
     worst5MTD = entries.slice(-5);
     worst5MTD = worst5MTD.sort((a, b) => a.groupMTDPl - b.groupMTDPl);
-  } else if (sortBy == "delta") {
+  } else if (sortBy == "price move") {
     entries = entries.filter((object: any, index) => !object["key"].includes("Rlzd"));
-    entries.sort((a, b) => b.groupDelta - a.groupDelta);
+    entries.sort((a, b) => b.groupDayPriceMoveSum - a.groupDayPriceMoveSum);
 
     // Step 3: Select the top 5 and worst 5 entries
     top5Day = entries.slice(0, 5);
-    worst5Day = entries.slice(-5).sort((a, b) => a.groupDelta - b.groupDelta);
-    entries.sort((a, b) => b.groupMTDDelta - a.groupMTDDelta);
+    worst5Day = entries.slice(-5).sort((a, b) => a.groupDayPriceMoveSum - b.groupDayPriceMoveSum);
+    entries.sort((a, b) => b.groupMTDPriceMoveSum - a.groupMTDPriceMoveSum);
     // Step 4: Map the selected entries to retrieve their `data` values
 
     top5MTD = entries.slice(0, 5);
     worst5MTD = entries.slice(-5);
-    worst5MTD = worst5MTD.sort((a, b) => a.groupMTDDelta - b.groupMTDDelta);
-  } else if (sortBy == "gamma") {
-    entries = entries.filter((object: any, index) => !object["key"].includes("Rlzd"));
-    entries.sort((a, b) => b.groupGamma - a.groupGamma);
-
-    // Step 3: Select the top 5 and worst 5 entries
-    top5Day = entries.slice(0, 5);
-    worst5Day = entries.slice(-5).sort((a, b) => a.groupGamma - b.groupGamma);
-    entries.sort((a, b) => b.groupGamma - a.groupGamma);
-    // Step 4: Map the selected entries to retrieve their `data` values
-
-    top5MTD = entries.slice(0, 5);
-    worst5MTD = entries.slice(-5);
-    worst5MTD = worst5MTD.sort((a, b) => a.groupGamma - b.groupGamma);
+    worst5MTD = worst5MTD.sort((a, b) => a.groupMTDPriceMoveSum - b.groupMTDPriceMoveSum);
   }
 
   let topWorstPerformaners = {
