@@ -7,6 +7,7 @@ export interface Position {
   Ask: number;
   "Asset Class": string;
   "Average Cost": number;
+  Duration: string;
   "BB Ticker": string;
   "BBG Composite Rating": string;
   Bid: number;
@@ -56,9 +57,10 @@ export interface Position {
   "Z Spread": number;
   holdPortfXrate: number;
   "MTD Rlzd DC": Record<string, number>;
-  Pin: "pinned"|"not pinned";
+  Pin: "pinned" | "not pinned";
+  "Security Description": string;
 }
 
-export interface  PinnedPosition extends Position {
-  "Pin Timestamp": number
+export interface PinnedPosition extends Position {
+  "Pin Timestamp": number;
 }

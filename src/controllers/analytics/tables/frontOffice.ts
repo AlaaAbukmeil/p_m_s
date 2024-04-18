@@ -27,6 +27,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Entry Yield",
     "Day P&L (USD)",
     "Day Price Move",
+    "3-Day Price Move",
 
     // "Day P&L % (NAV)",
     "Duration",
@@ -37,6 +38,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "MTD Price Move",
     // "MTD P&L % (NAV)",
     "MTD Int. (USD)",
+    
     "YTD Int. (USD)",
     "Average Cost",
     // `${formatMarkDate(dates.lastMonth)}`,
@@ -85,6 +87,9 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Base Margin",
     "Duration Bucket",
     "Rate Sensitivity",
+    "30-Day Int. EST",
+    "365-Day Int. EST",
+    "Day Int. (BC)"
   ];
 
   let titlesValues: any = {
@@ -92,6 +97,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "L/S": "L/S",
     "MTD Price Move": "MTD Price Move",
     "Day Price Move": "Day Price Move",
+    "3-Day Price Move": "3-Day Price Move",
 
     Strategy: "Strategy",
     "Asset Class": "Asset Class",
@@ -106,6 +112,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     Maturity: "Maturity",
     "% of NAV": "% of NAV",
     YTW: "YTW",
+    "Day Int. (BC)":"Day Int. (BC)",
     "Entry Yield": "Entry Yield",
     DV01: "DV01",
     Bid: "Bid",
@@ -117,7 +124,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "MTD FX P&L (USD)": "MTD P&L FX",
     "Realizd MTD P&L (USD)": "MTD Rlzd (BC)",
     "Unrealizd MTD P&L (USD)": "MTD URlzd (BC)",
-    "MTD Int. (USD)": "MTD Int. (BC)",
+    "MTD Int. (USD)": "MTD Int. (USD)",
     "MTD P&L (USD)": "MTD P&L (BC)",
     "Day P&L Attribution %": "Day Attribution %",
     "MTD P&L Attribution %": "MTD Attribution %",
@@ -125,6 +132,8 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Unrealised MTD P&L (USD) %": "Unrealised MTD P&L (USD) %",
     "MTD Int. (USD) %": "MTD Int. (USD) %",
     "Day Int. (USD)": "Day Int. (BC)",
+    "30-Day Int. EST": "30-Day Int. EST",
+    "365-Day Int. EST": "365-Day Int. EST",
     Sector: "Sector",
     Country: "Country",
     "Last Day Since Realizd": "Last Day Since Realizd",
@@ -160,7 +169,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Rate Sensitivity": "Rate Sensitivity",
   };
 
-  let twoDigits = [`${formatMarkDate(dates.lastMonth)}`, `${formatMarkDate(dates.yesterday)}`, `Last Mid ${formatMarkDate(dates.today)}`, "Bid", "Ask", "Duration", "Average Cost", "Entry Price", "Previous Mark", "Day Price Move", "MTD Price Move"];
+  let twoDigits = [`${formatMarkDate(dates.lastMonth)}`, `${formatMarkDate(dates.yesterday)}`, `Last Mid ${formatMarkDate(dates.today)}`, "Bid", "Ask", "Duration", "Average Cost", "Entry Price", "Previous Mark", "Day Price Move", "MTD Price Move", "3-Day Price Move"];
 
   // titlesValues[formatMarkDate(dates.lastMonth)] = "MTD Mark";
   // titlesValues[formatMarkDate(dates.yesterday)] = "Previous Mark";

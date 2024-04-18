@@ -11,7 +11,7 @@ import { Position } from "../../models/position";
 import { formatFrontOfficeTable } from "../analytics/tables/frontOffice";
 import { formatBackOfficeTable } from "../analytics/tables/backOffice";
 import { isRatingHigherThanBBBMinus } from "../analytics/tools";
-export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions = null, view: "front office" | "back office" | "exposure", sortBy: "pl" | "price move"  | null) {
+export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions = null, view: "front office" | "back office" | "exposure", sortBy: "pl" | "price move" | null) {
   const database = client.db("portfolios");
   let earliestPortfolioName = await getEarliestCollectionName(date);
 
@@ -54,6 +54,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
     })[0]; // Take the first item after sorting
 
     const latestDate = latestDateKey ? new Date(latestDateKey) : null;
+    
     if (latestDate && latestDate <= lastDayOfLastYear && documents[index]["Notional Amount"] == 0) {
       // If not, remove the document from the array
       documents.splice(index, 1);
@@ -79,8 +80,8 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
     let previousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeToday.predecessorDate);
     let previousPreviousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeYesterday.predecessorDate);
     let previousYearPortfolio = await getHistoricalPortfolio(lastYearLastCollectionName.predecessorDate);
-    previousDayPortfolio = getDayParams(previousDayPortfolio, previousPreviousDayPortfolio, lastDayBeforeYesterday.predecessorDate);
-    documents = getDayParams(documents, previousDayPortfolio, lastDayBeforeToday.predecessorDate);
+    documents = getDayParams(documents, previousDayPortfolio, lastDayBeforeToday.predecessorDate, false);
+    documents = getDayParams(documents, previousPreviousDayPortfolio, lastDayBeforeYesterday.predecessorDate, true);
     documents = getMTDParams(documents, lastMonthPortfolio, earliestPortfolioName.predecessorDate);
     documents = getYTDParams(documents, previousYearPortfolio, lastYearLastCollectionName.predecessorDate);
   } catch (error) {
@@ -102,9 +103,12 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
 
   documents = documents.filter((position: Position) => {
     if (position["Notional Amount"] == 0) {
+      if(!position["Security Description"]){
+        position["Security Description"] =""
+      }
       let monthsTrades = Object.keys(position["MTD Rlzd DC"] || {});
 
-      if (monthsTrades.includes(thisMonth)) {
+      if (monthsTrades.includes(thisMonth) || position["Security Description"].includes("redeemed")) {
         return position;
       }
     } else {
@@ -117,7 +121,8 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   if (fundDetailsMTD.length == 0) {
     return { error: "Does not exist" };
   }
-  if (!fundDetailsYTD) {
+
+  if (!fundDetailsYTD.length) {
     fundDetailsYTD = fundDetailsMTD;
   }
   fundDetailsYTD = fundDetailsYTD[0];
@@ -134,64 +139,78 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: dayParamsWithLatestUpdates.lastUploadTradesDate, updatePriceDate: dayParamsWithLatestUpdates.lastUpdatePricesDate };
 }
 
-export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInput: any) {
+export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInput: any, threeDayAnalytics = false) {
   // try {
 
   for (let index = 0; index < portfolio.length; index++) {
     let position = portfolio[index];
     let thisMonth = monthlyRlzdDate(dateInput);
 
-    if (!portfolio[index]["Mid"]) {
-      portfolio[index]["Mid"] = portfolio[index]["Entry Price"][thisMonth];
-    }
+    if (!threeDayAnalytics) {
+      if (!portfolio[index]["Mid"]) {
+        portfolio[index]["Mid"] = portfolio[index]["Entry Price"][thisMonth];
+      }
+      let previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue: any) => previousDayIssue["ISIN"] == position["ISIN"] && previousDayIssue["ISIN"] && position["ISIN"]) : null;
 
-    let previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue: any) => previousDayIssue["ISIN"] == position["ISIN"] && previousDayIssue["ISIN"] && position["ISIN"]) : null;
+      if (!previousDayPosition) {
+        previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue: any) => previousDayIssue["BB Ticker"] == position["BB Ticker"] && previousDayIssue["BB Ticker"] && position["BB Ticker"]) : null;
+      }
+      let previousMark = previousDayPosition ? previousDayPosition["Mid"] : null;
+      let previousFxRate = previousDayPosition ? (previousDayPosition["FX Rate"] ? previousDayPosition["FX Rate"] : previousDayPosition["holdPortfXrate"] ? previousDayPosition["holdPortfXrate"] : portfolio[index]["FX Rate"]) : portfolio[index]["FX Rate"];
 
-    if (!previousDayPosition) {
-      previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue: any) => previousDayIssue["BB Ticker"] == position["BB Ticker"] && previousDayIssue["BB Ticker"] && position["BB Ticker"]) : null;
-    }
-    let previousMark = previousDayPosition ? previousDayPosition["Mid"] : null;
-    let previousFxRate = previousDayPosition ? (previousDayPosition["FX Rate"] ? previousDayPosition["FX Rate"] : previousDayPosition["holdPortfXrate"] ? previousDayPosition["holdPortfXrate"] : portfolio[index]["FX Rate"]) : portfolio[index]["FX Rate"];
+      portfolio[index]["Previous FX"] = previousFxRate;
+      portfolio[index]["Previous Mark"] = previousMark;
+      if (!portfolio[index]["Type"]) {
+        portfolio[index]["Type"] = portfolio[index]["BB Ticker"].split(" ")[0] == "T" || portfolio[index]["Issuer"] == "US TREASURY N/B" ? "UST" : portfolio[index]["ISIN"].includes(" IB") ? "FUT" : "BND";
+      }
+      if (!portfolio[index]["BB Ticker"]) {
+        portfolio[index]["BB Ticker"] = portfolio[index]["Issue"];
+      }
 
-    portfolio[index]["Previous FX"] = previousFxRate;
-    portfolio[index]["Previous Mark"] = previousMark;
-    if (!portfolio[index]["Type"]) {
-      portfolio[index]["Type"] = portfolio[index]["BB Ticker"].split(" ")[0] == "T" || portfolio[index]["Issuer"] == "US TREASURY N/B" ? "UST" : portfolio[index]["ISIN"].includes(" IB") ? "FUT" : "BND";
-    }
-    if (!portfolio[index]["BB Ticker"]) {
-      portfolio[index]["BB Ticker"] = portfolio[index]["Issue"];
-    }
+      if (!portfolio[index]["Strategy"]) {
+        portfolio[index]["Strategy"] = portfolio[index]["BB Ticker"].toLowerCase().includes("perp") ? "CE" : "VI";
+      }
+      portfolio[index]["Asset Class"] = portfolio[index]["Asset Class"] ? portfolio[index]["Asset Class"] : portfolio[index]["Rating Class"] ? portfolio[index]["Rating Class"] : "";
+      if ((!portfolio[index]["Asset Class"] || portfolio[index]["Asset Class"] == "") && portfolio[index]["BBG Composite Rating"]) {
+        portfolio[index]["Asset Class"] = isRatingHigherThanBBBMinus(position["BBG Composite Rating"]);
+      }
+      if (portfolio[index]["Notional Amount"] < 0) {
+        portfolio[index]["Asset Class"] = "Hedge";
+      }
+      if (portfolio[index]["Type"] == "BND" && portfolio[index]["Strategy"] == "RV") {
+        portfolio[index]["Asset Class"] = "IG";
+      }
 
-    if (!portfolio[index]["Strategy"]) {
-      portfolio[index]["Strategy"] = portfolio[index]["BB Ticker"].toLowerCase().includes("perp") ? "CE" : "VI";
-    }
-    portfolio[index]["Asset Class"] = portfolio[index]["Asset Class"] ? portfolio[index]["Asset Class"] : portfolio[index]["Rating Class"] ? portfolio[index]["Rating Class"] : "";
-    if ((!portfolio[index]["Asset Class"] || portfolio[index]["Asset Class"] == "") && portfolio[index]["BBG Composite Rating"]) {
-      portfolio[index]["Asset Class"] = isRatingHigherThanBBBMinus(position["BBG Composite Rating"]);
-    }
-    if (portfolio[index]["Notional Amount"] < 0) {
-      portfolio[index]["Asset Class"] = "Hedge";
-    }
-    if (portfolio[index]["Type"] == "BND" && portfolio[index]["Strategy"] == "RV") {
-      portfolio[index]["Asset Class"] = "IG";
-    }
+      if (portfolio[index]["Previous Mark"] == 0) {
+        portfolio[index]["Previous Mark"] = 0;
+      } else if (!portfolio[index]["Previous Mark"]) {
+        portfolio[index]["Previous Mark"] = portfolio[index]["Mid"];
+        portfolio[index]["Notes"] += " Previous Mark X";
+      }
+      let type = portfolio[index]["Type"] == "CDS" ? -1 : portfolio[index]["Notional Amount"] < 0 ? -1 : 1;
+      let todayPrice: any = parseFloat(position["Mid"]);
+      let yesterdayPrice: any = parseFloat(position["Previous Mark"]);
 
-    if (portfolio[index]["Previous Mark"] == 0) {
-      portfolio[index]["Previous Mark"] = 0;
-    } else if (!portfolio[index]["Previous Mark"]) {
-      portfolio[index]["Previous Mark"] = portfolio[index]["Mid"];
-      portfolio[index]["Notes"] += " Previous Mark X";
-    }
-    let type = portfolio[index]["Type"] == "CDS" ? -1 : portfolio[index]["Notional Amount"] < 0 ? -1 : 1;
-    let todayPrice: any = parseFloat(position["Mid"]);
-    let yesterdayPrice: any = parseFloat(position["Previous Mark"]);
+      if (portfolio[index]["Type"] == "BND" || portfolio[index]["Type"] == "UST") {
+        portfolio[index]["Day Price Move"] = Math.round((todayPrice - yesterdayPrice) * 10000 * type) / 100 || 0;
+      } else {
+        portfolio[index]["Day Price Move"] = 0;
+      }
+    } else if (threeDayAnalytics) {
+      let type = portfolio[index]["Type"] == "CDS" ? -1 : portfolio[index]["Notional Amount"] < 0 ? -1 : 1;
+      let todayPrice: any = parseFloat(position["Mid"]);
+      let previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue: any) => previousDayIssue["ISIN"] == position["ISIN"] && previousDayIssue["ISIN"] && position["ISIN"]) : null;
 
-    if (portfolio[index]["Type"] == "BND" || portfolio[index]["Type"] == "UST") {
-      portfolio[index]["Day Price Move"] = Math.round((todayPrice - yesterdayPrice) * 10000 * type) / 100 || 0;
-    } else {
-      portfolio[index]["Day Price Move"] = 0;
+      if (!previousDayPosition) {
+        previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue: any) => previousDayIssue["BB Ticker"] == position["BB Ticker"] && previousDayIssue["BB Ticker"] && position["BB Ticker"]) : null;
+      }
+      let yesterdayTwoPrice = previousDayPosition ? previousDayPosition["Mid"] : todayPrice;
+      if (portfolio[index]["Type"] == "BND" || portfolio[index]["Type"] == "UST") {
+        portfolio[index]["3-Day Price Move"] = Math.round((todayPrice - yesterdayTwoPrice) * 10000 * type) / 100 || 0;
+      } else {
+        portfolio[index]["3-Day Price Move"] = 0;
+      }
     }
-   
   }
 
   return portfolio;
@@ -329,6 +348,9 @@ function getDayURlzdInt(portfolio: any, date: any) {
     }
     let couponDaysYear = portfolio[index]["Coupon Duration"] || 360;
     portfolio[index]["Day Int."] = (parseFloat(quantityGeneratingInterest) * (portfolio[index]["Coupon Rate"] / 100.0)) / couponDaysYear;
+    portfolio[index]["30-Day Int. EST"] = ((parseFloat(position["Notional Amount"]) * (portfolio[index]["Coupon Rate"] / 100.0)) / couponDaysYear) * 30;
+    portfolio[index]["365-Day Int. EST"] = ((parseFloat(position["Notional Amount"]) * (portfolio[index]["Coupon Rate"] / 100.0)) / couponDaysYear) * 365;
+
     if (!portfolio[index]["Day Int."]) {
       portfolio[index]["Day Int."] = 0;
     }

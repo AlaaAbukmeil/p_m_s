@@ -3,8 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getCurrentDateTime = exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDateTime = exports.convertExcelDateToJSDate = exports.swapMonthDay = exports.formatDateWorld = exports.getYear = exports.isNotNullOrUndefined = exports.getTradeDateYearTradesWithoutTheCentury = exports.getTradeDateYearTrades = exports.formatTradeDate = exports.getCurrentDateVconFormat = exports.verifyToken = exports.getTime = exports.formatDateUS = exports.formatDateFile = exports.formatDate = exports.parsePercentage = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = exports.bucket = exports.uri = void 0;
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
-exports.uri = "mongodb+srv://developertriada:" + process.env.NEWMONGODBPASSWORD + "@app.ywfxr8w.mongodb.net/?retryWrites=true&w=majority";
-//"mongodb+srv://alaa:" + process.env.MONGODBPASSWORD + "@atlascluster.zpfpywq.mongodb.net/?retryWrites=true&w=majority";
+exports.uri = "mongodb+srv://" + process.env.MONGODBUSERNAME + ":" + process.env.NEWMONGODBPASSWORD + "@app.ywfxr8w.mongodb.net/?retryWrites=true&w=majority";
 exports.bucket = "https://storage.googleapis.com/app-backend-414212.appspot.com";
 function getCurrentMonthDateRange() {
     const now = new Date();

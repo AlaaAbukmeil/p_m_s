@@ -106,6 +106,8 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     position["MTD P&L (LC)"] = Math.round(position["MTD P&L"] * holdBackRatio);
 
     position["MTD Int. (BC)"] = Math.round(position["MTD Int."] * usdRatio * holdBackRatio);
+    position["MTD Int. (USD)"] = position["MTD Int. (BC)"];
+
     position["MTD Rlzd (BC)"] = Math.round(position["MTD Rlzd"] * usdRatio * holdBackRatio);
     position["MTD URlzd (BC)"] = Math.round(position["MTD URlzd"] * usdRatio * holdBackRatio);
 
@@ -117,7 +119,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     position["YTD P&L (LC)"] = Math.round(position["YTD P&L"] * holdBackRatio);
 
     position["YTD Int. (BC)"] = Math.round(position["YTD Int."] * usdRatio * holdBackRatio);
-    position["YTD Int. (USD)"] = position["YTD Int. (BC)"]
+    position["YTD Int. (USD)"] = position["YTD Int. (BC)"];
 
     position["YTD Rlzd (BC)"] = Math.round(position["YTD Rlzd"] * usdRatio * holdBackRatio);
     position["YTD URlzd (BC)"] = Math.round(position["YTD URlzd"] * usdRatio * holdBackRatio);
@@ -517,7 +519,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
   countryNAVPercentage,
   sectorNAVPercentage,
   strategyNAVPercentage,
-  longShortDV01Sum,
+  longShort,
   durationSummary,
   groupedByLocation,
   view,
@@ -537,7 +539,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
   countryNAVPercentage: any;
   sectorNAVPercentage: any;
   strategyNAVPercentage: any;
-  longShortDV01Sum: any;
+  longShort: any;
   durationSummary: any;
   groupedByLocation: any;
   view: "front office" | "back office" | "exposure";
@@ -558,7 +560,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
   let assetClassOrder = view == "exposure" ? assetClassOrderExposure : assetClassOrderFrontOffice;
   for (let locationCode in groupedByLocation) {
     groupedByLocation[locationCode].order = assignAssetClass(locationCode, groupedByLocation[locationCode].data, assetClassOrder, view);
-    if (groupedByLocation[locationCode].order == assetClassOrder.UST_HEDGE) {
+    if (Math.round(groupedByLocation[locationCode].order) == assetClassOrder.UST_HEDGE) {
       groupedByLocation[locationCode].color = "#FEEBED";
 
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
@@ -574,21 +576,21 @@ export function assignColorAndSortParamsBasedOnAssetClass({
         }
         groupedByLocation[locationCode].data[index]["Strategy"] = "RV";
       }
-    } else if (groupedByLocation[locationCode].order == assetClassOrder.IG || groupedByLocation[locationCode].order == assetClassOrder.R_S) {
+    } else if (Math.round(groupedByLocation[locationCode].order) == assetClassOrder.IG || Math.round(groupedByLocation[locationCode].order) == assetClassOrder.R_S) {
       groupedByLocation[locationCode].color = "#E1BEE7";
       if (view != "exposure") {
         for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
           sumTable({ table: igTable, data: groupedByLocation[locationCode].data[index], view: view, param: null, subtotal: false, subtotalParam: "" });
         }
       }
-    } else if (groupedByLocation[locationCode].order == assetClassOrder.HY || groupedByLocation[locationCode].order == assetClassOrder.R_IS) {
+    } else if (Math.round(groupedByLocation[locationCode].order) == assetClassOrder.HY || Math.round(groupedByLocation[locationCode].order) == assetClassOrder.R_IS) {
       groupedByLocation[locationCode].color = "#C5CAE9";
       if (view != "exposure") {
         for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
           sumTable({ table: hyTable, data: groupedByLocation[locationCode].data[index], view: view, param: null, subtotal: false, subtotalParam: "" });
         }
       }
-    } else if (groupedByLocation[locationCode].order == assetClassOrder.CURR_HEDGE) {
+    } else if (Math.round(groupedByLocation[locationCode].order) == assetClassOrder.CURR_HEDGE) {
       groupedByLocation[locationCode].color = "#FFF9C4";
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
         let currency = groupedByLocation[locationCode].data[index]["ISIN"].includes("IB") ? groupedByLocation[locationCode].data[index]["Security Description"] : groupedByLocation[locationCode].data[index]["Currency"];
@@ -598,7 +600,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
 
         sumTable({ table: currTable, data: groupedByLocation[locationCode].data[index], view: view, param: currency, subtotal: false, subtotalParam: "" });
       }
-    } else if (groupedByLocation[locationCode].order == assetClassOrder.NON_USD) {
+    } else if (Math.round(groupedByLocation[locationCode].order) == assetClassOrder.NON_USD) {
       groupedByLocation[locationCode].color = "#FFF9C4";
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
         let currency = groupedByLocation[locationCode].data[index]["ISIN"].includes("IB") ? groupedByLocation[locationCode].data[index]["Security Description"] : groupedByLocation[locationCode].data[index]["Currency"];
@@ -608,7 +610,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
 
         sumTable({ table: currTable, data: groupedByLocation[locationCode].data[index], view: view, param: currency, subtotal: false, subtotalParam: "" });
       }
-    } else if (groupedByLocation[locationCode].order == assetClassOrder.FUT) {
+    } else if (Math.round(groupedByLocation[locationCode].order) == assetClassOrder.FUT) {
       groupedByLocation[locationCode].color = "#FFF9C4";
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
         let currency = groupedByLocation[locationCode].data[index]["ISIN"].includes("IB") ? groupedByLocation[locationCode].data[index]["Security Description"] : groupedByLocation[locationCode].data[index]["Currency"];
@@ -618,10 +620,10 @@ export function assignColorAndSortParamsBasedOnAssetClass({
 
         sumTable({ table: currTable, data: groupedByLocation[locationCode].data[index], view: view, param: currency, subtotal: false, subtotalParam: "" });
       }
-    } else if (groupedByLocation[locationCode].order == assetClassOrder.CDS) {
+    } else if (Math.round(groupedByLocation[locationCode].order) == assetClassOrder.CDS) {
       groupedByLocation[locationCode].color = "#CE93D8";
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {}
-    } else if (groupedByLocation[locationCode].order == assetClassOrder.UST_GLOBAL) {
+    } else if (Math.round(groupedByLocation[locationCode].order) == assetClassOrder.UST_GLOBAL) {
       groupedByLocation[locationCode].color = "#E8F5E9";
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
         let duration: any = getDuration(groupedByLocation[locationCode].data[index]["Duration"]);
@@ -634,19 +636,21 @@ export function assignColorAndSortParamsBasedOnAssetClass({
           sumTable({ table: ustTable, data: groupedByLocation[locationCode].data[index], view: view, param: duration, subtotal: true, subtotalParam: issue });
         }
       }
-    } else if (groupedByLocation[locationCode].order == assetClassOrder.Illiquid) {
+    } else if (Math.round(groupedByLocation[locationCode].order) == assetClassOrder.Illiquid) {
       groupedByLocation[locationCode].color = "#9FA8DA";
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {}
-    } else if (groupedByLocation[locationCode].order == assetClassOrder.undefined) {
+    } else if (Math.round(groupedByLocation[locationCode].order) == assetClassOrder.undefined) {
       groupedByLocation[locationCode].color = "#E5D1B4";
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {}
-    } else if (groupedByLocation[locationCode].order == assetClassOrder.RLZD) {
+    } else if (Math.round(groupedByLocation[locationCode].order) == assetClassOrder.RLZD) {
       groupedByLocation[locationCode].color = "#C5E1A5";
     }
 
     let groupDayPl = 0,
       groupMTDPl = 0,
       groupDV01Sum = 0,
+      groupMTDIntSum = 0,
+      groupYTDIntSum = 0,
       groupDayPriceMoveSum = null,
       groupMTDPriceMoveSum = null,
       groupUSDMarketValue = 0,
@@ -681,6 +685,9 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       let dv01DollarValueOfNav = parseFloat(groupedByLocation[locationCode].data[index]["DV01 Dollar Value Impact % of Nav"]);
       let dv01DollarValueLimitOfNav = parseFloat(groupedByLocation[locationCode].data[index]["DV01 Dollar Value Impact Limit % of Nav"]);
       let dv01DollarValueLimitUtilization = parseFloat(groupedByLocation[locationCode].data[index]["DV01 Dollar Value Impact Utilization % of Nav"]);
+      let mtdInt = parseFloat(groupedByLocation[locationCode].data[index]["MTD Int. (USD)"]);
+      let YTDInt = parseFloat(groupedByLocation[locationCode].data[index]["YTD Int. (USD)"]);
+
       let ytw = parseFloat(groupedByLocation[locationCode].data[index]["YTW"]);
       let entryYtw = parsePercentage(groupedByLocation[locationCode].data[index]["Entry Yield"]);
       let type = groupedByLocation[locationCode].data[index]["Type"];
@@ -708,9 +715,11 @@ export function assignColorAndSortParamsBasedOnAssetClass({
 
       tickerTable[bbTicker] = "";
       if (usdMarketValue > 0) {
-        longShortDV01Sum["Long"] += Math.round(parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0);
-      } else if (usdMarketValue < 0) {
-        longShortDV01Sum["Short"] += Math.round(parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0);
+        longShort["Long"].dv01Sum += Math.round(parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0);
+        longShort["Long"].intSum += Math.round(parseFloat(groupedByLocation[locationCode].data[index]["Day Int. (BC)"]) || 0);
+      } else if (usdMarketValue < 0 || groupedByLocation[locationCode].data[index]["Type"] == "CDS") {
+        longShort["Short"].dv01Sum += Math.round(parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0);
+        longShort["Short"].intSum += Math.round(parseFloat(groupedByLocation[locationCode].data[index]["Day Int. (BC)"]) || 0);
       }
 
       if (type == "BND" && strategy == "RV") {
@@ -736,6 +745,10 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       groupDayPl += dayPl;
       groupMTDPl += monthPl;
       groupDV01Sum += dv01;
+      groupMTDIntSum += mtdInt;
+
+      groupYTDIntSum += YTDInt;
+
       groupDayPriceMoveSum = groupDayPriceMoveSum && groupDayPriceMoveSum < dayPriceMove ? groupDayPriceMoveSum : dayPriceMove;
       groupMTDPriceMoveSum = groupMTDPriceMoveSum && groupMTDPriceMoveSum < mtdPriceMove ? groupMTDPriceMoveSum : mtdPriceMove;
 
@@ -780,6 +793,10 @@ export function assignColorAndSortParamsBasedOnAssetClass({
 
     groupedByLocation[locationCode].groupDayPl = groupDayPl;
     groupedByLocation[locationCode].groupDV01Sum = groupDV01Sum;
+    groupedByLocation[locationCode].groupMTDIntSum = groupMTDIntSum;
+
+    groupedByLocation[locationCode].groupYTDIntSum = groupYTDIntSum;
+
     groupedByLocation[locationCode].groupDayPriceMoveSum = groupDayPriceMoveSum;
     groupedByLocation[locationCode].groupMTDPriceMoveSum = groupMTDPriceMoveSum;
 
@@ -788,6 +805,8 @@ export function assignColorAndSortParamsBasedOnAssetClass({
     groupedByLocation[locationCode].groupNotional = groupNotional;
 
     groupedByLocation[locationCode].groupEntrySpreadTZ = groupEntrySpreadTZ;
+    groupedByLocation[locationCode].groupSpreadTZ = groupSpreadTZ;
+
   }
 }
 
@@ -809,6 +828,9 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
       "USD Market Value": 0,
       DV01: 0,
       "Day P&L (USD)": 0,
+      "MTD Int. (USD)": 0,
+
+      "YTD Int. (USD)": 0,
 
       "MTD P&L (USD)": 0,
       "Notional Amount": 0,
@@ -820,7 +842,9 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
       "USD Market Value": 0,
       DV01: 0,
       "Day P&L (USD)": 0,
+      "MTD Int. (USD)": 0,
 
+      "YTD Int. (USD)": 0,
       "MTD P&L (USD)": 0,
       "Notional Amount": 0,
     },
@@ -831,19 +855,20 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
       "USD Market Value": 0,
       DV01: 0,
       "Day P&L (USD)": 0,
+      "MTD Int. (USD)": 0,
 
+      "YTD Int. (USD)": 0,
       "MTD P&L (USD)": 0,
       "Notional Amount": 0,
     },
   };
-
   if (view == "exposure") {
     locationCodes = Object.entries(groupedByLocation);
     locationCodes = locationCodes
       .sort((a: any, b: any) => {
         const orderMap: any = {
           "Rate Sensitive": 1000, // Large numbers to ensure these come after all numeric ranges
-          "Rate Insensitive": 1001,
+          "Rate Insensitive": 2000,
         };
 
         // Helper function to convert location string to a sortable numeric value
@@ -855,7 +880,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
             const match = location.match(/^\s*(\d+)/); // Matches the first number sequence
             return match ? parseInt(match[1], 10) : Infinity; // Use Infinity for unexpected formats to sort them last
           } else {
-            return 1003;
+            return 3000;
           }
         }
 
@@ -885,6 +910,17 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
       }
       return 0; // a and b are equal
     });
+    if(view == "exposure" && (locationCode == "Rate Sensitive" || locationCode == "Rate Insensitive")){
+      groupedByLocation[locationCode].data.sort((a: any, b: any) => {
+        // Assuming "L/S" is a number that can be directly compared
+        if (parseFloat(a["Duration"]) < parseFloat(b["Duration"])) {
+          return -1; // a comes first
+        } else if (parseFloat(a["Duration"]) > parseFloat(b["Duration"])) {
+          return 1; // b comes first
+        }
+        return 0; // a and b are equal
+      });
+    }
 
     for (let groupPositionIndex = 0; groupPositionIndex < groupedByLocation[locationCode].data.length; groupPositionIndex++) {
       if (groupedByLocation[locationCode].data[groupPositionIndex]["Notional Amount"] == 0) {
@@ -899,6 +935,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         let length = groupedByLocation[locationCode].data.length;
         groupedByLocation[locationCode].data[length - 1]["bottom"] = true;
       }
+
+    
     }
 
     if (groupedByLocation[locationCode].data.length > 1 || (view == "exposure" && durationBuckets.includes(locationCode))) {
@@ -913,6 +951,10 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
           Location: locationCode,
           "USD Market Value": groupedByLocation[locationCode].groupUSDMarketValue,
           DV01: groupedByLocation[locationCode].groupDV01Sum,
+          "MTD Int. (USD)": groupedByLocation[locationCode].groupMTDIntSum,
+
+          "YTD Int. (USD)": groupedByLocation[locationCode].groupYTDIntSum,
+
           "Day Price Move": groupedByLocation[locationCode].groupDayPriceMoveSum,
 
           "MTD Price Move": groupedByLocation[locationCode].groupMTDPriceMoveSum,
@@ -934,6 +976,9 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
           Location: locationCode,
           "USD Market Value": groupedByLocation[locationCode].groupUSDMarketValue,
           DV01: groupedByLocation[locationCode].groupDV01Sum,
+          "MTD Int. (USD)": groupedByLocation[locationCode].groupMTDIntSum,
+
+          "YTD Int. (USD)": groupedByLocation[locationCode].groupYTDIntSum,
           "Day P&L (USD)": groupedByLocation[locationCode].groupDayPl,
           "Day Price Move": groupedByLocation[locationCode].groupDayPriceMoveSum,
 
@@ -953,6 +998,9 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
           macro["Global Hedge"]["USD Market Value"] += groupedByLocation[locationCode].groupUSDMarketValue;
           macro["Global Hedge"]["Notional Amount"] += groupedByLocation[locationCode].groupNotional;
           macro["Global Hedge"]["DV01"] += groupedByLocation[locationCode].groupDV01Sum;
+          macro["Global Hedge"]["MTD Int. (USD)"] += groupedByLocation[locationCode].groupMTDIntSum;
+          macro["Global Hedge"]["YTD Int. (USD)"] += groupedByLocation[locationCode].groupYTDIntSum;
+
           macro["Global Hedge"]["Day P&L (USD)"] += groupedByLocation[locationCode].groupDayPl;
           macro["Global Hedge"]["MTD P&L (USD)"] += groupedByLocation[locationCode].groupMTDPl;
         } else if (locationCode == "Rate Sensitive" || locationCode == "Rate Insensitive") {
@@ -962,6 +1010,9 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
           macro["Non-Hedge Bonds"]["USD Market Value"] += groupedByLocation[locationCode].groupUSDMarketValue;
           macro["Non-Hedge Bonds"]["Notional Amount"] += groupedByLocation[locationCode].groupNotional;
           macro["Non-Hedge Bonds"]["DV01"] += groupedByLocation[locationCode].groupDV01Sum;
+          macro["Non-Hedge Bonds"]["MTD Int. (USD)"] += groupedByLocation[locationCode].groupMTDIntSum;
+          macro["Non-Hedge Bonds"]["YTD Int. (USD)"] += groupedByLocation[locationCode].groupYTDIntSum;
+
           macro["Non-Hedge Bonds"]["Day P&L (USD)"] += groupedByLocation[locationCode].groupDayPl;
           macro["Non-Hedge Bonds"]["MTD P&L (USD)"] += groupedByLocation[locationCode].groupMTDPl;
         } else {
@@ -971,6 +1022,9 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
           macro["RV"]["USD Market Value"] += groupedByLocation[locationCode].groupUSDMarketValue;
           macro["RV"]["Notional Amount"] += groupedByLocation[locationCode].groupNotional;
           macro["RV"]["DV01"] += groupedByLocation[locationCode].groupDV01Sum;
+          macro["RV"]["MTD Int. (USD)"] += groupedByLocation[locationCode].groupMTDIntSum;
+          macro["RV"]["YTD Int. (USD)"] += groupedByLocation[locationCode].groupYTDIntSum;
+
           macro["RV"]["Day P&L (USD)"] += groupedByLocation[locationCode].groupDayPl;
           macro["RV"]["MTD P&L (USD)"] += groupedByLocation[locationCode].groupMTDPl;
         }
@@ -983,12 +1037,15 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
           DV01: groupedByLocation[locationCode].groupDV01Sum,
           "Day P&L (BC)": groupedByLocation[locationCode].groupDayPl,
           "Day Price Move": groupedByLocation[locationCode].groupDayPriceMoveSum,
+          "MTD Int. (BC)": groupedByLocation[locationCode].groupMTDIntSum,
 
+          "YTD Int. (BC)": groupedByLocation[locationCode].groupYTDIntSum,
           "MTD Price Move": groupedByLocation[locationCode].groupMTDPriceMoveSum,
 
           "MTD P&L (BC)": groupedByLocation[locationCode].groupMTDPl,
           "Notional Amount": groupedByLocation[locationCode].groupNotional,
         };
+       
         if (groupedByLocation[locationCode].groupSpreadTZ || groupedByLocation[locationCode].groupSpreadTZ == 0) {
           newObject["Current Spread (T)"] = Math.round(groupedByLocation[locationCode].groupSpreadTZ * 100) / 100;
         }
@@ -1035,7 +1092,7 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
   let strategyGMVPercentage: any = {};
   let issuerGMVPercentage: any = {};
 
-  let longShortDV01Sum = { Long: 0, Short: 0, Total: 0 };
+  let longShort = { Long: { dv01Sum: 0, intSum: 0 }, Short: { dv01Sum: 0, intSum: 0 }, Total: { dv01Sum: 0, intSum: 0 } };
 
   let durationSummary = {
     "0 To 2": { durationSum: 0, dv01Sum: 0 },
@@ -1136,7 +1193,7 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
 
   assignColorAndSortParamsBasedOnAssetClass({
     groupedByLocation: groupedByLocation,
-    longShortDV01Sum: longShortDV01Sum,
+    longShort: longShort,
     durationSummary: durationSummary,
     countryNAVPercentage: countryNAVPercentage,
     sectorNAVPercentage: sectorNAVPercentage,
@@ -1189,7 +1246,9 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
   let capacity = adjustMarginMultiplier(portfolio, sectorGMVPercentage, issuerNAVPercentage);
 
   durationSummary["Total"].dv01Sum = Math.round(durationSummary["0 To 2"].dv01Sum + durationSummary["2 To 5"].dv01Sum + durationSummary["5 To 10"].dv01Sum + durationSummary["10 To 30"].dv01Sum + durationSummary["> 30"].dv01Sum);
-  longShortDV01Sum["Total"] = Math.round(longShortDV01Sum["Long"] + longShortDV01Sum["Short"]);
+  longShort["Total"].dv01Sum = Math.round(longShort["Long"].dv01Sum + longShort["Short"].dv01Sum);
+  longShort["Total"].intSum = Math.round(longShort["Long"].intSum + longShort["Short"].intSum);
+
   return {
     portfolio: capacity.portfolio,
     duration: durationSummary,
@@ -1204,7 +1263,7 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
     issuerGMVPercentage: sortObjectBasedOnKey(issuerGMVPercentage),
     riskAssessment: riskAssessment,
     topWorstPerformaners: topWorstPerformaners,
-    longShortDV01Sum: longShortDV01Sum,
+    longShort: longShort,
     ustTable: ustTable,
     igTable: igTable,
     hyTable: hyTable,

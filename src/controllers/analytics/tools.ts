@@ -276,7 +276,6 @@ export class AggregatedData {
   "Total Gain/ Loss (USD)": number;
   "% of Total Gain/ Loss since Inception (Live Position)": number;
   "Notional Amount": number;
-  "Day Price Move": number;
   constructor() {
     this["Day P&L (USD)"] = 0;
     this["MTD P&L (USD)"] = 0;
@@ -304,7 +303,6 @@ export class AggregatedData {
     this["Total Gain/ Loss (USD)"] = 0;
     this["% of Total Gain/ Loss since Inception (Live Position)"] = 0;
     this["Notional Amount"] = 0;
-    this["Day Price Move"] = 0;
   }
 }
 export function assignAssetClass(locationCode: string, group: any, assetClassOrder: any, view: "front office" | "exposure" | "back office") {
@@ -314,33 +312,34 @@ export function assignAssetClass(locationCode: string, group: any, assetClassOrd
     let unrlzdPositionsNum = group.filter((position: any) => position["Notional Amount"] != 0).length;
     for (let index = 0; index < group.length; index++) {
       let position: PinnedPosition = group[index];
+      let duration = parseFloat(position["Duration"]) / 100;
 
       if (position["Notional Amount"] != 0) {
         if (!position["Type"]) {
-          return assetClassOrder.undefined;
+          return assetClassOrder.undefined + duration;
         }
         if (view != "exposure") {
           if ((position["Type"].includes("UST") || position["Strategy"] == "RV") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
-            return assetClassOrder.UST_HEDGE;
+            return assetClassOrder.UST_HEDGE + duration;
           }
           if (position["Type"].includes("FUT") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
-            return assetClassOrder.CURR_HEDGE;
+            return assetClassOrder.CURR_HEDGE + duration;
           }
           if (position["Type"].includes("UST") && position["Notional Amount"] <= 0 && (unrlzdPositionsNum == 1 || position["Strategy"] == "Global Hedge")) {
-            return assetClassOrder.UST_GLOBAL;
+            return assetClassOrder.UST_GLOBAL + duration;
           }
 
           if (position["Type"] == "FUT" && position["Notional Amount"] <= 0) {
-            return assetClassOrder.FUT;
+            return assetClassOrder.FUT + duration;
           }
           if (position["Asset Class"] == "Illiquid") {
-            return assetClassOrder.Illiquid;
+            return assetClassOrder.Illiquid + duration;
           }
           if (position["Type"] == "CDS") {
-            return assetClassOrder.CDS;
+            return assetClassOrder.CDS + duration;
           }
           if (position["Currency"] != "USD") {
-            return assetClassOrder.NON_USD;
+            return assetClassOrder.NON_USD + duration;
           }
           if (position["Asset Class"] == "IG") {
             assetClass = "IG";
@@ -354,34 +353,34 @@ export function assignAssetClass(locationCode: string, group: any, assetClassOrd
           rlzd = 1;
         } else if (view == "exposure") {
           if (locationCode == "Rate Sensitive" && view == "exposure") {
-            return assetClassOrder.R_S;
+            return assetClassOrder.R_S + duration;
           }
           if (locationCode == "Rate Insensitive" && view == "exposure") {
-            return assetClassOrder.R_IS;
+            return assetClassOrder.R_IS + duration;
           }
           if (position["Strategy"] == "RV") {
-            return assetClassOrder.UST_HEDGE;
+            return assetClassOrder.UST_HEDGE + duration;
           }
 
           if (position["Type"].includes("UST") && position["Notional Amount"] <= 0 && (unrlzdPositionsNum == 1 || position["Strategy"] == "Global Hedge")) {
-            return assetClassOrder.UST_GLOBAL;
+            return assetClassOrder.UST_GLOBAL + duration;
           }
 
           if (position["Type"].includes("FUT") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
-            return assetClassOrder.CURR_HEDGE;
+            return assetClassOrder.CURR_HEDGE + duration;
           }
 
           if (position["Type"] == "FUT" && position["Notional Amount"] <= 0) {
-            return assetClassOrder.FUT;
+            return assetClassOrder.FUT + duration;
           }
           if (position["Asset Class"] == "Illiquid") {
-            return assetClassOrder.Illiquid;
+            return assetClassOrder.Illiquid + duration;
           }
           if (position["Type"] == "CDS") {
-            return assetClassOrder.CDS;
+            return assetClassOrder.CDS + duration;
           }
           if (position["Currency"] != "USD") {
-            return assetClassOrder.NON_USD;
+            return assetClassOrder.NON_USD + duration;
           }
 
           //if one of them is not rlzd, then its not appliacable
@@ -393,17 +392,19 @@ export function assignAssetClass(locationCode: string, group: any, assetClassOrd
         }
       }
     }
+    let position: PinnedPosition = group[0];
+    let duration = parseFloat(position["Duration"]) / 100;
 
     if (rlzd == 2) {
-      return assetClassOrder.RLZD;
+      return assetClassOrder.RLZD + duration;
     }
     if (assetClass == "IG") {
-      return assetClassOrder.IG;
+      return assetClassOrder.IG + duration;
     }
     if (assetClass == "HY") {
-      return assetClassOrder.HY;
+      return assetClassOrder.HY + duration;
     }
-    return assetClassOrder.undefined;
+    return assetClassOrder.undefined + duration;
   } catch (error) {
     console.log(error);
     return assetClassOrder.undefined;

@@ -647,23 +647,25 @@ export async function editPosition(editedPosition: any, date: string) {
     let editedPositionTitles = Object.keys(editedPosition);
 
     let id = editedPosition["_id"];
-    let unEditableParams: any = [
+    let unEditableParams = [
       "Value",
       "Duration",
+      "Base Margin",
+      "Margin",
       "MTD Mark",
+      "YTD Mark",
       "Previous Mark",
       "Day P&L (BC)",
+      "Base Margin",
       "MTD Rlzd (BC)",
       "MTD URlzd (BC)",
       "MTD Int.Income (BC)",
       "MTD P&L (BC)",
       "Cost (LC)",
       "Day Accrual",
-      "YTD Mark Ref.D",
       "_id",
+      "YTD Mark Ref.D",
       "Day Price Move",
-      "MTD Price Move",
-
       "Value (BC)",
       "Value (LC)",
       "MTD Int. (BC)",
@@ -674,12 +676,14 @@ export async function editPosition(editedPosition: any, date: string) {
       "Cost MTD (LC)",
       "Quantity",
       "Day Int. (BC)",
-      "S&P Outlook",
-      "Moody's Bond Rating",
-      "Moody's Outlook",
-      "Fitch Bond Rating",
-      "Fitch Outlook",
+      // "S&P Outlook",
+      // "Moody's Bond Rating",
+      // "Moody's Outlook",
+      // "Fitch Bond Rating",
+      // "Fitch Outlook",
       // "BBG Composite Rating",
+      "Borrow Capacity",
+      "Margin",
       "Day P&L FX",
       "MTD P&L FX",
       "S&P Bond Rating",
@@ -714,6 +718,9 @@ export async function editPosition(editedPosition: any, date: string) {
 
       "Accrued Int. Since Inception (BC)",
       "Notes",
+      "MTD Price Move",
+      "Event Type",
+      "Edit Note"
     ];
     // these keys are made up by the function frontend table, it reverts keys to original keys
 

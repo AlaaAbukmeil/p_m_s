@@ -3,9 +3,8 @@ require("dotenv").config();
 
 const jwt = require("jsonwebtoken");
 
-export const uri = "mongodb+srv://developertriada:" + process.env.NEWMONGODBPASSWORD + "@app.ywfxr8w.mongodb.net/?retryWrites=true&w=majority";
+export const uri = "mongodb+srv://" + process.env.MONGODBUSERNAME + ":" + process.env.NEWMONGODBPASSWORD + "@app.ywfxr8w.mongodb.net/?retryWrites=true&w=majority";
 
-//"mongodb+srv://alaa:" + process.env.MONGODBPASSWORD + "@atlascluster.zpfpywq.mongodb.net/?retryWrites=true&w=majority";
 export const bucket = "https://storage.googleapis.com/app-backend-414212.appspot.com";
 export function getCurrentMonthDateRange(): string {
   const now = new Date();
@@ -165,7 +164,6 @@ export function getTradeDateYearTradesWithoutTheCentury(date: any) {
 export function isNotNullOrUndefined(value: any) {
   return value !== undefined && value !== null;
 }
-
 
 export function getYear(dateInput: string) {
   let date = new Date(dateInput);
