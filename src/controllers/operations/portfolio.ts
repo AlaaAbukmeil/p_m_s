@@ -495,7 +495,6 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
       if (!tradeExistsAlready && identifier !== "") {
         triadaIds.push(row["Triada Trade Id"]);
         if (!updatingPosition) {
-          let divider = row["Trade Type"] == "vcon" ? 100 : 1;
           let shortLongType = currentQuantity >= 0 ? 1 : -1;
 
           let settlementDate = row["Settle Date"];
@@ -546,7 +545,7 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           if (!object["Entry Price"]) {
             object["Entry Price"] = {};
           }
-          if (!object["Entry Price"][thisMonth]) {
+          if (rlzdOperation == -1) {
             object["Entry Price"][thisMonth] = currentPrice;
           }
           object["Last Individual Upload Trade"] = new Date();
@@ -585,7 +584,9 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           object["Original Face"] = originalFace;
 
           object["Coupon Duration"] = object["Coupon Rate"] ? couponDaysYear : "";
-          object["Entry Price"] = updatingPosition["Entry Price"];
+          if (rlzdOperation == -1) {
+            object["Entry Price"][thisMonth] = currentPrice;
+          }
 
           object["MTD Rlzd"] = updatingPosition["MTD Rlzd"];
 

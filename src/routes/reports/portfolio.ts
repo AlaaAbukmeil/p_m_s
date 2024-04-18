@@ -48,7 +48,7 @@ router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: 
 router.get("/summary-portfolio", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
     let date: any = req.query.date;
-    let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDayPriceMoveSum"|"groupMTDPriceMoveSum"| any = req.query.sort || "order";
+    let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDayPriceMoveSum" | "groupMTDPriceMoveSum" | any = req.query.sort || "order";
     let sign: any = req.query.sign || 1;
     let conditions: any = req.query || {};
     // console.log(conditions)
@@ -73,7 +73,7 @@ router.get("/summary-portfolio", verifyToken, async (req: Request, res: Response
 router.get("/summary-exposure-portfolio", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
     let date: any = req.query.date;
-    let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum"| "groupDayPriceMoveSum"|"groupMTDPriceMoveSum" | any = req.query.sort || "order";
+    let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDayPriceMoveSum" | "groupMTDPriceMoveSum" | "groupCallDate" | "groupMaturity" | any = req.query.sort || "order";
     let sign: any = req.query.sign || 1;
     let conditions: any = req.query || {};
     // console.log(conditions)
@@ -99,7 +99,7 @@ router.get("/performers-portfolio", verifyToken, async (req: Request, res: Respo
   try {
     let date: any = req.query.date;
     let conditions: any = req.query || {};
-    let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum"| "groupDayPriceMoveSum"|"groupMTDPriceMoveSum" | any = req.query.sort || "order";
+    let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDayPriceMoveSum" | "groupMTDPriceMoveSum" | any = req.query.sort || "order";
     let type: null | "pl" | "price move" | any = req.query.type;
     let view: "front office" | "back office" | any = req.query.view;
     let sign: any = req.query.sign || 1;
@@ -124,7 +124,7 @@ router.get("/performers-portfolio", verifyToken, async (req: Request, res: Respo
 router.get("/risk-report", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
     let date: any = req.query.date;
-    let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDayPriceMoveSum"|"groupMTDPriceMoveSum"| any = req.query.sort || "order";
+    let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDayPriceMoveSum" | "groupMTDPriceMoveSum" | any = req.query.sort || "order";
     let sign: any = req.query.sign || 1;
 
     if (date.includes("NaN")) {

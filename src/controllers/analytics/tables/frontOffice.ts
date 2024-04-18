@@ -33,12 +33,13 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Duration",
     "DV01",
     "Call Date",
+    "Maturity",
     "BBG / S&P / Moody / Fitch Rating",
     "MTD P&L (USD)",
     "MTD Price Move",
     // "MTD P&L % (NAV)",
     "MTD Int. (USD)",
-    
+
     "YTD Int. (USD)",
     "Average Cost",
     // `${formatMarkDate(dates.lastMonth)}`,
@@ -89,7 +90,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Rate Sensitivity",
     "30-Day Int. EST",
     "365-Day Int. EST",
-    "Day Int. (BC)"
+    "Day Int. (BC)",
   ];
 
   let titlesValues: any = {
@@ -112,7 +113,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     Maturity: "Maturity",
     "% of NAV": "% of NAV",
     YTW: "YTW",
-    "Day Int. (BC)":"Day Int. (BC)",
+    "Day Int. (BC)": "Day Int. (BC)",
     "Entry Yield": "Entry Yield",
     DV01: "DV01",
     Bid: "Bid",
@@ -219,7 +220,7 @@ export function formatFrontOfficeTable({ portfolio, date, fund, dates, sort, sig
     }
   }
 
-  let analyzedPortfolio = groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio: formatted, nav: formattedPortfolio.fundDetails.nav, sort: sort, sign: sign, view: view, currencies: formattedPortfolio.currencies, format: "summary", sortBy: sortBy, fundDetails: formattedPortfolio.fundDetails });
+  let analyzedPortfolio = groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio: formatted, nav: formattedPortfolio.fundDetails.nav, sort: sort, sign: sign, view: view, currencies: formattedPortfolio.currencies, format: "summary", sortBy: sortBy, fundDetails: formattedPortfolio.fundDetails, date: date });
   return { portfolio: analyzedPortfolio.portfolio, fundDetails: formattedPortfolio.fundDetails, analysis: analyzedPortfolio };
 }
 export function getTopWorst(groupedByLocation: any, sortBy: "pl" | null | "price move") {

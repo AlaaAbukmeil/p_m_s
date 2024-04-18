@@ -125,6 +125,9 @@ export function checkPosition(position: any, conditions: any) {
     let currency = position["Currency"] ? position["Currency"].toString().toLowerCase() : null;
     let issuer = position["Issuer"] ? position["Issuer"].toString().toLowerCase() : null;
     let ticker = position["BB Ticker"] ? position["BB Ticker"].toString().toLowerCase() : null;
+    let coupon = position["Coupon Rate"] ? parsePercentage(position["Coupon Rate"]) : 0;
+
+    let assetClass = position["Asset Class"] ? position["Asset Class"].toString().toLowerCase() : "";
 
     if (conditions.country) {
       if (!country.includes(conditions.country.toString().toLowerCase())) {
@@ -157,6 +160,16 @@ export function checkPosition(position: any, conditions: any) {
         return false;
       }
     }
+    if (conditions.coupon) {
+      if (coupon < conditions.coupon) {
+        return false;
+      }
+    }
+    if (conditions.assetClass && assetClass) {
+      if (!assetClass.includes(conditions.assetClass.toString().toLowerCase())) {
+        return false;
+      }
+    }
     if (conditions.durationStart && !conditions.durationEnd) {
       conditions.durationEnd = 100;
     }
@@ -167,7 +180,7 @@ export function checkPosition(position: any, conditions: any) {
     }
     return true;
   } catch (error) {
-    console.log(position, error);
+    console.log(conditions, error);
     return false;
   }
 }
@@ -187,35 +200,40 @@ export function formatMarkDate(date: any) {
 }
 
 export function yearsUntil(dateString: any, dateInput: any, bbTicker: string) {
-  // Parse the date string and create a new Date object
-  if (dateString == 0 || dateString == "0") {
+  try {
+    // Parse the date string and create a new Date object
+    if (dateString == 0 || dateString == "0") {
+      return 0;
+    }
+
+    let dateComponents = dateString.split("/");
+    if (dateComponents[2].length <= 2) {
+      dateComponents[2] = "20" + dateComponents[2];
+    }
+
+    dateString = dateComponents[1] + "/" + dateComponents[0] + "/" + dateComponents[2];
+    let date = new Date(dateString).getTime();
+
+    // Get the current date
+    const now: any = new Date(dateInput).getTime();
+
+    // Calculate the difference in milliseconds
+    const diff: any = date - now;
+
+    // Convert the difference from milliseconds to years
+    let years = diff / (1000 * 60 * 60 * 24 * 365.25);
+
+    // If the difference is negative (i.e., the date is in the future), take the absolute value
+    if (years < 0) {
+      years = 0;
+    }
+
+    // Round to two decimal places and return
+    return Math.round(years * 100) / 100;
+  } catch (error: any) {
+    console.log("maturity/call date error: " + bbTicker);
     return 0;
   }
-
-  let dateComponents = dateString.split("/");
-  if (dateComponents[2].length <= 2) {
-    dateComponents[2] = "20" + dateComponents[2];
-  }
-
-  dateString = dateComponents[1] + "/" + dateComponents[0] + "/" + dateComponents[2];
-  let date = new Date(dateString).getTime();
-
-  // Get the current date
-  const now: any = new Date(dateInput).getTime();
-
-  // Calculate the difference in milliseconds
-  const diff: any = date - now;
-
-  // Convert the difference from milliseconds to years
-  let years = diff / (1000 * 60 * 60 * 24 * 365.25);
-
-  // If the difference is negative (i.e., the date is in the future), take the absolute value
-  if (years < 0) {
-    years = 0;
-  }
-
-  // Round to two decimal places and return
-  return Math.round(years * 100) / 100;
 }
 
 export function getDuration(duration: any) {
@@ -305,6 +323,9 @@ export class AggregatedData {
     this["Notional Amount"] = 0;
   }
 }
+function alphabetIndex(char: string) {
+  return (char.toUpperCase().charCodeAt(0) - "A".charCodeAt(0) + 1) / 1000;
+}
 export function assignAssetClass(locationCode: string, group: any, assetClassOrder: any, view: "front office" | "exposure" | "back office") {
   try {
     let rlzd = 0,
@@ -316,30 +337,30 @@ export function assignAssetClass(locationCode: string, group: any, assetClassOrd
 
       if (position["Notional Amount"] != 0) {
         if (!position["Type"]) {
-          return assetClassOrder.undefined + duration;
+          return assetClassOrder.undefined + (view == "exposure" ? duration : 0);
         }
         if (view != "exposure") {
           if ((position["Type"].includes("UST") || position["Strategy"] == "RV") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
-            return assetClassOrder.UST_HEDGE + duration;
+            return assetClassOrder.UST_HEDGE + alphabetIndex(position["BB Ticker"]);
           }
           if (position["Type"].includes("FUT") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
-            return assetClassOrder.CURR_HEDGE + duration;
+            return assetClassOrder.CURR_HEDGE;
           }
           if (position["Type"].includes("UST") && position["Notional Amount"] <= 0 && (unrlzdPositionsNum == 1 || position["Strategy"] == "Global Hedge")) {
-            return assetClassOrder.UST_GLOBAL + duration;
+            return assetClassOrder.UST_GLOBAL;
           }
 
           if (position["Type"] == "FUT" && position["Notional Amount"] <= 0) {
-            return assetClassOrder.FUT + duration;
+            return assetClassOrder.FUT;
           }
           if (position["Asset Class"] == "Illiquid") {
-            return assetClassOrder.Illiquid + duration;
+            return assetClassOrder.Illiquid;
           }
           if (position["Type"] == "CDS") {
-            return assetClassOrder.CDS + duration;
+            return assetClassOrder.CDS;
           }
           if (position["Currency"] != "USD") {
-            return assetClassOrder.NON_USD + duration;
+            return assetClassOrder.NON_USD;
           }
           if (position["Asset Class"] == "IG") {
             assetClass = "IG";
@@ -353,34 +374,34 @@ export function assignAssetClass(locationCode: string, group: any, assetClassOrd
           rlzd = 1;
         } else if (view == "exposure") {
           if (locationCode == "Rate Sensitive" && view == "exposure") {
-            return assetClassOrder.R_S + duration;
+            return assetClassOrder.R_S + (view == "exposure" ? duration : 0);
           }
           if (locationCode == "Rate Insensitive" && view == "exposure") {
-            return assetClassOrder.R_IS + duration;
+            return assetClassOrder.R_IS + (view == "exposure" ? duration : 0);
           }
           if (position["Strategy"] == "RV") {
-            return assetClassOrder.UST_HEDGE + duration;
+            return assetClassOrder.UST_HEDGE + (view == "exposure" ? duration : 0);
           }
 
           if (position["Type"].includes("UST") && position["Notional Amount"] <= 0 && (unrlzdPositionsNum == 1 || position["Strategy"] == "Global Hedge")) {
-            return assetClassOrder.UST_GLOBAL + duration;
+            return assetClassOrder.UST_GLOBAL + (view == "exposure" ? duration : 0);
           }
 
           if (position["Type"].includes("FUT") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
-            return assetClassOrder.CURR_HEDGE + duration;
+            return assetClassOrder.CURR_HEDGE + (view == "exposure" ? duration : 0);
           }
 
           if (position["Type"] == "FUT" && position["Notional Amount"] <= 0) {
-            return assetClassOrder.FUT + duration;
+            return assetClassOrder.FUT + (view == "exposure" ? duration : 0);
           }
           if (position["Asset Class"] == "Illiquid") {
-            return assetClassOrder.Illiquid + duration;
+            return assetClassOrder.Illiquid + (view == "exposure" ? duration : 0);
           }
           if (position["Type"] == "CDS") {
-            return assetClassOrder.CDS + duration;
+            return assetClassOrder.CDS + (view == "exposure" ? duration : 0);
           }
           if (position["Currency"] != "USD") {
-            return assetClassOrder.NON_USD + duration;
+            return assetClassOrder.NON_USD + (view == "exposure" ? duration : 0);
           }
 
           //if one of them is not rlzd, then its not appliacable
@@ -396,15 +417,15 @@ export function assignAssetClass(locationCode: string, group: any, assetClassOrd
     let duration = parseFloat(position["Duration"]) / 100;
 
     if (rlzd == 2) {
-      return assetClassOrder.RLZD + duration;
+      return assetClassOrder.RLZD;
     }
     if (assetClass == "IG") {
-      return assetClassOrder.IG + duration;
+      return assetClassOrder.IG;
     }
     if (assetClass == "HY") {
-      return assetClassOrder.HY + duration;
+      return assetClassOrder.HY;
     }
-    return assetClassOrder.undefined + duration;
+    return assetClassOrder.undefined + (view == "exposure" ? duration : 0);
   } catch (error) {
     console.log(error);
     return assetClassOrder.undefined;

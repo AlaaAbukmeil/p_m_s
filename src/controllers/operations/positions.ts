@@ -175,7 +175,7 @@ export async function updatePositionPortfolio(
 
           object["Location"] = row["Location"].trim();
           object["Last Modified Date"] = new Date();
-          if (securityInPortfolio == 404 || securityInPortfolio["Notional Amount"] <= 0) {
+          if (rlzdOperation == -1) {
             object["Entry Yield"] = row["Yield"] || 0;
           }
           object["BB Ticker"] = row["BB Ticker"];
@@ -299,10 +299,9 @@ export async function updatePositionPortfolio(
             }
           }
 
-          if (updatingPosition["Notional Amount"] <= 0) {
-            updatingPosition["Entry Yield"] = row["Yield"] || 0;
+          if (rlzdOperation == -1) {
+            object["Entry Yield"] = row["Yield"] || 0;
           }
-
           object["Net"] = currentNet + updatingPosition["Net"];
           object["Average Cost"] = rlzdOperation == -1 ? getAverageCost(currentQuantity, updatingPosition["Notional Amount"], currentPrice, parseFloat(updatingPosition["Average Cost"])) : updatingPosition["Average Cost"];
           // this is reversed because the quantity is negated
@@ -720,7 +719,7 @@ export async function editPosition(editedPosition: any, date: string) {
       "Notes",
       "MTD Price Move",
       "Event Type",
-      "Edit Note"
+      "Edit Note",
     ];
     // these keys are made up by the function frontend table, it reverts keys to original keys
 
