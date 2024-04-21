@@ -324,6 +324,7 @@ export async function updatePositionPortfolio(
           if (rlzdOperation == 1) {
             object["MTD Rlzd"][thisMonth] = object["MTD Rlzd"][thisMonth] ? object["MTD Rlzd"][thisMonth] : [];
             object["MTD Rlzd"][thisMonth].push(MTDRlzdForThisTrade);
+            object["Entry Price"][thisMonth] = currentPrice;
           }
           object["Day Rlzd"] = updatingPosition["Day Rlzd"];
 

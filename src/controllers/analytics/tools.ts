@@ -126,7 +126,7 @@ export function checkPosition(position: any, conditions: any) {
     let issuer = position["Issuer"] ? position["Issuer"].toString().toLowerCase() : null;
     let ticker = position["BB Ticker"] ? position["BB Ticker"].toString().toLowerCase() : null;
     let coupon = position["Coupon Rate"] ? parsePercentage(position["Coupon Rate"]) : 0;
-
+    let yieldParam = position["YTM"] ? parsePercentage(position["YTM"]) : 0;
     let assetClass = position["Asset Class"] ? position["Asset Class"].toString().toLowerCase() : "";
 
     if (conditions.country) {
@@ -167,6 +167,11 @@ export function checkPosition(position: any, conditions: any) {
     }
     if (conditions.assetClass && assetClass) {
       if (!assetClass.includes(conditions.assetClass.toString().toLowerCase())) {
+        return false;
+      }
+    }
+    if (conditions.yield && yieldParam) {
+      if (yieldParam < conditions.yield) {
         return false;
       }
     }

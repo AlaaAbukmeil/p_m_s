@@ -522,6 +522,7 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           object["MTD Rlzd"] = {};
 
           object["MTD Rlzd"][thisMonth] = [];
+          console.log("tst 1")
 
           let MTDRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
           if (rlzdOperation == 1) {
@@ -538,6 +539,7 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           }
 
           object["Cost MTD"] = {};
+          console.log("tst 2")
 
           object["Cost MTD"][thisMonth] = operation == 1 ? parseFloat(currentPrincipal) : 0;
           object["Original Face"] = originalFace;
@@ -545,6 +547,8 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           if (!object["Entry Price"]) {
             object["Entry Price"] = {};
           }
+          console.log("tst 3")
+
           if (rlzdOperation == -1) {
             object["Entry Price"][thisMonth] = currentPrice;
           }
@@ -575,6 +579,11 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           // this is reversed because the quantity is negated
 
           object["Cost MTD"] = updatingPosition["Cost MTD"];
+          if(!object["Cost MTD"]){
+            object["Cost MTD"][thisMonth] = 0
+          }
+          console.log("tst 4")
+
           object["Cost MTD"][thisMonth] += operation == 1 ? currentPrincipal : 0;
 
           object["Coupon Rate"] = bondCouponMaturity.rate || 0;
@@ -582,11 +591,12 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           object["Interest"] = updatingPosition["Interest"];
           object["Interest"][settlementDate] = object["Interest"][settlementDate] ? object["Interest"][settlementDate] + currentQuantity : currentQuantity;
           object["Original Face"] = originalFace;
-
+          object["Entry Price"] = updatingPosition["Entry Price"]
           object["Coupon Duration"] = object["Coupon Rate"] ? couponDaysYear : "";
           if (rlzdOperation == -1) {
             object["Entry Price"][thisMonth] = currentPrice;
           }
+          console.log("tst 5")
 
           object["MTD Rlzd"] = updatingPosition["MTD Rlzd"];
 
@@ -603,6 +613,8 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
             object["Day Rlzd"][thisDay] = object["Day Rlzd"][thisDay] ? object["Day Rlzd"][thisDay] : [];
             object["Day Rlzd"][thisDay].push(dayRlzdForThisTrade);
           }
+          console.log("tst 6")
+
           object["Last Individual Upload Trade"] = new Date();
           let tradeRecord = null;
           if (!tradeRecord) {
@@ -628,7 +640,7 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
       }
 
       let action = await insertTradesInPortfolioAtASpecificDate(portfolio, `portfolio-${earliestPortfolioName.predecessorDate}`);
-      console.log(data, tradeType);
+      console.log(data, tradeType, "test");
       let modifyTradesAction = await modifyTradesDueToRecalculate(data, tradeType);
       console.log(modifyTradesAction, "modified trades");
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
