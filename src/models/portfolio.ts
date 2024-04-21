@@ -137,7 +137,7 @@ export interface PositionGeneralFormat extends PositionBeforeFormatting {
   "L/S": string;
   Duration: string;
   "USD Market Value": string;
-  Margin: string;
+  LTV: string;
   "OAS W Change": number;
   "Spread Change": string;
   "DV01 Dollar Value Impact": number;
@@ -163,7 +163,7 @@ export interface PositionGeneralFormat extends PositionBeforeFormatting {
   "Cost (LC)": number;
   "Coupon Rate": any;
   "Last Day Since Realizd": string | null;
-  "Base Margin": string;
+  "Base LTV": string;
   "Duration Bucket": "0 To 2" | "2 To 5" | "5 To 10" | "10 To 30" | "> 30";
 }
 

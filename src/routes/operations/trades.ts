@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { verifyToken } from "../../controllers/common";
 import { formatCentralizedRawFiles, getTriadaTrades } from "../../controllers/eblot/excelFormat";
-import { getTrades } from "../../controllers/reports/trades";
+import { getRlzdTrades, getTrades } from "../../controllers/reports/trades";
 import { uploadToBucket } from "../reports/portfolio";
 import { Request, Response, NextFunction } from "express";
 import { getGraphToken, getVcons } from "../../controllers/eblot/graphApiConnect";
@@ -22,7 +22,7 @@ tradesRouter.get("/all-trades", verifyToken, async (req, res) => {
     let trades = await getAllTrades(start, end);
     trades.filter((trade: any, index: any) => new Date(trade["Trade Date"]).getTime() > start && new Date(trade["Trade Date"]).getTime() < end);
 
-    let vconTrades: [CentralizedTrade[], number] | any = await getTriadaTrades("vcons", start, end) 
+    let vconTrades: [CentralizedTrade[], number] | any = await getTriadaTrades("vcons", start, end);
     let vcons: any = await getVcons(token, start + 2 * 24 * 60 * 60 * 1000, end - 2 * 24 * 60 * 60 * 1000, vconTrades);
 
     vcons = vcons.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app" && new Date(trade["Trade Date"]).getTime() > start && new Date(trade["Trade Date"]).getTime() < end);
@@ -41,6 +41,24 @@ tradesRouter.get("/trades", verifyToken, async (req, res) => {
     const tradeType: any = req.query.tradeType;
 
     let trades = await getTrades(`${tradeType}`);
+    res.send(trades);
+  } catch (error) {
+    res.status(500).send("An error occurred while reading the file.");
+  }
+});
+
+tradesRouter.get("/rlzd-trades", verifyToken, async (req, res) => {
+  try {
+    const tradeType: any = req.query.tradeType;
+    const isin: any = req.query["isin"];
+
+    const location: any = req.query["location"];
+    let date: any = req.query["date"];
+    let mtdMark: any = req.query["mtdMark"];
+    let mtdNotional: any = req.query["mtdNotional"] || 0;
+    mtdNotional = parseFloat(mtdNotional.toString().replace(/,/g, ""));
+    let trades = await getRlzdTrades(`${tradeType}`, isin, location, date, mtdMark, mtdNotional);
+
     res.send(trades);
   } catch (error) {
     res.status(500).send("An error occurred while reading the file.");

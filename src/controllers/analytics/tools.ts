@@ -355,7 +355,7 @@ export function assignAssetClass(locationCode: string, group: any, assetClassOrd
             return assetClassOrder.UST_GLOBAL;
           }
 
-          if (position["Type"] == "FUT" && position["Notional Amount"] <= 0) {
+          if (position["Type"] == "FUT") {
             return assetClassOrder.FUT;
           }
           if (position["Asset Class"] == "Illiquid") {

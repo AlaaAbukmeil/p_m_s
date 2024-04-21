@@ -41,6 +41,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     let bondDivider = position["Type"] == "BND" || position["Type"] == "UST" ? 100 : 1;
 
     let currency = position["Currency"];
+
     if (!position["FX Rate"]) {
       if (currencies[currency]) {
         usdRatio = currencies[currency];
@@ -156,7 +157,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     position["Duration Bucket"] = getDurationBucket(position["Duration"]);
     position["Issuer"] = position["Issuer"] == "0" ? "" : position["Issuer"];
 
-    position["Base Margin"] = nomuraRuleMargin(position);
+    position["Base LTV"] = nomuraRuleMargin(position);
     position["OAS"] = (position["OAS"] / 1000000) * position["Notional Amount"] * usdRatio;
     position["OAS"] = Math.round(position["OAS"] * 100) / 100 || 0;
 
@@ -264,7 +265,8 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
   let mtdFXGross = Math.round((mtdfx / parseFloat(fund.nav)) * 100000) / 1000;
   let monthGross = Math.round((mtdpl / parseFloat(fund.nav)) * 100000) / 1000;
   let ytdFXGross = Math.round((ytdfx / parseFloat(fundDetailsYTD.nav)) * 100000) / 1000;
-  let yearGross = Math.round((ytdpl / parseFloat(fundDetailsYTD.nav)) * 100000) / 1000;
+  let shadawNAV = parseFloat(fundDetailsYTD.nav) + mtdpl;
+  let yearGross = Math.round((1 - shadawNAV / parseFloat(fund.nav)) * 100000) / 1000;
   let fundDetails = {
     nav: parseFloat(fund.nav),
     holdbackRatio: parseFloat(fund.holdBackRatio),
@@ -941,6 +943,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         return 0; // a and b are equal
       });
     }
+    let totalTicker = "";
 
     for (let groupPositionIndex = 0; groupPositionIndex < groupedByLocation[locationCode].data.length; groupPositionIndex++) {
       if (groupedByLocation[locationCode].data[groupPositionIndex]["Notional Amount"] == 0) {
@@ -951,10 +954,12 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = groupedByLocation[locationCode].color;
       }
 
+      let length = groupedByLocation[locationCode].data.length;
       if (groupedByLocation[locationCode].data.length > 1) {
-        let length = groupedByLocation[locationCode].data.length;
         groupedByLocation[locationCode].data[length - 1]["bottom"] = true;
       }
+      let bbticker = groupedByLocation[locationCode].data[groupPositionIndex]["BB Ticker"].toString().split(" ");
+      totalTicker += bbticker[0] + " " + bbticker[1] + (groupPositionIndex < length - 1 ? " + " : "");
     }
 
     if (groupedByLocation[locationCode].data.length > 1 || (view == "exposure" && durationBuckets.includes(locationCode))) {
@@ -963,9 +968,9 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
       let newObject: any = {};
 
       if (portfolioViewType == "front office") {
-        let issuer = groupedByLocation[locationCode].data[0]["Issuer"] || "";
         newObject = {
-          "L/S": "Total " + issuer.split(" ")[0],
+          "L/S": "Total",
+          "BB Ticker": totalTicker,
           Color: "white",
           Location: locationCode,
           "USD Market Value": groupedByLocation[locationCode].groupUSDMarketValue,

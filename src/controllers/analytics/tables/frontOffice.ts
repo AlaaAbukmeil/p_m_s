@@ -85,7 +85,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Sector",
     "Country",
     "Duration",
-    "Base Margin",
+    "Base LTV",
     "Duration Bucket",
     "Rate Sensitivity",
     "30-Day Int. EST",
@@ -165,7 +165,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "% of Total Gain/ Loss since Inception (Live Position)": "% of Total Gain/ Loss since Inception (Live Position)",
     "Coupon Rate": "Coupon Rate",
     Pin: "Pin",
-    "Base Margin": "Base Margin",
+    "Base LTV": "Base LTV",
     "Duration Bucket": "Duration Bucket",
     "Rate Sensitivity": "Rate Sensitivity",
   };

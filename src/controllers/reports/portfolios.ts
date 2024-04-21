@@ -54,7 +54,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
     })[0]; // Take the first item after sorting
 
     const latestDate = latestDateKey ? new Date(latestDateKey) : null;
-    
+
     if (latestDate && latestDate <= lastDayOfLastYear && documents[index]["Notional Amount"] == 0) {
       // If not, remove the document from the array
       documents.splice(index, 1);
@@ -103,8 +103,8 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
 
   documents = documents.filter((position: Position) => {
     if (position["Notional Amount"] == 0) {
-      if(!position["Security Description"]){
-        position["Security Description"] =""
+      if (!position["Security Description"]) {
+        position["Security Description"] = "";
       }
       let monthsTrades = Object.keys(position["MTD Rlzd DC"] || {});
 
@@ -247,6 +247,7 @@ export function getMTDParams(portfolio: any, lastMonthPortfolio: any, dateInput:
 
         if (lastMonthPosition["ISIN"] == position["ISIN"] && lastMonthPosition["Mid"]) {
           portfolio[index]["MTD Mark"] = lastMonthPosition["Mid"];
+          portfolio[index]["MTD Notional"] = lastMonthPosition["Notional Amount"];
           portfolio[index]["MTD FX"] = lastMonthPosition["FX Rate"] ? lastMonthPosition["FX Rate"] : lastMonthPosition["holdPortfXrate"] ? lastMonthPosition["holdPortfXrate"] : portfolio[index]["Previous Rate"];
         }
       }
@@ -397,7 +398,7 @@ export function getMTDURlzdInt(portfolio: any, date: any) {
       for (let indexSettlementDate = 0; indexSettlementDate < settlementDates.length; indexSettlementDate++) {
         let settlementDate = settlementDates[indexSettlementDate]; // oct 11th
         let settlementDateTimestamp = new Date(settlementDate).getTime();
-        if (settlementDateTimestamp >= new Date(dayInCurrentMonth).getTime()) {
+        if (settlementDateTimestamp > new Date(dayInCurrentMonth).getTime()) {
           monthlyInterest[position["BB Ticker"]][dayInCurrentMonth] -= interestInfo[settlementDate]; // 25 00 000
         }
       }
@@ -407,6 +408,7 @@ export function getMTDURlzdInt(portfolio: any, date: any) {
       if (!dayInCurrentMonthInterestEarned) {
         dayInCurrentMonthInterestEarned = 0;
       }
+
       monthlyInterest[position["BB Ticker"]][dayInCurrentMonth] = dayInCurrentMonthInterestEarned;
       portfolio[index]["MTD Int."] += dayInCurrentMonthInterestEarned;
     }

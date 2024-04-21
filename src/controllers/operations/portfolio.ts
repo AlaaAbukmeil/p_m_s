@@ -522,7 +522,7 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           object["MTD Rlzd"] = {};
 
           object["MTD Rlzd"][thisMonth] = [];
-          console.log("tst 1")
+          console.log("tst 1");
 
           let MTDRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
           if (rlzdOperation == 1) {
@@ -539,7 +539,7 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           }
 
           object["Cost MTD"] = {};
-          console.log("tst 2")
+          console.log("tst 2");
 
           object["Cost MTD"][thisMonth] = operation == 1 ? parseFloat(currentPrincipal) : 0;
           object["Original Face"] = originalFace;
@@ -547,7 +547,7 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           if (!object["Entry Price"]) {
             object["Entry Price"] = {};
           }
-          console.log("tst 3")
+          console.log("tst 3");
 
           if (rlzdOperation == -1) {
             object["Entry Price"][thisMonth] = currentPrice;
@@ -579,10 +579,10 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           // this is reversed because the quantity is negated
 
           object["Cost MTD"] = updatingPosition["Cost MTD"];
-          if(!object["Cost MTD"]){
-            object["Cost MTD"][thisMonth] = 0
+          if (!object["Cost MTD"]) {
+            object["Cost MTD"][thisMonth] = 0;
           }
-          console.log("tst 4")
+          console.log("tst 4");
 
           object["Cost MTD"][thisMonth] += operation == 1 ? currentPrincipal : 0;
 
@@ -591,12 +591,12 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           object["Interest"] = updatingPosition["Interest"];
           object["Interest"][settlementDate] = object["Interest"][settlementDate] ? object["Interest"][settlementDate] + currentQuantity : currentQuantity;
           object["Original Face"] = originalFace;
-          object["Entry Price"] = updatingPosition["Entry Price"]
+          object["Entry Price"] = updatingPosition["Entry Price"];
           object["Coupon Duration"] = object["Coupon Rate"] ? couponDaysYear : "";
           if (rlzdOperation == -1) {
             object["Entry Price"][thisMonth] = currentPrice;
           }
-          console.log("tst 5")
+          console.log("tst 5");
 
           object["MTD Rlzd"] = updatingPosition["MTD Rlzd"];
 
@@ -613,7 +613,7 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
             object["Day Rlzd"][thisDay] = object["Day Rlzd"][thisDay] ? object["Day Rlzd"][thisDay] : [];
             object["Day Rlzd"][thisDay].push(dayRlzdForThisTrade);
           }
-          console.log("tst 6")
+          console.log("tst 6");
 
           object["Last Individual Upload Trade"] = new Date();
           let tradeRecord = null;
@@ -648,9 +648,20 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
       // console.log(positions)
       return action;
     } catch (error) {
+      let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+      console.log(error);
+      let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+      await insertEditLogs([errorMessage], "Errors", dateTime, "readCalculatePosition", "controllers/operations/portfolio.ts");
+
       return { error: error };
     }
   } catch (error) {
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.log(error);
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    await insertEditLogs([errorMessage], "Errors", dateTime, "readCalculatePosition", "controllers/operations/portfolio.ts");
+
     return { error: error };
   }
 }

@@ -171,7 +171,7 @@ export function adjustMarginMultiplier(portfolio: PositionGeneralFormat[], secto
   for (let index = 0; index < portfolio.length; index++) {
     try {
       let position = portfolio[index];
-      let positionBaseMargin = parsePercentage(position["Base Margin"]) / 100;
+      let positionBaseMargin = parsePercentage(position["Base LTV"]) / 100;
       let positionUSDValue = Math.abs(parseFloat(position["USD Market Value"]));
       let issuerMultiplier = 1;
       let sectorMultiplier = 1;
@@ -213,9 +213,9 @@ export function adjustMarginMultiplier(portfolio: PositionGeneralFormat[], secto
         } else if (assetClass == "Hedge") {
           capacity.amountHedge += amountCapacity;
         }
-        portfolio[index]["Base Margin"] = 100 - parsePercentage(position["Base Margin"]) + " %";
+        portfolio[index]["Base LTV"] = 100 - parsePercentage(position["Base LTV"]) + " %";
 
-        portfolio[index]["Margin"] = Math.round(positionMargin * 100) + " %" || "0 %";
+        portfolio[index]["LTV"] = Math.round(positionMargin * 100) + " %" || "0 %";
         portfolio[index]["Borrow Capacity"] = amountCapacity || 0;
       }
       capacity.amount = Math.round(capacity.amount);
