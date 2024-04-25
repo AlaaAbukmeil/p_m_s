@@ -191,6 +191,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     position["Entry Yield"] = position["Entry Yield"] ? Math.round(position["Entry Yield"] * 100) / 100 + " %" : "0 %";
     position["Coupon Rate"] = position["Coupon Rate"] + " %";
     position["Rate Sensitivity"] = position["Type"] == "UST" ? "" : rateSensitive(position["YTW"], position["Coupon Rate"], position["Duration"]);
+    position["MTD Notional"] = position["MTD Notional"] ? position["MTD Notional"] : 0;
 
     let latestDateKey;
 
@@ -266,7 +267,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
   let monthGross = Math.round((mtdpl / parseFloat(fund.nav)) * 100000) / 1000;
   let ytdFXGross = Math.round((ytdfx / parseFloat(fundDetailsYTD.nav)) * 100000) / 1000;
   let shadawNAV = parseFloat(fundDetailsYTD.nav) + mtdpl;
-  let yearGross = Math.round((1 - shadawNAV / parseFloat(fund.nav)) * 100000) / 1000;
+  let yearGross = Math.round((1 - shadawNAV / parseFloat(fund.nav) - fund.expenses / 10000) * 100000) / 1000;
   let fundDetails = {
     nav: parseFloat(fund.nav),
     holdbackRatio: parseFloat(fund.holdBackRatio),
@@ -306,7 +307,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     gmvOfNav: Math.round((lmv - smv) * 10000) / (100 * fund.nav),
     nmvOfNav: Math.round(nmv * 10000) / (100 * fund.nav),
     ytdEstInt: ytdEstInt,
-    ytdEstIntPercentage: Math.round((ytdEstInt / parseFloat(fundDetailsYTD.nav)) * 100000) / 1000,
+    ytdEstIntPercentage: Math.round((ytdEstInt / parseFloat(fundDetailsYTD.nav)) * 100000) / 1000 || 0,
   };
   let updatedPortfolio: PositionGeneralFormat[] | any = portfolio;
 
@@ -959,7 +960,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         groupedByLocation[locationCode].data[length - 1]["bottom"] = true;
       }
       let bbticker = groupedByLocation[locationCode].data[groupPositionIndex]["BB Ticker"].toString().split(" ");
-      totalTicker += bbticker[0] + " " + bbticker[1] + (groupPositionIndex < length - 1 ? " + " : "");
+      totalTicker += bbticker[0] + " " + (bbticker[1] || "") + (groupPositionIndex < length - 1 ? " + " : "");
     }
 
     if (groupedByLocation[locationCode].data.length > 1 || (view == "exposure" && durationBuckets.includes(locationCode))) {

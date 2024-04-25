@@ -3,6 +3,7 @@ import { client } from "../auth";
 import { getDate } from "../common";
 import { insertEditLogs } from "../operations/portfolio";
 import { getDateTimeInMongoDBCollectionFormat } from "./common";
+import { getAverageCost } from "./tools";
 
 export async function getTrades(tradeType: any) {
   try {
@@ -22,12 +23,11 @@ export async function getTrades(tradeType: any) {
   }
 }
 
-export async function getRlzdTrades(tradeType: any, isin: any, location: any, date: any, mtdMark: any, mtdAmountInput = 0) {
+export async function getRlzdTrades(tradeType: any, isin: any, location: any, date: any, mtdMark: any, mtdAmountInput: any): Promise<{ documents: any[]; totalRow: { Rlzd: number; "Rlzd P&L Amount": number } }> {
   try {
     const database = client.db("trades_v_2");
     const reportCollection = database.collection(`${tradeType}`);
     const inputDate = new Date(date);
-
     const startOfMonth = new Date(inputDate.getFullYear(), inputDate.getMonth(), 1).getTime();
     const endOfMonth = new Date(inputDate.getFullYear(), inputDate.getMonth() + 1, 0).getTime();
 
@@ -36,11 +36,16 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
     };
 
     let documents = await reportCollection.find(query).sort({ "Trade Date": 1 }).toArray();
+    // if(isin == "XS2809859536"){
+    //   console.log(documents)
+    // }
     let multiplier = tradeType == "vcons" ? 100 : 1;
     let total = 0;
 
-    let mtdAmount = mtdAmountInput;
+    let mtdAmount = parseFloat(mtdAmountInput) || 0;
     let accumualteNotional = mtdAmount;
+    let averageCost = parseFloat(mtdMark);
+
     for (let index = 0; index < documents.length; index++) {
       let trade = documents[index];
       if (!trade["BB Ticker"] && trade["Issue"]) {
@@ -52,14 +57,17 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
       let newNotional = parseFloat(trade["Notional Amount"]) * tradeBS;
       if (accumualteNotional + newNotional < accumualteNotional && accumualteNotional > 0) {
         trade["Rlzd"] = "True (Long)";
-        trade["Rlzd P&L Amount"] = parseFloat(trade["Notional Amount"]) * (parseFloat(trade["Price"]) / multiplier - parseFloat(mtdMark) / multiplier);
-        trade["Price Diff"] = parseFloat(trade["Price"]) / multiplier - parseFloat(mtdMark) / multiplier;
+        trade["Rlzd P&L Amount"] = parseFloat(trade["Notional Amount"]) * (parseFloat(trade["Price"]) / multiplier - averageCost / multiplier);
+        trade["Price Diff"] = parseFloat(trade["Price"]) / multiplier - averageCost / multiplier;
         total += trade["Rlzd P&L Amount"];
         accumualteNotional += newNotional;
+        trade["Average Cost MTD"] = averageCost;
+
         trade["Updated Notional"] = accumualteNotional;
       } else if (accumualteNotional + newNotional > accumualteNotional && accumualteNotional < 0) {
-        trade["Rlzd P&L Amount"] = parseFloat(trade["Notional Amount"]) * (parseFloat(mtdMark) / multiplier - parseFloat(trade["Price"]) / multiplier);
-        trade["Price Diff"] = parseFloat(mtdMark) / multiplier - parseFloat(trade["Price"]) / multiplier;
+        trade["Rlzd P&L Amount"] = parseFloat(trade["Notional Amount"]) * (averageCost / multiplier - parseFloat(trade["Price"]) / multiplier);
+        trade["Price Diff"] = averageCost / multiplier - parseFloat(trade["Price"]) / multiplier;
+        trade["Average Cost MTD"] = averageCost;
 
         trade["Rlzd"] = "True (Short)";
         total += trade["Rlzd P&L Amount"];
@@ -68,19 +76,26 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
       } else {
         trade["Rlzd P&L Amount"] = "0";
         trade["Rlzd"] = "False";
-
+        averageCost = getAverageCost(trade["Notional Amount"], accumualteNotional, trade["Price"], averageCost);
+        trade["Average Cost MTD"] = averageCost;
         accumualteNotional += newNotional;
         trade["Updated Notional"] = accumualteNotional;
       }
     }
-    let totalRow = {
+
+    let totalRow: any = {
       Rlzd: "Total",
       "Rlzd P&L Amount": total,
     };
     documents.push(totalRow);
-    return documents;
+    return { documents: documents, totalRow: totalRow };
   } catch (error) {
-    return error;
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    await insertEditLogs([errorMessage], "Errors", dateTime, "getRlzdTrades", "controllers/reports/trades.ts");
+
+    return { documents: [], totalRow: { Rlzd: 0, "Rlzd P&L Amount": 0 } };
   }
 }
 

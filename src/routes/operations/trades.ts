@@ -59,7 +59,7 @@ tradesRouter.get("/rlzd-trades", verifyToken, async (req, res) => {
     mtdNotional = parseFloat(mtdNotional.toString().replace(/,/g, ""));
     let trades = await getRlzdTrades(`${tradeType}`, isin, location, date, mtdMark, mtdNotional);
 
-    res.send(trades);
+    res.send(trades.documents);
   } catch (error) {
     res.status(500).send("An error occurred while reading the file.");
   }

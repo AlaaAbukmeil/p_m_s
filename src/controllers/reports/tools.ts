@@ -12,11 +12,11 @@ export function getAverageCost(currentQuantity: number, previousQuantity: number
     previousAverageCost = 0;
   }
   if (currentQuantity + previousQuantity == 0) {
-    let previousPrice = previousAverageCost;
-    return (previousPrice + currentPrice) / 2.0;
+    return currentPrice;
   } else {
     let previousPrice = previousAverageCost;
     let averageCost = (currentQuantity * currentPrice + previousQuantity * previousPrice) / (currentQuantity + previousQuantity);
+    // console.log("testing " + currentQuantity, previousQuantity, currentPrice, "previous average cost: " +previousAverageCost, "result: " + averageCost);
     return averageCost;
   }
 }

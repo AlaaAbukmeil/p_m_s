@@ -324,6 +324,8 @@ export async function updatePositionPortfolio(
           if (rlzdOperation == 1) {
             object["MTD Rlzd"][thisMonth] = object["MTD Rlzd"][thisMonth] ? object["MTD Rlzd"][thisMonth] : [];
             object["MTD Rlzd"][thisMonth].push(MTDRlzdForThisTrade);
+          }
+          if (rlzdOperation == -1) {
             object["Entry Price"][thisMonth] = currentPrice;
           }
           object["Day Rlzd"] = updatingPosition["Day Rlzd"];
@@ -758,7 +760,7 @@ export async function editPosition(editedPosition: any, date: string) {
             positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
             positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
           }
-        } else if ((title == "Mid" || title == "Ask" || title == "Bid" || title == "Average Cost") && editedPosition[title] != "") {
+        } else if ((title == "Mid" || title == "Ask" || title == "Bid" || title == "Average Cost" || title == "Entry Price") && editedPosition[title] != "") {
           if (!positionInPortfolio["Type"]) {
             positionInPortfolio["Type"] = positionInPortfolio["BB Ticker"].split(" ")[0] == "T" || positionInPortfolio["Issuer"] == "US TREASURY N/B" ? "UST" : "BND";
           }

@@ -11,6 +11,7 @@ import { Position } from "../../models/position";
 import { formatFrontOfficeTable } from "../analytics/tables/frontOffice";
 import { formatBackOfficeTable } from "../analytics/tables/backOffice";
 import { isRatingHigherThanBBBMinus } from "../analytics/tools";
+import { getRlzdTrades } from "./trades";
 export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions = null, view: "front office" | "back office" | "exposure", sortBy: "pl" | "price move" | null) {
   const database = client.db("portfolios");
   let earliestPortfolioName = await getEarliestCollectionName(date);
@@ -92,7 +93,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   let dayParamsWithLatestUpdates = await getDayURlzdInt(documents, new Date(date));
   documents = dayParamsWithLatestUpdates.portfolio;
   documents = await getYTDURlzdInt(documents, lastYearLastCollectionName.predecessorDate, date);
-  documents = getPL(documents, latestCollectionDate, date, lastYearLastCollectionName.predecessorDate);
+  documents = await getPL(documents, latestCollectionDate, date, lastYearLastCollectionName.predecessorDate);
   let dates = {
     today: earliestPortfolioName.predecessorDate,
     yesterday: lastDayBeforeToday.predecessorDate,
@@ -155,7 +156,7 @@ export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInpu
       if (!previousDayPosition) {
         previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue: any) => previousDayIssue["BB Ticker"] == position["BB Ticker"] && previousDayIssue["BB Ticker"] && position["BB Ticker"]) : null;
       }
-      let previousMark = previousDayPosition ? previousDayPosition["Mid"] : null;
+      let previousMark = previousDayPosition ? (portfolio[index]["Entry Price"][thisMonth] ? portfolio[index]["Entry Price"][thisMonth] : previousDayPosition["Mid"]) : null;
       let previousFxRate = previousDayPosition ? (previousDayPosition["FX Rate"] ? previousDayPosition["FX Rate"] : previousDayPosition["holdPortfXrate"] ? previousDayPosition["holdPortfXrate"] : portfolio[index]["FX Rate"]) : portfolio[index]["FX Rate"];
 
       portfolio[index]["Previous FX"] = previousFxRate;
@@ -384,6 +385,7 @@ export function getMTDURlzdInt(portfolio: any, date: any) {
     }
     let quantityGeneratingInterest = position["Notional Amount"];
     let interestInfo = position["Interest"];
+
     portfolio[index]["MTD Int."] = 0;
 
     let settlementDates = Object.keys(interestInfo);
@@ -408,6 +410,9 @@ export function getMTDURlzdInt(portfolio: any, date: any) {
       if (!dayInCurrentMonthInterestEarned) {
         dayInCurrentMonthInterestEarned = 0;
       }
+      // if (position["BB Ticker"] == "TALO 9 02/01/29 REGS") {
+      //   console.log(previousMonthDates[indexPreviousMonthDates], dayInCurrentMonthInterestEarned);
+      // }
 
       monthlyInterest[position["BB Ticker"]][dayInCurrentMonth] = dayInCurrentMonthInterestEarned;
       portfolio[index]["MTD Int."] += dayInCurrentMonthInterestEarned;
@@ -436,7 +441,7 @@ export function getYTDURlzdInt(portfolio: any, lastYearDate: any, date: any) {
   return portfolio;
 }
 
-function getPL(portfolio: any, latestPortfolioThisMonth: any, date: any, lastYearDate: any) {
+async function getPL(portfolio: any, latestPortfolioThisMonth: any, date: any, lastYearDate: any) {
   let thisMonth = monthlyRlzdDate(date);
   let thisDay = formatDateRlzdDaily(date);
   // console.log(latestPortfolioThisMonth[0])
@@ -454,9 +459,26 @@ function getPL(portfolio: any, latestPortfolioThisMonth: any, date: any, lastYea
     portfolio[index]["YTD Rlzd"] = getYTDRlzd(portfolio[index]["MTD Rlzd"], portfolio[index]["YTD Mark"], lastYearDate, portfolio[index]["BB Ticker"], portfolio[index]["Asset Class"]);
     portfolio[index]["Day Rlzd"] = positionUpToDateThisMonth["Day Rlzd"] ? (positionUpToDateThisMonth["Day Rlzd"][thisDay] ? calculateRlzd(positionUpToDateThisMonth["Day Rlzd"][thisDay], portfolio[index]["Previous Mark"], portfolio[index]["BB Ticker"], portfolio[index]["Asset Class"]) : 0) : 0;
     //deep copy
-    portfolio[index]["MTD Rlzd DC"] = portfolio[index]["MTD Rlzd"];
-    portfolio[index]["MTD Rlzd"] = portfolio[index]["MTD Rlzd"] ? (portfolio[index]["MTD Rlzd"][thisMonth] ? calculateRlzd(portfolio[index]["MTD Rlzd"][thisMonth], portfolio[index]["MTD Mark"], portfolio[index]["BB Ticker"], portfolio[index]["Asset Class"]) : 0) : 0;
+    let tradeType = "vcons";
+    let identifier = portfolio[index]["ISIN"];
+    let cdsCheck = portfolio[index]["Type"];
+    if (identifier.includes("IB")) {
+      tradeType = "ib";
+    } else if (identifier.includes("1393")) {
+      tradeType = "emsx";
+    } else if (cdsCheck.includes("CDS")) {
+      tradeType = "gs";
+    }
 
+    portfolio[index]["MTD Rlzd DC"] = portfolio[index]["MTD Rlzd"];
+    if (portfolio[index]["BB Ticker"] == "ACHMEA 0 11/02/44 EMTN") {
+      console.log(portfolio[index]["MTD Rlzd"]);
+    }
+    let multiplier = tradeType == "vcons" ? 100 : 1;
+
+    let trades = await getRlzdTrades(`${tradeType}`, identifier, portfolio[index]["Location"], date, portfolio[index]["MTD Mark"] * multiplier, portfolio[index]["MTD Notional"]);
+   
+    portfolio[index]["MTD Rlzd"] = trades.totalRow["Rlzd P&L Amount"];
     portfolio[index]["Cost MTD"] = portfolio[index]["Cost MTD"] ? portfolio[index]["Cost MTD"][thisMonth] || 0 : 0;
     portfolio[index]["Day P&L"] = parseFloat(portfolio[index]["Day Int."]) + parseFloat(portfolio[index]["Day Rlzd"]) + parseFloat(portfolio[index]["Day URlzd"]) ? parseFloat(portfolio[index]["Day Int."]) + parseFloat(portfolio[index]["Day Rlzd"]) + parseFloat(portfolio[index]["Day URlzd"]) : 0;
     portfolio[index]["MTD P&L"] = parseFloat(portfolio[index]["MTD Rlzd"]) + (parseFloat(portfolio[index]["MTD URlzd"]) || 0) + parseFloat(portfolio[index]["MTD Int."]) || 0;

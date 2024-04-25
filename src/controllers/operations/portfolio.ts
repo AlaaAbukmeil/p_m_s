@@ -272,7 +272,7 @@ export async function editFund(data: any): Promise<any> {
     const reportCollection = database.collection("details");
     const id = new ObjectId(data["_id"]);
     const updates = {} as any;
-    const tableTitles = ["month", "nav", "holdBackRatio"];
+    const tableTitles = ["month", "nav", "holdBackRatio", "expenses"];
 
     // Build the updates object based on `data` and `tableTitles`
     for (const title of tableTitles) {

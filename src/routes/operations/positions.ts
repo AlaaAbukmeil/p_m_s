@@ -184,7 +184,6 @@ positionsRouter.post("/update-previous-prices", verifyToken, uploadToBucket.any(
 
 positionsRouter.post("/edit-fund", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
-    console.log(req.body, "before");
     let action = await editFund(req.body);
 
     res.sendStatus(200);
