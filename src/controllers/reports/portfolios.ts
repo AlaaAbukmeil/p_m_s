@@ -182,9 +182,6 @@ export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInpu
       if (portfolio[index]["Notional Amount"] < 0) {
         portfolio[index]["Asset Class"] = "Hedge";
       }
-      if (portfolio[index]["Type"] == "BND" && portfolio[index]["Strategy"] == "RV") {
-        portfolio[index]["Asset Class"] = "IG";
-      }
 
       if (portfolio[index]["Previous Mark"] == 0) {
         portfolio[index]["Previous Mark"] = 0;

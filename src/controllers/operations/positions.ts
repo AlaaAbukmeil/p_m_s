@@ -359,7 +359,7 @@ export async function updatePositionPortfolio(
       console.log(error);
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
       let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-      if (!errorMessage.includes("Batch cannot be empty")) {
+      if (!errorMessage.toString().includes("Batch cannot be empty")) {
         await insertEditLogs([errorMessage], "Errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts");
       }
 
@@ -762,6 +762,16 @@ export async function editPosition(editedPosition: any, date: string) {
             positionInPortfolio["Interest"][sinkFactorDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Notional Amount"]);
 
             changes.push(`Notional Amount Changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]} on ${sinkFactorDate}`);
+            positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
+
+            positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
+          } else if (editedPosition["Event Type"] == "Redeemped") {
+            let factorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
+
+            positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
+            positionInPortfolio["Interest"][factorDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Notional Amount"]);
+
+            changes.push(`Notional Amount Redeemped at˝ ${positionInPortfolio["Notional Amount"]} on ${factorDate}`);
             positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
 
             positionInPortfolio["Net"] = parseFloat(editedPosition[title]);

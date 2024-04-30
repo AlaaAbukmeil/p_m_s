@@ -186,7 +186,7 @@ export function checkPosition(position: any, conditions: any) {
     }
     return true;
   } catch (error) {
-    console.log(conditions, error);
+    // console.log(conditions, error);
     return false;
   }
 }
@@ -347,17 +347,17 @@ export function assignAssetClass(locationCode: string, group: any, assetClassOrd
         }
         if (view != "exposure") {
           if ((position["Type"].includes("UST") || position["Strategy"] == "RV") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
-            return assetClassOrder.UST_HEDGE + alphabetIndex(position["BB Ticker"]);
+            return assetClassOrder.RV + alphabetIndex(position["BB Ticker"]);
           }
           if (position["Type"].includes("FUT") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
-            return assetClassOrder.CURR_HEDGE;
+            return assetClassOrder.RV;
           }
           if (position["Type"].includes("UST") && position["Notional Amount"] <= 0 && (unrlzdPositionsNum == 1 || position["Strategy"] == "Global Hedge")) {
             return assetClassOrder.UST_GLOBAL;
           }
 
           if (position["Type"] == "FUT") {
-            return assetClassOrder.FUT;
+            return assetClassOrder.FUT_CURR;
           }
           if (position["Asset Class"] == "Illiquid") {
             return assetClassOrder.Illiquid;
@@ -365,8 +365,8 @@ export function assignAssetClass(locationCode: string, group: any, assetClassOrd
           if (position["Type"] == "CDS") {
             return assetClassOrder.CDS;
           }
-          if (position["Currency"] != "USD") {
-            return assetClassOrder.NON_USD;
+          if (position["Currency"] != "USD" && unrlzdPositionsNum == 1) {
+            return assetClassOrder.FUT_CURR;
           }
           if (position["Asset Class"] == "IG") {
             assetClass = "IG";
@@ -386,15 +386,11 @@ export function assignAssetClass(locationCode: string, group: any, assetClassOrd
             return assetClassOrder.R_IS + (view == "exposure" ? duration : 0);
           }
           if (position["Strategy"] == "RV") {
-            return assetClassOrder.UST_HEDGE + (view == "exposure" ? duration : 0);
+            return assetClassOrder.RV + (view == "exposure" ? duration : 0);
           }
 
           if (position["Type"].includes("UST") && position["Notional Amount"] <= 0 && (unrlzdPositionsNum == 1 || position["Strategy"] == "Global Hedge")) {
             return assetClassOrder.UST_GLOBAL + (view == "exposure" ? duration : 0);
-          }
-
-          if (position["Type"].includes("FUT") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
-            return assetClassOrder.CURR_HEDGE + (view == "exposure" ? duration : 0);
           }
 
           if (position["Type"] == "FUT" && position["Notional Amount"] <= 0) {
@@ -407,7 +403,7 @@ export function assignAssetClass(locationCode: string, group: any, assetClassOrd
             return assetClassOrder.CDS + (view == "exposure" ? duration : 0);
           }
           if (position["Currency"] != "USD") {
-            return assetClassOrder.NON_USD + (view == "exposure" ? duration : 0);
+            return assetClassOrder.FUT_CURR + (view == "exposure" ? duration : 0);
           }
 
           //if one of them is not rlzd, then its not appliacable
@@ -466,12 +462,10 @@ export function getDurationBucket(duration: string) {
 export let assetClassOrderFrontOffice: any = {
   //hedge UST and hedge
 
-  UST_HEDGE: 1,
+  RV: 1,
   IG: 2,
   HY: 3,
-  CURR_HEDGE: 4,
-  NON_USD: 5,
-  FUT: 6,
+  FUT_CURR: 6,
   CDS: 7,
   UST_GLOBAL: 8,
   Illiquid: 9,
@@ -485,11 +479,9 @@ export let assetClassOrderExposure: any = {
   UST_GLOBAL: 1,
   R_S: 2,
   R_IS: 3,
-  CURR_HEDGE: 4,
-  NON_USD: 5,
-  FUT: 6,
+  FUT_CURR: 6,
   CDS: 7,
-  UST_HEDGE: 8,
+  RV: 8,
   Illiquid: 9,
   undefined: 10,
   RLZD: 11,
@@ -518,9 +510,10 @@ export class AggregateRow {
   "YTD Int. (USD)": number;
   "MTD P&L (USD)": number;
   "Notional Amount": number;
+  "Row Index": number;
 
-  constructor() {
-    this["L/S"] = "Global Hedge";
+  constructor(title: string) {
+    this["L/S"] = title;
     this["Color"] = "#F9F4D2";
     this["Location"] = "Global Hedge";
     this["USD Market Value"] = 0;
@@ -530,5 +523,6 @@ export class AggregateRow {
     this["YTD Int. (USD)"] = 0;
     this["MTD P&L (USD)"] = 0;
     this["Notional Amount"] = 0;
+    this["Row Index"] = -1;
   }
 }
