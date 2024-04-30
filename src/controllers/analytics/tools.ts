@@ -10,6 +10,7 @@ export function sortObjectBasedOnKey(object: any) {
 export function toTitleCase(str: string) {
   return str
     .toLowerCase()
+    .replace("&", " ")
     .split(" ")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
@@ -503,5 +504,31 @@ export function rateSensitive(yieldInput: string, coupon: string, duration: stri
     return "Rate Insensitive";
   } else {
     return "Rate Sensitive";
+  }
+}
+
+export class AggregateRow {
+  "L/S": string;
+  "Color": string;
+  "Location": string;
+  "USD Market Value": number;
+  "DV01": number;
+  "Day P&L (USD)": number;
+  "MTD Int. (USD)": number;
+  "YTD Int. (USD)": number;
+  "MTD P&L (USD)": number;
+  "Notional Amount": number;
+
+  constructor() {
+    this["L/S"] = "Global Hedge";
+    this["Color"] = "#F9F4D2";
+    this["Location"] = "Global Hedge";
+    this["USD Market Value"] = 0;
+    this["DV01"] = 0;
+    this["Day P&L (USD)"] = 0;
+    this["MTD Int. (USD)"] = 0;
+    this["YTD Int. (USD)"] = 0;
+    this["MTD P&L (USD)"] = 0;
+    this["Notional Amount"] = 0;
   }
 }

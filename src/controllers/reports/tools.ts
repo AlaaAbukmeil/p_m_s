@@ -35,7 +35,22 @@ export function settlementDatePassed(settlementDate: string, ticker: string) {
 
   return today >= inputDate;
 }
+export function remainingDaysInYear(inputDate: any) {
+  inputDate = new Date(inputDate);
+  // Get the current year from the input date
+  const year = inputDate.getFullYear();
 
+  // Create a new Date object for the last day of the current year
+  const lastDayOfYear = new Date(year, 11, 31); // Months are zero-based in JavaScript
+
+  // Calculate the difference between the last day of the year and the input date in milliseconds
+  const timeDiff = lastDayOfYear.getTime() - inputDate.getTime();
+
+  // Convert milliseconds to days and add 1 to include the input date
+  const daysRemaining = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) + 1;
+
+  return daysRemaining;
+}
 export function parseBondIdentifier(identifier: any): any {
   // Split the identifier into components
   try {

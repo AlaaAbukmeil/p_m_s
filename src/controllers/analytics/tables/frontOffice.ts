@@ -207,8 +207,8 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
   return object;
 }
 
-export function formatFrontOfficeTable({ portfolio, date, fund, dates, sort, sign, conditions, fundDetailsYTD, sortBy, view }: { portfolio: PositionBeforeFormatting[]; date: any; fund: any; dates: any; sort: any; sign: number; conditions: null | any; fundDetailsYTD: any; sortBy: "pl" | null | "price move"; view: "front office" | "back office" | "exposure" }) {
-  let formattedPortfolio: any = formatGeneralTable({ portfolio: portfolio, date: date, fund: fund, dates: dates, conditions: conditions, fundDetailsYTD: fundDetailsYTD });
+export function formatFrontOfficeTable({ portfolio, date, fund, dates, sort, sign, conditions, fundDetailsYTD, sortBy, view, ytdinterest }: { portfolio: PositionBeforeFormatting[]; date: any; fund: any; dates: any; sort: any; sign: number; conditions: null | any; fundDetailsYTD: any; sortBy: "pl" | null | "price move"; view: "front office" | "back office" | "exposure"; ytdinterest: any }) {
+  let formattedPortfolio: any = formatGeneralTable({ portfolio: portfolio, date: date, fund: fund, dates: dates, conditions: conditions, fundDetailsYTD: fundDetailsYTD, ytdinterest });
 
   let formatted = [];
 

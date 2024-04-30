@@ -8,6 +8,7 @@ import { getGraphToken, getVcons } from "../../controllers/eblot/graphApiConnect
 import { getAllTrades } from "../../controllers/eblot/eblot";
 import { deleteTrade, editTrade } from "../../controllers/operations/trades";
 import { CentralizedTrade } from "../../models/trades";
+import { getDateTimeInMongoDBCollectionFormat } from "../../controllers/reports/common";
 
 const tradesRouter = Router();
 
@@ -54,10 +55,15 @@ tradesRouter.get("/rlzd-trades", verifyToken, async (req, res) => {
 
     const location: any = req.query["location"];
     let date: any = req.query["date"];
+    date = getDateTimeInMongoDBCollectionFormat(new Date());
+
     let mtdMark: any = req.query["mtdMark"];
     let mtdNotional: any = req.query["mtdNotional"] || 0;
+    let type: any = req.query["type"] || 0;
+
     mtdNotional = parseFloat(mtdNotional.toString().replace(/,/g, ""));
     let trades = await getRlzdTrades(`${tradeType}`, isin, location, date, mtdMark, mtdNotional);
+    console.log(trades);
 
     res.send(trades.documents);
   } catch (error) {

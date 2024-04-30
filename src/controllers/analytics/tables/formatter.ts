@@ -3,11 +3,11 @@ import { formatDateUS, parsePercentage } from "../../common";
 import { calculateAccruedSinceInception } from "../../reports/portfolios";
 import { parseBondIdentifier } from "../../reports/tools";
 import { getCountrySectorStrategySum } from "./statistics";
-import { sortObjectBasedOnKey, oasWithChange, checkPosition, yearsUntil, getDuration, getSectorAssetClass, AggregatedData, assignAssetClass, getDurationBucket, assetClassOrderFrontOffice, assetClassOrderExposure, rateSensitive } from "../tools";
+import { sortObjectBasedOnKey, oasWithChange, checkPosition, yearsUntil, getDuration, getSectorAssetClass, AggregatedData, assignAssetClass, getDurationBucket, assetClassOrderFrontOffice, assetClassOrderExposure, rateSensitive, toTitleCase, AggregateRow } from "../tools";
 import { getTopWorst } from "./frontOffice";
 import { adjustMarginMultiplier, nomuraRuleMargin } from "../cash/rules";
 
-export function formatGeneralTable({ portfolio, date, fund, dates, conditions, fundDetailsYTD }: { portfolio: PositionBeforeFormatting[]; date: any; fund: any; dates: any; conditions: any; fundDetailsYTD: any }): { portfolio: PositionGeneralFormat[]; fundDetails: FundMTD; currencies: any } {
+export function formatGeneralTable({ portfolio, date, fund, dates, conditions, fundDetailsYTD, ytdinterest }: { portfolio: PositionBeforeFormatting[]; date: any; fund: any; dates: any; conditions: any; fundDetailsYTD: any; ytdinterest: any }): { portfolio: PositionGeneralFormat[]; fundDetails: FundMTD; currencies: any } {
   let currencies: any = {};
   let dv01Sum = 0;
   let mtdpl = 0,
@@ -20,15 +20,11 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     dayfx = 0,
     dayurlzd = 0,
     dayrlzd = 0,
-    ytdint = 0,
-    ytdpl = 0,
-    ytdfx = 0,
-    ytdurlzd = 0,
-    ytdrlzd = 0,
     nmv = 0,
     lmv = 0,
     ytdEstInt = 0,
-    smv = 0;
+    smv = 0,
+    priceImpact = 0;
   for (let index = 0; index < portfolio.length; index++) {
     let position: any = portfolio[index];
 
@@ -87,6 +83,8 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     }
     position["DV01"] = (position["DV01"] / 1000000) * position["Notional Amount"] * usdRatio;
     position["DV01"] = Math.round(position["DV01"] * 100) / 100 || 0;
+
+    position["DV01 Cal"] = Math.round(-1 * position["DV01"] * position["1-Day Spread Change"]) || 0;
 
     position["Day P&L FX"] = (position["FX Rate"] - position["Previous FX"]) * position["Value (BC)"];
     position["MTD P&L FX"] = (position["FX Rate"] - position["MTD FX"]) * position["Value (BC)"];
@@ -207,7 +205,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     const latestDate = latestDateKey ? new Date(latestDateKey) : null;
 
     position["Last Day Since Realizd"] = position["Notional Amount"] == 0 ? formatDateUS(latestDate) : null;
-
+    position["Sector"] = position["Sector"] ? toTitleCase(position["Sector"]) : "";
     if (conditions) {
       if (checkPosition(position, conditions)) {
         mtdpl += position["MTD P&L (BC)"];
@@ -215,12 +213,6 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
         mtdurlzd += position["MTD URlzd (BC)"];
         mtdint += position["MTD Int. (BC)"];
         mtdfx += position["MTD P&L FX"];
-
-        ytdpl += position["YTD P&L (BC)"];
-        ytdrlzd += position["YTD Rlzd (BC)"];
-        ytdurlzd += position["YTD URlzd (BC)"];
-        ytdint += position["YTD Int. (BC)"];
-        ytdfx += position["YTD P&L FX"];
 
         dayint += position["Day Int. (BC)"];
 
@@ -231,6 +223,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
         dayrlzd += position["Day Rlzd (BC)"];
         dv01Sum += position["DV01"];
         ytdEstInt += position["365-Day Int. EST"];
+        priceImpact += parseFloat(position["DV01 Cal"]);
       } else {
         delete portfolio[index];
       }
@@ -247,16 +240,11 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
 
       mtdfx += position["MTD P&L FX"];
 
-      ytdpl += position["YTD P&L (BC)"];
-      ytdrlzd += position["YTD Rlzd (BC)"];
-      ytdurlzd += position["YTD URlzd (BC)"];
-      ytdint += position["YTD Int. (BC)"];
-      ytdfx += position["YTD P&L FX"];
-
       dayurlzd += position["Day URlzd (BC)"];
       dayrlzd += position["Day Rlzd (BC)"];
       dv01Sum += position["DV01"];
       ytdEstInt += position["365-Day Int. EST"];
+      priceImpact += parseFloat(position["DV01 Cal"]);
     }
   }
 
@@ -265,9 +253,9 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
 
   let mtdFXGross = Math.round((mtdfx / parseFloat(fund.nav)) * 100000) / 1000;
   let monthGross = Math.round((mtdpl / parseFloat(fund.nav)) * 100000) / 1000;
-  let ytdFXGross = Math.round((ytdfx / parseFloat(fundDetailsYTD.nav)) * 100000) / 1000;
   let shadawNAV = parseFloat(fundDetailsYTD.nav) + mtdpl;
   let yearGross = Math.round((1 - shadawNAV / parseFloat(fund.nav) - fund.expenses / 10000) * 100000) / 1000;
+  let yearGrossAmount = Math.round((yearGross / 100) * parseFloat(fund.nav));
   let fundDetails = {
     nav: parseFloat(fund.nav),
     holdbackRatio: parseFloat(fund.holdBackRatio),
@@ -281,13 +269,13 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     mtdFXGross: mtdFXGross,
 
     ytdGross: yearGross,
-    ytdpl: Math.round(ytdpl * 1000) / 1000,
-    ytdrlzd: Math.round(ytdrlzd * 1000) / 1000,
-    ytdurlzd: Math.round(ytdurlzd * 1000) / 1000,
-    ytdint: Math.round(ytdint * 1000) / 1000,
-    ytdfx: Math.round(ytdfx * 1000) / 1000,
-    ytdintPercentage: Math.round((ytdint / parseFloat(fundDetailsYTD.nav)) * 100000) / 1000,
-    ytdFXGross: ytdFXGross,
+    ytdpl: yearGrossAmount,
+    ytdrlzd: "x",
+    ytdurlzd: "x",
+    ytdint: Math.round(ytdinterest * 1000) / 1000,
+    ytdfx: "x",
+    ytdintPercentage: Math.round((ytdinterest / parseFloat(fundDetailsYTD.nav)) * 100000) / 1000,
+    ytdFXGross: "x",
 
     dayGross: dayGross,
     dayFXGross: dayFXGross,
@@ -307,6 +295,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     gmvOfNav: Math.round((lmv - smv) * 10000) / (100 * fund.nav),
     nmvOfNav: Math.round(nmv * 10000) / (100 * fund.nav),
     ytdEstInt: ytdEstInt,
+    priceImpact: priceImpact,
     ytdEstIntPercentage: Math.round((ytdEstInt / parseFloat(fundDetailsYTD.nav)) * 100000) / 1000 || 0,
   };
   let updatedPortfolio: PositionGeneralFormat[] | any = portfolio;
@@ -544,6 +533,10 @@ export function assignColorAndSortParamsBasedOnAssetClass({
   strategyGMVPercentage,
   issuerGMVPercentage,
   date,
+  countryLMVPercentage,
+  sectorLMVPercentage,
+  strategyLMVPercentage,
+  issuerLMVPercentage,
 }: {
   countryNAVPercentage: any;
   sectorNAVPercentage: any;
@@ -566,6 +559,10 @@ export function assignColorAndSortParamsBasedOnAssetClass({
   strategyGMVPercentage: any;
   issuerGMVPercentage: any;
   date: string;
+  countryLMVPercentage: any;
+  sectorLMVPercentage: any;
+  strategyLMVPercentage: any;
+  issuerLMVPercentage: any;
 }) {
   let assetClassOrder = view == "exposure" ? assetClassOrderExposure : assetClassOrderFrontOffice;
   for (let locationCode in groupedByLocation) {
@@ -717,12 +714,17 @@ export function assignColorAndSortParamsBasedOnAssetClass({
 
       let absoulteUsdMarketValue = Math.abs(usdMarketValue);
 
+      if (usdMarketValue > 0) {
+        strategyLMVPercentage[strategy] = strategyLMVPercentage[strategy] ? strategyLMVPercentage[strategy] + usdMarketValue : usdMarketValue;
+        issuerLMVPercentage[issuer] = issuerLMVPercentage[issuer] ? issuerLMVPercentage[issuer] + usdMarketValue : usdMarketValue;
+        countryLMVPercentage[country.toLowerCase()] = countryLMVPercentage[country.toLowerCase()] ? countryLMVPercentage[country.toLowerCase()] + usdMarketValue : usdMarketValue;
+        sectorLMVPercentage[sector.toLowerCase()] = sectorLMVPercentage[sector.toLowerCase()] ? sectorLMVPercentage[sector.toLowerCase()] + usdMarketValue : usdMarketValue;
+      }
+
       strategyNAVPercentage[strategy] = strategyNAVPercentage[strategy] ? strategyNAVPercentage[strategy] + usdMarketValue : usdMarketValue;
       issuerNAVPercentage[issuer] = issuerNAVPercentage[issuer] ? issuerNAVPercentage[issuer] + usdMarketValue : usdMarketValue;
-      if (usdMarketValue > 0) {
-        countryNAVPercentage[country.toLowerCase()] = countryNAVPercentage[country.toLowerCase()] ? countryNAVPercentage[country.toLowerCase()] + usdMarketValue : usdMarketValue;
-        sectorNAVPercentage[sector.toLowerCase()] = sectorNAVPercentage[sector.toLowerCase()] ? sectorNAVPercentage[sector.toLowerCase()] + usdMarketValue : usdMarketValue;
-      }
+      countryNAVPercentage[country.toLowerCase()] = countryNAVPercentage[country.toLowerCase()] ? countryNAVPercentage[country.toLowerCase()] + usdMarketValue : usdMarketValue;
+      sectorNAVPercentage[sector.toLowerCase()] = sectorNAVPercentage[sector.toLowerCase()] ? sectorNAVPercentage[sector.toLowerCase()] + usdMarketValue : usdMarketValue;
 
       strategyGMVPercentage[strategy] = strategyGMVPercentage[strategy] ? strategyGMVPercentage[strategy] + absoulteUsdMarketValue : absoulteUsdMarketValue;
       issuerGMVPercentage[issuer] = issuerGMVPercentage[issuer] ? issuerGMVPercentage[issuer] + absoulteUsdMarketValue : absoulteUsdMarketValue;
@@ -843,48 +845,25 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
   let locationCodes;
   let macroHedgeIndex = 0;
   let nonHedgeIndex, rvIndex;
-  let macro = {
-    "Global Hedge": {
-      "L/S": "Global Hedge",
-      Color: "#F9F4D2",
-      Location: "Global Hedge",
-      "USD Market Value": 0,
-      DV01: 0,
-      "Day P&L (USD)": 0,
-      "MTD Int. (USD)": 0,
+  let macro: any;
 
-      "YTD Int. (USD)": 0,
-
-      "MTD P&L (USD)": 0,
-      "Notional Amount": 0,
-    },
-    "Non-Hedge Bonds": {
-      "L/S": "Non-Hedge Bonds",
-      Color: "#F9F4D2",
-      Location: "Non-Hedge Bonds",
-      "USD Market Value": 0,
-      DV01: 0,
-      "Day P&L (USD)": 0,
-      "MTD Int. (USD)": 0,
-
-      "YTD Int. (USD)": 0,
-      "MTD P&L (USD)": 0,
-      "Notional Amount": 0,
-    },
-    RV: {
-      "L/S": "RV",
-      Color: "#F9F4D2",
-      Location: "RV",
-      "USD Market Value": 0,
-      DV01: 0,
-      "Day P&L (USD)": 0,
-      "MTD Int. (USD)": 0,
-
-      "YTD Int. (USD)": 0,
-      "MTD P&L (USD)": 0,
-      "Notional Amount": 0,
-    },
-  };
+  if (view == "exposure") {
+    macro = {
+      "Global Hedge": new AggregateRow(),
+      "Non-Hedge Bonds": new AggregateRow(),
+      RV: new AggregateRow(),
+    };
+  } else {
+    macro = {
+      RV: new AggregateRow(),
+      IG: new AggregateRow(),
+      HY: new AggregateRow(),
+      FUT: new AggregateRow(),
+      CDS: new AggregateRow(),
+      "Global Hedge": new AggregateRow(),
+      Rlzd: new AggregateRow(),
+    };
+  }
   if (view == "exposure") {
     locationCodes = Object.entries(groupedByLocation);
     locationCodes = locationCodes
@@ -963,7 +942,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
       totalTicker += bbticker[0] + " " + (bbticker[1] || "") + (groupPositionIndex < length - 1 ? " + " : "");
     }
 
-    if (groupedByLocation[locationCode].data.length > 1 || (view == "exposure" && durationBuckets.includes(locationCode))) {
+    if (groupedByLocation[locationCode].data.length > 1 || view == "exposure") {
       let portfolioViewType = view;
 
       let newObject: any = {};
@@ -1118,6 +1097,11 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
   let strategyGMVPercentage: any = {};
   let issuerGMVPercentage: any = {};
 
+  let countryLMVPercentage: any = {};
+  let sectorLMVPercentage: any = {};
+  let strategyLMVPercentage: any = {};
+  let issuerLMVPercentage: any = {};
+
   let longShort = { Long: { dv01Sum: 0, intSum: 0 }, Short: { dv01Sum: 0, intSum: 0 }, Total: { dv01Sum: 0, intSum: 0 } };
 
   let durationSummary = {
@@ -1185,7 +1169,6 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
     let rate = item["Rate Sensitivity"];
     let assetClass = item["Asset Class"];
     let currency = item["Currency"];
-    let pinned = item["Pin"];
     // group = group ? group : {};
 
     let rlzdTimestamp = new Date(item["Last Day Since Realizd"]).getTime();
@@ -1231,6 +1214,11 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
     strategyGMVPercentage: strategyGMVPercentage,
     issuerGMVPercentage: issuerGMVPercentage,
 
+    countryLMVPercentage: countryLMVPercentage,
+    sectorLMVPercentage: sectorLMVPercentage,
+    strategyLMVPercentage: strategyLMVPercentage,
+    issuerLMVPercentage: issuerLMVPercentage,
+
     view: view,
     ustTable: ustTable,
     igTable: igTable,
@@ -1270,6 +1258,9 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
   getCountrySectorStrategySum(countryNAVPercentage, sectorNAVPercentage, strategyNAVPercentage, issuerNAVPercentage, fundDetails.nav);
 
   getCountrySectorStrategySum(countryGMVPercentage, sectorGMVPercentage, strategyGMVPercentage, issuerGMVPercentage, fundDetails.nav);
+
+  getCountrySectorStrategySum(countryLMVPercentage, sectorLMVPercentage, strategyLMVPercentage, issuerLMVPercentage, fundDetails.nav);
+
   let capacity = adjustMarginMultiplier(portfolio, sectorGMVPercentage, issuerNAVPercentage);
 
   durationSummary["Total"].dv01Sum = Math.round(durationSummary["0 To 2"].dv01Sum + durationSummary["2 To 5"].dv01Sum + durationSummary["5 To 10"].dv01Sum + durationSummary["10 To 30"].dv01Sum + durationSummary["> 30"].dv01Sum);
@@ -1284,10 +1275,17 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
     strategyNAVPercentage: sortObjectBasedOnKey(strategyNAVPercentage),
     issuerNAVPercentage: sortObjectBasedOnKey(issuerNAVPercentage),
     capacity: capacity.capacity,
+
     countryGMVPercentage: sortObjectBasedOnKey(countryGMVPercentage),
     sectorGMVPercentage: sortObjectBasedOnKey(sectorGMVPercentage),
     strategyGMVPercentage: sortObjectBasedOnKey(strategyGMVPercentage),
     issuerGMVPercentage: sortObjectBasedOnKey(issuerGMVPercentage),
+
+    countryLMVPercentage: sortObjectBasedOnKey(countryLMVPercentage),
+    sectorLMVPercentage: sortObjectBasedOnKey(sectorLMVPercentage),
+    strategyLMVPercentage: sortObjectBasedOnKey(strategyLMVPercentage),
+    issuerLMVPercentage: sortObjectBasedOnKey(issuerLMVPercentage),
+
     riskAssessment: riskAssessment,
     topWorstPerformaners: topWorstPerformaners,
     longShort: longShort,

@@ -181,12 +181,12 @@ export interface FundMTD {
 
   ytdGross: number;
   ytdpl: number;
-  ytdrlzd: number;
-  ytdurlzd: number;
+  ytdrlzd: any;
+  ytdurlzd: any;
   ytdint: number;
-  ytdfx: number;
+  ytdfx: any;
   ytdintPercentage: number;
-  ytdFXGross: number;
+  ytdFXGross: any;
 
   dayGross: number;
   dayFXGross: number;
