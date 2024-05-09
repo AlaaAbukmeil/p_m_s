@@ -34,7 +34,6 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     let holdBackRatio = (position["Asset Class"] || position["Rating Class"]) == "Illiquid" ? parseFloat(fund.holdBackRatio) : 1;
 
     position["Quantity"] = position["Notional Amount"] / originalFace;
-
     let bondDivider = position["Type"] == "BND" || position["Type"] == "UST" ? 100 : 1;
 
     let currency = position["Currency"];
@@ -89,7 +88,6 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
 
     position["Day P&L FX"] = (position["FX Rate"] - position["Previous FX"]) * position["Value (BC)"];
     position["MTD P&L FX"] = (position["FX Rate"] - position["MTD FX"]) * position["Value (BC)"];
-    position["YTD P&L FX"] = (position["FX Rate"] - position["YTD FX"]) * position["Value (BC)"];
 
     if (!position["Day P&L FX"]) {
       position["Day P&L FX"] = 0;
@@ -97,9 +95,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     if (!position["MTD P&L FX"]) {
       position["MTD P&L FX"] = 0;
     }
-    if (!position["YTD P&L FX"]) {
-      position["YTD P&L FX"] = 0;
-    }
+  
 
     position["MTD FX"] = position["MTD FX"] ? Math.round(position["MTD FX"] * 1000) / 1000 : Math.round(position["Previous FX"] * 1000) / 1000;
 
@@ -117,17 +113,9 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     position["MTD P&L (BC)"] = Math.round(position["MTD P&L"] * usdRatio * holdBackRatio + position["MTD P&L FX"]);
 
     position["YTD Int. (LC)"] = Math.round(position["YTD Int."] * holdBackRatio);
-    position["YTD Rlzd (LC)"] = Math.round(position["YTD Rlzd"] * holdBackRatio);
-    position["YTD URlzd (LC)"] = Math.round(position["YTD URlzd"] * holdBackRatio);
-    position["YTD P&L (LC)"] = Math.round(position["YTD P&L"] * holdBackRatio);
 
     position["YTD Int. (BC)"] = Math.round(position["YTD Int."] * usdRatio * holdBackRatio);
     position["YTD Int. (USD)"] = position["YTD Int. (BC)"];
-
-    position["YTD Rlzd (BC)"] = Math.round(position["YTD Rlzd"] * usdRatio * holdBackRatio);
-    position["YTD URlzd (BC)"] = Math.round(position["YTD URlzd"] * usdRatio * holdBackRatio);
-
-    position["YTD P&L (BC)"] = Math.round(position["YTD P&L"] * usdRatio * holdBackRatio + position["YTD P&L FX"]);
 
     // position["MTD Cost (LC)"] = Math.round(position["MTD Cost"] * holdBackRatio * 1000000) / 1000000;
     position["Cost (LC)"] = Math.round((position["Average Cost"] / bondDivider) * position["Notional Amount"] * holdBackRatio);
@@ -370,7 +358,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
         let issue: any = groupedByLocation[locationCode].data[index]["BB Ticker"];
 
         sumTable({ table: rvPairTable, data: groupedByLocation[locationCode].data[index], view: view, param: locationCode, subtotal: false, subtotalParam: "" });
-        if (notional < 0) {
+        if (notional < 0 && groupedByLocation[locationCode].data[index]["Type"] == "UST") {
           sumTable({ table: ustTableByCoupon, data: groupedByLocation[locationCode].data[index], view: view, param: couponRate, subtotal: false, subtotalParam: "" });
           sumTable({ table: ustTable, data: groupedByLocation[locationCode].data[index], view: view, param: duration, subtotal: true, subtotalParam: issue });
         }
@@ -954,7 +942,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
     portfolio.splice(nonHedgeIndex, 0, macro["Non-Hedge Bonds"]);
     portfolio.splice(rvIndex, 0, macro["RV"]);
   }
-  if (view == "front office") {
+  if (view == "front office" && sort == "order") {
     let aggregate: ["RV", "IG", "HY", "CURR + FUT", "CDS", "Global Hedge", "Rlzd"] = ["RV", "IG", "HY", "CURR + FUT", "CDS", "Global Hedge", "Rlzd"];
     for (let index = 0; index < aggregate.length; index++) {
       let row: "RV" | "IG" | "HY" | "CURR + FUT" | "CDS" | "Global Hedge" | "Rlzd" = aggregate[index];

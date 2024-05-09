@@ -2,7 +2,7 @@ import { client } from "../auth";
 import { formatDateUS, formatDateWorld, getDate, getTradeDateYearTrades } from "../common";
 import { getSecurityInPortfolioWithoutLocation, insertEditLogs } from "./portfolio";
 import { findTrade, insertTrade } from "../reports/trades";
-import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../reports/common";
+import { getDateTimeInMongoDBCollectionFormat, getDateTimeInMongoDBCollectionNewFormat, monthlyRlzdDate } from "../reports/common";
 import { readCentralizedEBlot, readPricingSheet } from "./readExcel";
 import { findTradeRecord, formatUpdatedPositions, getAverageCost, getEarliestCollectionName, parseBondIdentifier } from "../reports/tools";
 import { PinnedPosition, Position } from "../../models/position";
@@ -360,7 +360,7 @@ export async function updatePositionPortfolio(
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
       let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
       if (!errorMessage.toString().includes("Batch cannot be empty")) {
-        await insertEditLogs([errorMessage], "Errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts");
+        await insertEditLogs([errorMessage], "Errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts 1");
       }
 
       return { error: error };
@@ -369,9 +369,9 @@ export async function updatePositionPortfolio(
     console.log(error);
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-
-    await insertEditLogs([errorMessage], "Errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts");
-
+    if (!errorMessage.toString().includes("Batch cannot be empty")) {
+      await insertEditLogs([errorMessage], "Errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts 2");
+    }
     return { error: error };
   }
 }
@@ -380,7 +380,7 @@ export async function insertTradesInPortfolio(trades: any) {
   const database = client.db("portfolios");
 
   // Create an array of updateOne operations
-  let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 0 * 24 * 60 * 60 * 1000));
+  let day = getDateTimeInMongoDBCollectionNewFormat(new Date(new Date().getTime() - 0 * 24 * 60 * 60 * 1000));
 
   let operations = trades
     .filter((trade: any) => trade["Location"])
@@ -425,8 +425,9 @@ export async function insertTradesInPortfolio(trades: any) {
     console.log(error);
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-
-    await insertEditLogs([errorMessage], "Errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts");
+    if (!errorMessage.toString().includes("Batch cannot be empty")) {
+      await insertEditLogs([errorMessage], "Errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts 3");
+    }
 
     return [];
   }
@@ -577,7 +578,7 @@ export async function updatePricesPortfolio(path: string) {
 export async function insertPricesUpdatesInPortfolio(updatedPortfolio: any) {
   const database = client.db("portfolios");
   let portfolio = updatedPortfolio;
-  let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 0 * 24 * 60 * 60 * 1000));
+  let day = getDateTimeInMongoDBCollectionNewFormat(new Date(new Date().getTime()));
   // Create an array of updateOne operations
 
   // Execute the operations in bulk
@@ -743,8 +744,8 @@ export async function editPosition(editedPosition: any, date: string) {
 
     for (let indexTitle = 0; indexTitle < editedPositionTitles.length; indexTitle++) {
       let title = editedPositionTitles[indexTitle];
-      let todayDate = formatDateUS(new Date().toString());
-      let monthDate = monthlyRlzdDate(new Date().toString());
+      let todayDate = formatDateUS(new Date(date).toString());
+      let monthDate = monthlyRlzdDate(new Date(date).toString());
       if (!unEditableParams.includes(title) && editedPosition[title] != "") {
         if (title == "Notional Amount") {
           if (editedPosition["Event Type"] == "Sink Factor") {
@@ -753,6 +754,10 @@ export async function editPosition(editedPosition: any, date: string) {
             positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
             positionInPortfolio["Interest"][payInKindFactorDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Notional Amount"]);
 
+            let MTDRlzdForThisTrade = { quantity: editedPosition[title], message: "sinked" };
+            positionInPortfolio["MTD Rlzd"] = positionInPortfolio["MTD Rlzd"] ? positionInPortfolio["MTD Rlzd"] : {};
+            positionInPortfolio["MTD Rlzd"][monthDate] = positionInPortfolio["MTD Rlzd"][monthDate] ? positionInPortfolio["MTD Rlzd"][monthDate] : [];
+            positionInPortfolio["MTD Rlzd"][monthDate].push(MTDRlzdForThisTrade);
             changes.push(`Notional Amount Changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]} on ${payInKindFactorDate} (pay in kind)`);
             positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
           } else if (editedPosition["Event Type"] == "Pay In Kind") {
@@ -760,14 +765,20 @@ export async function editPosition(editedPosition: any, date: string) {
 
             positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
             positionInPortfolio["Interest"][sinkFactorDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Notional Amount"]);
-
+            let MTDRlzdForThisTrade = { quantity: editedPosition[title], message: "pay in kind" };
+            positionInPortfolio["MTD Rlzd"] = positionInPortfolio["MTD Rlzd"] ? positionInPortfolio["MTD Rlzd"] : {};
+            positionInPortfolio["MTD Rlzd"][monthDate] = positionInPortfolio["MTD Rlzd"][monthDate] ? positionInPortfolio["MTD Rlzd"][monthDate] : [];
+            positionInPortfolio["MTD Rlzd"][monthDate].push(MTDRlzdForThisTrade);
             changes.push(`Notional Amount Changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]} on ${sinkFactorDate}`);
             positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
 
             positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
           } else if (editedPosition["Event Type"] == "Redeemped") {
             let factorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
-
+            let MTDRlzdForThisTrade = { quantity: editedPosition[title], message: "redeemed" };
+            positionInPortfolio["MTD Rlzd"] = positionInPortfolio["MTD Rlzd"] ? positionInPortfolio["MTD Rlzd"] : {};
+            positionInPortfolio["MTD Rlzd"][monthDate] = positionInPortfolio["MTD Rlzd"][monthDate] ? positionInPortfolio["MTD Rlzd"][monthDate] : [];
+            positionInPortfolio["MTD Rlzd"][monthDate].push(MTDRlzdForThisTrade);
             positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
             positionInPortfolio["Interest"][factorDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Notional Amount"]);
 

@@ -522,7 +522,6 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           object["MTD Rlzd"] = {};
 
           object["MTD Rlzd"][thisMonth] = [];
-          console.log("tst 1");
 
           let MTDRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
           if (rlzdOperation == 1) {
@@ -539,7 +538,6 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           }
 
           object["Cost MTD"] = {};
-          console.log("tst 2");
 
           object["Cost MTD"][thisMonth] = operation == 1 ? parseFloat(currentPrincipal) : 0;
           object["Original Face"] = originalFace;
@@ -547,7 +545,6 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           if (!object["Entry Price"]) {
             object["Entry Price"] = {};
           }
-          console.log("tst 3");
 
           if (rlzdOperation == -1) {
             object["Entry Price"][thisMonth] = currentPrice;
@@ -582,7 +579,6 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           if (!object["Cost MTD"]) {
             object["Cost MTD"][thisMonth] = 0;
           }
-          console.log("tst 4");
 
           object["Cost MTD"][thisMonth] += operation == 1 ? currentPrincipal : 0;
 
@@ -596,7 +592,6 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           if (rlzdOperation == -1) {
             object["Entry Price"][thisMonth] = currentPrice;
           }
-          console.log("tst 5");
 
           object["MTD Rlzd"] = updatingPosition["MTD Rlzd"];
 
@@ -613,7 +608,6 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
             object["Day Rlzd"][thisDay] = object["Day Rlzd"][thisDay] ? object["Day Rlzd"][thisDay] : [];
             object["Day Rlzd"][thisDay].push(dayRlzdForThisTrade);
           }
-          console.log("tst 6");
 
           object["Last Individual Upload Trade"] = new Date();
           let tradeRecord = null;
@@ -629,23 +623,20 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
     }
 
     try {
-      // console.log(positions);
       for (let index = 0; index < portfolio.length; index++) {
         let position = portfolio[index];
         if (position["ISIN"].trim() == isin.trim() && position["Location"] == location.trim()) {
           portfolio[index] = positions[0];
           portfolio[index]["Quantity"] = portfolio[index]["Notional Amount"];
+
           // console.log(portfolio[index], "updateed", `portfolio-${earliestPortfolioName.predecessorDate}`);
         }
       }
 
       let action = await insertTradesInPortfolioAtASpecificDate(portfolio, `portfolio-${earliestPortfolioName.predecessorDate}`);
-      console.log(data, tradeType, "test");
       let modifyTradesAction = await modifyTradesDueToRecalculate(data, tradeType);
-      console.log(modifyTradesAction, "modified trades");
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
       await insertEditLogs([], "Recalculate Position", dateTime, "", data[0]["BB Ticker"] + " " + data[0]["Location"]);
-      // console.log(positions)
       return action;
     } catch (error) {
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());

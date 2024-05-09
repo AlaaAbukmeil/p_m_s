@@ -35,7 +35,7 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
     };
 
     let documents = await reportCollection.find(query).sort({ "Trade Date": 1 }).toArray();
-    
+
     let multiplier = tradeType == "vcons" ? 100 : 1;
     let total = 0;
 
@@ -65,6 +65,7 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
         trade["Rlzd P&L Amount"] = parseFloat(trade["Notional Amount"]) * (averageCost / multiplier - parseFloat(trade["Price"]) / multiplier);
         trade["Price Diff"] = averageCost - parseFloat(trade["Price"]);
         trade["Average Cost MTD"] = averageCost;
+     
 
         trade["Rlzd"] = "True (Short)";
         total += trade["Rlzd P&L Amount"];
@@ -73,6 +74,7 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
       } else {
         trade["Rlzd P&L Amount"] = "0";
         trade["Rlzd"] = "False";
+     
         averageCost = getAverageCost(trade["Notional Amount"], accumualteNotional, trade["Price"], averageCost);
         trade["Average Cost MTD"] = averageCost;
         accumualteNotional += newNotional;

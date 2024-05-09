@@ -11,7 +11,7 @@ export function getAverageCost(currentQuantity: number, previousQuantity: number
   if (!previousAverageCost) {
     previousAverageCost = 0;
   }
-  if (currentQuantity + previousQuantity == 0) {
+  if (Math.round(currentQuantity + previousQuantity) == 0) {
     return currentPrice;
   } else {
     let previousPrice = previousAverageCost;

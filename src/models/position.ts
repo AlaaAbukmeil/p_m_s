@@ -57,6 +57,8 @@ export interface Position {
   "Z Spread": number;
   holdPortfXrate: number;
   "MTD Rlzd DC": Record<string, number>;
+  "MTD Rlzd": Record<string, number>;
+
   Pin: "pinned" | "not pinned";
   "Security Description": string;
 }

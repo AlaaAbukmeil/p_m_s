@@ -55,7 +55,7 @@ tradesRouter.get("/rlzd-trades", verifyToken, async (req, res) => {
 
     const location: any = req.query["location"];
     let date: any = req.query["date"];
-    date = getDateTimeInMongoDBCollectionFormat(new Date());
+    date = getDateTimeInMongoDBCollectionFormat(new Date(date));
 
     let mtdMark: any = req.query["mtdMark"];
     let mtdNotional: any = req.query["mtdNotional"] || 0;

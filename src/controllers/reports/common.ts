@@ -38,6 +38,29 @@ export function getDateTimeInMongoDBCollectionFormat(date: any) {
   return formattedDateTime;
 }
 
+export function getDateTimeInMongoDBCollectionNewFormat(date: any) {
+  let today: any = new Date(date);
+
+  let day = today.getDate();
+  let month = today.getMonth() + 1;
+  let year = today.getFullYear();
+  let hours: any = today.getHours();
+  let minutes: any = today.getMinutes();
+  if (day < 10) {
+    day = "0" + day;
+  }
+  if (month < 10) {
+    month = "0" + month;
+  }
+
+  // Pad single digit minutes or hours with a leading zero
+  if (hours < 10) hours = "0" + hours;
+  if (minutes < 10) minutes = "0" + minutes;
+
+  let formattedDateTime = year + "-" + month + "-" + day;
+  return formattedDateTime;
+}
+
 export function mapDatetimeToSameDay(datetimeList: any, daytimeInput: any) {
   // Convert daytimeInput to a string in the "yyyy-mm-dd" format
   let dateStr = new Date(daytimeInput).toISOString().slice(0, 10);

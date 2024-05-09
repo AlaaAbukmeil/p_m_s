@@ -176,10 +176,16 @@ export function adjustMarginMultiplier(portfolio: PositionGeneralFormat[], secto
       let issuerMultiplier = 1;
       let sectorMultiplier = 1;
       let assetClass = position["Asset Class"];
+      if (portfolio[index]["ISIN"]) {
+        portfolio[index]["LTV"] = "0 %";
+        portfolio[index]["Borrow Capacity"] = 0;
+      }
 
       let issuer = position["Issuer"];
-      let sector = toTitleCase(position["Sector"]);
-      if (sector) {
+      let sector = position["Sector"];
+      if (sector && sector != "") {
+        sector = toTitleCase(position["Sector"]);
+
         let portfolioGMVPercentageOfSector = sectorGMVPercentage[sector]["percentage"];
         if (portfolioGMVPercentageOfSector >= 30 && portfolioGMVPercentageOfSector < 50) {
           sectorMultiplier = 1.25;
@@ -187,7 +193,7 @@ export function adjustMarginMultiplier(portfolio: PositionGeneralFormat[], secto
           sectorMultiplier = 1.5;
         }
       }
-      if (issuer) {
+      if (issuer && issuer != "") {
         let portfolioGMVPercentageOfIssuer = issuerGMVPercentage[issuer]["percentage"];
         if (portfolioGMVPercentageOfIssuer >= 10 && portfolioGMVPercentageOfIssuer < 20) {
           issuerMultiplier = 1.25;
@@ -215,7 +221,7 @@ export function adjustMarginMultiplier(portfolio: PositionGeneralFormat[], secto
         }
         portfolio[index]["Base LTV"] = 100 - parsePercentage(position["Base LTV"]) + " %";
 
-        portfolio[index]["LTV"] = Math.round(positionMargin * 100) + " %" || "0 %";
+        portfolio[index]["LTV"] = Math.round((positionMargin || 0) * 100) + " %" || "0 %";
         portfolio[index]["Borrow Capacity"] = amountCapacity || 0;
       }
       capacity.amount = Math.round(capacity.amount);
@@ -223,11 +229,7 @@ export function adjustMarginMultiplier(portfolio: PositionGeneralFormat[], secto
       capacity.amountIG = Math.round(capacity.amountIG);
 
       capacity.amountHedge = Math.round(capacity.amountHedge);
-    } catch (error: any) {
-      let position = portfolio[index];
-      let issuer = position["Issuer"];
-      let sector = position["Sector"];
-    }
+    } catch (error: any) {}
   }
 
   return { portfolio: portfolio, capacity: capacity };
