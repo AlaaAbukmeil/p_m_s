@@ -55,6 +55,67 @@ export function isRatingHigherThanBBBMinus(rating: string) {
   return ratingIndex < benchmarkIndex ? "IG" : "HY";
 }
 
+export function getStandardRating(bbg: any, sp: any, moody: any, fitch: any) {
+  // Mapping Moody's ratings to standard S&P/Moody's ratings
+  const moodyToStandard: any = {
+    Aaa: "AAA",
+    Aa1: "AA+",
+    Aa2: "AA",
+    Aa3: "AA-",
+    A1: "A+",
+    A2: "A",
+    A3: "A-",
+    Baa1: "BBB+",
+    Baa2: "BBB",
+    Baa3: "BBB-",
+    Ba1: "BB+",
+    Ba2: "BB",
+    Ba3: "BB-",
+    B1: "B+",
+    B2: "B",
+    B3: "B-",
+    Caa1: "CCC+",
+    Caa2: "CCC",
+    Caa3: "CCC-",
+  };
+
+  // Mapping Fitch ratings to standard S&P/Moody's ratings
+  const fitchToStandard: any = {
+    AAA: "AAA",
+    "AA+": "AA+",
+    AA: "AA",
+    "AA-": "AA-",
+    "A+": "A+",
+    A: "A",
+    "A-": "A-",
+    "BBB+": "BBB+",
+    BBB: "BBB",
+    "BBB-": "BBB-",
+    "BB+": "BB+",
+    BB: "BB",
+    "BB-": "BB-",
+    "B+": "B+",
+    B: "B",
+    "B-": "B-",
+    "CCC+": "CCC+",
+    CCC: "CCC",
+    "CCC-": "CCC-",
+  };
+
+  // Check and return the first available rating in the order of preference
+  if (bbg && bbg != "NR") {
+    return bbg;
+  } else if (sp && sp != "NR") {
+    return sp;
+  } else if (moody && moodyToStandard[moody] && moody != "NR") {
+    return moodyToStandard[moody];
+  } else if (fitch && fitchToStandard[fitch] && fitch != "NR") {
+    return fitchToStandard[fitch];
+  } else {
+    return "NR";
+  }
+}
+
 export function bbgRating(rating: string) {
   const ratingsOrder = [
     "AAA",

@@ -174,7 +174,29 @@ export function formatUpdatedPositions(positions: any, portfolio: any, lastUpdat
 
 export async function getEarliestCollectionName(originalDate: string): Promise<{ predecessorDate: string; collectionNames: string[] }> {
   const database = client.db("portfolios");
-  let collections = await database.listCollections().toArray();
+
+  const targetDate = new Date(originalDate);
+  const startDate = new Date(targetDate.getFullYear(), targetDate.getMonth() - 2, targetDate.getDate());
+
+  // Generate regex pattern to match collections within the two-month range
+  let startMonth = startDate.getMonth() + 1;
+  let startYear = startDate.getFullYear();
+  let endMonth = targetDate.getMonth() + 1;
+  let endYear = targetDate.getFullYear();
+
+  let regexPattern = `^portfolio-(${startYear}-${startMonth.toString().padStart(2, "0")}`;
+  if (startYear !== endYear || startMonth !== endMonth) {
+    for (let date = new Date(startDate); date <= targetDate; date.setMonth(date.getMonth() + 1)) {
+      let month = date.getMonth() + 1;
+      let year = date.getFullYear();
+      regexPattern += `|${year}-${month.toString().padStart(2, "0")}`;
+    }
+  }
+  regexPattern += ")";
+
+  const cursor = database.listCollections({ name: { $regex: new RegExp(regexPattern) } });
+  const collections = await cursor.toArray();
+
   let collectionNames = [];
   for (let index = 0; index < collections.length; index++) {
     let collection = collections[index];
@@ -184,6 +206,7 @@ export async function getEarliestCollectionName(originalDate: string): Promise<{
       collectionNames.push(collection.name);
     }
   }
+
   let dates = [];
   for (let collectionIndex = 0; collectionIndex < collections.length; collectionIndex++) {
     let collection = collections[collectionIndex];
@@ -202,7 +225,6 @@ export async function getEarliestCollectionName(originalDate: string): Promise<{
     return { predecessorDate: "", collectionNames: collectionNames };
   }
   let predecessorDate: any = new Date(Math.max.apply(null, predecessorDates));
-  //hong kong time difference with utc
   if (predecessorDate) {
     predecessorDate = getDateTimeInMongoDBCollectionFormat(new Date(predecessorDate));
   }

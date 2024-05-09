@@ -91,6 +91,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "30-Day Int. EST",
     "365-Day Int. EST",
     "Day Int. (BC)",
+    "Rating Score",
   ];
 
   let titlesValues: any = {
@@ -168,6 +169,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Base LTV": "Base LTV",
     "Duration Bucket": "Duration Bucket",
     "Rate Sensitivity": "Rate Sensitivity",
+    "Rating Score": "Rating Score",
   };
 
   let twoDigits = [`${formatMarkDate(dates.lastMonth)}`, `${formatMarkDate(dates.yesterday)}`, `Last Mid ${formatMarkDate(dates.today)}`, "Bid", "Ask", "Duration", "Average Cost", "Entry Price", "Previous Mark", "Day Price Move", "MTD Price Move", "3-Day Price Move"];
@@ -197,7 +199,6 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
   object["ISIN"] = position["ISIN"];
   object["Issuer"] = position["Issuer"];
   object["Last Price Update"] = position["Last Price Update"];
-  object["Rating Score"] = position["BBG Composite Rating"] && position["BBG Composite Rating"] !== "NR" ? bbgRating(position["BBG Composite Rating"]) : position["Moody's Bond Rating"] ? moodyRating(position["Moody's Bond Rating"]) : -99;
   object["Value (BC) % of GMV"] = Math.abs(Math.round((position["Value (BC)"] / fundDetails.gmv) * 10000) / 100) + " %";
   object[`BBG / S&P / Moody / Fitch Rating`] = (position["BBG Composite Rating"] || "NR") + " " + (position["S&P Bond Rating"] || "NR") + " " + (position["Moody's Bond Rating"] || "NR") + " " + (position["Fitch Bond Rating"] || "NR") + " ";
   object["Spread (Z)"] = position["Z Spread"].toFixed(0);
