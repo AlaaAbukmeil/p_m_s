@@ -487,21 +487,6 @@ async function getPL(portfolio: any, latestPortfolioThisMonth: any, date: any, l
   return portfolio;
 }
 
-function getYTDRlzd(rlzdTradesObject: any, ytdPrice: any, ytdDate: any, bbTicker: string, assetClass = "") {
-  let rlzd = 0;
-  let rlzdTrades = [];
-  ytdDate = new Date(ytdDate).getTime();
-  for (let month in rlzdTradesObject) {
-    let dateComponents = month.split("/");
-    let date = new Date(dateComponents[1] + "/28/" + dateComponents[0]).getTime();
-    if (date > ytdDate) {
-      rlzdTrades.push(...rlzdTradesObject[month]);
-    }
-  }
-  rlzd = calculateRlzd(rlzdTrades, ytdPrice, bbTicker, assetClass);
-
-  return rlzd;
-}
 
 export function calculateAccruedSinceLastYear(interestInfo: any, couponRate: any, numOfDaysInAYear: any, lastYearDate: any, isin: string, dateInput: any) {
   try {

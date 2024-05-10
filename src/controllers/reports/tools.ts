@@ -172,6 +172,45 @@ export function formatUpdatedPositions(positions: any, portfolio: any, lastUpdat
   return data;
 }
 
+export async function getCollectionName(originalDate: any) {
+  const database = client.db("portfolios");
+  const targetDate = new Date(originalDate);
+  let day = targetDate.getDate();
+  let month = targetDate.getMonth() + 1;
+  let year = targetDate.getFullYear();
+  let regexPattern = `portfolio-${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+  const cursor = database.listCollections({ name: { $regex: new RegExp(regexPattern) } });
+  const collections = await cursor.toArray();
+
+  let collectionNames = [];
+  for (let index = 0; index < collections.length; index++) {
+    let collection = collections[index];
+    let collectionDateName = collection.name.split("-");
+    let collectionDate = collectionDateName[1] + "-" + collectionDateName[2] + "-" + collectionDateName[3].split(" ")[0];
+    if (originalDate.includes(collectionDate)) {
+      collectionNames.push(collection.name);
+    }
+  }
+
+  let dates: any = [];
+  for (let collectionIndex = 0; collectionIndex < collections.length; collectionIndex++) {
+    let collection = collections[collectionIndex];
+    let collectionDateName = collection.name.split("-");
+    let collectionDate = collectionDateName[1] + "/" + collectionDateName[2] + "/" + collectionDateName[3];
+
+    if (new Date(collectionDate)) {
+      dates.push(new Date(collectionDate));
+    }
+  }
+  if (dates.length == 0) {
+    return null;
+  }
+  let predecessorDate: any = new Date(Math.max.apply(null, dates));
+  if (predecessorDate) {
+    predecessorDate = getDateTimeInMongoDBCollectionFormat(new Date(predecessorDate));
+  }
+  return predecessorDate;
+}
 export async function getEarliestCollectionName(originalDate: string): Promise<{ predecessorDate: string; collectionNames: string[] }> {
   const database = client.db("portfolios");
 

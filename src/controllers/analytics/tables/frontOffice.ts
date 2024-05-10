@@ -92,6 +92,8 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "365-Day Int. EST",
     "Day Int. (BC)",
     "Rating Score",
+    "Region",
+    "Market Type",
   ];
 
   let titlesValues: any = {
@@ -170,6 +172,8 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Duration Bucket": "Duration Bucket",
     "Rate Sensitivity": "Rate Sensitivity",
     "Rating Score": "Rating Score",
+    Region: "Region",
+    "Market Type": "Market Type",
   };
 
   let twoDigits = [`${formatMarkDate(dates.lastMonth)}`, `${formatMarkDate(dates.yesterday)}`, `Last Mid ${formatMarkDate(dates.today)}`, "Bid", "Ask", "Duration", "Average Cost", "Entry Price", "Previous Mark", "Day Price Move", "MTD Price Move", "3-Day Price Move"];

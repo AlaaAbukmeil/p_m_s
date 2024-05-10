@@ -65,7 +65,6 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
         trade["Rlzd P&L Amount"] = parseFloat(trade["Notional Amount"]) * (averageCost / multiplier - parseFloat(trade["Price"]) / multiplier);
         trade["Price Diff"] = averageCost - parseFloat(trade["Price"]);
         trade["Average Cost MTD"] = averageCost;
-     
 
         trade["Rlzd"] = "True (Short)";
         total += trade["Rlzd P&L Amount"];
@@ -74,7 +73,7 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
       } else {
         trade["Rlzd P&L Amount"] = "0";
         trade["Rlzd"] = "False";
-     
+
         averageCost = getAverageCost(trade["Notional Amount"], accumualteNotional, trade["Price"], averageCost);
         trade["Average Cost MTD"] = averageCost;
         accumualteNotional += newNotional;
@@ -91,8 +90,9 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
   } catch (error) {
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getRlzdTrades", "controllers/reports/trades.ts");
+    if (!errorMessage.toString().includes("Batch cannot be empty")) {
+      await insertEditLogs([errorMessage], "Errors", dateTime, "getRlzdTrades", "controllers/reports/trades.ts");
+    }
 
     return { documents: [], totalRow: { Rlzd: 0, "Rlzd P&L Amount": 0 }, averageCostMTD: 0 };
   }

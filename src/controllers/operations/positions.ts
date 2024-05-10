@@ -4,7 +4,7 @@ import { getSecurityInPortfolioWithoutLocation, insertEditLogs } from "./portfol
 import { findTrade, insertTrade } from "../reports/trades";
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../reports/common";
 import { readCentralizedEBlot, readPricingSheet } from "./readExcel";
-import { findTradeRecord, formatUpdatedPositions, getAverageCost, getEarliestCollectionName, parseBondIdentifier } from "../reports/tools";
+import { findTradeRecord, formatUpdatedPositions, getAverageCost, getCollectionName, getEarliestCollectionName, parseBondIdentifier } from "../reports/tools";
 import { PinnedPosition, Position } from "../../models/position";
 import { CentralizedTrade } from "../../models/trades";
 import { modifyTradesDueToRecalculate } from "./trades";
@@ -383,6 +383,11 @@ export async function insertTradesInPortfolio(trades: any) {
   // Create an array of updateOne operations
   let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 0 * 24 * 60 * 60 * 1000));
 
+  let checkCollectionDay = await getCollectionName(day);
+  if (checkCollectionDay) {
+    day = checkCollectionDay;
+  }
+
   let operations = trades
     .filter((trade: any) => trade["Location"])
     .map((trade: any) => {
@@ -417,6 +422,7 @@ export async function insertTradesInPortfolio(trades: any) {
   // Execute the operations in bulk
   try {
     const date = day;
+    console.log(`portfolio-${date}`);
     console.log(operations, "operations inserted date");
     const historicalReportCollection = database.collection(`portfolio-${date}`);
     let action = await historicalReportCollection.bulkWrite(operations);
@@ -461,7 +467,6 @@ export async function updatePricesPortfolio(path: string) {
         } else if (row["BB Ticker"] == "Futures") {
           divider = 1;
         } else if (row["BB Ticker"] == "Equity") {
-          console.log(row);
           divider = 1;
         }
 
@@ -580,6 +585,11 @@ export async function insertPricesUpdatesInPortfolio(updatedPortfolio: any) {
   const database = client.db("portfolios");
   let portfolio = updatedPortfolio;
   let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime()));
+
+  let checkCollectionDay = await getCollectionName(day);
+  if (checkCollectionDay) {
+    day = checkCollectionDay;
+  }
   // Create an array of updateOne operations
 
   // Execute the operations in bulk
@@ -614,6 +624,7 @@ export async function insertPricesUpdatesInPortfolio(updatedPortfolio: any) {
     });
     console.log(day, "inserted date");
     let updatedCollection = database.collection(`portfolio-${day}`);
+    
     let updatedResult = await updatedCollection.bulkWrite(updatedOperations);
 
     return updatedResult;

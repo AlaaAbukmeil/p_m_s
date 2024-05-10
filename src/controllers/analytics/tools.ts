@@ -587,3 +587,40 @@ export class AggregateRow {
     this["Row Index"] = -1;
   }
 }
+
+export function classifyCountry(country: any) {
+  // Define the country classification and region in a structured object
+  if (!country || country == "") {
+    return { marketType: "NA", region: "NA", country: country };
+  }
+  const countryClassification: any = {
+    americas: {
+      developed: ["canada", "united states"],
+      emerging: ["argentina", "brazil", "chile", "colombia"],
+      frontier: ["panama", "jamaica"],
+    },
+    europe: {
+      developed: ["austria", "belgium", "denmark", "finland", "france", "germany", "ireland", "italy", "luxembourg", "netherlands", "norway", "portugal", "spain", "sweden", "switzerland", "united kingdom", "britain", "jersey"],
+      emerging: ["czech republic", "greece", "hungary", "poland", "iceland"],
+      frontier: ["croatia", "romania", "serbia", "slovenia"],
+    },
+    "asia - oceania": {
+      developed: ["australia", "hong kong", "japan", "new zeland", "singapore", "south korea"],
+      emerging: ["china", "india", "indonesia", "macau", "malaysia", "philippines", "taiwan", "thailand"],
+      frontier: ["bangladesh", "laos", "mongolia", "pakistan", "sri lanka", "vietnam"],
+    },
+    "middle east-africa": {
+      developed: ["israel"],
+      emerging: ["bahrain", "egypt", "ivory coast", "kuwait", "morocco", "oman", "qatar", "saudi arabia", "south africa", "turkey", "uae", "tunisia", "mauritius"],
+      frontier: ["jordan", "kazakhstan", "kenya", "lebanon"],
+    },
+  };
+  for (const region in countryClassification) {
+    for (const marketType in countryClassification[region]) {
+      if (countryClassification[region][marketType].includes(country.toString().toLowerCase())) {
+        return { marketType: toTitleCase(marketType), region: toTitleCase(region), country: country };
+      }
+    }
+  }
+  return { marketType: "NA", region: "NA", country: country };
+}
