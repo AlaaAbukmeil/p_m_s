@@ -72,6 +72,7 @@ export function parseBondIdentifier(identifier: any): any {
         let rate;
         if (components.length > 2) {
           rate = parseFloat(components[1].replace("V", "").trim()) ? parseFloat(components[1].replace("V", "").trim()) : "";
+          // console.log(rate, "reate before");
           if (rate) {
             let fractions = Object.keys(fractionMap);
             for (let index = 0; index < fractions.length; index++) {
@@ -82,23 +83,32 @@ export function parseBondIdentifier(identifier: any): any {
               }
             }
           }
-          while (dateIndex < components.length && components[dateIndex].split("/").length <= 2) {
-            dateIndex++;
+          // console.log(rate, "reate after");
+          for (let index = dateIndex; index < components.length; index++) {
+            if (components[dateIndex]) {
+              if (components[dateIndex].split("/").length <= 2) {
+                dateIndex++;
+              }
+            }
           }
-          let dateComponents = components[dateIndex].split("/");
-          let date: any = new Date(`${dateComponents[0]}/${dateComponents[1]}/${"20" + dateComponents[2]}`);
-          if (identifier.toString().toLowerCase().includes("perp")) {
-            date = null;
-          }
+          let date: any;
+          if (components[dateIndex]) {
+            let dateComponents = components[dateIndex].split("/");
+            date = new Date(`${dateComponents[0]}/${dateComponents[1]}/${"20" + dateComponents[2]}`);
+            if (identifier.toString().toLowerCase().includes("perp")) {
+              date = null;
+            }
 
-          if (date) {
-            date = formatDateWorld(date);
+            if (date) {
+              date = formatDateWorld(date);
+            }
           }
           return { rate: rate, date: date };
         } else {
           return { rate: 0, date: 0 };
         }
       } catch (error: any) {
+        console.log(error);
         return { rate: 0, date: 0 };
       }
     } else {

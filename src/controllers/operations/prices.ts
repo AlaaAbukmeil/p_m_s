@@ -203,8 +203,11 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
                 object["FX Rate"] = 1;
               }
 
-              if (row["Country"] && !row["Country"].includes("N/A")) {
-                object["Country"] = row["Country"];
+              if (row["Instrument's Country"] && !row["Instrument's Country"].includes("N/A")) {
+                object["Country"] = row["Instrument's Country"];
+              }
+              if (row["Issuer's Country"] && !row["Issuer's Country"].includes("N/A")) {
+                object["Issuer'sCountry"] = row["Issuer's Country"];
               }
               if (row["Sector"] && !row["Sector"].includes("N/A")) {
                 object["Sector"] = row["Sector"];
@@ -220,6 +223,17 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
               currency = row["BB Ticker"].split(" ")[1];
             }
             currencyInUSD[currency] = rate;
+          }
+        }
+        let currencies = Object.keys(currencyInUSD);
+        for (let index = 0; index < currencies.length; index++) {
+          let currency = currencies[index];
+          let positions: any = getSecurityInPortfolioWithoutLocation(portfolio, currency);
+          for (let indexPosition = 0; indexPosition < positions.length; indexPosition++) {
+            let position = positions[indexPosition];
+            position["Mid"] = currencyInUSD[currency];
+            updatedPricePortfolio.push(position);
+
           }
         }
         for (let index = 0; index < updatedPricePortfolio.length; index++) {

@@ -119,8 +119,8 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   };
   let pinnedPositions = await getPinnedPositions();
   documents = assignPinnedPositions(documents, pinnedPositions);
-
-  let fundDetailsMTD: any = await getFundDetails(thisMonth);
+  let previousMonthDate = monthlyRlzdDate(previousMonthDates[0]);
+  let fundDetailsMTD: any = await getFundDetails(previousMonthDate);
   let fundDetailsYTD: any = await getFundDetails(lastYear);
 
   if (fundDetailsMTD.length == 0) {
@@ -140,7 +140,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   }
   let fundDetails = portfolioFormattedSorted.fundDetails;
   documents = portfolioFormattedSorted.portfolio;
-
+  console.log(fundDetails);
   return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: dayParamsWithLatestUpdates.lastUploadTradesDate, updatePriceDate: dayParamsWithLatestUpdates.lastUpdatePricesDate };
 }
 
@@ -152,7 +152,7 @@ export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInpu
     let thisMonth = monthlyRlzdDate(dateInput);
 
     if (!threeDayAnalytics) {
-      if (!portfolio[index]["Mid"]) {
+      if (!portfolio[index]["Mid"] && portfolio[index]["Type"] != "FX") {
         portfolio[index]["Mid"] = portfolio[index]["Entry Price"][thisMonth];
       }
       let previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue: any) => previousDayIssue["ISIN"] == position["ISIN"] && previousDayIssue["ISIN"] && position["ISIN"]) : null;
@@ -260,9 +260,11 @@ export function getMTDParams(portfolio: any, lastMonthPortfolio: any, dateInput:
     }
 
     for (let index = 0; index < portfolio.length; index++) {
-      if (!parseFloat(portfolio[index]["MTD Mark"]) && parseFloat(portfolio[index]["MTD Mark"]) != 0 && portfolio[index]["Entry Price"][thisMonth]) {
-        portfolio[index]["MTD Mark"] = portfolio[index]["Entry Price"][thisMonth];
-        portfolio[index]["Notes"] = "MTD Mark X";
+      if (portfolio[index]["Type"] != "FX") {
+        if (!parseFloat(portfolio[index]["MTD Mark"]) && parseFloat(portfolio[index]["MTD Mark"]) != 0 && portfolio[index]["Entry Price"][thisMonth]) {
+          portfolio[index]["MTD Mark"] = portfolio[index]["Entry Price"][thisMonth];
+          portfolio[index]["Notes"] = "MTD Mark X";
+        }
       }
     }
 
@@ -319,7 +321,7 @@ function getDayURlzdInt(portfolio: any, date: any) {
     let position = portfolio[index];
     portfolio[index]["Principal"] = 0;
     let quantityGeneratingInterest = position["Notional Amount"];
-    let interestInfo = position["Interest"];
+    let interestInfo = position["Interest"] || {};
     let yesterdayPrice;
     if (position["Previous Mark"]) {
       yesterdayPrice = position["Previous Mark"];
@@ -378,13 +380,15 @@ export async function getMTDURlzdInt(portfolio: any, date: any) {
 
     let tradeType = "vcons";
     let identifier = portfolio[index]["ISIN"];
-    let cdsCheck = portfolio[index]["Type"];
+    let typeCheck = portfolio[index]["Type"];
     if (identifier.includes("IB")) {
       tradeType = "ib";
     } else if (identifier.includes("1393")) {
       tradeType = "emsx";
-    } else if (cdsCheck.includes("CDS")) {
+    } else if (typeCheck.includes("CDS")) {
       tradeType = "gs";
+    } else if (typeCheck.includes("FX")) {
+      tradeType = "fx";
     }
 
     portfolio[index]["MTD Rlzd DC"] = portfolio[index]["MTD Rlzd"];
@@ -412,7 +416,7 @@ export async function getMTDURlzdInt(portfolio: any, date: any) {
       portfolio[index]["MTD Price Move"] = 0;
     }
     let quantityGeneratingInterest = position["Notional Amount"];
-    let interestInfo = position["Interest"];
+    let interestInfo = position["Interest"] || {};
 
     portfolio[index]["MTD Int."] = 0;
 
@@ -454,7 +458,7 @@ export function getYTDInt(portfolio: any, lastYearDate: any, date: any) {
 
     portfolio[index]["Coupon Duration"] = portfolio[index]["Coupon Duration"] ? portfolio[index]["Coupon Duration"] : portfolio[index]["Type"] == "UST" ? 365.0 : 360.0;
 
-    portfolio[index]["YTD Int."] = calculateAccruedSinceLastYear(portfolio[index]["Interest"], portfolio[index]["Coupon Rate"] / 100, portfolio[index]["Coupon Duration"], lastYearDate, portfolio[index]["ISIN"], date);
+    portfolio[index]["YTD Int."] = portfolio[index]["Type"] != "FX" ? calculateAccruedSinceLastYear(portfolio[index]["Interest"], portfolio[index]["Coupon Rate"] / 100, portfolio[index]["Coupon Duration"], lastYearDate, portfolio[index]["ISIN"], date) : 0;
     ytdinterest += portfolio[index]["YTD Int."];
   }
 
@@ -486,7 +490,6 @@ async function getPL(portfolio: any, latestPortfolioThisMonth: any, date: any, l
   }
   return portfolio;
 }
-
 
 export function calculateAccruedSinceLastYear(interestInfo: any, couponRate: any, numOfDaysInAYear: any, lastYearDate: any, isin: string, dateInput: any) {
   try {
@@ -542,6 +545,9 @@ export function calculateRlzd(trades: RlzdTrades[], mark: number, issue: string,
 }
 
 export function calculateAccruedSinceInception(interestInfo: any, couponRate: any, numOfDaysInAYear: any, isin: string, date: string) {
+  if (!interestInfo) {
+    interestInfo = {};
+  }
   let quantityDates = Object.keys(interestInfo).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
   quantityDates.push(formatDateUS(new Date(date)));
   couponRate = couponRate ? couponRate : 0;

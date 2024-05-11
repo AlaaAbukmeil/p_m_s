@@ -69,7 +69,7 @@ export function sumTable({ table, data, view, param, subtotal, subtotalParam }: 
   
       if (dv01DollarValueImpactTest == "Fail") {
         table[param + " Aggregated"]["DV01 Dollar Value Impact Test"] = "Fail";
-        table[param + " Aggregated"]["DV01 Dollar Value Impact Color Test"] = "#FFAB91"; // : "#FFAB91";
+        // table[param + " Aggregated"]["DV01 Dollar Value Impact Color Test"] = "#FFAB91"; // : "#FFAB91";
       }
   
       table[param + " Aggregated"]["Value (BC) % of Nav"] += Math.round(valueUSDOfNav * 100) / 100;
@@ -79,7 +79,7 @@ export function sumTable({ table, data, view, param, subtotal, subtotalParam }: 
       table[param + " Aggregated"]["Value (BC) Utilization % of Nav"] += valueUSDUtilizationOfNav;
       if (valueUSDOfNavTest == "Fail") {
         table[param + " Aggregated"]["Value (BC) Test"] = "Fail";
-        table[param + " Aggregated"]["Value (BC) Color Test"] = "#FFAB91";
+        // table[param + " Aggregated"]["Value (BC) Color Test"] = "#FFAB91";
       }
       table[param + " Aggregated"]["Capital Gain/ Loss since Inception (Live Position)"] += capitalGains;
       table[param + " Aggregated"]["% of Capital Gain/ Loss since Inception (Live Position)"] += capitalGainsPercentage;
@@ -99,7 +99,7 @@ export function sumTable({ table, data, view, param, subtotal, subtotalParam }: 
   
       if (dv01DollarValueImpactTest == "Fail") {
         table["Total"]["DV01 Dollar Value Impact Test"] = "Fail";
-        table["Total"]["DV01 Dollar Value Impact Color Test"] = "#FFAB91"; // : "#FFAB91";
+        // table["Total"]["DV01 Dollar Value Impact Color Test"] = "#FFAB91"; // : "#FFAB91";
       }
   
       table["Total"]["Value (BC) % of Nav"] += valueUSDOfNav;
@@ -109,7 +109,7 @@ export function sumTable({ table, data, view, param, subtotal, subtotalParam }: 
       table["Total"]["Value (BC) Utilization % of Nav"] += valueUSDUtilizationOfNav;
       if (valueUSDOfNavTest == "Fail") {
         table["Total"]["Value (BC) Test"] = "Fail";
-        table["Total"]["Value (BC) Color Test"] = "#FFAB91";
+        // table["Total"]["Value (BC) Color Test"] = "#FFAB91";
       }
       table["Total"]["Capital Gain/ Loss since Inception (Live Position)"] += capitalGains;
       table["Total"]["% of Capital Gain/ Loss since Inception (Live Position)"] += capitalGainsPercentage;

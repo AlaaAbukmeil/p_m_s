@@ -190,6 +190,11 @@ export function checkPosition(position: any, conditions: any) {
     let coupon = position["Coupon Rate"] ? parsePercentage(position["Coupon Rate"]) : 0;
     let yieldParam = position["YTM"] ? parsePercentage(position["YTM"]) : 0;
     let assetClass = position["Asset Class"] ? position["Asset Class"].toString().toLowerCase() : "";
+    let rating = position["Rating Score"] ? position["Rating Score"].toString().toLowerCase() : "";
+
+    let region = position["Region"] ? position["Region"].toString().toLowerCase() : "";
+
+    let marketType = position["Market Type"] ? position["Market Type"].toString().toLowerCase() : "";
 
     if (conditions.country) {
       if (!country.includes(conditions.country.toString().toLowerCase())) {
@@ -242,6 +247,21 @@ export function checkPosition(position: any, conditions: any) {
     }
     if (conditions.durationStart && conditions.durationEnd) {
       if (isNotNullOrUndefined(conditions.durationStart) && isNotNullOrUndefined(conditions.durationEnd) && (duration < parseFloat(conditions.durationStart) || duration > parseFloat(conditions.durationEnd))) {
+        return false;
+      }
+    }
+    if (conditions.rating && rating) {
+      if (!rating.includes(conditions.rating.toString().toLowerCase())) {
+        return false;
+      }
+    }
+    if (conditions.region && region) {
+      if (!region.includes(conditions.region.toString().toLowerCase())) {
+        return false;
+      }
+    }
+    if (conditions.marketType && marketType) {
+      if (!marketType.includes(conditions.marketType.toString().toLowerCase())) {
         return false;
       }
     }

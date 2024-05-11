@@ -3,7 +3,7 @@ import { bucket, verifyToken } from "../../controllers/common";
 import { uploadToBucket } from "../reports/portfolio";
 import { Request, Response, NextFunction } from "express";
 import { addFund, deleteFund, deletePosition, editFund, editPositionBulkPortfolio, getAllFundDetails, getCollectionDays, getEditLogs } from "../../controllers/operations/portfolio";
-import { editPosition, pinPosition, readCalculatePosition, updatePositionPortfolio, updatePricesPortfolio } from "../../controllers/operations/positions";
+import { editPosition, insertFXPosition, pinPosition, readCalculatePosition, updatePositionPortfolio, updatePricesPortfolio } from "../../controllers/operations/positions";
 import { readCentralizedEBlot, readMUFGPrices, readPricingSheet } from "../../controllers/operations/readExcel";
 import { updatePreviousPricesPortfolioBloomberg, updatePreviousPricesPortfolioMUFG } from "../../controllers/operations/prices";
 import { monthlyRlzdDate } from "../../controllers/reports/common";
@@ -76,6 +76,33 @@ positionsRouter.post("/edit-position", verifyToken, uploadToBucket.any(), async 
     res.send({ error: "Template is not correct" });
   }
 });
+
+positionsRouter.post("/fx-add-position", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let data = req.body;
+    let check = ["Notional Amount", "Code", "Location"];
+    let checkResult = false;
+    let checkResultElement = "";
+
+    for (let index = 0; index < check.length; index++) {
+      const element = check[index];
+      if (!data[element]) {
+        checkResult = true;
+        checkResultElement = element;
+      }
+    }
+    console.log(data);
+    if (checkResult) {
+      res.send({ error: "missing param: " + checkResultElement });
+    } else {
+      let action = await insertFXPosition(req.body, req.body.date);
+      res.sendStatus(200);
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ error: "Template is not correct" });
+  }
+});
 positionsRouter.post("/pin-position", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let action = await pinPosition(req.body);
@@ -138,7 +165,7 @@ positionsRouter.post("/update-prices", verifyToken, uploadToBucket.any(), async 
     if (action?.error) {
       res.send({ error: action.error });
     } else {
-      res.sendStatus(200);
+      res.send({ error: null });
     }
   } catch (error) {
     res.send({ error: "File Template is not correct" });
@@ -170,11 +197,15 @@ positionsRouter.post("/update-previous-prices", verifyToken, uploadToBucket.any(
     const fileName = req.files[0].filename;
     const path = bucket + fileName;
     let data: any = collectionType == "MUFG" ? await readMUFGPrices(path) : await readPricingSheet(path);
-    let action = collectionType == "MUFG" ? await updatePreviousPricesPortfolioMUFG(data, collectionDate, path) : await updatePreviousPricesPortfolioBloomberg(data, collectionDate, path);
-    if (action?.error) {
-      res.send({ error: action.error });
+    if (!data.error) {
+      let action = collectionType == "MUFG" ? await updatePreviousPricesPortfolioMUFG(data, collectionDate, path) : await updatePreviousPricesPortfolioBloomberg(data, collectionDate, path);
+      if (action?.error && Object.keys(action.error).length) {
+        res.send({ error: action.error, status: 404 });
+      } else {
+        res.send({ error: null });
+      }
     } else {
-      res.sendStatus(200);
+      res.send({ error: data.error, status: 404 });
     }
     // console.log(action);
   } catch (error) {

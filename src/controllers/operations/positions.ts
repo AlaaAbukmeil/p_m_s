@@ -1,5 +1,5 @@
 import { client } from "../auth";
-import { formatDateUS, formatDateWorld, getDate, getTradeDateYearTrades } from "../common";
+import { convertExcelDateToJSDate, formatDateUS, formatDateWorld, getDate, getTradeDateYearTrades } from "../common";
 import { getSecurityInPortfolioWithoutLocation, insertEditLogs } from "./portfolio";
 import { findTrade, insertTrade } from "../reports/trades";
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../reports/common";
@@ -527,8 +527,11 @@ export async function updatePricesPortfolio(path: string) {
               object["FX Rate"] = 1;
             }
 
-            if (row["Country"] && !row["Country"].includes("N/A")) {
-              object["Country"] = row["Country"];
+            if (row["Instrument's Country"] && !row["Instrument's Country"].includes("N/A")) {
+              object["Country"] = row["Instrument's Country"];
+            }
+            if (row["Issuer's Country"] && !row["Issuer's Country"].includes("N/A")) {
+              object["Issuer'sCountry"] = row["Issuer's Country"];
             }
             if (row["Sector"] && !row["Sector"].includes("N/A")) {
               object["Sector"] = row["Sector"];
@@ -546,6 +549,18 @@ export async function updatePricesPortfolio(path: string) {
           currencyInUSD[currency] = rate;
         }
       }
+
+      let currencies = Object.keys(currencyInUSD);
+      for (let index = 0; index < currencies.length; index++) {
+        let currency = currencies[index];
+        let positions: any = getSecurityInPortfolioWithoutLocation(portfolio, currency);
+        for (let indexPosition = 0; indexPosition < positions.length; indexPosition++) {
+          let position = positions[indexPosition];
+          position["Mid"] = currencyInUSD[currency];
+          console.log(position);
+        }
+      }
+
       for (let index = 0; index < updatedPricePortfolio.length; index++) {
         let position: Position = updatedPricePortfolio[index];
         let positionMaturity = maturity[position["ISIN"]];
@@ -624,7 +639,7 @@ export async function insertPricesUpdatesInPortfolio(updatedPortfolio: any) {
     });
     console.log(day, "inserted date");
     let updatedCollection = database.collection(`portfolio-${day}`);
-    
+
     let updatedResult = await updatedCollection.bulkWrite(updatedOperations);
 
     return updatedResult;
@@ -1187,8 +1202,8 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
         }
       }
     }
-
     try {
+      console.log(positions)
       for (let index = 0; index < portfolio.length; index++) {
         let position = portfolio[index];
         if (position["ISIN"].trim() == isin.trim() && position["Location"] == location.trim()) {
@@ -1220,5 +1235,79 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
     await insertEditLogs([errorMessage], "Errors", dateTime, "readCalculatePosition", "controllers/operations/portfolio.ts");
 
     return { error: error };
+  }
+}
+
+export async function insertFXPosition(position: any, date: any) {
+  let today = getTradeDateYearTrades(convertExcelDateToJSDate(new Date(date)));
+  let fxPositions: any = {
+    Type: "FX",
+    "Notional Amount": position["Notional Amount"],
+    "BB Ticker": position["Code"],
+    ISIN: position["Code"],
+    Strategy: parseInt(position["Notional Amount"]) < 0 ? "Hedge" : "VI",
+    "Asset Class": "Cash",
+    Location: position["Location"],
+    Interest: {},
+
+    Currency: "",
+  };
+  fxPositions.Interest[today] = parseInt(position["Notional Amount"]);
+
+  let portfolio = await getPortfolio();
+  portfolio.push(fxPositions);
+  const database = client.db("portfolios");
+  let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date(date).getTime()));
+
+  let checkCollectionDay = await getCollectionName(day);
+  if (checkCollectionDay) {
+    day = checkCollectionDay;
+  }
+  // Create an array of updateOne operations
+
+  // Execute the operations in bulk
+  try {
+    //so the latest updated version portfolio profits will not be copied into a new instance
+    const updatedOperations = portfolio.map((position: any) => {
+      // Start with the known filters
+      const filters: any = [];
+      // Only add the "BB Ticker" filter if it's present in the trade object
+
+      if (position["ISIN"]) {
+        filters.push({
+          ISIN: position["ISIN"],
+          Location: position["Location"],
+        });
+      } else if (position["BB Ticker"]) {
+        filters.push({
+          "BB Ticker": position["BB Ticker"],
+          Location: position["Location"],
+        });
+      }
+
+      return {
+        updateOne: {
+          filter: { $or: filters },
+          update: { $set: position },
+          upsert: true,
+        },
+      };
+    });
+    console.log(day, "inserted date");
+    let updatedCollection = database.collection(`portfolio-${day}`);
+
+    let updatedResult = await updatedCollection.bulkWrite(updatedOperations);
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+
+    await insertEditLogs([fxPositions], "FX Position", dateTime, "insertFXPosition", "controllers/operations/positions.ts");
+
+    return updatedResult;
+  } catch (error: any) {
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.log(error);
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    if (!errorMessage.toString().includes("Batch cannot be empty")) {
+      await insertEditLogs([errorMessage], "Errors", dateTime, "insertFXPosition", "controllers/operations/positions.ts");
+    }
   }
 }

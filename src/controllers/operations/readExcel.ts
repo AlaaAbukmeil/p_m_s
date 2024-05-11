@@ -323,7 +323,8 @@ export async function readPricingSheet(path: string) {
     "Mid Yield Worst",
     "Mid Yield call",
     "Spread to benchmark",
-    "Country",
+    "Issuer's Country",
+
     "Sector",
     "Maturity",
     "Call Date",
@@ -337,6 +338,7 @@ export async function readPricingSheet(path: string) {
     "Issuer Name",
     "OAS Spread",
     "Z Spread",
+    "Instrument's Country",
   ];
   const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : (wrongHeaders = `app expected ${headers[0][index]} and got ${value}`))); //headersFormat.length === headers[2].length && headersFormat.every((value, index) => value === headers[2][index]);
   if (!arraysAreEqual) {

@@ -29,13 +29,14 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
   for (let index = 0; index < portfolio.length; index++) {
     let position: any = portfolio[index];
 
+    //to make it consistent with previous versions
     let originalFace = position["Original Face"] || 1;
     let usdRatio = parseFloat(position["FX Rate"] || position["holdPortfXrate"]) || 1;
     let holdBackRatio = (position["Asset Class"] || position["Rating Class"]) == "Illiquid" ? parseFloat(fund.holdBackRatio) : 1;
-
+    position["Interest"] = position["Interest"] ? position["Interest"] : {};
     position["Quantity"] = position["Notional Amount"] / originalFace;
+    position["Interest"];
     let bondDivider = position["Type"] == "BND" || position["Type"] == "UST" ? 100 : 1;
-
     let currency = position["Currency"];
 
     if (!position["FX Rate"]) {
@@ -47,6 +48,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
         currencies[currency] = usdRatio;
       }
     }
+    ///////
     position["FX Rate"] = usdRatio;
 
     position["Cost (BC)"] = position["Type"] == "CDS" ? Math.round((position["Average Cost"] * position["Notional Amount"] * usdRatio) / position["Original Face"]) : Math.round(position["Average Cost"] * position["Notional Amount"] * usdRatio);
@@ -198,6 +200,14 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     let regionClassInfo = classifyCountry(position["Country"] || "");
     position["Region"] = regionClassInfo.region;
     position["Market Type"] = regionClassInfo.marketType;
+    if (position["Type"] == "FX") {
+      position["MTD P&L FX"] = position["MTD URlzd (BC)"];
+      position["MTD URlzd (BC)"] = 0;
+      position["MTD URlzd (LC)"] = 0;
+      position["MTD P&L (BC)"] = 0;
+      position["MTD P&L (LC)"] = 0;
+
+    }
 
     if (conditions) {
       if (checkPosition(position, conditions)) {
