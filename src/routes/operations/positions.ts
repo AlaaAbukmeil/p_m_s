@@ -3,9 +3,9 @@ import { bucket, verifyToken } from "../../controllers/common";
 import { uploadToBucket } from "../reports/portfolio";
 import { Request, Response, NextFunction } from "express";
 import { addFund, deleteFund, deletePosition, editFund, editPositionBulkPortfolio, getAllFundDetails, getCollectionDays, getEditLogs } from "../../controllers/operations/portfolio";
-import { editPosition, insertFXPosition, pinPosition, readCalculatePosition, updatePositionPortfolio, updatePricesPortfolio } from "../../controllers/operations/positions";
+import { editPosition, insertFXPosition, pinPosition, readCalculatePosition, updatePositionPortfolio } from "../../controllers/operations/positions";
 import { readCentralizedEBlot, readMUFGPrices, readPricingSheet } from "../../controllers/operations/readExcel";
-import { updatePreviousPricesPortfolioBloomberg, updatePreviousPricesPortfolioMUFG } from "../../controllers/operations/prices";
+import { updatePreviousPricesPortfolioBloomberg, updatePreviousPricesPortfolioMUFG, updatePricesPortfolio } from "../../controllers/operations/prices";
 import { monthlyRlzdDate } from "../../controllers/reports/common";
 import { FundDetails } from "../../models/portfolio";
 import { CentralizedTrade } from "../../models/trades";
@@ -197,6 +197,7 @@ positionsRouter.post("/update-previous-prices", verifyToken, uploadToBucket.any(
     const fileName = req.files[0].filename;
     const path = bucket + fileName;
     let data: any = collectionType == "MUFG" ? await readMUFGPrices(path) : await readPricingSheet(path);
+
     if (!data.error) {
       let action = collectionType == "MUFG" ? await updatePreviousPricesPortfolioMUFG(data, collectionDate, path) : await updatePreviousPricesPortfolioBloomberg(data, collectionDate, path);
       if (action?.error && Object.keys(action.error).length) {
@@ -213,41 +214,5 @@ positionsRouter.post("/update-previous-prices", verifyToken, uploadToBucket.any(
   }
 });
 
-positionsRouter.post("/edit-fund", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  try {
-    let action = await editFund(req.body);
-
-    res.sendStatus(200);
-  } catch (error) {
-    console.log(error);
-    res.send({ error: "Template is not correct" });
-  }
-});
-
-positionsRouter.post("/delete-fund", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  try {
-    console.log(req.body, "before");
-    let action = await deleteFund(req.body);
-    res.sendStatus(200);
-  } catch (error) {
-    console.log(error);
-    res.send({ error: "Template is not correct" });
-  }
-});
-
-positionsRouter.post("/add-fund", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  try {
-    console.log(req.body, "before");
-    let action = await addFund(req.body);
-    if (action.error) {
-      res.send({ error: action.error });
-    } else {
-      res.sendStatus(200);
-    }
-  } catch (error) {
-    console.log(error);
-    res.send({ error: "Template is not correct" });
-  }
-});
 
 export default positionsRouter;

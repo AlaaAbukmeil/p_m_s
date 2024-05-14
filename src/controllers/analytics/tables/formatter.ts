@@ -200,17 +200,11 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     let regionClassInfo = classifyCountry(position["Country"] || "");
     position["Region"] = regionClassInfo.region;
     position["Market Type"] = regionClassInfo.marketType;
-    if (position["Type"] == "FX") {
-      position["MTD P&L FX"] = position["MTD URlzd (BC)"];
-      position["MTD URlzd (BC)"] = 0;
-      position["MTD URlzd (LC)"] = 0;
-      position["MTD P&L (BC)"] = 0;
-      position["MTD P&L (LC)"] = 0;
-
-    }
+   
 
     if (conditions) {
-      if (checkPosition(position, conditions)) {
+      let test = checkPosition(position, conditions)
+      if (test) {
         mtdpl += position["MTD P&L (BC)"];
         mtdrlzd += position["MTD Rlzd (BC)"];
         mtdurlzd += position["MTD URlzd (BC)"];
@@ -255,14 +249,20 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
   let dayFXGross = Math.round((dayfx / parseFloat(fund.nav)) * 100000) / 1000;
 
   let mtdFXGross = Math.round((mtdfx / parseFloat(fund.nav)) * 100000) / 1000;
-  let monthGross = Math.round((mtdpl / parseFloat(fund.nav)) * 100000) / 1000;
-  let shadawNAV = parseFloat(fundDetailsYTD.nav) + mtdpl;
-  let yearGross = Math.round((1 - shadawNAV / parseFloat(fund.nav) - fund.expenses / 10000) * 100000) / 1000;
-  let yearGrossAmount = Math.round((yearGross / 100) * parseFloat(fund.nav));
+  let mtdplPercentage = Math.round((mtdpl / parseFloat(fund.nav)) * 1000) / 1000;
+  let shadawYTDNAV = (parseFloat(fund["a2 price"]) - parseFloat(fundDetailsYTD["a2 price"])) / parseFloat(fundDetailsYTD["a2 price"]);
+  let shadawMTDNAV = parseFloat(fund.nav) + (mtdrlzd + mtdint - (fund.expenses / 10000) * fund.nav);
+
+  let ytdNet = Math.round((shadawYTDNAV + mtdplPercentage - fund.expenses / 10000) * 100000) / 1000;
+  let yearNetAmount = Math.round((ytdNet / 100) * parseFloat(fund.nav));
   let fundDetails = {
     nav: parseFloat(fund.nav),
     holdbackRatio: parseFloat(fund.holdBackRatio),
-    mtdGross: monthGross,
+    mtdplPercentage: mtdplPercentage * 100,
+    shadawNAV: Math.round(shadawMTDNAV),
+    month: fund.month,
+    borrowAmount: Math.round(parseFloat((fund["borrowing amount"]||"").replace(/,/g, ""))),
+
     mtdpl: Math.round(mtdpl * 1000) / 1000,
     mtdrlzd: Math.round(mtdrlzd * 1000) / 1000,
     mtdurlzd: Math.round(mtdurlzd * 1000) / 1000,
@@ -271,8 +271,8 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     mtdintPercentage: Math.round((mtdint / parseFloat(fund.nav)) * 100000) / 1000,
     mtdFXGross: mtdFXGross,
 
-    ytdGross: yearGross,
-    ytdpl: yearGrossAmount,
+    ytdNet: ytdNet,
+    ytdpl: yearNetAmount,
     ytdrlzd: "x",
     ytdurlzd: "x",
     ytdint: Math.round(ytdinterest * 1000) / 1000,

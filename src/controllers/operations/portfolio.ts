@@ -272,7 +272,7 @@ export async function editFund(data: any): Promise<any> {
     const reportCollection = database.collection("details");
     const id = new ObjectId(data["_id"]);
     const updates = {} as any;
-    const tableTitles = ["month", "nav", "holdBackRatio", "expenses"];
+    const tableTitles = ["month", "nav", "holdBackRatio", "a2 price", "borrowing amount", "expenses"];
 
     // Build the updates object based on `data` and `tableTitles`
     for (const title of tableTitles) {
@@ -325,7 +325,7 @@ export async function addFund(data: any): Promise<any> {
     const database = client.db("fund");
     const reportCollection = database.collection("details");
     const newFundData = {} as any;
-    const tableTitles = ["month", "nav", "holdBackRatio"];
+    const tableTitles = ["month", "nav", "holdBackRatio", "a2 price", "borrowing amount", "expenses"];
 
     // Build the newFundData object based on `data` and `tableTitles`
     for (const title of tableTitles) {
@@ -426,4 +426,3 @@ export async function deletePosition(data: any, dateInput: any): Promise<any> {
     return { error: error.message }; // Return the error message
   }
 }
-

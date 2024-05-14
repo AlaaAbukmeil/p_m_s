@@ -5,6 +5,7 @@ import router from "./routes/reports/portfolio";
 import positionsRouter from "./routes/operations/positions";
 import tradesRouter from "./routes/operations/trades";
 import reconcileRouter from "./routes/reconcile";
+import fundRouter from "./routes/operations/fund";
 require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -43,6 +44,8 @@ app.use("/api/web/", formatterRouter);
 app.use("/api/web/", reconcileRouter);
 app.use("/api/web/", tradesRouter);
 app.use("/api/web/", positionsRouter);
+app.use("/api/web/", fundRouter);
+
 
 app.use(apiLimiter);
 

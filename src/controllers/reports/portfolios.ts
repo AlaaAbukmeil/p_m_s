@@ -140,7 +140,6 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   }
   let fundDetails = portfolioFormattedSorted.fundDetails;
   documents = portfolioFormattedSorted.portfolio;
-  console.log(fundDetails);
   return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: dayParamsWithLatestUpdates.lastUploadTradesDate, updatePriceDate: dayParamsWithLatestUpdates.lastUpdatePricesDate };
 }
 

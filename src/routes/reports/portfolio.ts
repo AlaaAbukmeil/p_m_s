@@ -51,7 +51,7 @@ router.get("/summary-portfolio", verifyToken, async (req: Request, res: Response
     let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDayPriceMoveSum" | "groupMTDPriceMoveSum" | any = req.query.sort || "order";
     let sign: any = req.query.sign || 1;
     let conditions: any = req.query || {};
-    // console.log(conditions)
+    
 
     if (date.includes("NaN")) {
       date = getDateTimeInMongoDBCollectionFormat(new Date());

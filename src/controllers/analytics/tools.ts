@@ -197,33 +197,33 @@ export function checkPosition(position: any, conditions: any) {
     let marketType = position["Market Type"] ? position["Market Type"].toString().toLowerCase() : "";
 
     if (conditions.country) {
-      if (!country.includes(conditions.country.toString().toLowerCase())) {
+      if (!checkPassedCondition(conditions.country, country)) {
         return false;
       }
     }
     if (conditions.sector) {
-      if (!sector.includes(conditions.sector.toString().toLowerCase())) {
+      if (!checkPassedCondition(conditions.sector, sector)) {
         return false;
       }
     }
     if (conditions.strategy) {
-      if (!strategy.includes(conditions.strategy.toString().toLowerCase())) {
+      if (!checkPassedCondition(conditions.strategy, strategy)) {
         return false;
       }
     }
     if (conditions.currency) {
-      if (!currency.includes(conditions.currency.toString().toLowerCase())) {
+      if (!checkPassedCondition(conditions.currency, currency)) {
         return false;
       }
     }
     if (conditions.issuer) {
-      if (!issuer.includes(conditions.issuer.toString().toLowerCase())) {
+      if (!checkPassedCondition(conditions.issuer, issuer)) {
         return false;
       }
     }
 
     if (conditions.ticker) {
-      if (!ticker.includes(conditions.ticker.toString().toLowerCase())) {
+      if (!checkPassedCondition(conditions.ticker, ticker)) {
         return false;
       }
     }
@@ -233,7 +233,7 @@ export function checkPosition(position: any, conditions: any) {
       }
     }
     if (conditions.assetClass && assetClass) {
-      if (!assetClass.includes(conditions.assetClass.toString().toLowerCase())) {
+      if (!checkPassedCondition(conditions.assetClass, assetClass)) {
         return false;
       }
     }
@@ -251,17 +251,17 @@ export function checkPosition(position: any, conditions: any) {
       }
     }
     if (conditions.rating && rating) {
-      if (!rating.includes(conditions.rating.toString().toLowerCase())) {
+      if (!checkPassedCondition(conditions.rating, rating)) {
         return false;
       }
     }
     if (conditions.region && region) {
-      if (!region.includes(conditions.region.toString().toLowerCase())) {
+      if (!checkPassedCondition(conditions.region, region)) {
         return false;
       }
     }
     if (conditions.marketType && marketType) {
-      if (!marketType.includes(conditions.marketType.toString().toLowerCase())) {
+      if (!checkPassedCondition(conditions.marketType, marketType)) {
         return false;
       }
     }
@@ -270,6 +270,18 @@ export function checkPosition(position: any, conditions: any) {
     // console.log(conditions, error);
     return false;
   }
+}
+
+function checkPassedCondition(param: any, input: any) {
+  let paramArray = param.toString().split("@");
+  for (let index = 0; index < paramArray.length; index++) {
+    let paramArrayElement = paramArray[index].toLowerCase();
+    
+    if (paramArrayElement == input.toLowerCase() && paramArrayElement != "") {
+      return true;
+    }
+  }
+  return false;
 }
 
 export function formatMarkDate(date: any) {
@@ -430,7 +442,7 @@ export function assignAssetClass(locationCode: string, group: any, assetClassOrd
           if ((position["Type"].includes("UST") || position["Strategy"] == "RV") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
             return assetClassOrder.RV + alphabetIndex(position["BB Ticker"]);
           }
-          if (position["Type"].includes("FUT") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
+          if ((position["Type"].includes("FUT") || position["Type"].includes("FX")) && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
             return assetClassOrder.RV;
           }
           if (position["Type"].includes("UST") && position["Notional Amount"] <= 0 && (unrlzdPositionsNum == 1 || position["Strategy"] == "Global Hedge")) {

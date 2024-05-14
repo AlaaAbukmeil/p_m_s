@@ -118,9 +118,9 @@ export async function insertTrade(trades: any, tradeType: any) {
     console.log(error);
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-
-    await insertEditLogs([errorMessage], "Errors", dateTime, "insertTrade", "controllers/reports/trades.ts");
-
+    if (!errorMessage.toString().includes("Batch cannot be empty")) {
+      await insertEditLogs([errorMessage], "Errors", dateTime, "insertTrade", "controllers/reports/trades.ts");
+    }
     return;
   }
 }
@@ -153,8 +153,9 @@ export async function findTrade(tradeType: string, tradeTriadaId: string, seqNo:
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     console.log(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-
-    await insertEditLogs([errorMessage], "Errors", dateTime, "findTrade", "controllers/reports/trades.ts");
+    if (!errorMessage.toString().includes("Batch cannot be empty")) {
+      await insertEditLogs([errorMessage], "Errors", dateTime, "findTrade", "controllers/reports/trades.ts");
+    }
     return {};
   }
 }

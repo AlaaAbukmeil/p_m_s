@@ -170,7 +170,7 @@ export interface PositionGeneralFormat extends PositionBeforeFormatting {
 export interface FundMTD {
   nav: number;
   holdbackRatio: number;
-  mtdGross: number;
+  mtdplPercentage: number;
   mtdpl: number;
   mtdrlzd: number;
   mtdurlzd: number;
@@ -179,7 +179,7 @@ export interface FundMTD {
   mtdintPercentage: number;
   mtdFXGross: number;
 
-  ytdGross: number;
+  ytdNet: number;
   ytdpl: number;
   ytdrlzd: any;
   ytdurlzd: any;
