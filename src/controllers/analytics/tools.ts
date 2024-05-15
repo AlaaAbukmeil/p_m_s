@@ -177,7 +177,73 @@ export function oasWithChange(oas: any): any {
     return [parseFloat(oas) * 0.25, "25 % of spread"];
   }
 }
+export function padInteger(num: any) {
+  // Convert integer to string
+  let numStr = num;
 
+  // Pad the string with leading zeros to ensure it has at least 3 digits
+  return numStr.toFixed(3);
+}
+export function calculateBondPrice({ couponRate, periods, yieldToMaturity }: { couponRate: any; periods: any; yieldToMaturity: any }) {
+  try {
+    // Convert percentage rates to decimal
+    couponRate = parseFloat(couponRate);
+    periods = parseFloat(periods);
+    yieldToMaturity = parseFloat(yieldToMaturity);
+
+    const r = yieldToMaturity / 100;
+    const PMT = (couponRate / 100) * 1000;
+
+    // Calculate the present value of coupon payments
+    const PV_coupons = (PMT * (1 - Math.pow(1 + r, -periods))) / r;
+
+    // Calculate the present value of the face value
+    const PV_face = 1000 * Math.pow(1 + r, -periods);
+
+    // Sum the present values to get the bond price
+    let bondPrice = PV_coupons + PV_face;
+
+    return bondPrice;
+  } catch (error) {
+    console.log(error);
+    return "";
+  }
+}
+export function calculateBondPerpPrice({ couponRate, yieldToMaturity }: { couponRate: any; yieldToMaturity: any }) {
+  try {
+    // Convert percentage rates to decimal
+    couponRate = parseFloat(couponRate);
+    yieldToMaturity = parseFloat(yieldToMaturity);
+
+    const r = yieldToMaturity / 100;
+    const PMT = (couponRate / 100) * 1000;
+
+    let bondPrice = PMT / r;
+
+    return bondPrice;
+  } catch (error) {
+    console.log(error);
+    return "";
+  }
+}
+
+export function calculateCR01({ couponRate, yieldToMaturity, periods }: { couponRate: any; yieldToMaturity: any; periods: any }) {
+  if (periods > 0) {
+    let originalPrice: any = calculateBondPrice({ couponRate, yieldToMaturity, periods });
+    yieldToMaturity = yieldToMaturity + 0.01; // adding 1 basis point
+    let adjustedPrice: any = calculateBondPrice({ couponRate, yieldToMaturity, periods });
+    // CR01 is the decrease in price when the yield increases by 1 basis point
+    return (originalPrice - adjustedPrice) * 100;
+
+  } else {
+    let originalPrice: any = calculateBondPerpPrice({ couponRate, yieldToMaturity });
+    yieldToMaturity = yieldToMaturity + 0.01; // adding 1 basis point
+
+    let adjustedPrice: any = calculateBondPerpPrice({ couponRate, yieldToMaturity });
+    // CR01 is the decrease in price when the yield increases by 1 basis point
+    return (originalPrice - adjustedPrice) * 100;
+  }
+}
 export function checkPosition(position: any, conditions: any) {
   try {
     let country = position["Country"] ? position["Country"].toString().toLowerCase() : null;
@@ -251,7 +317,7 @@ export function checkPosition(position: any, conditions: any) {
       }
     }
     if (conditions.rating && rating) {
-      if (!checkPassedCondition(conditions.rating, rating)) {
+      if (!checkPassedCondition(conditions.rating, rating, true)) {
         return false;
       }
     }
@@ -272,12 +338,14 @@ export function checkPosition(position: any, conditions: any) {
   }
 }
 
-function checkPassedCondition(param: any, input: any) {
+function checkPassedCondition(param: any, input: any, test = false) {
   let paramArray = param.toString().split("@");
+  if (test) {
+  }
   for (let index = 0; index < paramArray.length; index++) {
     let paramArrayElement = paramArray[index].toLowerCase();
-    
-    if (paramArrayElement == input.toLowerCase() && paramArrayElement != "") {
+
+    if (paramArrayElement.toLowerCase().trim() == input.toLowerCase().trim() && paramArrayElement != "") {
       return true;
     }
   }
@@ -370,6 +438,8 @@ export class AggregatedData {
   "Day P&L (USD)": number;
   "MTD P&L (USD)": number;
   "DV01": number;
+  "CR01": number;
+
   "USD Market Value": number;
   "OAS": number;
   "Z Spread": number;
@@ -379,6 +449,12 @@ export class AggregatedData {
   "DV01 Dollar Value Impact Limit % of Nav": number;
   "DV01 Dollar Value Impact Utilization % of Nav": number;
   "DV01 Dollar Value Impact Test": string;
+
+  "CR01 Dollar Value Impact": number;
+  "CR01 Dollar Value Impact % of Nav": number;
+  "CR01 Dollar Value Impact Limit % of Nav": number;
+  "CR01 Dollar Value Impact Utilization % of Nav": number;
+  "CR01 Dollar Value Impact Test": string;
 
   "Value (BC) % of Nav": number;
   "Value (BC) % of GMV": number;
@@ -397,6 +473,8 @@ export class AggregatedData {
     this["Day P&L (USD)"] = 0;
     this["MTD P&L (USD)"] = 0;
     this["DV01"] = 0;
+    this["CR01"] = 0;
+
     this["USD Market Value"] = 0;
     this["OAS"] = 0;
     this["Z Spread"] = 0;
@@ -406,6 +484,12 @@ export class AggregatedData {
     this["DV01 Dollar Value Impact Limit % of Nav"] = 0;
     this["DV01 Dollar Value Impact Utilization % of Nav"] = 0;
     this["DV01 Dollar Value Impact Test"] = "Pass";
+
+    this["CR01 Dollar Value Impact"] = 0;
+    this["CR01 Dollar Value Impact % of Nav"] = 0;
+    this["CR01 Dollar Value Impact Limit % of Nav"] = 0;
+    this["CR01 Dollar Value Impact Utilization % of Nav"] = 0;
+    this["CR01 Dollar Value Impact Test"] = "Pass";
 
     this["Value (BC) % of Nav"] = 0;
     this["Value (BC) % of GMV"] = 0;
@@ -598,6 +682,8 @@ export class AggregateRow {
   "Location": string;
   "USD Market Value": number;
   "DV01": number;
+  "CR01": number;
+
   "Day P&L (USD)": number;
   "MTD Int. (USD)": number;
   "YTD Int. (USD)": number;
@@ -611,6 +697,8 @@ export class AggregateRow {
     this["Location"] = "Global Hedge";
     this["USD Market Value"] = 0;
     this["DV01"] = 0;
+    this["CR01"] = 0;
+
     this["Day P&L (USD)"] = 0;
     this["MTD Int. (USD)"] = 0;
     this["YTD Int. (USD)"] = 0;

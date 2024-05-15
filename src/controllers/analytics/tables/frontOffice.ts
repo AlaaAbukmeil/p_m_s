@@ -32,6 +32,8 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     // "Day P&L % (NAV)",
     "Duration",
     "DV01",
+    "CR01",
+
     "Call Date",
     "Maturity",
     "BBG / S&P / Moody / Fitch Rating",
@@ -59,12 +61,11 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
 
     "DV01 Dollar Value Impact",
     "DV01 Dollar Value Impact % of Nav",
-    "Spread Change",
-    "DV01 Dollar Value Impact % of Nav",
     "DV01 Dollar Value Impact Limit % of Nav",
     "DV01 Dollar Value Impact Utilization % of Nav",
     "DV01 Dollar Value Impact Test",
-    "DV01 Dollar Value Impact Color Test",
+    "DV01 Dollar Value Impact Test Color",
+    "Spread Change",
 
     "Value (BC) % of Nav",
     "Value (BC) Limit % of Nav",
@@ -72,7 +73,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Value (BC) Utilization % of Nav",
 
     "Value (BC) Test",
-    "Value (BC) Color Test",
+    "Value (BC) Test Color",
     "Capital Gain/ Loss since Inception (Live Position)",
     "% of Capital Gain/ Loss since Inception (Live Position)",
     "Accrued Int. Since Inception (BC)",
@@ -94,6 +95,13 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Rating Score",
     "Region",
     "Market Type",
+
+    "CR01 Dollar Value Impact",
+    "CR01 Dollar Value Impact % of Nav",
+    "CR01 Dollar Value Impact Limit % of Nav",
+    "CR01 Dollar Value Impact Utilization % of Nav",
+    "CR01 Dollar Value Impact Test",
+    "CR01 Dollar Value Impact Test Color",
   ];
 
   let titlesValues: any = {
@@ -119,6 +127,8 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Day Int. (BC)": "Day Int. (BC)",
     "Entry Yield": "Entry Yield",
     DV01: "DV01",
+    CR01: "CR01",
+
     Bid: "Bid",
     Ask: "Ask",
     "Average Cost": "Average Cost",
@@ -153,7 +163,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "DV01 Dollar Value Impact Limit % of Nav": "DV01 Dollar Value Impact Limit % of Nav",
     "DV01 Dollar Value Impact Utilization % of Nav": "DV01 Dollar Value Impact Utilization % of Nav",
     "DV01 Dollar Value Impact Test": "DV01 Dollar Value Impact Test",
-    "DV01 Dollar Value Impact Color Test": "DV01 Dollar Value Impact Color Test",
+    "DV01 Dollar Value Impact Test Color": "DV01 Dollar Value Impact Test Color",
     "Value (BC) % of Nav": "Value (BC) % of Nav",
     "Value (BC) Limit % of Nav": "Value (BC) Limit % of Nav",
 
@@ -161,7 +171,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Accrued Int. Since Inception (BC)": "Accrued Int. Since Inception (BC)",
     "YTD Int. (USD)": "YTD Int. (USD)",
     "Value (BC) Test": "Value (BC) Test",
-    "Value (BC) Color Test": "Value (BC) Color Test",
+    "Value (BC) Test Color": "Value (BC) Test Color",
     "Capital Gain/ Loss since Inception (Live Position)": "Capital Gain/ Loss since Inception (Live Position)",
     "% of Capital Gain/ Loss since Inception (Live Position)": "% of Capital Gain/ Loss since Inception (Live Position)",
     "Total Gain/ Loss (USD)": "Total Gain/ Loss (USD)",
@@ -174,6 +184,13 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Rating Score": "Rating Score",
     Region: "Region",
     "Market Type": "Market Type",
+
+    "CR01 Dollar Value Impact": "CR01 Dollar Value Impact",
+    "CR01 Dollar Value Impact % of Nav": "CR01 Dollar Value Impact % of Nav",
+    "CR01 Dollar Value Impact Limit % of Nav": "CR01 Dollar Value Impact Limit % of Nav",
+    "CR01 Dollar Value Impact Utilization % of Nav": "CR01 Dollar Value Impact Utilization % of Nav",
+    "CR01 Dollar Value Impact Test": "CR01 Dollar Value Impact Test",
+    "CR01 Dollar Value Impact Test Color": "CR01 Dollar Value Impact Test Color",
   };
 
   let twoDigits = [`${formatMarkDate(dates.lastMonth)}`, `${formatMarkDate(dates.yesterday)}`, `Last Mid ${formatMarkDate(dates.today)}`, "Bid", "Ask", "Duration", "Average Cost", "Entry Price", "Previous Mark", "Day Price Move", "MTD Price Move", "3-Day Price Move"];

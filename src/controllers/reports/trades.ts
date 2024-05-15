@@ -29,7 +29,7 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
     const reportCollection = database.collection(`${tradeType}`);
     const inputDate = new Date(date);
     const startOfMonth = new Date(inputDate.getFullYear(), inputDate.getMonth(), 1).getTime();
-    const endOfMonth = new Date(inputDate.getFullYear(), inputDate.getMonth() + 1, 0).getTime();
+    const endOfMonth = inputDate.getTime();
     const query = {
       $and: [{ ISIN: isin }, { Location: location }, { timestamp: { $gte: startOfMonth, $lte: endOfMonth } }],
     };

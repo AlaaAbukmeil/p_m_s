@@ -3,7 +3,7 @@ import { formatDateUS, parsePercentage } from "../../common";
 import { calculateAccruedSinceInception } from "../../reports/portfolios";
 import { parseBondIdentifier } from "../../reports/tools";
 import { getCountrySectorStrategySum } from "./statistics";
-import { sortObjectBasedOnKey, oasWithChange, checkPosition, yearsUntil, getDuration, getSectorAssetClass, AggregatedData, assignAssetClass, getDurationBucket, assetClassOrderFrontOffice, assetClassOrderExposure, rateSensitive, toTitleCase, AggregateRow, getStandardRating, classifyCountry } from "../tools";
+import { sortObjectBasedOnKey, oasWithChange, checkPosition, yearsUntil, getDuration, getSectorAssetClass, AggregatedData, assignAssetClass, getDurationBucket, assetClassOrderFrontOffice, assetClassOrderExposure, rateSensitive, toTitleCase, AggregateRow, getStandardRating, classifyCountry, padInteger, calculateBondPrice, calculateCR01 } from "../tools";
 import { getTopWorst } from "./frontOffice";
 import { adjustMarginMultiplier, nomuraRuleMargin } from "../cash/rules";
 import { sumTable } from "./riskTables";
@@ -156,7 +156,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     position["DV01 Dollar Value Impact Limit % of Nav"] = position["Value (BC)"] / fund.nav > 10 ? 2 + " %" : 1.5 + " %";
     position["DV01 Dollar Value Impact Utilization % of Nav"] = Math.round((parsePercentage(position["DV01 Dollar Value Impact % of Nav"]) / parsePercentage(position["DV01 Dollar Value Impact Limit % of Nav"])) * 10000) / 100 + " %";
     position["DV01 Dollar Value Impact Test"] = Math.abs(parsePercentage(position["DV01 Dollar Value Impact Utilization % of Nav"])) < 100 ? "Pass" : "Fail";
-    position["DV01 Dollar Value Impact Color Test"] = position["DV01 Dollar Value Impact Test"] == "Pass" ? "#C5E1A5" : "#FFAB91";
+    position["DV01 Dollar Value Impact Test Color"] = position["DV01 Dollar Value Impact Test"] == "Pass" ? "#C5E1A5" : "#FFAB91";
 
     position["Value (BC) % of Nav"] = Math.round((position["Value (BC)"] / fund.nav) * 10000) / 100 + " %";
 
@@ -164,7 +164,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     position["Value (BC) Utilization % of Nav"] = Math.round((parsePercentage(position["Value (BC) % of Nav"]) / parsePercentage(position["Value (BC) Limit % of Nav"])) * 10000) / 100 + " %";
 
     position["Value (BC) Test"] = Math.abs(parsePercentage(position["Value (BC) Utilization % of Nav"])) < 100 ? "Pass" : "Fail";
-    position["Value (BC) Color Test"] = position["Value (BC) Test"] == "Pass" ? "#C5E1A5" : "#FFAB91";
+    position["Value (BC) Test Color"] = position["Value (BC) Test"] == "Pass" ? "#C5E1A5" : "#FFAB91";
 
     position["Capital Gain/ Loss since Inception (Live Position)"] = position["Value (BC)"] - position["Cost (BC)"];
     let shortLongType = position["Value (BC)"] > 0 ? 1 : -1;
@@ -200,10 +200,24 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     let regionClassInfo = classifyCountry(position["Country"] || "");
     position["Region"] = regionClassInfo.region;
     position["Market Type"] = regionClassInfo.marketType;
-   
+    if (position["Type"] == "BND" || position["Type"] == "UST") {
+      position["Bond Calculated Price"] = calculateBondPrice({ couponRate: position["Coupon Rate"], periods: position["Duration"], yieldToMaturity: parsePercentage(position["YTM"]) });
+      position["Bond Calculated Price"] = position["Bond Calculated Price"] / 10;
+      position["CR01"] = calculateCR01({ couponRate: position["Coupon Rate"], periods: position["Duration"], yieldToMaturity: parsePercentage(position["YTM"]) });
+    } else {
+      position["Bond Calculated Price"] = "";
+      position["CR01"] = 0;
+    }
+
+    position["CR01 Dollar Value Impact"] = Math.round(position["OAS W Change"] * position["CR01"]);
+    position["CR01 Dollar Value Impact % of Nav"] = Math.round(((position["CR01 Dollar Value Impact"] * position["OAS W Change"]) / fund.nav) * 10000) / 100 + " %";
+    position["CR01 Dollar Value Impact Limit % of Nav"] = position["Value (BC)"] / fund.nav > 10 ? 2 + " %" : 1.5 + " %";
+    position["CR01 Dollar Value Impact Utilization % of Nav"] = Math.round((parsePercentage(position["CR01 Dollar Value Impact % of Nav"]) / parsePercentage(position["CR01 Dollar Value Impact Limit % of Nav"])) * 10000) / 100 + " %";
+    position["CR01 Dollar Value Impact Test"] = Math.abs(parsePercentage(position["CR01 Dollar Value Impact Utilization % of Nav"])) < 100 ? "Pass" : "Fail";
+    position["CR01 Dollar Value Impact Test Color"] = position["CR01 Dollar Value Impact Test"] == "Pass" ? "#C5E1A5" : "#FFAB91";
 
     if (conditions) {
-      let test = checkPosition(position, conditions)
+      let test = checkPosition(position, conditions);
       if (test) {
         mtdpl += position["MTD P&L (BC)"];
         mtdrlzd += position["MTD Rlzd (BC)"];
@@ -245,24 +259,24 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     }
   }
 
-  let dayGross = Math.round((daypl / parseFloat(fund.nav)) * 100000) / 1000;
+  let dayplPercentage = Math.round((daypl / parseFloat(fund.nav)) * 100000) / 1000;
   let dayFXGross = Math.round((dayfx / parseFloat(fund.nav)) * 100000) / 1000;
 
   let mtdFXGross = Math.round((mtdfx / parseFloat(fund.nav)) * 100000) / 1000;
   let mtdplPercentage = Math.round((mtdpl / parseFloat(fund.nav)) * 1000) / 1000;
   let shadawYTDNAV = (parseFloat(fund["a2 price"]) - parseFloat(fundDetailsYTD["a2 price"])) / parseFloat(fundDetailsYTD["a2 price"]);
-  let shadawMTDNAV = parseFloat(fund.nav) + (mtdrlzd + mtdint - (fund.expenses / 10000) * fund.nav);
+  let shadawMTDNAV = parseFloat(fund.nav) + (mtdpl - (fund.expenses / 10000) * fund.nav);
 
   let ytdNet = Math.round((shadawYTDNAV + mtdplPercentage - fund.expenses / 10000) * 100000) / 1000;
   let yearNetAmount = Math.round((ytdNet / 100) * parseFloat(fund.nav));
   let fundDetails = {
     nav: parseFloat(fund.nav),
     holdbackRatio: parseFloat(fund.holdBackRatio),
-    mtdplPercentage: mtdplPercentage * 100,
     shadawNAV: Math.round(shadawMTDNAV),
     month: fund.month,
-    borrowAmount: Math.round(parseFloat((fund["borrowing amount"]||"").replace(/,/g, ""))),
+    borrowAmount: Math.round(parseFloat((fund["borrowing amount"] || "").replace(/,/g, ""))),
 
+    mtdplPercentage: padInteger(mtdplPercentage * 100),
     mtdpl: Math.round(mtdpl * 1000) / 1000,
     mtdrlzd: Math.round(mtdrlzd * 1000) / 1000,
     mtdurlzd: Math.round(mtdurlzd * 1000) / 1000,
@@ -271,7 +285,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     mtdintPercentage: Math.round((mtdint / parseFloat(fund.nav)) * 100000) / 1000,
     mtdFXGross: mtdFXGross,
 
-    ytdNet: ytdNet,
+    ytdNet: padInteger(ytdNet),
     ytdpl: yearNetAmount,
     ytdrlzd: "x",
     ytdurlzd: "x",
@@ -280,7 +294,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     ytdintPercentage: Math.round((ytdinterest / parseFloat(fundDetailsYTD.nav)) * 100000) / 1000,
     ytdFXGross: "x",
 
-    dayGross: dayGross,
+    dayplPercentage: padInteger(dayplPercentage),
     dayFXGross: dayFXGross,
     dayint: Math.round(dayint * 1000) / 1000,
     dayintPercentage: Math.round((dayint / parseFloat(fund.nav)) * 100000) / 1000,
@@ -302,7 +316,6 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     ytdEstIntPercentage: Math.round((ytdEstInt / parseFloat(fundDetailsYTD.nav)) * 100000) / 1000 || 0,
   };
   let updatedPortfolio: PositionGeneralFormat[] | any = portfolio;
-
   return { portfolio: updatedPortfolio, fundDetails: fundDetails, currencies: currencies };
 }
 
@@ -475,6 +488,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
     let groupDayPl = 0,
       groupMTDPl = 0,
       groupDV01Sum = 0,
+      groupCR01Sum = 0,
       groupCallDate = null,
       groupMaturity = null,
       groupMTDIntSum = 0,
@@ -492,6 +506,11 @@ export function assignColorAndSortParamsBasedOnAssetClass({
     groupedByLocation[locationCode]["DV01 Dollar Value Impact Limit % of Nav"] = 0;
     groupedByLocation[locationCode]["DV01 Dollar Value Impact Utilization % of Nav"] = 0;
 
+    groupedByLocation[locationCode]["CR01 Dollar Value Impact"] = 0;
+    groupedByLocation[locationCode]["CR01 Dollar Value Impact % of Nav"] = 0;
+    groupedByLocation[locationCode]["CR01 Dollar Value Impact Limit % of Nav"] = 0;
+    groupedByLocation[locationCode]["CR01 Dollar Value Impact Utilization % of Nav"] = 0;
+
     for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
       let country = groupedByLocation[locationCode].data[index]["Country"] ? groupedByLocation[locationCode].data[index]["Country"] : "Unspecified";
       let issuer = groupedByLocation[locationCode].data[index]["Issuer"] ? groupedByLocation[locationCode].data[index]["Issuer"] : "Unspecified";
@@ -500,6 +519,8 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       let bbTicker = groupedByLocation[locationCode].data[index]["BB Ticker"] ? groupedByLocation[locationCode].data[index]["BB Ticker"] : "Unspecified";
       let duration = parseFloat(groupedByLocation[locationCode].data[index]["Duration"]) || 0;
       let dv01 = parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0;
+      let cr01 = parseFloat(groupedByLocation[locationCode].data[index]["CR01"]) || 0;
+
       let dayPriceMove = parseFloat(groupedByLocation[locationCode].data[index]["Day Price Move"]) || 0;
 
       let mtdPriceMove = parseFloat(groupedByLocation[locationCode].data[index]["MTD Price Move"]) || 0;
@@ -513,6 +534,12 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       let dv01DollarValueOfNav = parseFloat(groupedByLocation[locationCode].data[index]["DV01 Dollar Value Impact % of Nav"]);
       let dv01DollarValueLimitOfNav = parseFloat(groupedByLocation[locationCode].data[index]["DV01 Dollar Value Impact Limit % of Nav"]);
       let dv01DollarValueLimitUtilization = parseFloat(groupedByLocation[locationCode].data[index]["DV01 Dollar Value Impact Utilization % of Nav"]);
+
+      let cr01DollarValueImpact = parseFloat(groupedByLocation[locationCode].data[index]["CR01 Dollar Value Impact"]);
+      let cr01DollarValueOfNav = parseFloat(groupedByLocation[locationCode].data[index]["CR01 Dollar Value Impact % of Nav"]);
+      let cr01DollarValueLimitOfNav = parseFloat(groupedByLocation[locationCode].data[index]["CR01 Dollar Value Impact Limit % of Nav"]);
+      let cr01DollarValueLimitUtilization = parseFloat(groupedByLocation[locationCode].data[index]["CR01 Dollar Value Impact Utilization % of Nav"]);
+
       let mtdInt = parseFloat(groupedByLocation[locationCode].data[index]["MTD Int. (USD)"]);
       let YTDInt = parseFloat(groupedByLocation[locationCode].data[index]["YTD Int. (USD)"]);
       let maturity = yearsUntil(groupedByLocation[locationCode].data[index]["Maturity"], date, groupedByLocation[locationCode].data[index]["BB Ticker"]);
@@ -602,6 +629,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       groupDayPl += dayPl;
       groupMTDPl += monthPl;
       groupDV01Sum += dv01;
+      groupCR01Sum += cr01;
 
       groupMTDIntSum += mtdInt;
 
@@ -622,6 +650,11 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       groupedByLocation[locationCode]["DV01 Dollar Value Impact % of Nav"] = dv01DollarValueOfNav;
       groupedByLocation[locationCode]["DV01 Dollar Value Impact Limit % of Nav"] = dv01DollarValueLimitOfNav;
       groupedByLocation[locationCode]["DV01 Dollar Value Impact Utilization % of Nav"] = dv01DollarValueLimitUtilization;
+
+      groupedByLocation[locationCode]["CR01 Dollar Value Impact"] += cr01DollarValueImpact;
+      groupedByLocation[locationCode]["CR01 Dollar Value Impact % of Nav"] = cr01DollarValueOfNav;
+      groupedByLocation[locationCode]["CR01 Dollar Value Impact Limit % of Nav"] = cr01DollarValueLimitOfNav;
+      groupedByLocation[locationCode]["CR01 Dollar Value Impact Utilization % of Nav"] = cr01DollarValueLimitUtilization;
 
       if (duration < 2) {
         durationSummary["0 To 2"].durationSum += duration;
@@ -654,6 +687,8 @@ export function assignColorAndSortParamsBasedOnAssetClass({
 
     groupedByLocation[locationCode].groupDayPl = groupDayPl;
     groupedByLocation[locationCode].groupDV01Sum = groupDV01Sum;
+    groupedByLocation[locationCode].groupCR01Sum = groupCR01Sum;
+
     groupedByLocation[locationCode].groupMaturity = groupMaturity;
 
     groupedByLocation[locationCode].groupCallDate = groupCallDate;
@@ -784,6 +819,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         Location: locationCode,
         "USD Market Value": groupedByLocation[locationCode].groupUSDMarketValue,
         DV01: groupedByLocation[locationCode].groupDV01Sum,
+        CR01: groupedByLocation[locationCode].groupCR01Sum,
 
         "MTD Int. (USD)": groupedByLocation[locationCode].groupMTDIntSum,
 
@@ -903,6 +939,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         Location: locationCode,
         "USD Market Value": groupedByLocation[locationCode].groupUSDMarketValue,
         DV01: groupedByLocation[locationCode].groupDV01Sum,
+        CR01: groupedByLocation[locationCode].groupCR01Sum,
+
         "MTD Int. (USD)": groupedByLocation[locationCode].groupMTDIntSum,
 
         "YTD Int. (USD)": groupedByLocation[locationCode].groupYTDIntSum,
@@ -962,6 +1000,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         Location: locationCode,
         "Value (BC)": groupedByLocation[locationCode].groupUSDMarketValue,
         DV01: groupedByLocation[locationCode].groupDV01Sum,
+        CR01: groupedByLocation[locationCode].groupCR01Sum,
+
         "Day P&L (BC)": groupedByLocation[locationCode].groupDayPl,
         "Day Price Move": groupedByLocation[locationCode].groupDayPriceMoveSum,
         "MTD Int. (BC)": groupedByLocation[locationCode].groupMTDIntSum,

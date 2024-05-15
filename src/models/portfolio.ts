@@ -144,7 +144,7 @@ export interface PositionGeneralFormat extends PositionBeforeFormatting {
   "DV01 Dollar Value Impact % of Nav": string;
   "DV01 Dollar Value Impact Limit % of Nav": string;
   "DV01 Dollar Value Impact Utilization % of Nav": string;
-  "DV01 Dollar Value Impact Color Test": string;
+  "DV01 Dollar Value Impact Test Color": string;
   "Borrow Capacity": number;
   "Value (BC) % of Nav": string;
 
@@ -152,7 +152,7 @@ export interface PositionGeneralFormat extends PositionBeforeFormatting {
   "Value (BC) Utilization % of Nav": string;
 
   "Value (BC) Test": string;
-  "Value (BC) Color Test": string;
+  "Value (BC) Test Color": string;
   "DV01 Dollar Value Impact Test": string;
   "Capital Gain/ Loss since Inception (Live Position)": number;
   "% of Capital Gain/ Loss since Inception (Live Position)": string;
@@ -188,7 +188,7 @@ export interface FundMTD {
   ytdintPercentage: number;
   ytdFXGross: any;
 
-  dayGross: number;
+  dayplPercentage: number;
   dayFXGross: number;
   dayint: number;
   dayintPercentage: number;

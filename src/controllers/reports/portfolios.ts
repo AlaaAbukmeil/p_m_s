@@ -298,7 +298,7 @@ export function getYTDParams(portfolio: any, lastYearPortfolio: any, date: any) 
       if (!parseFloat(portfolio[index]["YTD Mark"]) && parseFloat(portfolio[index]["YTD Mark"]) != 0 && portfolio[index]["Entry Price"]) {
         let ytdMarkInfo = getEarliestDateKeyAndValue(portfolio[index]["Entry Price"], date);
         portfolio[index]["YTD Mark"] = ytdMarkInfo.value;
-        portfolio[index]["YTD Mark Ref.D"] = formatDateUS(ytdMarkInfo.date);
+        portfolio[index]["YTD Mark Ref.D"] = ytdMarkInfo.date ? formatDateUS(ytdMarkInfo.date) : "";
         portfolio[index]["Notes"] = "YTD Mark X";
       }
       if (!portfolio[index]["YTD FX"]) {
