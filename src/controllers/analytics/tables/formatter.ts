@@ -25,7 +25,8 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     lmv = 0,
     ytdEstInt = 0,
     smv = 0,
-    priceImpact = 0;
+    cr01Sum = 0;
+
   for (let index = 0; index < portfolio.length; index++) {
     let position: any = portfolio[index];
 
@@ -85,8 +86,6 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     }
     position["DV01"] = (position["DV01"] / 1000000) * position["Notional Amount"] * usdRatio;
     position["DV01"] = Math.round(position["DV01"] * 100) / 100 || 0;
-
-    position["DV01 Cal"] = Math.round(-1 * position["DV01"] * position["1-Day Spread Change"]) || 0;
 
     position["Day P&L FX"] = (position["FX Rate"] - position["Previous FX"]) * position["Value (BC)"];
     position["MTD P&L FX"] = (position["FX Rate"] - position["MTD FX"]) * position["Value (BC)"];
@@ -203,11 +202,14 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     if (position["Type"] == "BND" || position["Type"] == "UST") {
       position["Bond Calculated Price"] = calculateBondPrice({ couponRate: position["Coupon Rate"], periods: position["Duration"], yieldToMaturity: parsePercentage(position["YTM"]) });
       position["Bond Calculated Price"] = position["Bond Calculated Price"] / 10;
-      position["CR01"] = calculateCR01({ couponRate: position["Coupon Rate"], periods: position["Duration"], yieldToMaturity: parsePercentage(position["YTM"]) });
+      position["CR01"] = calculateCR01({ couponRate: position["Coupon Rate"], periods: position["Duration"], yieldToMaturity: parsePercentage(position["YTM"]) }) || 0;
     } else {
       position["Bond Calculated Price"] = "";
       position["CR01"] = 0;
     }
+
+    position["CR01"] = (position["CR01"] / 1000000) * position["Notional Amount"] * usdRatio;
+
 
     position["CR01 Dollar Value Impact"] = Math.round(position["OAS W Change"] * position["CR01"]);
     position["CR01 Dollar Value Impact % of Nav"] = Math.round(((position["CR01 Dollar Value Impact"] * position["OAS W Change"]) / fund.nav) * 10000) / 100 + " %";
@@ -234,7 +236,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
         dayrlzd += position["Day Rlzd (BC)"];
         dv01Sum += position["DV01"];
         ytdEstInt += position["365-Day Int. EST"];
-        priceImpact += parseFloat(position["DV01 Cal"]);
+        cr01Sum += parseFloat(position["CR01"]);
       } else {
         delete portfolio[index];
       }
@@ -243,19 +245,18 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
       mtdrlzd += position["MTD Rlzd (BC)"];
       mtdurlzd += position["MTD URlzd (BC)"];
       mtdint += position["MTD Int. (BC)"];
+      mtdfx += position["MTD P&L FX"];
 
       dayint += position["Day Int. (BC)"];
 
       daypl += position["Day P&L (BC)"];
       dayfx += position["Day P&L FX"];
 
-      mtdfx += position["MTD P&L FX"];
-
       dayurlzd += position["Day URlzd (BC)"];
       dayrlzd += position["Day Rlzd (BC)"];
       dv01Sum += position["DV01"];
       ytdEstInt += position["365-Day Int. EST"];
-      priceImpact += parseFloat(position["DV01 Cal"]);
+      cr01Sum += parseFloat(position["CR01"]);
     }
   }
 
@@ -263,7 +264,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
   let dayFXGross = Math.round((dayfx / parseFloat(fund.nav)) * 100000) / 1000;
 
   let mtdFXGross = Math.round((mtdfx / parseFloat(fund.nav)) * 100000) / 1000;
-  let mtdplPercentage = Math.round((mtdpl / parseFloat(fund.nav)) * 1000) / 1000;
+  let mtdplPercentage = mtdpl / parseFloat(fund.nav);
   let shadawYTDNAV = (parseFloat(fund["a2 price"]) - parseFloat(fundDetailsYTD["a2 price"])) / parseFloat(fundDetailsYTD["a2 price"]);
   let shadawMTDNAV = parseFloat(fund.nav) + (mtdpl - (fund.expenses / 10000) * fund.nav);
 
@@ -303,6 +304,8 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     dayurlzd: Math.round(dayurlzd * 1000) / 1000,
     dayrlzd: Math.round(dayrlzd * 1000) / 1000,
     dv01Sum: Math.round(dv01Sum * 1000) / 1000,
+    cr01Sum: Math.round(cr01Sum * 1000) / 1000,
+
     lmv: Math.round(lmv * 1000) / 1000,
     smv: Math.round(smv * 1000) / 1000,
     gmv: Math.round((lmv - smv) * 1000) / 1000,
@@ -312,7 +315,6 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     gmvOfNav: Math.round((lmv - smv) * 10000) / (100 * fund.nav),
     nmvOfNav: Math.round(nmv * 10000) / (100 * fund.nav),
     ytdEstInt: ytdEstInt,
-    priceImpact: priceImpact,
     ytdEstIntPercentage: Math.round((ytdEstInt / parseFloat(fundDetailsYTD.nav)) * 100000) / 1000 || 0,
   };
   let updatedPortfolio: PositionGeneralFormat[] | any = portfolio;
@@ -848,6 +850,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         macro["RV"]["USD Market Value"] += groupedByLocation[locationCode].groupUSDMarketValue;
         macro["RV"]["Notional Amount"] += groupedByLocation[locationCode].groupNotional;
         macro["RV"]["DV01"] += groupedByLocation[locationCode].groupDV01Sum;
+        macro["RV"]["CR01"] += groupedByLocation[locationCode].groupCR01Sum;
+
         macro["RV"]["MTD Int. (USD)"] += groupedByLocation[locationCode].groupMTDIntSum;
         macro["RV"]["YTD Int. (USD)"] += groupedByLocation[locationCode].groupYTDIntSum;
 
@@ -861,6 +865,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         macro["IG"]["USD Market Value"] += groupedByLocation[locationCode].groupUSDMarketValue;
         macro["IG"]["Notional Amount"] += groupedByLocation[locationCode].groupNotional;
         macro["IG"]["DV01"] += groupedByLocation[locationCode].groupDV01Sum;
+        macro["IG"]["CR01"] += groupedByLocation[locationCode].groupCR01Sum;
+
         macro["IG"]["MTD Int. (USD)"] += groupedByLocation[locationCode].groupMTDIntSum;
         macro["IG"]["YTD Int. (USD)"] += groupedByLocation[locationCode].groupYTDIntSum;
 
@@ -874,6 +880,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         macro["HY"]["USD Market Value"] += groupedByLocation[locationCode].groupUSDMarketValue;
         macro["HY"]["Notional Amount"] += groupedByLocation[locationCode].groupNotional;
         macro["HY"]["DV01"] += groupedByLocation[locationCode].groupDV01Sum;
+        macro["HY"]["CR01"] += groupedByLocation[locationCode].groupCR01Sum;
+
         macro["HY"]["MTD Int. (USD)"] += groupedByLocation[locationCode].groupMTDIntSum;
         macro["HY"]["YTD Int. (USD)"] += groupedByLocation[locationCode].groupYTDIntSum;
 
@@ -887,6 +895,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         macro["CURR + FUT"]["USD Market Value"] += groupedByLocation[locationCode].groupUSDMarketValue;
         macro["CURR + FUT"]["Notional Amount"] += groupedByLocation[locationCode].groupNotional;
         macro["CURR + FUT"]["DV01"] += groupedByLocation[locationCode].groupDV01Sum;
+        macro["CURR + FUT"]["CR01"] += groupedByLocation[locationCode].groupCR01Sum;
+
         macro["CURR + FUT"]["MTD Int. (USD)"] += groupedByLocation[locationCode].groupMTDIntSum;
         macro["CURR + FUT"]["YTD Int. (USD)"] += groupedByLocation[locationCode].groupYTDIntSum;
 
@@ -900,6 +910,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         macro["CDS"]["USD Market Value"] += groupedByLocation[locationCode].groupUSDMarketValue;
         macro["CDS"]["Notional Amount"] += groupedByLocation[locationCode].groupNotional;
         macro["CDS"]["DV01"] += groupedByLocation[locationCode].groupDV01Sum;
+        macro["CDS"]["CR01"] += groupedByLocation[locationCode].groupCR01Sum;
+
         macro["CDS"]["MTD Int. (USD)"] += groupedByLocation[locationCode].groupMTDIntSum;
         macro["CDS"]["YTD Int. (USD)"] += groupedByLocation[locationCode].groupYTDIntSum;
 
@@ -913,6 +925,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         macro["Global Hedge"]["USD Market Value"] += groupedByLocation[locationCode].groupUSDMarketValue;
         macro["Global Hedge"]["Notional Amount"] += groupedByLocation[locationCode].groupNotional;
         macro["Global Hedge"]["DV01"] += groupedByLocation[locationCode].groupDV01Sum;
+        macro["Global Hedge"]["CR01"] += groupedByLocation[locationCode].groupCR01Sum;
+
         macro["Global Hedge"]["MTD Int. (USD)"] += groupedByLocation[locationCode].groupMTDIntSum;
         macro["Global Hedge"]["YTD Int. (USD)"] += groupedByLocation[locationCode].groupYTDIntSum;
 
@@ -926,6 +940,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         macro["Rlzd"]["USD Market Value"] += groupedByLocation[locationCode].groupUSDMarketValue;
         macro["Rlzd"]["Notional Amount"] += groupedByLocation[locationCode].groupNotional;
         macro["Rlzd"]["DV01"] += groupedByLocation[locationCode].groupDV01Sum;
+        macro["Rlzd"]["CR01"] += groupedByLocation[locationCode].groupCR01Sum;
+
         macro["Rlzd"]["MTD Int. (USD)"] += groupedByLocation[locationCode].groupMTDIntSum;
         macro["Rlzd"]["YTD Int. (USD)"] += groupedByLocation[locationCode].groupYTDIntSum;
 
@@ -963,6 +979,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         macro["Global Hedge"]["USD Market Value"] += groupedByLocation[locationCode].groupUSDMarketValue;
         macro["Global Hedge"]["Notional Amount"] += groupedByLocation[locationCode].groupNotional;
         macro["Global Hedge"]["DV01"] += groupedByLocation[locationCode].groupDV01Sum;
+        macro["Global Hedge"]["CR01"] += groupedByLocation[locationCode].groupCR01Sum;
+
         macro["Global Hedge"]["MTD Int. (USD)"] += groupedByLocation[locationCode].groupMTDIntSum;
         macro["Global Hedge"]["YTD Int. (USD)"] += groupedByLocation[locationCode].groupYTDIntSum;
 
@@ -975,6 +993,9 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         macro["Non-Hedge Bonds"]["USD Market Value"] += groupedByLocation[locationCode].groupUSDMarketValue;
         macro["Non-Hedge Bonds"]["Notional Amount"] += groupedByLocation[locationCode].groupNotional;
         macro["Non-Hedge Bonds"]["DV01"] += groupedByLocation[locationCode].groupDV01Sum;
+        macro["Non-Hedge Bonds"]["CR01"] += groupedByLocation[locationCode].groupCR01Sum;
+
+
         macro["Non-Hedge Bonds"]["MTD Int. (USD)"] += groupedByLocation[locationCode].groupMTDIntSum;
         macro["Non-Hedge Bonds"]["YTD Int. (USD)"] += groupedByLocation[locationCode].groupYTDIntSum;
 
@@ -987,6 +1008,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         macro["RV"]["USD Market Value"] += groupedByLocation[locationCode].groupUSDMarketValue;
         macro["RV"]["Notional Amount"] += groupedByLocation[locationCode].groupNotional;
         macro["RV"]["DV01"] += groupedByLocation[locationCode].groupDV01Sum;
+        macro["RV"]["CR01"] += groupedByLocation[locationCode].groupCR01Sum;
+
         macro["RV"]["MTD Int. (USD)"] += groupedByLocation[locationCode].groupMTDIntSum;
         macro["RV"]["YTD Int. (USD)"] += groupedByLocation[locationCode].groupYTDIntSum;
 

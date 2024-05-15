@@ -338,7 +338,6 @@ function getDayURlzdInt(portfolio: any, date: any) {
     position["Previous Mark"] = yesterdayPrice;
     let todayPrice: any = parseFloat(position["Mid"]);
     portfolio[index]["Day URlzd"] = portfolio[index]["Type"] == "CDS" ? ((parseFloat(todayPrice) - parseFloat(yesterdayPrice)) * portfolio[index]["Notional Amount"]) / portfolio[index]["Original Face"] : (parseFloat(todayPrice) - parseFloat(yesterdayPrice)) * portfolio[index]["Notional Amount"] || 0;
-    portfolio[index]["1-Day Spread Change"] = parseFloat(portfolio[index]["Z Spread"]) - parseFloat(portfolio[index]["Previous Z Spread"]);
     if (portfolio[index]["Day URlzd"] == 0) {
       portfolio[index]["Day URlzd"] = 0;
     } else if (!portfolio[index]["Day URlzd"]) {

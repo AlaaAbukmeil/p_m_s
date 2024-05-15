@@ -233,15 +233,14 @@ export function calculateCR01({ couponRate, yieldToMaturity, periods }: { coupon
     yieldToMaturity = yieldToMaturity + 0.01; // adding 1 basis point
     let adjustedPrice: any = calculateBondPrice({ couponRate, yieldToMaturity, periods });
     // CR01 is the decrease in price when the yield increases by 1 basis point
-    return (originalPrice - adjustedPrice) * 100;
-
+    return (originalPrice - adjustedPrice) * 1000;
   } else {
     let originalPrice: any = calculateBondPerpPrice({ couponRate, yieldToMaturity });
     yieldToMaturity = yieldToMaturity + 0.01; // adding 1 basis point
 
     let adjustedPrice: any = calculateBondPerpPrice({ couponRate, yieldToMaturity });
     // CR01 is the decrease in price when the yield increases by 1 basis point
-    return (originalPrice - adjustedPrice) * 100;
+    return (originalPrice - adjustedPrice) * 1000;
   }
 }
 export function checkPosition(position: any, conditions: any) {

@@ -72,28 +72,28 @@ export async function getTrade(tradeType: string, tradeId: string) {
 export async function editTrade(editedTrade: any, tradeType: any) {
   try {
     let tradeInfo = await getTrade(tradeType, editedTrade["_id"]);
-    let beforeModify = JSON.parse(JSON.stringify(tradeInfo));
-    beforeModify["_id"] = new ObjectId(beforeModify["_id"]);
 
     if (tradeInfo) {
-      let centralizedBlotKeys: any = ["B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Edit Note"];
+      let beforeModify = JSON.parse(JSON.stringify(tradeInfo));
+      beforeModify["_id"] = new ObjectId(beforeModify["_id"]);
+
+      let centralizedBlotKeys: any = ["B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Nomura Upload Status", "Edit Note"];
       let changes = 0;
       let changesText = [];
       for (let index = 0; index < centralizedBlotKeys.length; index++) {
         let key: any = centralizedBlotKeys[index];
-        if (editedTrade[key] != "") {
+        if (editedTrade[key] != "" && editedTrade[key]) {
           changesText.push(`${key} changed from ${tradeInfo[key]} to ${editedTrade[key]} `);
           tradeInfo[key] = editedTrade[key];
 
           changes++;
         }
       }
-
       if (!changes) {
         return { error: "The trade is still the same." };
       }
 
-      await client.connect();
+      // await client.connect();
 
       // Access the 'structure' database
       const database = client.db("trades_v_2");
@@ -109,7 +109,7 @@ export async function editTrade(editedTrade: any, tradeType: any) {
         { $set: tradeInfo } // Update operation
       );
 
-      if (action) {
+      if ("action") {
         return { error: null };
       } else {
         return {
