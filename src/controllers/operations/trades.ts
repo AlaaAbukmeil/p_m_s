@@ -253,3 +253,51 @@ export async function allTradesCDS(start: any, end: any): Promise<CentralizedTra
     return [];
   }
 }
+
+export async function getTriadaTrades(tradeType: any, fromTimestamp: number | null = 0, toTimestamp: number | null = 0) {
+  const database = client.db("trades_v_2");
+
+  let options: any = [];
+
+  // If both timestamps are provided, use them to filter the results
+  if (fromTimestamp !== null && toTimestamp !== null) {
+    options.push({ timestamp: { $gte: fromTimestamp, $lte: toTimestamp } });
+    // If only fromTimestamp is provided
+  } else if (fromTimestamp !== null) {
+    options.push({ timestamp: { $gte: fromTimestamp } });
+    // If only toTimestamp is provided
+  } else if (toTimestamp !== null) {
+    options.push({ timestamp: { $lte: toTimestamp } });
+  }
+
+  let query: any = {};
+
+  // If there are any timestamp options, use them in the query
+  if (options.length > 0) {
+    query.$and = options;
+  }
+
+  let reportCollection = await database.collection(`${tradeType}`).find(query).toArray();
+  if (fromTimestamp && toTimestamp) {
+    reportCollection = reportCollection.filter((trade: any, index: any) => {
+      // Include trade if tradeDate property does not exist
+
+      // Convert tradeDate to a timestamp if necessary
+      const tradeDateTimestamp = new Date(trade["Trade Date"]).getTime();
+
+      // Check if tradeDate falls within the specified range
+      return tradeDateTimestamp >= fromTimestamp && tradeDateTimestamp <= toTimestamp;
+    });
+  }
+  for (let index = 0; index < reportCollection.length; index++) {
+    let trade = reportCollection[index];
+    trade["Trade App Status"] = "uploaded_to_app";
+    trade["BB Ticker"] = trade["BB Ticker"] ? trade["BB Ticker"] : trade["Issue"];
+    trade["Notional Amount"] = trade["Notional Amount"] && parseFloat(trade["Notional Amount"]) != 0 ? trade["Notional Amount"] : trade["Quantity"];
+    delete trade["_id"];
+    delete trade["Quantity"];
+    delete trade["Issue"];
+    delete trade["timestamp"];
+  }
+  return reportCollection;
+}

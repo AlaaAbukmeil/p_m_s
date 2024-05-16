@@ -7,6 +7,7 @@ import { uri } from "../common";
 import { readBBGBlot, readEmsxEBlot, readIBEblot, uploadToGCloudBucket } from "../operations/readExcel";
 import { client } from "../auth";
 import { CentralizedTrade, Vcon } from "../../models/trades";
+import { formatDateNomura } from "../operations/tools";
 const xlsx = require("xlsx");
 const { PassThrough } = require("stream");
 const { v4: uuidv4 } = require("uuid");
@@ -122,54 +123,6 @@ export function renderVcon(emailContent: string): Vcon {
   vcon = { ...firstParams, ...secondParams };
 
   return vcon;
-}
-
-export async function getTriadaTrades(tradeType: any, fromTimestamp: number | null = 0, toTimestamp: number | null = 0) {
-  const database = client.db("trades_v_2");
-
-  let options: any = [];
-
-  // If both timestamps are provided, use them to filter the results
-  if (fromTimestamp !== null && toTimestamp !== null) {
-    options.push({ timestamp: { $gte: fromTimestamp, $lte: toTimestamp } });
-    // If only fromTimestamp is provided
-  } else if (fromTimestamp !== null) {
-    options.push({ timestamp: { $gte: fromTimestamp } });
-    // If only toTimestamp is provided
-  } else if (toTimestamp !== null) {
-    options.push({ timestamp: { $lte: toTimestamp } });
-  }
-
-  let query: any = {};
-
-  // If there are any timestamp options, use them in the query
-  if (options.length > 0) {
-    query.$and = options;
-  }
-
-  let reportCollection = await database.collection(`${tradeType}`).find(query).toArray();
-  if (fromTimestamp && toTimestamp) {
-    reportCollection = reportCollection.filter((trade: any, index: any) => {
-      // Include trade if tradeDate property does not exist
-
-      // Convert tradeDate to a timestamp if necessary
-      const tradeDateTimestamp = new Date(trade["Trade Date"]).getTime();
-
-      // Check if tradeDate falls within the specified range
-      return tradeDateTimestamp >= fromTimestamp && tradeDateTimestamp <= toTimestamp;
-    });
-  }
-  for (let index = 0; index < reportCollection.length; index++) {
-    let trade = reportCollection[index];
-    trade["Trade App Status"] = "uploaded_to_app";
-    trade["BB Ticker"] = trade["BB Ticker"] ? trade["BB Ticker"] : trade["Issue"];
-    trade["Notional Amount"] = trade["Notional Amount"] && parseFloat(trade["Notional Amount"]) != 0 ? trade["Notional Amount"] : trade["Quantity"];
-    delete trade["_id"];
-    delete trade["Quantity"];
-    delete trade["Issue"];
-    delete trade["timestamp"];
-  }
-  return reportCollection;
 }
 
 export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTrades: any, ibTrades: any, emsxTrades: any): Promise<CentralizedTrade[]> {
@@ -499,4 +452,41 @@ export function formatEmsxTrades(data: any, emsxTrades: any, portfolio: any) {
     return { error: error };
   }
   return trades;
+}
+
+export function formatNomura(tradesInput: any, start: string, end: string) {
+  let startTimestamp = new Date(start).getTime() - 1 * 24 * 60 * 60 * 1000;
+  let endTimestamp = new Date(end).getTime() + 1 * 24 * 60 * 60 * 1000;
+  tradesInput = tradesInput.filter((trade: any, index: any) => new Date(trade["Trade Date"]).getTime() > startTimestamp && new Date(trade["Trade Date"]).getTime() < endTimestamp);
+  let tradesOutput = [];
+  for (let index = 0; index < tradesInput.length; index++) {
+    let trade = tradesInput[index];
+    let obj: any = {};
+    obj["Transaction-Type-Indicator"] = "AT";
+    obj["Client-Ref"] = trade["Triada Trade Id"];
+    obj["Shaped-Trade-Ref"] = trade["Triada Trade Id"];
+    obj["Account-Number"] = "90104-NOMB-INTL";
+    obj["Trade-Version"] = "NEW";
+    obj["Trade-Date"] = formatDateNomura(trade["Trade Date"]);
+    obj["Settlement-Date"] = formatDateNomura(trade["Settle Date"]);
+    obj["BS-Indicator"] = trade["B/S"];
+    obj["Security-Indicator-Type"] = "ISIN";
+    obj["Security-Val"] = trade["ISIN"];
+    obj["Security-Description"] = trade["BB Ticker"];
+    obj["Issue-Currency"] = trade["Currency"];
+    obj["Broker"] = trade["Counter Party"];
+    obj["Quantity"] = trade["Notional Amount"];
+    obj["Price"] = trade["Price"];
+    obj["Commission-Type"] = "";
+    obj["Commission-Value"] = "";
+    obj["Tax"] = "";
+    obj["Proceeds"] = trade["Settlement Amount"];
+    obj["Proceeds-Currency"] = trade["Currency"];
+    obj["Interest"] = trade["Accrued Interest"];
+    obj["Prefigured-Indicator"] = "YES";
+    if (trade["Nomura Upload Status"] != "uploaded") {
+      tradesOutput.push(obj);
+    }
+  }
+  return tradesOutput;
 }

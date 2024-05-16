@@ -77,6 +77,8 @@ export function formatMufg(trades: any, start: string, end: string): MufgTrade[]
   }
   return mufgTrades;
 }
+
+
 export function formatMufgCDS(trades: any, start: string, end: string): MufgTrade[] {
   let startTimestamp = new Date(start).getTime() - 1 * 24 * 60 * 60 * 1000;
   let endTimestamp = new Date(end).getTime() + 1 * 24 * 60 * 60 * 1000;
@@ -89,7 +91,7 @@ export function formatMufgCDS(trades: any, start: string, end: string): MufgTrad
     obj["Fund"] = "90104";
     obj["Transaction_Event"] = "N";
     obj["Transaction_Type"] = trade["B/S"];
-    obj["Security_ID_Client"] =  trade["BB Ticker"] 
+    obj["Security_ID_Client"] = trade["BB Ticker"];
     obj["Security_ID_UGC"] = "";
     obj["Security_Description"] = trade["BB Ticker"];
     obj["Trade_ID_Client"] = trade["Triada Trade Id"];

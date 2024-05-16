@@ -1,6 +1,6 @@
 import { checkIfUserExists, registerUser, resetPassword, sendResetPasswordRequest } from "../controllers/auth";
 import { bucket, formatDateFile, verifyToken } from "../controllers/common";
-import { formatCentralizedRawFiles, formatEmsxTrades, formatIbTrades, getTriadaTrades } from "../controllers/eblot/excelFormat";
+import { formatCentralizedRawFiles, formatEmsxTrades, formatIbTrades, formatNomura } from "../controllers/eblot/excelFormat";
 import { uploadToBucket } from "./reports/portfolio";
 import { CookieOptions, NextFunction, Router } from "express";
 import { Request, Response } from "express";
@@ -9,7 +9,7 @@ import { getPortfolio } from "../controllers/operations/positions";
 import { formatFxMufg, formatMufg, formatMufgCDS } from "../controllers/operations/mufgOperations";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/eblot/graphApiConnect";
 import { MufgTrade } from "../models/mufg";
-import { allTrades, allTradesCDS } from "../controllers/operations/trades";
+import { allTrades, allTradesCDS, getTriadaTrades } from "../controllers/operations/trades";
 
 const formatterRouter = Router();
 
@@ -86,8 +86,8 @@ formatterRouter.post("/centralized-blotter", verifyToken, uploadToBucket.any(), 
     // to be modified
     let start = new Date(data.timestamp_start).getTime() - 5 * 24 * 60 * 60 * 1000;
     let end = new Date(data.timestamp_end).getTime() + 5 * 24 * 60 * 60 * 1000;
-    let startLimit = new Date(data.timestamp_start).getTime() - 2 * 24 * 60 * 60 * 1000;
-    let endLimit = new Date(data.timestamp_end).getTime() + 2 * 24 * 60 * 60 * 1000;
+    let startLimit = new Date(data.timestamp_start).getTime() - 1 * 24 * 60 * 60 * 1000;
+    let endLimit = new Date(data.timestamp_end).getTime() + 1 * 24 * 60 * 60 * 1000;
     let vconTrades = await getTriadaTrades("vcons", start, end);
 
     let vcons: any = await getVcons(token, data.timestamp_start, data.timestamp_end, vconTrades);
@@ -153,6 +153,21 @@ formatterRouter.post("/fx-excel", verifyToken, uploadToBucket.any(), async (req:
   } else {
     let fxTrades = await uploadArrayAndReturnFilePath(array, pathName, "fx");
     let downloadEBlotName = bucket + fxTrades;
+    res.send(downloadEBlotName);
+  }
+});
+formatterRouter.post("/nomura-excel", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  let data = req.body;
+  let pathName = "nomura" + formatDateFile(data.timestamp_start) + "_" + formatDateFile(data.timestamp_end) + "_";
+  let start = new Date(data.timestamp_start).getTime() - 5 * 24 * 60 * 60 * 1000;
+  let end = new Date(data.timestamp_end).getTime() + 5 * 24 * 60 * 60 * 1000;
+  let vconTrades = await getTriadaTrades("vcons", start, end);
+  let array = formatNomura(vconTrades, data.timestamp_start, data.timestamp_end);
+  if (array.length == 0) {
+    res.send({ error: "No Trades" });
+  } else {
+    let mufgTrades = await uploadArrayAndReturnFilePath(array, pathName, "nomura");
+    let downloadEBlotName = bucket + mufgTrades;
     res.send(downloadEBlotName);
   }
 });

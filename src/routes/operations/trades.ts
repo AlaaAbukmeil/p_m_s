@@ -1,12 +1,12 @@
 import { Router } from "express";
 import { verifyToken } from "../../controllers/common";
-import { formatCentralizedRawFiles, getTriadaTrades } from "../../controllers/eblot/excelFormat";
+import { formatCentralizedRawFiles } from "../../controllers/eblot/excelFormat";
 import { getRlzdTrades, getTrades } from "../../controllers/reports/trades";
 import { uploadToBucket } from "../reports/portfolio";
 import { Request, Response, NextFunction } from "express";
 import { getGraphToken, getVcons } from "../../controllers/eblot/graphApiConnect";
 import { getAllTrades } from "../../controllers/eblot/eblot";
-import { deleteTrade, editTrade } from "../../controllers/operations/trades";
+import { deleteTrade, editTrade, getTriadaTrades } from "../../controllers/operations/trades";
 import { CentralizedTrade } from "../../models/trades";
 import { getDateTimeInMongoDBCollectionFormat } from "../../controllers/reports/common";
 
