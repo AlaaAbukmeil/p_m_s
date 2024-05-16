@@ -10,6 +10,7 @@ import { FundDetails } from "../../models/portfolio";
 import { Position } from "../../models/position";
 import { CentralizedTrade } from "../../models/trades";
 import { modifyTradesDueToRecalculate } from "./trades";
+import { errorEmailALert } from "./email";
 
 export async function getCollectionDays(): Promise<string[]> {
   try {
@@ -99,7 +100,11 @@ export async function insertEditLogs(changes: any[], type: string, dateTime: str
   const reportCollection = database.collection(`${type}`);
   try {
     const result = await reportCollection.insertOne(object);
+    if (type == "Errors") {
+      let errorEmail = { errorMessage: changes[0], functionName: editNote, location: identifier, date: dateTime };
 
+      let test = await errorEmailALert(errorEmail);
+    }
     return result;
   } catch (err) {
     console.error(`Failed to insert item: ${err}`);
