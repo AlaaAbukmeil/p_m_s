@@ -13,7 +13,7 @@ fundRouter.post("/edit-fund", verifyToken, uploadToBucket.any(), async (req: Req
     res.sendStatus(200);
   } catch (error) {
     console.log(error);
-    res.send({ error: "Template is not correct" });
+    res.send({ error: "Something is not correct, check error log records" });
   }
 });
 
@@ -24,7 +24,8 @@ fundRouter.post("/delete-fund", verifyToken, uploadToBucket.any(), async (req: R
     res.sendStatus(200);
   } catch (error) {
     console.log(error);
-    res.send({ error: "Template is not correct" });
+    res.send({ error: "Something is not correct, check error log records" });
+
   }
 });
 
@@ -39,7 +40,8 @@ fundRouter.post("/add-fund", verifyToken, uploadToBucket.any(), async (req: Requ
     }
   } catch (error) {
     console.log(error);
-    res.send({ error: "Template is not correct" });
+    res.send({ error: "Something is not correct, check error log records" });
+
   }
 });
 

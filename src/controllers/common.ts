@@ -116,7 +116,31 @@ export const verifyToken = (req: Request | any, res: Response, next: NextFunctio
     }
 
     const decoded = jwt.verify(token, process.env.SECRET);
-    req.userRole = decoded.accessRole;
+    req.accessRole = decoded.accessRole;
+    if (decoded.accessRole != "admin") {
+      return res.sendStatus(401);
+    }
+    next();
+  } catch (error) {
+    console.log(error);
+    return res.sendStatus(401);
+  }
+};
+
+export const verifyTokenMember = (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    const token = req.cookies["triada.admin.cookie"].token;
+
+    if (!token) {
+      return res.sendStatus(401);
+    }
+
+    const decoded = jwt.verify(token, process.env.SECRET);
+    req.accessRole = decoded.accessRole;
+    console.log(decoded.accessRole);
+    if (decoded.accessRole != "member (risk report)" && decoded.accessRole != "admin") {
+      return res.sendStatus(401);
+    }
     next();
   } catch (error) {
     console.log(error);

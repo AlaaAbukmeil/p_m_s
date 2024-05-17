@@ -7,7 +7,6 @@ import { CentralizedTrade } from "../../models/trades";
 export async function getAllTradesForSpecificPosition(tradeType: string, isin: string, location: string, date: string) {
   try {
     // Connect to the MongoDB client
-    await client.connect();
     let timestamp = new Date(date).getTime();
 
     // Access the 'structure' database
@@ -40,7 +39,6 @@ export async function getAllTradesForSpecificPosition(tradeType: string, isin: s
 export async function getTrade(tradeType: string, tradeId: string) {
   try {
     // Connect to the MongoDB client
-    await client.connect();
 
     // Access the 'structure' database
     const database = client.db("trades_v_2");
@@ -93,7 +91,6 @@ export async function editTrade(editedTrade: any, tradeType: any) {
         return { error: "The trade is still the same." };
       }
 
-      // await client.connect();
 
       // Access the 'structure' database
       const database = client.db("trades_v_2");
@@ -109,7 +106,7 @@ export async function editTrade(editedTrade: any, tradeType: any) {
         { $set: tradeInfo } // Update operation
       );
 
-      if ("action") {
+      if (action) {
         return { error: null };
       } else {
         return {
@@ -128,7 +125,6 @@ export async function editTrade(editedTrade: any, tradeType: any) {
 export async function deleteTrade(tradeType: string, tradeId: string, tradeIssue: string, location: string) {
   try {
     // Connect to the MongoDB client
-    await client.connect();
 
     // Get the database and the specific collection
     const database = client.db("trades_v_2");

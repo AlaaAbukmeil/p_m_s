@@ -210,14 +210,22 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
 
     position["CR01"] = (position["CR01"] / 1000000) * position["Notional Amount"] * usdRatio;
 
-
     position["CR01 Dollar Value Impact"] = Math.round(position["OAS W Change"] * position["CR01"]);
     position["CR01 Dollar Value Impact % of Nav"] = Math.round(((position["CR01 Dollar Value Impact"] * position["OAS W Change"]) / fund.nav) * 10000) / 100 + " %";
     position["CR01 Dollar Value Impact Limit % of Nav"] = position["Value (BC)"] / fund.nav > 10 ? 2 + " %" : 1.5 + " %";
     position["CR01 Dollar Value Impact Utilization % of Nav"] = Math.round((parsePercentage(position["CR01 Dollar Value Impact % of Nav"]) / parsePercentage(position["CR01 Dollar Value Impact Limit % of Nav"])) * 10000) / 100 + " %";
     position["CR01 Dollar Value Impact Test"] = Math.abs(parsePercentage(position["CR01 Dollar Value Impact Utilization % of Nav"])) < 100 ? "Pass" : "Fail";
     position["CR01 Dollar Value Impact Test Color"] = position["CR01 Dollar Value Impact Test"] == "Pass" ? "#C5E1A5" : "#FFAB91";
+    if (position["Type"] == "FX") {
+      position["MTD P&L FX"] = position["MTD P&L (BC)"];
+      position["Day P&L FX"] = position["Day P&L (BC)"];
 
+      position["MTD URlzd (BC)"] = 0;
+      position["Day URlzd (BC)"] = 0;
+
+      position["MTD URlzd (LC)"] = 0;
+      position["Day URlzd (LC)"] = 0;
+    }
     if (conditions) {
       let test = checkPosition(position, conditions);
       if (test) {
@@ -994,7 +1002,6 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         macro["Non-Hedge Bonds"]["Notional Amount"] += groupedByLocation[locationCode].groupNotional;
         macro["Non-Hedge Bonds"]["DV01"] += groupedByLocation[locationCode].groupDV01Sum;
         macro["Non-Hedge Bonds"]["CR01"] += groupedByLocation[locationCode].groupCR01Sum;
-
 
         macro["Non-Hedge Bonds"]["MTD Int. (USD)"] += groupedByLocation[locationCode].groupMTDIntSum;
         macro["Non-Hedge Bonds"]["YTD Int. (USD)"] += groupedByLocation[locationCode].groupYTDIntSum;

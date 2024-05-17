@@ -1,5 +1,5 @@
 import { NextFunction, Router, Response, Request } from "express";
-import { verifyToken, generateRandomString, bucket } from "../../controllers/common";
+import { verifyToken, generateRandomString, bucket, verifyTokenMember } from "../../controllers/common";
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../../controllers/reports/common";
 import { getPortfolioWithAnalytics } from "../../controllers/reports/portfolios";
 import { getPortfolio } from "../../controllers/operations/positions";
@@ -121,7 +121,7 @@ router.get("/performers-portfolio", verifyToken, async (req: Request, res: Respo
   }
 });
 
-router.get("/risk-report", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/risk-report", verifyTokenMember, async (req: Request, res: Response, next: NextFunction) => {
   try {
     let date: any = req.query.date;
     let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDayPriceMoveSum" | "groupMTDPriceMoveSum" | any = req.query.sort || "order";

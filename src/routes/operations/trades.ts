@@ -80,7 +80,8 @@ tradesRouter.post("/edit-trade", verifyToken, uploadToBucket.any(), async (req: 
     }
   } catch (error) {
     console.log(error);
-    res.send({ error: "Template is not correct" });
+    res.send({ error: "something is not correct, check error log records" });
+
   }
 });
 

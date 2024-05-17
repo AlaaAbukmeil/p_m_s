@@ -27,6 +27,8 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   console.log(lastDayOfThisMonthCollectionName.predecessorDate, "get rlzd dyanmic date");
 
   console.log(earliestPortfolioName.predecessorDate, "get portfolio");
+  console.log(lastDayBeforeToday.predecessorDate, "get portfolio yesterday");
+
   const reportCollection = database.collection(`portfolio-${earliestPortfolioName.predecessorDate}`);
 
   let documents = await reportCollection
@@ -76,18 +78,10 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   let lastMonthLastCollectionName = await getEarliestCollectionName(previousMonthDates[0] + " 23:59");
   let lastYearLastCollectionName = await getEarliestCollectionName(previousYearDate + " 23:59");
   console.log(lastYearLastCollectionName.predecessorDate, "last year collection name");
-  try {
-    let lastMonthPortfolio = await getHistoricalPortfolio(lastMonthLastCollectionName.predecessorDate);
-    let previousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeToday.predecessorDate);
-    let previousPreviousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeYesterday.predecessorDate);
-    let previousYearPortfolio = await getHistoricalPortfolio(lastYearLastCollectionName.predecessorDate);
-    documents = getDayParams(documents, previousDayPortfolio, lastDayBeforeToday.predecessorDate, false);
-    documents = getDayParams(documents, previousPreviousDayPortfolio, lastDayBeforeYesterday.predecessorDate, true);
-    documents = getMTDParams(documents, lastMonthPortfolio, earliestPortfolioName.predecessorDate);
-    documents = getYTDParams(documents, previousYearPortfolio, lastYearLastCollectionName.predecessorDate);
-  } catch (error) {
-    console.log(error);
-  }
+  let lastMonthPortfolio = await getHistoricalPortfolio(lastMonthLastCollectionName.predecessorDate);
+  let previousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeToday.predecessorDate);
+  let previousPreviousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeYesterday.predecessorDate);
+  let previousYearPortfolio = await getHistoricalPortfolio(lastYearLastCollectionName.predecessorDate);
   let ytdDocuments = await getYTDInt(documents, lastYearLastCollectionName.predecessorDate, date);
   documents = ytdDocuments.portfolio;
   let ytdinterest = ytdDocuments.ytdinterest;
@@ -98,7 +92,6 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
       for (let index = 0; index < monthsTrades.length; index++) {
         monthsTrades[index] = monthlyRlzdDate(monthsTrades[index]);
       }
-
       if (monthsTrades.includes(thisMonth)) {
         return position;
       }
@@ -106,6 +99,10 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
       return position;
     }
   });
+  documents = getDayParams(documents, previousDayPortfolio, lastDayBeforeToday.predecessorDate, false);
+  documents = getDayParams(documents, previousPreviousDayPortfolio, lastDayBeforeYesterday.predecessorDate, true);
+  documents = getMTDParams(documents, lastMonthPortfolio, earliestPortfolioName.predecessorDate);
+  documents = getYTDParams(documents, previousYearPortfolio, lastYearLastCollectionName.predecessorDate);
 
   documents = await getMTDURlzdInt(documents, new Date(date));
   let dayParamsWithLatestUpdates = await getDayURlzdInt(documents, new Date(date));
@@ -154,7 +151,7 @@ export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInpu
       if (!portfolio[index]["Mid"] && portfolio[index]["Type"] != "FX") {
         portfolio[index]["Mid"] = portfolio[index]["Entry Price"][thisMonth];
       }
-      let previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue: any) => previousDayIssue["ISIN"] == position["ISIN"] && previousDayIssue["ISIN"] && position["ISIN"]) : null;
+      let previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue: any) => previousDayIssue["ISIN"] == position["ISIN"] && previousDayIssue["ISIN"] && position["ISIN"] && previousDayIssue["Notional Amount"] != 0) : null;
 
       if (previousDayPosition) {
         let previousMark = previousDayPosition ? (previousDayPosition["Mid"] ? previousDayPosition["Mid"] : null) : null;
@@ -184,12 +181,12 @@ export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInpu
         portfolio[index]["Asset Class"] = "Hedge";
       }
 
-      if (portfolio[index]["Previous Mark"] == 0) {
-        portfolio[index]["Previous Mark"] = 0;
-      } else if (!portfolio[index]["Previous Mark"]) {
+      if (!portfolio[index]["Previous Mark"]) {
         portfolio[index]["Previous Mark"] = portfolio[index]["Mid"];
-        portfolio[index]["Notes"] += " Previous Mark X";
+        portfolio[index]["Notes"] = portfolio[index]["Notes"] ? portfolio[index]["Notes"] : "";
+        portfolio[index]["Notes"] += " Previous Mark X ";
       }
+
       let type = portfolio[index]["Type"] == "CDS" ? -1 : portfolio[index]["Notional Amount"] < 0 ? -1 : 1;
       let todayPrice: any = parseFloat(position["Mid"]);
       let yesterdayPrice: any = parseFloat(position["Previous Mark"]);
@@ -246,7 +243,7 @@ export function getMTDParams(portfolio: any, lastMonthPortfolio: any, dateInput:
 
       for (let lastMonthIndex = 0; lastMonthIndex < lastMonthPortfolio.length; lastMonthIndex++) {
         lastMonthPosition = lastMonthPortfolio[lastMonthIndex];
-        portfolio[index]["Notes"] = "";
+        portfolio[index]["Notes"] = portfolio[index]["Notes"] ? portfolio[index]["Notes"] : "";
 
         if (lastMonthPosition["ISIN"] == position["ISIN"] && lastMonthPosition["Mid"]) {
           portfolio[index]["MTD Mark"] = lastMonthPosition["Mid"];
@@ -262,7 +259,9 @@ export function getMTDParams(portfolio: any, lastMonthPortfolio: any, dateInput:
       if (portfolio[index]["Type"] != "FX") {
         if (!parseFloat(portfolio[index]["MTD Mark"]) && parseFloat(portfolio[index]["MTD Mark"]) != 0 && portfolio[index]["Entry Price"][thisMonth]) {
           portfolio[index]["MTD Mark"] = portfolio[index]["Entry Price"][thisMonth];
-          portfolio[index]["Notes"] = "MTD Mark X";
+          portfolio[index]["Notes"] = portfolio[index]["Notes"] ? portfolio[index]["Notes"] : "";
+
+          portfolio[index]["Notes"] += "MTD Mark X ";
         }
       }
     }
@@ -281,7 +280,8 @@ export function getYTDParams(portfolio: any, lastYearPortfolio: any, date: any) 
       let lastYearPosition;
       for (let lastMonthIndex = 0; lastMonthIndex < lastYearPortfolio.length; lastMonthIndex++) {
         lastYearPosition = lastYearPortfolio[lastMonthIndex];
-        portfolio[index]["Notes"] = "";
+        portfolio[index]["Notes"] = portfolio[index]["Notes"] ? portfolio[index]["Notes"] : "";
+
 
         if (lastYearPosition["ISIN"] == portfolio[index]["ISIN"] && lastYearPosition["Mid"]) {
           portfolio[index]["YTD Mark"] = lastYearPosition["Mid"];
@@ -299,7 +299,7 @@ export function getYTDParams(portfolio: any, lastYearPortfolio: any, date: any) 
         let ytdMarkInfo = getEarliestDateKeyAndValue(portfolio[index]["Entry Price"], date);
         portfolio[index]["YTD Mark"] = ytdMarkInfo.value;
         portfolio[index]["YTD Mark Ref.D"] = ytdMarkInfo.date ? formatDateUS(ytdMarkInfo.date) : "";
-        portfolio[index]["Notes"] = "YTD Mark X";
+        portfolio[index]["Notes"] += "YTD Mark X ";
       }
       if (!portfolio[index]["YTD FX"]) {
         portfolio[index]["YTD FX"] = currencies[portfolio[index]["Currency"]] || portfolio[index]["MTD FX"];
@@ -335,7 +335,6 @@ function getDayURlzdInt(portfolio: any, date: any) {
       lastUpdatePricesDate = new Date(position["Last Price Update"]).getTime();
     }
 
-    position["Previous Mark"] = yesterdayPrice;
     let todayPrice: any = parseFloat(position["Mid"]);
     portfolio[index]["Day URlzd"] = portfolio[index]["Type"] == "CDS" ? ((parseFloat(todayPrice) - parseFloat(yesterdayPrice)) * portfolio[index]["Notional Amount"]) / portfolio[index]["Original Face"] : (parseFloat(todayPrice) - parseFloat(yesterdayPrice)) * portfolio[index]["Notional Amount"] || 0;
     if (portfolio[index]["Day URlzd"] == 0) {

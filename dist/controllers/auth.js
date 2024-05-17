@@ -1,8 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resetPassword = exports.generateRandomIntegers = exports.sendResetPasswordRequest = exports.checkIfUserExists = exports.registerUser = exports.client = void 0;
+exports.getUser = exports.editUser = exports.getAllUsers = exports.resetPassword = exports.generateRandomIntegers = exports.sendResetPasswordRequest = exports.checkIfUserExists = exports.registerUser = exports.client = void 0;
 require("dotenv").config();
+const mongodb_1 = require("mongodb");
 const common_1 = require("./common");
+const common_2 = require("./reports/common");
+const portfolio_1 = require("./operations/portfolio");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const jwtSecret = process.env.SECRET;
@@ -36,7 +39,7 @@ async function registerUser(email, password, verificationCode) {
             const updateDoc = {
                 email: email,
                 password: cryptedPassword,
-                accessRole: "2",
+                accessRole: "admin",
             };
             const action = await usersCollection.insertOne(updateDoc);
             return { message: "registered", status: 200 };
@@ -69,23 +72,24 @@ async function checkIfUserExists(email, password) {
                         status: 200,
                         token: token,
                         email: email,
+                        accessRole: user["accessRole"],
                     };
                 }
                 else {
-                    return { message: "wrong password", status: 401, token: null, email: null };
+                    return { message: "wrong password", status: 401, token: null, email: null, accessRole: null };
                 }
             }
             catch (error) {
-                return { message: "unexpected error", status: 401, token: null, email: null };
+                return { message: "unexpected error", status: 401, token: null, email: null, accessRole: null };
                 // handle error appropriately
             }
         }
         else {
-            return { message: "user does not exist", status: 401, token: null, email: null };
+            return { message: "user does not exist", status: 401, token: null, email: null, accessRole: null };
         }
     }
     catch (error) {
-        return { message: "unexpected error", status: 401, token: null, email: null };
+        return { message: "unexpected error", status: 401, token: null, email: null, accessRole: null };
     }
 }
 exports.checkIfUserExists = checkIfUserExists;
@@ -129,7 +133,7 @@ exports.generateRandomIntegers = generateRandomIntegers;
 function sendEmailToResetPassword(userEmail, verificationCode) {
     try {
         let email = new SibApiV3Sdk.TransactionalEmailsApi().sendTransacEmail({
-            sender: { email: "abukmeilalaa@gmail.com", name: "Triada Capital" },
+            sender: { email: "developer.triada@gmail.com", name: "Triada Capital" },
             subject: "Reset Your Password",
             htmlContent: "<!DOCTYPE html><html><body><p>Reset your Triada Account Password.</p></body></html>",
             params: {
@@ -195,3 +199,83 @@ async function resetPassword(userEmail, resetCode, enteredPassword) {
     }
 }
 exports.resetPassword = resetPassword;
+async function getAllUsers() {
+    const database = exports.client.db("auth");
+    const usersCollection = database.collection("users");
+    const users = await usersCollection.find().toArray();
+    return users;
+}
+exports.getAllUsers = getAllUsers;
+async function editUser(editedUser) {
+    try {
+        let userInfo = await getUser(editedUser["_id"]);
+        if (userInfo) {
+            let beforeModify = JSON.parse(JSON.stringify(userInfo));
+            beforeModify["_id"] = new mongodb_1.ObjectId(beforeModify["_id"]);
+            let centralizedBlotKeys = ["name", "email", "accessRole"];
+            let changes = 0;
+            let changesText = [];
+            for (let index = 0; index < centralizedBlotKeys.length; index++) {
+                let key = centralizedBlotKeys[index];
+                if (editedUser[key] != "" && editedUser[key]) {
+                    changesText.push(`${key} changed from ${userInfo[key]} to ${editedUser[key]} `);
+                    userInfo[key] = editedUser[key];
+                    changes++;
+                }
+            }
+            if (!changes) {
+                return { error: "The User is still the same." };
+            }
+            // Access the 'structure' database
+            const database = exports.client.db("auth");
+            // Access the collection named by the 'customerId' parameter
+            const collection = database.collection("users");
+            let dateTime = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date());
+            await (0, portfolio_1.insertEditLogs)(changesText, "Edit User", dateTime, userInfo["Edit Note"], userInfo["email"] + " " + userInfo["name"]);
+            let action = await collection.updateOne({ _id: userInfo["_id"] }, // Filter to match the document
+            { $set: userInfo } // Update operation
+            );
+            if (action) {
+                return { error: null };
+            }
+            else {
+                return {
+                    error: "unexpected error, please contact Triada team",
+                };
+            }
+        }
+        else {
+            return { error: "Trade does not exist, please referesh the page!" };
+        }
+    }
+    catch (error) {
+        let dateTime = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date());
+        console.log(error);
+        let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+        await (0, portfolio_1.insertEditLogs)([errorMessage], "Errors", dateTime, "editUser", "src/controllers/auth.ts");
+    }
+}
+exports.editUser = editUser;
+async function getUser(userId) {
+    try {
+        // Connect to the MongoDB client
+        // Access the 'structure' database
+        const database = exports.client.db("auth");
+        // Access the collection named by the 'customerId' parameter
+        const collection = database.collection("users");
+        // Perform your operations, such as find documents in the collection
+        // This is an example operation that fetches all documents in the collection
+        // Empty query object means "match all documents"
+        const options = {}; // You can set options for the find operation if needed
+        const query = { _id: new mongodb_1.ObjectId(userId) }; // Replace yourIdValue with the actual ID you're querying
+        const results = await collection.find(query, options).toArray();
+        // The 'results' variable now contains an array of documents from the collection
+        return results[0];
+    }
+    catch (error) {
+        // Handle any errors that occurred during the operation
+        console.error("An error occurred while retrieving data from MongoDB:", error);
+        return {};
+    }
+}
+exports.getUser = getUser;

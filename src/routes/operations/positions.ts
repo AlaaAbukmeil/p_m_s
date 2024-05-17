@@ -73,7 +73,7 @@ positionsRouter.post("/edit-position", verifyToken, uploadToBucket.any(), async 
     res.sendStatus(200);
   } catch (error) {
     console.log(error);
-    res.send({ error: "Template is not correct" });
+    res.send({ error: "something is not correct, check error log records" });
   }
 });
 
@@ -100,7 +100,8 @@ positionsRouter.post("/fx-add-position", verifyToken, uploadToBucket.any(), asyn
     }
   } catch (error) {
     console.log(error);
-    res.send({ error: "Template is not correct" });
+    res.send({ error: "something is not correct, check error log records" });
+
   }
 });
 positionsRouter.post("/pin-position", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
@@ -109,7 +110,8 @@ positionsRouter.post("/pin-position", verifyToken, uploadToBucket.any(), async (
     res.sendStatus(200);
   } catch (error) {
     console.log(error);
-    res.send({ error: "Template is not correct" });
+    res.send({ error: "something is not correct, check error log records" });
+
   }
 });
 
