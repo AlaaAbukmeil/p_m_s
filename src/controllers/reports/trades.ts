@@ -1,7 +1,7 @@
 import { CentralizedTrade } from "../../models/trades";
 import { client } from "../auth";
 import { getDate } from "../common";
-import { insertEditLogs } from "../operations/portfolio";
+import { insertEditLogs } from "../operations/logs";
 import { getDateTimeInMongoDBCollectionFormat } from "./common";
 import { getAverageCost } from "./tools";
 

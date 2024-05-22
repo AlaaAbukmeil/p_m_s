@@ -1,7 +1,6 @@
 import { CentralizedTrade } from "../../models/trades";
 import { client } from "../auth";
 import { formatDateUS, formatDateWorld } from "../common";
-import { insertEditLogs } from "../operations/portfolio";
 import { getAllDatesSinceLastMonthLastDay, getDateTimeInMongoDBCollectionFormat } from "./common";
 
 export function getAverageCost(currentQuantity: number, previousQuantity: number, currentPrice: any, previousAverageCost: any) {

@@ -5,7 +5,7 @@ import { getPortfolio } from "../operations/positions";
 import { getDateTimeInMongoDBCollectionFormat, mergeSort } from "../reports/common";
 import { renderVcon, renderFx } from "./excelFormat";
 import { Vcon } from "../../models/trades";
-import { insertEditLogs } from "../operations/portfolio";
+import { insertEditLogs } from "../operations/logs";
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
 const FormData = require("form-data");

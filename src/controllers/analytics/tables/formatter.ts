@@ -69,6 +69,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     position["Mid"] = Math.round(position["Mid"] * 1000 * bondDivider) / 1000;
     position["Bid"] = Math.round(position["Bid"] * 1000 * bondDivider) / 1000;
     position["Ask"] = Math.round(position["Ask"] * 1000 * bondDivider) / 1000;
+    position["Average Cost MTD"] = Math.round(position["Average Cost MTD"] * 1000 * bondDivider) / 1000;
 
     position["Entry Price"] = Math.round(position["Entry Price"] * 1000 * bondDivider) / 1000;
 
@@ -145,13 +146,13 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     position["Issuer"] = position["Issuer"] == "0" ? "" : position["Issuer"];
 
     position["Base LTV"] = nomuraRuleMargin(position);
-    position["OAS"] = (position["OAS"] / 1000000) * position["Notional Amount"] * usdRatio;
+    position["OAS"] = position["OAS"] * usdRatio;
     position["OAS"] = Math.round(position["OAS"] * 100) / 100 || 0;
 
     position["OAS W Change"] = oasWithChange(position["OAS"])[0];
     position["Spread Change"] = oasWithChange(position["OAS"])[1];
     position["DV01 Dollar Value Impact"] = Math.round(position["OAS W Change"] * position["DV01"]);
-    position["DV01 Dollar Value Impact % of Nav"] = Math.round(((position["DV01 Dollar Value Impact"] * position["OAS W Change"]) / fund.nav) * 10000) / 100 + " %";
+    position["DV01 Dollar Value Impact % of Nav"] = Math.round(((position["DV01 Dollar Value Impact"] * position["OAS W Change"]) / fund.nav) * 100) / 100 + " %";
     position["DV01 Dollar Value Impact Limit % of Nav"] = position["Value (BC)"] / fund.nav > 10 ? 2 + " %" : 1.5 + " %";
     position["DV01 Dollar Value Impact Utilization % of Nav"] = Math.round((parsePercentage(position["DV01 Dollar Value Impact % of Nav"]) / parsePercentage(position["DV01 Dollar Value Impact Limit % of Nav"])) * 10000) / 100 + " %";
     position["DV01 Dollar Value Impact Test"] = Math.abs(parsePercentage(position["DV01 Dollar Value Impact Utilization % of Nav"])) < 100 ? "Pass" : "Fail";
@@ -165,15 +166,15 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     position["Value (BC) Test"] = Math.abs(parsePercentage(position["Value (BC) Utilization % of Nav"])) < 100 ? "Pass" : "Fail";
     position["Value (BC) Test Color"] = position["Value (BC) Test"] == "Pass" ? "#C5E1A5" : "#FFAB91";
 
-    position["Capital Gain/ Loss since Inception (Live Position)"] = position["Value (BC)"] - position["Cost (BC)"];
+    position["Capital Gain/ Loss since Inception (Live Position)"] = position["Value (BC)"] - position["Cost (BC)"] || 0;
     let shortLongType = position["Value (BC)"] > 0 ? 1 : -1;
-    position["% of Capital Gain/ Loss since Inception (Live Position)"] = Math.round((position["Value (BC)"] / position["Cost (BC)"] - 1) * shortLongType * 10000) / 100 + " %";
+    position["% of Capital Gain/ Loss since Inception (Live Position)"] = (Math.round((position["Value (BC)"] / position["Cost (BC)"] - 1) * shortLongType * 10000) / 100 || 0) + " %";
     position["Accrued Int. Since Inception (BC)"] = calculateAccruedSinceInception(position["Interest"], position["Coupon Rate"] / 100, position["Coupon Duration"], position["ISIN"], date) * usdRatio;
 
-    position["Total Gain/ Loss (USD)"] = Math.round(position["Capital Gain/ Loss since Inception (Live Position)"] + position["Accrued Int. Since Inception (BC)"]);
-    position["% of Total Gain/ Loss since Inception (Live Position)"] = Math.round(((position["Total Gain/ Loss (USD)"] + position["Cost (BC)"]) / position["Cost (BC)"] - 1) * shortLongType * 10000) / 100 + " %";
+    position["Total Gain/ Loss (USD)"] = Math.round(position["Capital Gain/ Loss since Inception (Live Position)"] + position["Accrued Int. Since Inception (BC)"]) || 0;
+    position["% of Total Gain/ Loss since Inception (Live Position)"] = (Math.round(((position["Total Gain/ Loss (USD)"] + position["Cost (BC)"]) / position["Cost (BC)"] - 1) * shortLongType * 10000) / 100 || 0) + " %";
 
-    position["Z Spread"] = (position["Z Spread"] / 1000000) * position["Notional Amount"] * usdRatio;
+    position["Z Spread"] = position["Z Spread"] * usdRatio;
     position["Z Spread"] = Math.round(position["Z Spread"] * 1000000) / 1000000 || 0;
     position["Entry Yield"] = position["Entry Yield"] ? Math.round(position["Entry Yield"] * 100) / 100 + " %" : "0 %";
     position["Coupon Rate"] = position["Coupon Rate"] + " %";
@@ -207,6 +208,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
       position["Bond Calculated Price"] = "";
       position["CR01"] = 0;
     }
+    position["CR01"] = isFinite(position["CR01"]) ? position["CR01"] : 0;
 
     position["CR01"] = (position["CR01"] / 1000000) * position["Notional Amount"] * usdRatio;
 

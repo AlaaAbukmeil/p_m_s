@@ -137,7 +137,6 @@ export const verifyTokenMember = (req: Request | any, res: Response, next: NextF
 
     const decoded = jwt.verify(token, process.env.SECRET);
     req.accessRole = decoded.accessRole;
-    console.log(decoded.accessRole);
     if (decoded.accessRole != "member (risk report)" && decoded.accessRole != "admin") {
       return res.sendStatus(401);
     }

@@ -3,8 +3,8 @@ import { uploadToBucket } from "./reports/portfolio";
 import { NextFunction, Router } from "express";
 import { Request, Response } from "express";
 import { readMUFGReconcileFile, readNomuraReconcileFile, uploadArrayAndReturnFilePath } from "../controllers/operations/readExcel";
-import { getPortfolioOnSpecificDate } from "../controllers/operations/portfolio";
 import { reconcileMUFG, reconcileNomura } from "../controllers/operations/reconcile";
+import { getPortfolioOnSpecificDate } from "../controllers/reports/portfolios";
 
 const reconcileRouter = Router();
 

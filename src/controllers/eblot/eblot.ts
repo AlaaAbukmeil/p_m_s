@@ -1,6 +1,6 @@
 import { CentralizedTrade } from "../../models/trades";
 import { client } from "../auth";
-import { insertEditLogs } from "../operations/portfolio";
+import { insertEditLogs } from "../operations/logs";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 
 export async function getAllTrades(from: number, to: number): Promise<CentralizedTrade[]> {

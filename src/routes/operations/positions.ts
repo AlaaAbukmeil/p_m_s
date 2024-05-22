@@ -2,8 +2,8 @@ import { Router } from "express";
 import { bucket, verifyToken } from "../../controllers/common";
 import { uploadToBucket } from "../reports/portfolio";
 import { Request, Response, NextFunction } from "express";
-import { addFund, deleteFund, deletePosition, editFund, editPositionBulkPortfolio, getAllFundDetails, getCollectionDays, getEditLogs } from "../../controllers/operations/portfolio";
-import { editPosition, insertFXPosition, pinPosition, readCalculatePosition, updatePositionPortfolio } from "../../controllers/operations/positions";
+import { addFund, deleteFund, editFund, getAllFundDetails } from "../../controllers/operations/fund";
+import { deletePosition, editPosition, editPositionBulkPortfolio, insertFXPosition, pinPosition, readCalculatePosition, updatePositionPortfolio } from "../../controllers/operations/positions";
 import { readCentralizedEBlot, readMUFGPrices, readPricingSheet } from "../../controllers/operations/readExcel";
 import { updatePreviousPricesPortfolioBloomberg, updatePreviousPricesPortfolioMUFG, updatePricesPortfolio } from "../../controllers/operations/prices";
 import { monthlyRlzdDate } from "../../controllers/reports/common";
@@ -11,6 +11,8 @@ import { FundDetails } from "../../models/portfolio";
 import { CentralizedTrade } from "../../models/trades";
 import { getAllTradesForSpecificPosition } from "../../controllers/operations/trades";
 import { consumers } from "stream";
+import { getEditLogs } from "../../controllers/operations/logs";
+import { getCollectionDays } from "../../controllers/operations/tools";
 
 const positionsRouter = Router();
 

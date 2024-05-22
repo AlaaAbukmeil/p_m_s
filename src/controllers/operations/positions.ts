@@ -1,13 +1,14 @@
 import { client } from "../auth";
 import { convertExcelDateToJSDate, formatDateUS, formatDateWorld, getDate, getTradeDateYearTrades } from "../common";
-import { getSecurityInPortfolioWithoutLocation, insertEditLogs } from "./portfolio";
 import { findTrade, insertTrade } from "../reports/trades";
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../reports/common";
-import { readCentralizedEBlot, readPricingSheet } from "./readExcel";
+import { readCentralizedEBlot, readEditInput, readPricingSheet } from "./readExcel";
 import { findTradeRecord, formatUpdatedPositions, getAverageCost, getCollectionName, getEarliestCollectionName, parseBondIdentifier } from "../reports/tools";
 import { PinnedPosition, Position } from "../../models/position";
 import { CentralizedTrade } from "../../models/trades";
 import { modifyTradesDueToRecalculate } from "./trades";
+import { insertEditLogs } from "./logs";
+import { getSecurityInPortfolioById } from "./tools";
 const ObjectId = require("mongodb").ObjectId;
 
 export async function getPortfolio(): Promise<Position[]> {
@@ -1097,5 +1098,69 @@ export async function insertFXPosition(position: any, date: any) {
     if (!errorMessage.toString().includes("Batch cannot be empty")) {
       await insertEditLogs([errorMessage], "Errors", dateTime, "insertFXPosition", "controllers/operations/positions.ts");
     }
+  }
+}
+export async function editPositionBulkPortfolio(path: string) {
+  let data: any = await readEditInput(path);
+
+  if (data.error) {
+    return { error: data.error };
+  } else {
+    try {
+      let positions: any = [];
+      let portfolio = await getPortfolio();
+      let titles = ["Type", "Strategy", "Country", "Asset Class", "Sector"];
+      for (let index = 0; index < data.length; index++) {
+        let row = data[index];
+        let identifier = row["_id"];
+        let securityInPortfolio: any = getSecurityInPortfolioById(portfolio, identifier);
+
+        if (securityInPortfolio != 404) {
+          for (let titleIndex = 0; titleIndex < titles.length; titleIndex++) {
+            let title = titles[titleIndex];
+            securityInPortfolio[title] = row[title];
+          }
+          positions.push(securityInPortfolio);
+        }
+      }
+      try {
+        let updatedPortfolio = formatUpdatedPositions(positions, portfolio, "Last edit operation");
+        let insertion = await insertTradesInPortfolio(updatedPortfolio.updatedPortfolio);
+        let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+        await insertEditLogs(["bulk edit"], "Bulk Edit", dateTime, "Bulk Edit E-blot", "Link: " + path);
+
+        return insertion;
+      } catch (error) {
+        return { error: error };
+      }
+    } catch (error) {
+      return { error: error };
+    }
+  }
+}
+export async function deletePosition(data: any, dateInput: any): Promise<any> {
+  try {
+    const database = client.db("portfolios");
+    let date = getDateTimeInMongoDBCollectionFormat(new Date(dateInput)).split(" ")[0] + " 23:59";
+    let earliestPortfolioName = await getEarliestCollectionName(date);
+
+    const reportCollection = database.collection(`portfolio-${earliestPortfolioName.predecessorDate}`);
+
+    const id = new ObjectId(data["_id"]);
+
+    // Update the document with the built updates object
+    const updateResult = await reportCollection.deleteOne({ _id: id });
+    console.log(updateResult, id);
+    if (updateResult.deletedCount === 0) {
+      return { error: "Document does not exist" };
+    } else if (updateResult.deletedCount === 0) {
+      return { error: "Document not updated. It may already have the same values" };
+    }
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    await insertEditLogs([], "Delete Position", dateTime, "Delete Position", data["BB Ticker"] + " " + data["Location"]);
+
+    return updateResult;
+  } catch (error: any) {
+    return { error: error.message }; // Return the error message
   }
 }

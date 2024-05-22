@@ -1,13 +1,13 @@
-import { checkIfUserExists, editUser, getAllUsers, registerUser, resetPassword, sendResetPasswordRequest } from "../controllers/auth";
-import { verifyToken } from "../controllers/common";
-import { editTrade } from "../controllers/operations/trades";
+import { addUser, checkIfUserExists, deleteUser, editUser, getAllUsers, registerUser, resetPassword, sendResetPasswordRequest } from "../controllers/auth";
+import { verifyToken, verifyTokenMember } from "../controllers/common";
+import { deleteTrade, editTrade } from "../controllers/operations/trades";
 import { uploadToBucket } from "./reports/portfolio";
 import { CookieOptions, NextFunction, Router } from "express";
 import { Request, Response } from "express";
 
 const authRouter = Router();
 
-authRouter.get("/auth", uploadToBucket.any(), verifyToken, async (req: any, res: Response, next: NextFunction) => {
+authRouter.get("/auth", uploadToBucket.any(), verifyTokenMember, async (req: any, res: Response, next: NextFunction) => {
   res.send({ status: 200, accessRole: req.accessRole });
 });
 authRouter.get("/users", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
@@ -31,6 +31,7 @@ authRouter.post("/login", uploadToBucket.any(), async (req: Request, res: Respon
     secure: process.env.PRODUCTION === "production", // Set to true if using HTTPS
     sameSite: "lax",
   };
+  console.log(user)
 
   res.cookie("triada.admin.cookie", user, cookie);
   res.send(user);
@@ -71,5 +72,31 @@ authRouter.post("/edit-user", verifyToken, uploadToBucket.any(), async (req: Req
     res.send({ error: "something is not correct, check error log records" });
   }
 });
-
+authRouter.post("/delete-user", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let data = req.body;
+    let action: any = await deleteUser(data["_id"], data["name"], data["email"]);
+    if (action.error) {
+      res.send({ error: action.error, status: 404 });
+    } else {
+      res.send({ message: "success", status: 200 });
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ error: "Unexpected Error" });
+  }
+});
+authRouter.post("/add-user", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let action = await addUser(req.body);
+    if (action.error) {
+      res.send({ error: action.error });
+    } else {
+      res.sendStatus(200);
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({ error: "Something is not correct, check error log records" });
+  }
+});
 export default authRouter;

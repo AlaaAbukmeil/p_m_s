@@ -1,17 +1,19 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUser = exports.editUser = exports.getAllUsers = exports.resetPassword = exports.generateRandomIntegers = exports.sendResetPasswordRequest = exports.checkIfUserExists = exports.registerUser = exports.client = void 0;
+exports.addUser = exports.deleteUser = exports.getUser = exports.editUser = exports.getAllUsers = exports.resetPassword = exports.generateRandomIntegers = exports.sendResetPasswordRequest = exports.checkIfUserExists = exports.registerUser = exports.client = void 0;
 require("dotenv").config();
 const mongodb_1 = require("mongodb");
 const common_1 = require("./common");
 const common_2 = require("./reports/common");
-const portfolio_1 = require("./operations/portfolio");
+const logs_1 = require("./operations/logs");
+const email_1 = require("./operations/email");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const jwtSecret = process.env.SECRET;
 const bcrypt = require("bcrypt");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const saltRounds = process.env.SALT_ROUNDS;
+const { v4: uuidv4 } = require("uuid");
 exports.client = new MongoClient(common_1.uri, {
     serverApi: {
         version: ServerApiVersion.v1,
@@ -40,6 +42,8 @@ async function registerUser(email, password, verificationCode) {
                 email: email,
                 password: cryptedPassword,
                 accessRole: "admin",
+                createdOn: (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date()),
+                lastTimeAccessed: (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date()),
             };
             const action = await usersCollection.insertOne(updateDoc);
             return { message: "registered", status: 200 };
@@ -67,6 +71,13 @@ async function checkIfUserExists(email, password) {
                 if (result) {
                     const jwtObject = { email: email, accessRole: user["accessRole"] };
                     const token = jwt.sign(jwtObject, jwtSecret, { expiresIn: "24h" });
+                    const updateDoc = {
+                        $set: {
+                            lastTimeAccessed: (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date()),
+                        },
+                    };
+                    let action = await usersCollection.updateOne({ _id: user["_id"] }, updateDoc // Filter to match the document
+                    );
                     return {
                         message: "authenticated",
                         status: 200,
@@ -109,7 +120,7 @@ async function sendResetPasswordRequest(userEmail) {
                 },
             };
             let actionInsetResetCode = await usersCollection.updateOne(filter, updateDoc);
-            let actionEmail = await sendEmailToResetPassword(user.email, resetPasswordCode);
+            let actionEmail = await (0, email_1.sendEmailToResetPassword)(user.email, resetPasswordCode);
             return { status: 200, message: "Reset code have been sent!", email: user.email };
         }
         catch (error) {
@@ -130,35 +141,6 @@ function generateRandomIntegers(n = 5, min = 1, max = 10) {
     return resetCode;
 }
 exports.generateRandomIntegers = generateRandomIntegers;
-function sendEmailToResetPassword(userEmail, verificationCode) {
-    try {
-        let email = new SibApiV3Sdk.TransactionalEmailsApi().sendTransacEmail({
-            sender: { email: "developer.triada@gmail.com", name: "Triada Capital" },
-            subject: "Reset Your Password",
-            htmlContent: "<!DOCTYPE html><html><body><p>Reset your Triada Account Password.</p></body></html>",
-            params: {
-                greeting: "Hello there!",
-                headline: "Reset Your Password",
-            },
-            messageVersions: [
-                //Definition for Message Version 1
-                {
-                    to: [
-                        {
-                            email: userEmail,
-                        },
-                    ],
-                    htmlContent: "<!DOCTYPE html><html><body><p>Hello there, <br /> Your verification code is " + verificationCode + ". <br /> <br /> If you have not asked to reset your LesGo Epic account's password, please ignore this email. <br /><br /> Cheers!<br /> LesGo Epic</p></body></html>",
-                    subject: "Reset Your Password",
-                },
-            ],
-        });
-        return { statusCode: 200 };
-    }
-    catch (error) {
-        return error;
-    }
-}
 async function resetPassword(userEmail, resetCode, enteredPassword) {
     const database = exports.client.db("auth");
     const usersCollection = database.collection("users");
@@ -231,7 +213,7 @@ async function editUser(editedUser) {
             // Access the collection named by the 'customerId' parameter
             const collection = database.collection("users");
             let dateTime = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date());
-            await (0, portfolio_1.insertEditLogs)(changesText, "Edit User", dateTime, userInfo["Edit Note"], userInfo["email"] + " " + userInfo["name"]);
+            await (0, logs_1.insertEditLogs)(changesText, "Edit User", dateTime, userInfo["Edit Note"], userInfo["email"] + " " + userInfo["name"]);
             let action = await collection.updateOne({ _id: userInfo["_id"] }, // Filter to match the document
             { $set: userInfo } // Update operation
             );
@@ -252,7 +234,7 @@ async function editUser(editedUser) {
         let dateTime = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date());
         console.log(error);
         let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-        await (0, portfolio_1.insertEditLogs)([errorMessage], "Errors", dateTime, "editUser", "src/controllers/auth.ts");
+        await (0, logs_1.insertEditLogs)([errorMessage], "Errors", dateTime, "editUser", "src/controllers/auth.ts");
     }
 }
 exports.editUser = editUser;
@@ -279,3 +261,59 @@ async function getUser(userId) {
     }
 }
 exports.getUser = getUser;
+async function deleteUser(userId, userName, userEmail) {
+    try {
+        // Connect to the MongoDB client
+        // Get the database and the specific collection
+        const database = exports.client.db("auth");
+        const collection = database.collection("users");
+        let query = { _id: new mongodb_1.ObjectId(userId) };
+        // Delete the document with the specified _id
+        const result = await collection.deleteOne(query);
+        if (result.deletedCount === 0) {
+            return { error: `User does not exist!` };
+        }
+        else {
+            let dateTime = (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date());
+            await (0, logs_1.insertEditLogs)(["deleted"], "Delete User", dateTime, "deleted", userName + " " + userEmail);
+            return { error: null };
+        }
+    }
+    catch (error) {
+        console.error(`An error occurred while deleting the document: ${error}`);
+        return { error: "Unexpected error 501" };
+    }
+}
+exports.deleteUser = deleteUser;
+async function addUser({ email, name, accessRole }) {
+    try {
+        const database = exports.client.db("auth");
+        const usersCollection = database.collection("users");
+        let password = uuidv4();
+        let salt = await bcrypt.genSalt(parseInt(saltRounds));
+        let cryptedPassword = await bcrypt.hash(password, salt);
+        const user = await usersCollection.findOne({ email: email });
+        if (user == null) {
+            const updateDoc = {
+                name: name,
+                email: email,
+                password: cryptedPassword,
+                accessRole: accessRole,
+                createdOn: (0, common_2.getDateTimeInMongoDBCollectionFormat)(new Date()),
+            };
+            const action = await usersCollection.insertOne(updateDoc);
+            let emailRegisteration = await (0, email_1.sendRegsiterationEmail)({ email: email, password: password, name: name });
+            return { message: "registered", status: 200, error: `user's password: ${password}` };
+        }
+        else if (user) {
+            return { error: "user already exist", status: 404 };
+        }
+        else {
+            return { error: "unauthorized", status: 401 };
+        }
+    }
+    catch (error) {
+        return { error: "unauthorized", status: 401 };
+    }
+}
+exports.addUser = addUser;

@@ -1,8 +1,8 @@
 import { ObjectId } from "mongodb";
 import { client } from "../auth";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
-import { insertEditLogs } from "./portfolio";
 import { CentralizedTrade } from "../../models/trades";
+import { insertEditLogs } from "./logs";
 
 export async function getAllTradesForSpecificPosition(tradeType: string, isin: string, location: string, date: string) {
   try {

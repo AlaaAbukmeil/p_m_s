@@ -2,7 +2,7 @@ import { Router } from "express";
 import { verifyToken } from "../../controllers/common";
 import { uploadToBucket } from "../reports/portfolio";
 import { Request, Response, NextFunction } from "express";
-import { addFund, deleteFund, editFund } from "../../controllers/operations/portfolio";
+import { addFund, deleteFund, editFund } from "../../controllers/operations/fund";
 
 const fundRouter = Router();
 

@@ -1,4 +1,3 @@
-import { getPortfolioOnSpecificDate, getSecurityInPortfolioWithoutLocation, insertEditLogs } from "./portfolio";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { formatUpdatedPositions, getCollectionName } from "../reports/tools";
 import { client } from "../auth";
@@ -6,6 +5,9 @@ import { Position } from "../../models/position";
 import { formatDateWorld } from "../common";
 import { readPricingSheet } from "./readExcel";
 import { getPortfolio } from "./positions";
+import { getSecurityInPortfolioWithoutLocation } from "./tools";
+import { getPortfolioOnSpecificDate } from "../reports/portfolios";
+import { insertEditLogs } from "./logs";
 const ObjectId = require("mongodb").ObjectId;
 export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDate: string, path: string) {
   try {

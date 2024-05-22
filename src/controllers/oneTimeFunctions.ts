@@ -1,6 +1,5 @@
 import util from "util";
 import {  uri } from "./common";
-import { getPortfolioOnSpecificDate } from "./operations/portfolio";
 import { monthlyRlzdDate } from "./reports/common";
 import { getPortfolio, insertTradesInPortfolio, insertTradesInPortfolioAtASpecificDate } from "./operations/positions";
 const fs = require("fs");

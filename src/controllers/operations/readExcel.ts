@@ -1,7 +1,7 @@
 import { CentralizedTrade } from "../../models/trades";
 import { bucket, convertExcelDateToJSDate, generateRandomString, getTradeDateYearTrades } from "../common";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
-import { insertEditLogs } from "./portfolio";
+import { insertEditLogs } from "./logs";
 
 const xlsx = require("xlsx");
 const axios = require("axios");
@@ -674,3 +674,4 @@ export async function readFxTrades(path: string) {
   const data = xlsx.utils.sheet_to_json(worksheet, { defval: "", range: "A1:N100" });
   return data;
 }
+
