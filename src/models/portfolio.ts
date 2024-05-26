@@ -77,7 +77,6 @@ export interface PositionBeforeFormatting {
   Notes: string;
   "MTD Mark": number;
   "MTD FX": number;
-  "YTD Mark": number;
   "YTD FX": number;
   "MTD URlzd": number;
   "MTD Int.": number;
@@ -180,7 +179,6 @@ export interface FundMTD {
   mtdFXGross: number;
 
   ytdNet: number;
-  ytdpl: number;
   ytdrlzd: any;
   ytdurlzd: any;
   ytdint: number;

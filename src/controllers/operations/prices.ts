@@ -169,9 +169,18 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
             for (let index = 0; index < positions.length; index++) {
               let object = positions[index];
 
+              if (row["Today's Mid"] && !row["Today's Mid"].toString().includes("N/A")) {
+                return { error: `${object["BB Ticker"]}' price has error, please review prices` };
+              }
+              if (row["Today's Ask"] && !row["Today's Ask"].toString().includes("N/A")) {
+                return { error: `${object["BB Ticker"]}' price has error, please review prices` };
+              }
+              if (row["Today's Bid"] && !row["Today's Bid"].toString().includes("N/A")) {
+                return { error: `${object["BB Ticker"]}' price has error, please review prices` };
+              }
               object["Mid"] = parseFloat(row["Today's Mid"]) / divider;
-              object["Ask"] = parseFloat(row["Override Ask"]) > 0 ? parseFloat(row["Override Ask"]) / divider : parseFloat(row["Today's Ask (Broker)"]) > 0 ? parseFloat(row["Today's Ask (Broker)"]) / divider : parseFloat(row["Today's Ask"]) / divider;
-              object["Bid"] = parseFloat(row["Override Bid"]) > 0 ? parseFloat(row["Override Bid"]) / divider : parseFloat(row["Today's Bid (Broker)"]) > 0 ? parseFloat(row["Today's Bid (Broker)"]) / divider : parseFloat(row["Today's Bid"]) / divider;
+              object["Ask"] = parseFloat(row["Today's Ask"]) / divider;
+              object["Bid"] = parseFloat(row["Today's Bid"]) / divider;
               object["YTM"] = row["Mid Yield call"].toString().includes("N/A") ? 0 : row["Mid Yield call"];
               object["Broker"] = row["Broker"].toString().includes("N/A") ? "" : row["Broker"];
 
@@ -190,6 +199,7 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
               object["Issuer"] = row["Issuer Name"].toString().includes("N/A") ? "" : row["Issuer Name"];
               object["Bloomberg ID"] = row["Bloomberg ID"];
               object["CUSIP"] = row["CUSIP"].toString().includes("N/A") ? "" : row["CUSIP"];
+              object["CR01"] = row["CR01"].toString().includes("N/A") ? "" : row["CR01"];
 
               if (!row["Call Date"].includes("N/A") && !row["Call Date"].includes("#")) {
                 callDate[row["ISIN"]] = row["Call Date"];
@@ -209,8 +219,8 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
                 object["FX Rate"] = 1;
               }
 
-              if (row["Instrument's Country"] && !row["Instrument's Country"].includes("N/A")) {
-                object["Country"] = row["Instrument's Country"];
+              if (row["Instrument's Country Full Name"] && !row["Instrument's Country Full Name"].includes("N/A")) {
+                object["Country"] = row["Instrument's Country Full Name"];
               }
               if (row["Issuer's Country"] && !row["Issuer's Country"].includes("N/A")) {
                 object["Issuer's Country"] = row["Issuer's Country"];
@@ -239,7 +249,6 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
             let position = positions[indexPosition];
             position["Mid"] = currencyInUSD[currency];
             updatedPricePortfolio.push(position);
-
           }
         }
         for (let index = 0; index < updatedPricePortfolio.length; index++) {
@@ -282,7 +291,7 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
 export async function updatePricesPortfolio(path: string) {
   try {
     let data: any = await readPricingSheet(path);
-    console.log(data[0])
+    console.log(data[0]);
 
     if (data.error) {
       return data;
@@ -326,10 +335,18 @@ export async function updatePricesPortfolio(path: string) {
 
           for (let index = 0; index < positions.length; index++) {
             let object = positions[index];
-
+            if (row["Today's Mid"] && !row["Today's Mid"].toString().includes("N/A")) {
+              return { error: `${object["BB Ticker"]}' price has error, please review prices` };
+            }
+            if (row["Today's Ask"] && !row["Today's Ask"].toString().includes("N/A")) {
+              return { error: `${object["BB Ticker"]}' price has error, please review prices` };
+            }
+            if (row["Today's Bid"] && !row["Today's Bid"].toString().includes("N/A")) {
+              return { error: `${object["BB Ticker"]}' price has error, please review prices` };
+            }
             object["Mid"] = parseFloat(row["Today's Mid"]) / divider;
-            object["Ask"] = parseFloat(row["Override Ask"]) > 0 ? parseFloat(row["Override Ask"]) / divider : parseFloat(row["Today's Ask (Broker)"]) > 0 ? parseFloat(row["Today's Ask (Broker)"]) / divider : parseFloat(row["Today's Ask"]) / divider;
-            object["Bid"] = parseFloat(row["Override Bid"]) > 0 ? parseFloat(row["Override Bid"]) / divider : parseFloat(row["Today's Bid (Broker)"]) > 0 ? parseFloat(row["Today's Bid (Broker)"]) / divider : parseFloat(row["Today's Bid"]) / divider;
+            object["Ask"] = parseFloat(row["Today's Ask"]) / divider;
+            object["Bid"] = parseFloat(row["Today's Bid"]) / divider;
             object["YTM"] = row["Mid Yield call"].toString().includes("N/A") ? 0 : row["Mid Yield call"];
             object["Broker"] = row["Broker"].toString().includes("N/A") ? "" : row["Broker"];
 
@@ -348,6 +365,7 @@ export async function updatePricesPortfolio(path: string) {
             object["Issuer"] = row["Issuer Name"].toString().includes("N/A") ? "" : row["Issuer Name"];
             object["Bloomberg ID"] = row["Bloomberg ID"];
             object["CUSIP"] = row["CUSIP"].toString().includes("N/A") ? "" : row["CUSIP"];
+            object["CR01"] = row["CR01"].toString().includes("N/A") ? "" : row["CR01"];
 
             if (!row["Call Date"].includes("N/A") && !row["Call Date"].includes("#")) {
               callDate[row["ISIN"]] = row["Call Date"];
@@ -367,8 +385,8 @@ export async function updatePricesPortfolio(path: string) {
               object["FX Rate"] = 1;
             }
 
-            if (row["Instrument's Country"] && !row["Instrument's Country"].includes("N/A")) {
-              object["Country"] = row["Instrument's Country"];
+            if (row["Instrument's Country Full Name"] && !row["Instrument's Country Full Name"].includes("N/A")) {
+              object["Country"] = row["Instrument's Country Full Name"];
             }
             if (row["Issuer's Country"] && !row["Issuer's Country"].includes("N/A")) {
               object["Issuer's Country"] = row["Issuer's Country"];
@@ -398,7 +416,6 @@ export async function updatePricesPortfolio(path: string) {
           let position = positions[indexPosition];
           position["Mid"] = currencyInUSD[currency];
           updatedPricePortfolio.push(position);
-
         }
       }
 
@@ -428,6 +445,35 @@ export async function updatePricesPortfolio(path: string) {
         console.log(error);
         return { error: "Template does not match" };
       }
+    }
+  } catch (error: any) {
+    console.log(error);
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    return { error: errorMessage };
+  }
+}
+
+export async function checkLivePositions() {
+  try {
+    let portfolio = await getPortfolio();
+    let positions: any = [];
+
+    for (let index = 0; index < portfolio.length; index++) {
+      let position = portfolio[index];
+      let notional = position["Notional Amount"];
+      let bloombergId = position["Bloomberg ID"];
+      if (notional != 0) {
+        let object = { bloombergId: bloombergId, notional: notional };
+        positions.push(object);
+      }
+    }
+
+    try {
+      return positions;
+    } catch (error) {
+      console.log(error);
+      return { error: "Template does not match" };
     }
   } catch (error: any) {
     console.log(error);

@@ -46,7 +46,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
 
   for (let index = 0; index < documents.length; index++) {
     documents[index]["Notional Amount"] = documents[index]["Notional Amount"] || parseFloat(documents[index]["Notional Amount"]) == 0 ? documents[index]["Notional Amount"] : documents[index]["Quantity"];
-
+    documents[index]["Notes"] = "" 
     let latestDateKey;
 
     latestDateKey = Object.keys(documents[index]["Interest"]).sort((a, b) => {
@@ -83,7 +83,6 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   let lastMonthPortfolio = await getHistoricalPortfolio(lastMonthLastCollectionName.predecessorDate);
   let previousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeToday.predecessorDate);
   let previousPreviousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeYesterday.predecessorDate);
-  let previousYearPortfolio = await getHistoricalPortfolio(lastYearLastCollectionName.predecessorDate);
   let ytdDocuments = await getYTDInt(documents, lastYearLastCollectionName.predecessorDate, date);
   documents = ytdDocuments.portfolio;
   let ytdinterest = ytdDocuments.ytdinterest;
@@ -104,7 +103,6 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   documents = getDayParams(documents, previousDayPortfolio, lastDayBeforeToday.predecessorDate, false);
   documents = getDayParams(documents, previousPreviousDayPortfolio, lastDayBeforeYesterday.predecessorDate, true);
   documents = getMTDParams(documents, lastMonthPortfolio, earliestPortfolioName.predecessorDate);
-  documents = getYTDParams(documents, previousYearPortfolio, lastYearLastCollectionName.predecessorDate);
 
   documents = await getMTDURlzdInt(documents, new Date(date));
   let dayParamsWithLatestUpdates = await getDayURlzdInt(documents, new Date(date));
@@ -176,9 +174,8 @@ export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInpu
         portfolio[index]["Strategy"] = portfolio[index]["BB Ticker"].toLowerCase().includes("perp") ? "CE" : "VI";
       }
       portfolio[index]["Asset Class"] = portfolio[index]["Asset Class"] ? portfolio[index]["Asset Class"] : portfolio[index]["Rating Class"] ? portfolio[index]["Rating Class"] : "";
-      if ((!portfolio[index]["Asset Class"] || portfolio[index]["Asset Class"] == "") && portfolio[index]["BBG Composite Rating"]) {
-        portfolio[index]["Asset Class"] = isRatingHigherThanBBBMinus(position["BBG Composite Rating"]);
-      }
+      
+      
       if (portfolio[index]["Notional Amount"] < 0) {
         portfolio[index]["Asset Class"] = "Hedge";
       }
@@ -258,6 +255,7 @@ export function getMTDParams(portfolio: any, lastMonthPortfolio: any, dateInput:
     }
 
     for (let index = 0; index < portfolio.length; index++) {
+     
       if (portfolio[index]["Type"] != "FX") {
         if (!parseFloat(portfolio[index]["MTD Mark"]) && parseFloat(portfolio[index]["MTD Mark"]) != 0 && portfolio[index]["Entry Price"][thisMonth]) {
           portfolio[index]["MTD Mark"] = portfolio[index]["Entry Price"][thisMonth];
@@ -271,44 +269,6 @@ export function getMTDParams(portfolio: any, lastMonthPortfolio: any, dateInput:
     return portfolio;
   } catch (error) {
     console.log(error);
-    return portfolio;
-  }
-}
-
-export function getYTDParams(portfolio: any, lastYearPortfolio: any, date: any) {
-  try {
-    let currencies: any = {};
-    for (let index = 0; index < portfolio.length; index++) {
-      let lastYearPosition;
-      for (let lastMonthIndex = 0; lastMonthIndex < lastYearPortfolio.length; lastMonthIndex++) {
-        lastYearPosition = lastYearPortfolio[lastMonthIndex];
-        portfolio[index]["Notes"] = portfolio[index]["Notes"] ? portfolio[index]["Notes"] : "";
-
-        if (lastYearPosition["ISIN"] == portfolio[index]["ISIN"] && lastYearPosition["Mid"]) {
-          portfolio[index]["YTD Mark"] = lastYearPosition["Mid"];
-          portfolio[index]["YTD Mark Ref.D"] = formatDateUS(date);
-
-          portfolio[index]["YTD FX"] = lastYearPosition["FX Rate"] ? lastYearPosition["FX Rate"] : portfolio[index]["MTD FX"] || 1;
-
-          currencies[portfolio[index]["Currency"]] = portfolio[index]["YTD FX"];
-        }
-      }
-    }
-
-    for (let index = 0; index < portfolio.length; index++) {
-      if (!parseFloat(portfolio[index]["YTD Mark"]) && parseFloat(portfolio[index]["YTD Mark"]) != 0 && portfolio[index]["Entry Price"]) {
-        let ytdMarkInfo = getEarliestDateKeyAndValue(portfolio[index]["Entry Price"], date);
-        portfolio[index]["YTD Mark"] = ytdMarkInfo.value;
-        portfolio[index]["YTD Mark Ref.D"] = ytdMarkInfo.date ? formatDateUS(ytdMarkInfo.date) : "";
-        portfolio[index]["Notes"] += "YTD Mark X ";
-      }
-      if (!portfolio[index]["YTD FX"]) {
-        portfolio[index]["YTD FX"] = currencies[portfolio[index]["Currency"]] || portfolio[index]["MTD FX"];
-      }
-    }
-
-    return portfolio;
-  } catch (error) {
     return portfolio;
   }
 }
@@ -349,7 +309,7 @@ function getDayURlzdInt(portfolio: any, date: any) {
       let settlementDate = settlementDates[indexSettlementDate];
       let settlementDateTimestamp = new Date(settlementDate).getTime();
       portfolio[index]["Principal"] += interestInfo[settlementDate];
-
+      portfolio[index]["Interest"][settlementDate + " Total"] = portfolio[index]["Principal"]
       if (settlementDateTimestamp >= new Date(date).getTime()) {
         quantityGeneratingInterest -= interestInfo[settlementDate];
       }
@@ -370,6 +330,7 @@ export async function getMTDURlzdInt(portfolio: any, date: any) {
   let currentDayDate: string = new Date(date).toISOString().slice(0, 10);
   let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate);
   let monthlyInterest: any = {};
+  let test = true;
 
   for (let index = 0; index < portfolio.length; index++) {
     let position = portfolio[index];
@@ -421,7 +382,6 @@ export async function getMTDURlzdInt(portfolio: any, date: any) {
 
     monthlyInterest[position["BB Ticker"]] = {};
     // reason why 1, to ignore last day of last month
-
     for (let indexPreviousMonthDates = 1; indexPreviousMonthDates < previousMonthDates.length; indexPreviousMonthDates++) {
       let dayInCurrentMonth = previousMonthDates[indexPreviousMonthDates]; //OCT 1st -
       monthlyInterest[position["BB Ticker"]][dayInCurrentMonth] = quantityGeneratingInterest; // 2000 000

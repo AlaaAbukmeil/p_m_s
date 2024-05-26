@@ -441,7 +441,6 @@ export async function insertTradesInPortfolio(trades: any) {
   }
 }
 
-
 export async function editPosition(editedPosition: any, date: string) {
   try {
     const database = client.db("portfolios");
@@ -471,10 +470,13 @@ export async function editPosition(editedPosition: any, date: string) {
       "Value",
       "Duration",
       "Base LTV",
+      "MTD Notional",
       "LTV",
+      "MTD Notional",
       "MTD Mark",
-      "YTD Mark",
       "Previous Mark",
+      "Entry Price",
+
       "Day P&L (BC)",
       "MTD Rlzd (BC)",
       "MTD URlzd (BC)",
@@ -483,7 +485,7 @@ export async function editPosition(editedPosition: any, date: string) {
       "Cost (LC)",
       "Day Accrual",
       "_id",
-      "YTD Mark Ref.D",
+
       "Day Price Move",
       "Value (BC)",
       "Value (LC)",
@@ -495,14 +497,9 @@ export async function editPosition(editedPosition: any, date: string) {
       "Cost MTD (LC)",
       "Quantity",
       "Day Int. (BC)",
-      // "S&P Outlook",
-      // "Moody's Bond Rating",
-      // "Moody's Outlook",
-      // "Fitch Bond Rating",
-      // "Fitch Outlook",
-      // "BBG Composite Rating",
+
       "Borrow Capacity",
-      "LTV",
+      "Margin",
       "Day P&L FX",
       "MTD P&L FX",
       "S&P Bond Rating",
@@ -524,23 +521,29 @@ export async function editPosition(editedPosition: any, date: string) {
       "MTD Int. (LC)",
       "Currency)	Day Int. (LC)",
       "YTD P&L (LC)",
-      "YTD Rlzd (LC)",
-      "YTD URlzd (LC)",
       "YTD Int. (LC)",
 
-      "YTD P&L (BC)",
-      "YTD Rlzd (BC)",
       "YTD URlzd (BC)",
       "YTD Int. (BC)",
       "YTD FX",
       "Total Gain/ Loss (USD)",
-      "MTD Notional",
 
       "Accrued Int. Since Inception (BC)",
       "Notes",
       "MTD Price Move",
+      "Average Cost MTD",
+      "3-Day Price Move",
+      "1-Day Spread Change",
+      "Market Type",
+      "Region",
+      "Principal",
+      "Average Cost MTD",
+      "3-Day Price Move",
+      "Market Type",
+      "Principal",
       "Event Type",
       "Edit Note",
+      "Factor Date (if any)",
     ];
     // these keys are made up by the function frontend table, it reverts keys to original keys
 
@@ -557,7 +560,17 @@ export async function editPosition(editedPosition: any, date: string) {
       return { error: "Fatal Error" };
     }
     let changes = [];
+    for (let indexTitle = 0; indexTitle < editedPositionTitles.length; indexTitle++) {
+      let title = editedPositionTitles[indexTitle];
 
+      if (editedPosition[title] == "") {
+        editedPosition[title] == "";
+      }
+
+      if (Array.isArray(editedPosition[title])) {
+        editedPosition[title] == "";
+      }
+    }
     for (let indexTitle = 0; indexTitle < editedPositionTitles.length; indexTitle++) {
       let title = editedPositionTitles[indexTitle];
       let todayDate = formatDateUS(new Date(date).toString());
@@ -568,12 +581,8 @@ export async function editPosition(editedPosition: any, date: string) {
             let payInKindFactorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
 
             positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
-            positionInPortfolio["Interest"][payInKindFactorDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Principal"]);
+            positionInPortfolio["Interest"][payInKindFactorDate] = parseFloat(editedPosition[title]);
 
-            let MTDRlzdForThisTrade = { quantity: editedPosition[title], message: "sinked" };
-            positionInPortfolio["MTD Rlzd"] = positionInPortfolio["MTD Rlzd"] ? positionInPortfolio["MTD Rlzd"] : {};
-            positionInPortfolio["MTD Rlzd"][monthDate] = positionInPortfolio["MTD Rlzd"][monthDate] ? positionInPortfolio["MTD Rlzd"][monthDate] : [];
-            positionInPortfolio["MTD Rlzd"][monthDate].push(MTDRlzdForThisTrade);
             changes.push(`Notional Amount Changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]} on ${payInKindFactorDate} (pay in kind)`);
             positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
           } else if (editedPosition["Event Type"] == "Pay In Kind") {
@@ -581,20 +590,13 @@ export async function editPosition(editedPosition: any, date: string) {
 
             positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
             positionInPortfolio["Interest"][sinkFactorDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Notional Amount"]);
-            let MTDRlzdForThisTrade = { quantity: editedPosition[title], message: "pay in kind" };
-            positionInPortfolio["MTD Rlzd"] = positionInPortfolio["MTD Rlzd"] ? positionInPortfolio["MTD Rlzd"] : {};
-            positionInPortfolio["MTD Rlzd"][monthDate] = positionInPortfolio["MTD Rlzd"][monthDate] ? positionInPortfolio["MTD Rlzd"][monthDate] : [];
-            positionInPortfolio["MTD Rlzd"][monthDate].push(MTDRlzdForThisTrade);
+
             changes.push(`Notional Amount Changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]} on ${sinkFactorDate}`);
             positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
 
             positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
           } else if (editedPosition["Event Type"] == "Redeemped") {
             let factorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
-            let MTDRlzdForThisTrade = { quantity: editedPosition[title], message: "redeemed" };
-            positionInPortfolio["MTD Rlzd"] = positionInPortfolio["MTD Rlzd"] ? positionInPortfolio["MTD Rlzd"] : {};
-            positionInPortfolio["MTD Rlzd"][monthDate] = positionInPortfolio["MTD Rlzd"][monthDate] ? positionInPortfolio["MTD Rlzd"][monthDate] : [];
-            positionInPortfolio["MTD Rlzd"][monthDate].push(MTDRlzdForThisTrade);
             positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
             positionInPortfolio["Interest"][factorDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Notional Amount"]);
 
@@ -992,7 +994,7 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
       }
     }
     try {
-      console.log(positions)
+      console.log(positions);
       for (let index = 0; index < portfolio.length; index++) {
         let position = portfolio[index];
         if (position["ISIN"].trim() == isin.trim() && position["Location"] == location.trim()) {

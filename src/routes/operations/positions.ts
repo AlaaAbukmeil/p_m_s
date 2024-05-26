@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { bucket, verifyToken } from "../../controllers/common";
+import { bucket, formatDateFile, verifyToken } from "../../controllers/common";
 import { uploadToBucket } from "../reports/portfolio";
 import { Request, Response, NextFunction } from "express";
 import { addFund, deleteFund, editFund, getAllFundDetails } from "../../controllers/operations/fund";
 import { deletePosition, editPosition, editPositionBulkPortfolio, insertFXPosition, pinPosition, readCalculatePosition, updatePositionPortfolio } from "../../controllers/operations/positions";
-import { readCentralizedEBlot, readMUFGPrices, readPricingSheet } from "../../controllers/operations/readExcel";
-import { updatePreviousPricesPortfolioBloomberg, updatePreviousPricesPortfolioMUFG, updatePricesPortfolio } from "../../controllers/operations/prices";
+import { readCentralizedEBlot, readMUFGPrices, readPricingSheet, uploadArrayAndReturnFilePath } from "../../controllers/operations/readExcel";
+import { checkLivePositions, updatePreviousPricesPortfolioBloomberg, updatePreviousPricesPortfolioMUFG, updatePricesPortfolio } from "../../controllers/operations/prices";
 import { monthlyRlzdDate } from "../../controllers/reports/common";
 import { FundDetails } from "../../models/portfolio";
 import { CentralizedTrade } from "../../models/trades";
@@ -103,7 +103,6 @@ positionsRouter.post("/fx-add-position", verifyToken, uploadToBucket.any(), asyn
   } catch (error) {
     console.log(error);
     res.send({ error: "something is not correct, check error log records" });
-
   }
 });
 positionsRouter.post("/pin-position", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
@@ -113,7 +112,6 @@ positionsRouter.post("/pin-position", verifyToken, uploadToBucket.any(), async (
   } catch (error) {
     console.log(error);
     res.send({ error: "something is not correct, check error log records" });
-
   }
 });
 
@@ -175,6 +173,19 @@ positionsRouter.post("/update-prices", verifyToken, uploadToBucket.any(), async 
     res.send({ error: "File Template is not correct" });
   }
 });
+positionsRouter.post("/live-prices", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    
+    let action: any = await checkLivePositions();
+    let pathName = "live-positions";
+    let livePositions = await uploadArrayAndReturnFilePath(action, pathName, "live-positions");
+
+    let downloadEBlotName = bucket + livePositions;
+    res.send(downloadEBlotName);
+  } catch (error) {
+    res.send({ error: "File Template is not correct" });
+  }
+});
 
 positionsRouter.post("/bulk-edit", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
@@ -217,6 +228,5 @@ positionsRouter.post("/update-previous-prices", verifyToken, uploadToBucket.any(
     res.send({ error: "fatal error" });
   }
 });
-
 
 export default positionsRouter;

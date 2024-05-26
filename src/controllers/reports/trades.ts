@@ -58,7 +58,6 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
         trade["Price Diff"] = parseFloat(trade["Price"]) - averageCost;
         total += trade["Rlzd P&L Amount"];
         accumualteNotional += newNotional;
-        trade["Average Cost MTD"] = averageCost;
 
         trade["Updated Notional"] = accumualteNotional;
       } else if (accumualteNotional + newNotional > accumualteNotional && accumualteNotional < 0) {

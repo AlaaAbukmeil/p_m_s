@@ -184,65 +184,9 @@ export function padInteger(num: any) {
   // Pad the string with leading zeros to ensure it has at least 3 digits
   return numStr.toFixed(3);
 }
-export function calculateBondPrice({ couponRate, periods, yieldToMaturity }: { couponRate: any; periods: any; yieldToMaturity: any }) {
-  try {
-    // Convert percentage rates to decimal
-    couponRate = parseFloat(couponRate);
-    periods = parseFloat(periods);
-    yieldToMaturity = parseFloat(yieldToMaturity);
 
-    const r = yieldToMaturity / 100;
-    const PMT = (couponRate / 100) * 1000;
 
-    // Calculate the present value of coupon payments
-    const PV_coupons = (PMT * (1 - Math.pow(1 + r, -periods))) / r;
 
-    // Calculate the present value of the face value
-    const PV_face = 1000 * Math.pow(1 + r, -periods);
-
-    // Sum the present values to get the bond price
-    let bondPrice = PV_coupons + PV_face;
-
-    return bondPrice;
-  } catch (error) {
-    console.log(error);
-    return "";
-  }
-}
-export function calculateBondPerpPrice({ couponRate, yieldToMaturity }: { couponRate: any; yieldToMaturity: any }) {
-  try {
-    // Convert percentage rates to decimal
-    couponRate = parseFloat(couponRate);
-    yieldToMaturity = parseFloat(yieldToMaturity);
-
-    const r = yieldToMaturity / 100;
-    const PMT = (couponRate / 100) * 1000;
-
-    let bondPrice = PMT / r;
-
-    return bondPrice;
-  } catch (error) {
-    console.log(error);
-    return "";
-  }
-}
-
-export function calculateCR01({ couponRate, yieldToMaturity, periods }: { couponRate: any; yieldToMaturity: any; periods: any }) {
-  if (periods > 0) {
-    let originalPrice: any = calculateBondPrice({ couponRate, yieldToMaturity, periods });
-    yieldToMaturity = yieldToMaturity + 0.01; // adding 1 basis point
-    let adjustedPrice: any = calculateBondPrice({ couponRate, yieldToMaturity, periods });
-    // CR01 is the decrease in price when the yield increases by 1 basis point
-    return (originalPrice - adjustedPrice) * 1000;
-  } else {
-    let originalPrice: any = calculateBondPerpPrice({ couponRate, yieldToMaturity });
-    yieldToMaturity = yieldToMaturity + 0.01; // adding 1 basis point
-
-    let adjustedPrice: any = calculateBondPerpPrice({ couponRate, yieldToMaturity });
-    // CR01 is the decrease in price when the yield increases by 1 basis point
-    return (originalPrice - adjustedPrice) * 1000;
-  }
-}
 export function checkPosition(position: any, conditions: any) {
   try {
     let country = position["Country"] ? position["Country"].toString().toLowerCase() : null;
@@ -726,12 +670,12 @@ export function classifyCountry(country: any) {
     "asia - oceania": {
       developed: ["australia", "hong kong", "japan", "new zeland", "singapore", "south korea"],
       emerging: ["china", "india", "indonesia", "macau", "malaysia", "philippines", "taiwan", "thailand"],
-      frontier: ["bangladesh", "laos", "mongolia", "pakistan", "sri lanka", "vietnam"],
+      frontier: ["bangladesh", "laos", "mongolia", "pakistan", "sri lanka", "vietnam","cambodia"],
     },
     "middle east-africa": {
       developed: ["israel"],
       emerging: ["bahrain", "egypt", "ivory coast", "kuwait", "morocco", "oman", "qatar", "saudi arabia", "south africa", "turkey", "uae", "tunisia", "mauritius"],
-      frontier: ["jordan", "kazakhstan", "kenya", "lebanon"],
+      frontier: ["jordan", "kazakhstan", "kenya", "lebanon", "ghana","uzbekistan"],
     },
   };
   for (const region in countryClassification) {

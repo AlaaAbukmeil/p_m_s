@@ -308,13 +308,19 @@ export async function readPricingSheet(path: string) {
     "BB Ticker",
     "Bloomberg ID",
     "Broker",
+    "Broker 2",
+
+    "Broker 3",
+
     "Override Bid",
     "Override Ask",
-    "Notes",
-    "Today's Bid (Broker)",
-    "Today's Ask (Broker)",
-    "Today's Bid (BB)",
-    "Today's Ask (BB)",
+    "Override Mid",
+
+    "Errors Detected Bid (First Broker)",
+    "Errors Detected Ask (First Broker)",
+
+    "Today's Bid",
+    "Today's Ask",
     "Today's Mid",
     "ISIN",
     "CUSIP",
@@ -338,7 +344,11 @@ export async function readPricingSheet(path: string) {
     "Issuer Name",
     "OAS Spread",
     "Z Spread",
-    "Instrument's Country",
+    "Instrument's Country Code",
+    "Instrument's Country Full Name",
+    "OAS Spread +1",
+    "Mid Price +1 Spread",
+    "CR01",
   ];
   const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : (wrongHeaders = `app expected ${headers[0][index]} and got ${value}`))); //headersFormat.length === headers[2].length && headersFormat.every((value, index) => value === headers[2][index]);
   if (!arraysAreEqual) {
@@ -352,7 +362,7 @@ export async function readPricingSheet(path: string) {
   } else {
     const data = xlsx.utils.sheet_to_json(worksheet, {
       defval: "",
-      range: "A1:AG300",
+      range: "A1:AM500",
     });
     let keys = Object.keys(data[0]);
     let reformedData: any = [];
@@ -674,4 +684,3 @@ export async function readFxTrades(path: string) {
   const data = xlsx.utils.sheet_to_json(worksheet, { defval: "", range: "A1:N100" });
   return data;
 }
-
