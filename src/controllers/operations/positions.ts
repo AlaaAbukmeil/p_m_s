@@ -1,4 +1,4 @@
-import { client } from "../auth";
+import { client } from "../userManagement/auth";
 import { convertExcelDateToJSDate, formatDateUS, formatDateWorld, getDate, getTradeDateYearTrades } from "../common";
 import { findTrade, insertTrade } from "../reports/trades";
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../reports/common";
@@ -231,10 +231,8 @@ export async function updatePositionPortfolio(
           object["MTD Rlzd"] = securityInPortfolio !== 404 ? (securityInPortfolio["MTD Rlzd"] ? securityInPortfolio["MTD Rlzd"] : {}) : {};
 
           object["MTD Rlzd"][thisMonth] = securityInPortfolio !== 404 ? (securityInPortfolio["MTD Rlzd"] ? (securityInPortfolio["MTD Rlzd"][thisMonth] ? securityInPortfolio["MTD Rlzd"][thisMonth] : []) : []) : [];
-
           let MTDRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
           if (rlzdOperation == 1) {
-            object["MTD Rlzd"][thisMonth].push(MTDRlzdForThisTrade);
           }
 
           object["Day Rlzd"] = securityInPortfolio !== 404 ? (securityInPortfolio["Day Rlzd"] ? securityInPortfolio["Day Rlzd"] : {}) : {};
@@ -252,6 +250,7 @@ export async function updatePositionPortfolio(
           object["Cost MTD"] = securityInPortfolio !== 404 ? securityInPortfolio["Cost MTD"] : {};
           let curentMonthCost = securityInPortfolio !== 404 ? (parseFloat(securityInPortfolio["Cost MTD"][thisMonth]) ? parseFloat(securityInPortfolio["Cost MTD"][thisMonth]) : 0) : 0;
           object["Cost MTD"][thisMonth] = operation == 1 ? (securityInPortfolio !== 404 ? curentMonthCost + parseFloat(currentPrincipal) : parseFloat(currentPrincipal)) : 0;
+
           object["Original Face"] = originalFace;
 
           if (!object["Entry Price"]) {
@@ -260,6 +259,7 @@ export async function updatePositionPortfolio(
           if (!object["Entry Price"][thisMonth]) {
             object["Entry Price"][thisMonth] = currentPrice;
           }
+
           object["Last Individual Upload Trade"] = new Date();
 
           positions.push(object);
@@ -327,9 +327,11 @@ export async function updatePositionPortfolio(
             object["MTD Rlzd"][thisMonth] = object["MTD Rlzd"][thisMonth] ? object["MTD Rlzd"][thisMonth] : [];
             object["MTD Rlzd"][thisMonth].push(MTDRlzdForThisTrade);
           }
+
           if (rlzdOperation == -1) {
             object["Entry Price"][thisMonth] = currentPrice;
           }
+
           object["Day Rlzd"] = updatingPosition["Day Rlzd"];
 
           let dayRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
@@ -357,7 +359,7 @@ export async function updatePositionPortfolio(
       await insertEditLogs([positions], "Upload Trades", dateTime, "Num of updated/created positions: " + Object.keys(positions).length, "Link: " + path);
 
       return insertion;
-    } catch (error) {
+    } catch (error: any) {
       console.log(error);
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
       let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
@@ -365,16 +367,17 @@ export async function updatePositionPortfolio(
         await insertEditLogs([errorMessage], "Errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts 1");
       }
 
-      return { error: error };
+      return { error: error.toString() };
     }
-  } catch (error) {
+  } catch (error: any) {
     console.log(error);
+
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
     if (!errorMessage.toString().includes("Batch cannot be empty")) {
       await insertEditLogs([errorMessage], "Errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts 2");
     }
-    return { error: error };
+    return { error: error.toString() };
   }
 }
 

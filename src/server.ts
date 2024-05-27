@@ -1,7 +1,7 @@
 //jshint esversion:6
 import authRouter from "./routes/auth";
 import formatterRouter from "./routes/formatter";
-import router from "./routes/reports/portfolio";
+import router from "./routes/reports/reports";
 import positionsRouter from "./routes/operations/positions";
 import tradesRouter from "./routes/operations/trades";
 import reconcileRouter from "./routes/reconcile";

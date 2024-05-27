@@ -1,7 +1,7 @@
 const ObjectId = require("mongodb").ObjectId;
 
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../reports/common";
-import { client } from "../auth";
+import { client } from "../userManagement/auth";
 import { FundDetails } from "../../models/portfolio";
 import { getEarliestCollectionNameFund } from "../reports/portfolios";
 import { insertEditLogs } from "./logs";

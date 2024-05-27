@@ -4,7 +4,7 @@ require("dotenv").config();
 const jwt = require("jsonwebtoken");
 
 export const uri = "mongodb+srv://" + process.env.MONGODBUSERNAME + ":" + process.env.NEWMONGODBPASSWORD + "@app.ywfxr8w.mongodb.net/?retryWrites=true&w=majority";
-
+export const platform = "https://admin.triadacapital.com/";
 export const bucket = "https://storage.googleapis.com/app-backend-414212.appspot.com";
 export function getCurrentMonthDateRange(): string {
   const now = new Date();
@@ -127,7 +127,7 @@ export const verifyToken = (req: Request | any, res: Response, next: NextFunctio
   }
 };
 
-export const verifyTokenMember = (req: Request | any, res: Response, next: NextFunction) => {
+export const verifyTokenRiskMember = (req: Request | any, res: Response, next: NextFunction) => {
   try {
     const token = req.cookies["triada.admin.cookie"].token;
 
@@ -138,6 +138,25 @@ export const verifyTokenMember = (req: Request | any, res: Response, next: NextF
     const decoded = jwt.verify(token, process.env.SECRET);
     req.accessRole = decoded.accessRole;
     if (decoded.accessRole != "member (risk report)" && decoded.accessRole != "admin") {
+      return res.sendStatus(401);
+    }
+    next();
+  } catch (error) {
+    console.log(error);
+    return res.sendStatus(401);
+  }
+};
+export const verifyTokenFactSheetMember = (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    const token = req.cookies["triada.admin.cookie"].token;
+
+    if (!token) {
+      return res.sendStatus(401);
+    }
+
+    const decoded = jwt.verify(token, process.env.SECRET);
+    req.accessRole = decoded.accessRole;
+    if (decoded.accessRole != "member (risk report)" && decoded.accessRole != "admin" && decoded.accessRole != "member (factsheet report)") {
       return res.sendStatus(401);
     }
     next();

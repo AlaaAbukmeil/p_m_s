@@ -1,5 +1,5 @@
 import { Position } from "../../models/position";
-import { client } from "../auth";
+import { client } from "../userManagement/auth";
 import { formatDateUS } from "../common";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { insertEditLogs } from "./logs";

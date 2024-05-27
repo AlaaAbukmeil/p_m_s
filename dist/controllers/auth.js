@@ -194,7 +194,7 @@ async function editUser(editedUser) {
         if (userInfo) {
             let beforeModify = JSON.parse(JSON.stringify(userInfo));
             beforeModify["_id"] = new mongodb_1.ObjectId(beforeModify["_id"]);
-            let centralizedBlotKeys = ["name", "email", "accessRole"];
+            let centralizedBlotKeys = ["name", "email", "accessRole", "verified"];
             let changes = 0;
             let changesText = [];
             for (let index = 0; index < centralizedBlotKeys.length; index++) {

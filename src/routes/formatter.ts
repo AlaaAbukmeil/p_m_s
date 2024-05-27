@@ -1,7 +1,7 @@
-import { checkIfUserExists, registerUser, resetPassword, sendResetPasswordRequest } from "../controllers/auth";
+import { checkIfUserExists, registerUser, resetPassword, sendResetPasswordRequest } from "../controllers/userManagement/auth";
 import { bucket, formatDateFile, verifyToken } from "../controllers/common";
 import { formatCentralizedRawFiles, formatEmsxTrades, formatIbTrades, formatNomura } from "../controllers/eblot/excelFormat";
-import { uploadToBucket } from "./reports/portfolio";
+import { uploadToBucket } from "./reports/reports";
 import { CookieOptions, NextFunction, Router } from "express";
 import { Request, Response } from "express";
 import { readEmsxRawExcel, readIBRawExcel, uploadArrayAndReturnFilePath } from "../controllers/operations/readExcel";

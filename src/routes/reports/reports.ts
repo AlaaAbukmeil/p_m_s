@@ -1,8 +1,9 @@
 import { NextFunction, Router, Response, Request } from "express";
-import { verifyToken, generateRandomString, bucket, verifyTokenMember } from "../../controllers/common";
+import { verifyToken, generateRandomString, bucket, verifyTokenRiskMember, verifyTokenFactSheetMember } from "../../controllers/common";
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../../controllers/reports/common";
 import { getPortfolioWithAnalytics } from "../../controllers/reports/portfolios";
 import { getPortfolio } from "../../controllers/operations/positions";
+import { calculateMonthlyReturn, monthlyData } from "../../controllers/reports/factSheet";
 
 require("dotenv").config();
 
@@ -51,7 +52,6 @@ router.get("/summary-portfolio", verifyToken, async (req: Request, res: Response
     let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDayPriceMoveSum" | "groupMTDPriceMoveSum" | any = req.query.sort || "order";
     let sign: any = req.query.sign || 1;
     let conditions: any = req.query || {};
-    
 
     if (date.includes("NaN")) {
       date = getDateTimeInMongoDBCollectionFormat(new Date());
@@ -121,7 +121,7 @@ router.get("/performers-portfolio", verifyToken, async (req: Request, res: Respo
   }
 });
 
-router.get("/risk-report", verifyTokenMember, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/risk-report", verifyTokenRiskMember, async (req: Request, res: Response, next: NextFunction) => {
   try {
     let date: any = req.query.date;
     let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDayPriceMoveSum" | "groupMTDPriceMoveSum" | any = req.query.sort || "order";
@@ -140,11 +140,19 @@ router.get("/risk-report", verifyTokenMember, async (req: Request, res: Response
     res.send({ error: error.toString() });
   }
 });
-
-router.post("/one-time", uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  let portfolio = await getPortfolio();
-  console.log(portfolio);
-  res.send(200);
+router.get("/fact-sheet", verifyTokenFactSheetMember, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    let date = getDateTimeInMongoDBCollectionFormat(new Date());
+    let sign = 1;
+    let sort = "order";
+    let report = monthlyData;
+    let result = calculateMonthlyReturn(report);
+    let countrySectorMacro = await getPortfolioWithAnalytics(date, sort, sign, null, "fact sheet", null);
+    res.send({ countrySectorMacro: countrySectorMacro, result: result });
+  } catch (error: any) {
+    console.log(error);
+    res.send({ error: error.toString() });
+  }
 });
 
 export default router;

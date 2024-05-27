@@ -1,13 +1,14 @@
-import { addUser, checkIfUserExists, deleteUser, editUser, getAllUsers, registerUser, resetPassword, sendResetPasswordRequest } from "../controllers/auth";
-import { verifyToken, verifyTokenMember } from "../controllers/common";
+import { addUser, checkIfUserExists, deleteUser, editUser, getAllUsers, registerUser, resetPassword, sendResetPasswordRequest } from "../controllers/userManagement/auth";
+import { verifyToken, verifyTokenRiskMember } from "../controllers/common";
 import { deleteTrade, editTrade } from "../controllers/operations/trades";
-import { uploadToBucket } from "./reports/portfolio";
+import { uploadToBucket } from "./reports/reports";
 import { CookieOptions, NextFunction, Router } from "express";
 import { Request, Response } from "express";
-
+const bcrypt = require("bcrypt");
+const saltRounds: any = process.env.SALT_ROUNDS;
 const authRouter = Router();
 
-authRouter.get("/auth", uploadToBucket.any(), verifyTokenMember, async (req: any, res: Response, next: NextFunction) => {
+authRouter.get("/auth", uploadToBucket.any(), verifyTokenRiskMember, async (req: any, res: Response, next: NextFunction) => {
   res.send({ status: 200, accessRole: req.accessRole });
 });
 authRouter.get("/users", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
@@ -31,7 +32,6 @@ authRouter.post("/login", uploadToBucket.any(), async (req: Request, res: Respon
     secure: process.env.PRODUCTION === "production", // Set to true if using HTTPS
     sameSite: "lax",
   };
-  console.log(user)
 
   res.cookie("triada.admin.cookie", user, cookie);
   res.send(user);
@@ -43,6 +43,7 @@ authRouter.post("/sign-up", async (req: Request, res: Response, next: NextFuncti
   let password = data.password;
   let verificationCode = data.verificationCode;
   let result = await registerUser(email, password, verificationCode);
+  console.log(result)
   res.send(result);
 });
 authRouter.post("/send-reset-code", async (req: Request, res: Response, next: NextFunction) => {
@@ -99,4 +100,5 @@ authRouter.post("/add-user", verifyToken, uploadToBucket.any(), async (req: Requ
     res.send({ error: "Something is not correct, check error log records" });
   }
 });
+
 export default authRouter;

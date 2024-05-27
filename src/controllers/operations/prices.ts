@@ -1,6 +1,6 @@
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { formatUpdatedPositions, getCollectionName } from "../reports/tools";
-import { client } from "../auth";
+import { client } from "../userManagement/auth";
 import { Position } from "../../models/position";
 import { formatDateWorld } from "../common";
 import { readPricingSheet } from "./readExcel";
@@ -169,13 +169,13 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
             for (let index = 0; index < positions.length; index++) {
               let object = positions[index];
 
-              if (row["Today's Mid"] && !row["Today's Mid"].toString().includes("N/A")) {
+              if (row["Today's Mid"] && row["Today's Mid"].toString().includes("N/A")) {
                 return { error: `${object["BB Ticker"]}' price has error, please review prices` };
               }
-              if (row["Today's Ask"] && !row["Today's Ask"].toString().includes("N/A")) {
+              if (row["Today's Ask"] && row["Today's Ask"].toString().includes("N/A")) {
                 return { error: `${object["BB Ticker"]}' price has error, please review prices` };
               }
-              if (row["Today's Bid"] && !row["Today's Bid"].toString().includes("N/A")) {
+              if (row["Today's Bid"] && row["Today's Bid"].toString().includes("N/A")) {
                 return { error: `${object["BB Ticker"]}' price has error, please review prices` };
               }
               object["Mid"] = parseFloat(row["Today's Mid"]) / divider;
@@ -274,8 +274,12 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
           await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "Update Previous Prices based on bloomberg", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExists).length, "Link: " + path);
           let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio, collectionDate);
           console.log(updatedPricePortfolio.length, "number of positions prices updated");
-
-          return { error: updatedPortfolio.positionsThatDoNotExistsNames };
+          
+          if (Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length) {
+            return { error: updatedPortfolio.positionsThatDoNotExistsNames };
+          } else {
+            return { error: null };
+          }
         } catch (error) {
           console.log(error);
           return { error: "Template does not match" };
@@ -291,7 +295,6 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
 export async function updatePricesPortfolio(path: string) {
   try {
     let data: any = await readPricingSheet(path);
-    console.log(data[0]);
 
     if (data.error) {
       return data;
@@ -335,13 +338,13 @@ export async function updatePricesPortfolio(path: string) {
 
           for (let index = 0; index < positions.length; index++) {
             let object = positions[index];
-            if (row["Today's Mid"] && !row["Today's Mid"].toString().includes("N/A")) {
+            if (row["Today's Mid"] && row["Today's Mid"].toString().includes("N/A")) {
               return { error: `${object["BB Ticker"]}' price has error, please review prices` };
             }
-            if (row["Today's Ask"] && !row["Today's Ask"].toString().includes("N/A")) {
+            if (row["Today's Ask"] && row["Today's Ask"].toString().includes("N/A")) {
               return { error: `${object["BB Ticker"]}' price has error, please review prices` };
             }
-            if (row["Today's Bid"] && !row["Today's Bid"].toString().includes("N/A")) {
+            if (row["Today's Bid"] && row["Today's Bid"].toString().includes("N/A")) {
               return { error: `${object["BB Ticker"]}' price has error, please review prices` };
             }
             object["Mid"] = parseFloat(row["Today's Mid"]) / divider;
@@ -440,7 +443,11 @@ export async function updatePricesPortfolio(path: string) {
         let insertion = await insertPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio);
         await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "Update Prices", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length, "Link: " + path);
 
-        return { error: updatedPortfolio.positionsThatDoNotExistsNames };
+        if (Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length) {
+          return { error: updatedPortfolio.positionsThatDoNotExistsNames };
+        } else {
+          return { error: null };
+        }
       } catch (error) {
         console.log(error);
         return { error: "Template does not match" };

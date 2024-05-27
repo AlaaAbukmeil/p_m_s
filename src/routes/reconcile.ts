@@ -1,5 +1,5 @@
 import { bucket, verifyToken } from "../controllers/common";
-import { uploadToBucket } from "./reports/portfolio";
+import { uploadToBucket } from "./reports/reports";
 import { NextFunction, Router } from "express";
 import { Request, Response } from "express";
 import { readMUFGReconcileFile, readNomuraReconcileFile, uploadArrayAndReturnFilePath } from "../controllers/operations/readExcel";

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { bucket, formatDateFile, verifyToken } from "../../controllers/common";
-import { uploadToBucket } from "../reports/portfolio";
+import { uploadToBucket } from "../reports/reports";
 import { Request, Response, NextFunction } from "express";
 import { addFund, deleteFund, editFund, getAllFundDetails } from "../../controllers/operations/fund";
 import { deletePosition, editPosition, editPositionBulkPortfolio, insertFXPosition, pinPosition, readCalculatePosition, updatePositionPortfolio } from "../../controllers/operations/positions";
@@ -146,7 +146,8 @@ positionsRouter.post("/upload-trades", verifyToken, uploadToBucket.any(), async 
     } else {
       let action: any = await updatePositionPortfolio(allTrades, path);
       if (action?.error) {
-        res.send({ error: allTrades.error });
+        console.log(action);
+        res.send({ error: action.error });
       } else {
         console.log(action);
         res.send(action);
@@ -163,7 +164,6 @@ positionsRouter.post("/update-prices", verifyToken, uploadToBucket.any(), async 
     const fileName = req.files[0].filename;
     const path = bucket + fileName;
     let action: any = await updatePricesPortfolio(path);
-
     if (action?.error) {
       res.send({ error: action.error });
     } else {
@@ -175,7 +175,6 @@ positionsRouter.post("/update-prices", verifyToken, uploadToBucket.any(), async 
 });
 positionsRouter.post("/live-prices", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
-    
     let action: any = await checkLivePositions();
     let pathName = "live-positions";
     let livePositions = await uploadArrayAndReturnFilePath(action, pathName, "live-positions");

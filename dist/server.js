@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 //jshint esversion:6
 const auth_1 = __importDefault(require("./routes/auth"));
 const formatter_1 = __importDefault(require("./routes/formatter"));
-const portfolio_1 = __importDefault(require("./routes/reports/portfolio"));
+const reports_1 = __importDefault(require("./routes/reports/reports"));
 const positions_1 = __importDefault(require("./routes/operations/positions"));
 const trades_1 = __importDefault(require("./routes/operations/trades"));
 const reconcile_1 = __importDefault(require("./routes/reconcile"));
@@ -38,7 +38,7 @@ app.use(bodyParser.urlencoded({
     extended: false,
 }));
 app.use(bodyParser.json());
-app.use("/api/web/", portfolio_1.default);
+app.use("/api/web/", reports_1.default);
 app.use("/api/web/", auth_1.default);
 app.use("/api/web/", formatter_1.default);
 app.use("/api/web/", reconcile_1.default);

@@ -1,4 +1,4 @@
-import { client } from "../auth";
+import { client } from "../userManagement/auth";
 
 import { formatDateRlzdDaily, getAllDatesSinceLastMonthLastDay, getAllDatesSinceLastYearLastDay, getDateTimeInMongoDBCollectionFormat, getDaysBetween, getEarliestDateKeyAndValue, getLastDayOfMonth, monthlyRlzdDate } from "./common";
 import { getFundDetails } from "../operations/fund";
@@ -9,12 +9,12 @@ import { getHistoricalPortfolio, getPinnedPositions } from "../operations/positi
 import { RlzdTrades } from "../../models/portfolio";
 import { Position } from "../../models/position";
 import { formatFrontOfficeTable } from "../analytics/tables/frontOffice";
-import { formatBackOfficeTable } from "../analytics/tables/backOffice";
+import { formatBackOfficeTable, formatFactSheetStatsTable } from "../analytics/tables/backOffice";
 import { isRatingHigherThanBBBMinus } from "../analytics/tools";
 import { getRlzdTrades } from "./trades";
 import { insertEditLogs } from "../operations/logs";
 import { getMonthInFundDetailsFormat } from "../operations/tools";
-export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions = null, view: "front office" | "back office" | "exposure", sortBy: "pl" | "price move" | null) {
+export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions = null, view: "front office" | "back office" | "exposure" | "fact sheet", sortBy: "pl" | "price move" | null) {
   const database = client.db("portfolios");
   let earliestPortfolioName = await getEarliestCollectionName(date);
 
@@ -46,7 +46,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
 
   for (let index = 0; index < documents.length; index++) {
     documents[index]["Notional Amount"] = documents[index]["Notional Amount"] || parseFloat(documents[index]["Notional Amount"]) == 0 ? documents[index]["Notional Amount"] : documents[index]["Quantity"];
-    documents[index]["Notes"] = "" 
+    documents[index]["Notes"] = "";
     let latestDateKey;
 
     latestDateKey = Object.keys(documents[index]["Interest"]).sort((a, b) => {
@@ -130,14 +130,20 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   fundDetailsYTD = fundDetailsYTD[0];
   let fund = fundDetailsMTD[0];
   let portfolioFormattedSorted;
-  if (view == "front office" || view == "exposure") {
-    portfolioFormattedSorted = formatFrontOfficeTable({ portfolio: documents, date: date, fund: fund, dates: dates, sort: sort, sign: sign, conditions: conditions, fundDetailsYTD: fundDetailsYTD, sortBy: sortBy, view: view, ytdinterest: ytdinterest });
+  if (view == "fact sheet") {
+    portfolioFormattedSorted = formatFactSheetStatsTable({ portfolio: documents, date: date, fund: fund, dates: dates, sort: sort, sign: sign, conditions: conditions, fundDetailsYTD: fundDetailsYTD, sortBy: sortBy, ytdinterest: ytdinterest });
+    let fundDetails = portfolioFormattedSorted.fundDetails;
+    return { fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis };
   } else {
-    portfolioFormattedSorted = formatBackOfficeTable({ portfolio: documents, date: date, fund: fund, dates: dates, sort: sort, sign: sign, conditions: conditions, fundDetailsYTD: fundDetailsYTD, sortBy: sortBy, ytdinterest: ytdinterest });
+    if (view == "front office" || view == "exposure") {
+      portfolioFormattedSorted = formatFrontOfficeTable({ portfolio: documents, date: date, fund: fund, dates: dates, sort: sort, sign: sign, conditions: conditions, fundDetailsYTD: fundDetailsYTD, sortBy: sortBy, view: view, ytdinterest: ytdinterest });
+    } else {
+      portfolioFormattedSorted = formatBackOfficeTable({ portfolio: documents, date: date, fund: fund, dates: dates, sort: sort, sign: sign, conditions: conditions, fundDetailsYTD: fundDetailsYTD, sortBy: sortBy, ytdinterest: ytdinterest });
+    }
+    let fundDetails = portfolioFormattedSorted.fundDetails;
+    documents = portfolioFormattedSorted.portfolio;
+    return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: dayParamsWithLatestUpdates.lastUploadTradesDate, updatePriceDate: dayParamsWithLatestUpdates.lastUpdatePricesDate };
   }
-  let fundDetails = portfolioFormattedSorted.fundDetails;
-  documents = portfolioFormattedSorted.portfolio;
-  return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: dayParamsWithLatestUpdates.lastUploadTradesDate, updatePriceDate: dayParamsWithLatestUpdates.lastUpdatePricesDate };
 }
 
 export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInput: any, threeDayAnalytics = false) {
@@ -174,8 +180,7 @@ export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInpu
         portfolio[index]["Strategy"] = portfolio[index]["BB Ticker"].toLowerCase().includes("perp") ? "CE" : "VI";
       }
       portfolio[index]["Asset Class"] = portfolio[index]["Asset Class"] ? portfolio[index]["Asset Class"] : portfolio[index]["Rating Class"] ? portfolio[index]["Rating Class"] : "";
-      
-      
+
       if (portfolio[index]["Notional Amount"] < 0) {
         portfolio[index]["Asset Class"] = "Hedge";
       }
@@ -255,7 +260,6 @@ export function getMTDParams(portfolio: any, lastMonthPortfolio: any, dateInput:
     }
 
     for (let index = 0; index < portfolio.length; index++) {
-     
       if (portfolio[index]["Type"] != "FX") {
         if (!parseFloat(portfolio[index]["MTD Mark"]) && parseFloat(portfolio[index]["MTD Mark"]) != 0 && portfolio[index]["Entry Price"][thisMonth]) {
           portfolio[index]["MTD Mark"] = portfolio[index]["Entry Price"][thisMonth];
@@ -309,7 +313,7 @@ function getDayURlzdInt(portfolio: any, date: any) {
       let settlementDate = settlementDates[indexSettlementDate];
       let settlementDateTimestamp = new Date(settlementDate).getTime();
       portfolio[index]["Principal"] += interestInfo[settlementDate];
-      portfolio[index]["Interest"][settlementDate + " Total"] = portfolio[index]["Principal"]
+      portfolio[index]["Interest"][settlementDate + " Total"] = portfolio[index]["Principal"];
       if (settlementDateTimestamp >= new Date(date).getTime()) {
         quantityGeneratingInterest -= interestInfo[settlementDate];
       }

@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb";
-import { client } from "../auth";
+import { client } from "../userManagement/auth";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { CentralizedTrade } from "../../models/trades";
 import { insertEditLogs } from "./logs";

@@ -1,9 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCurrentDateTime = exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDateTime = exports.convertExcelDateToJSDate = exports.swapMonthDay = exports.formatDateWorld = exports.getYear = exports.isNotNullOrUndefined = exports.getTradeDateYearTradesWithoutTheCentury = exports.getTradeDateYearTrades = exports.formatTradeDate = exports.getCurrentDateVconFormat = exports.verifyTokenMember = exports.verifyToken = exports.getTime = exports.formatDateUS = exports.formatDateFile = exports.formatDate = exports.parsePercentage = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = exports.bucket = exports.uri = void 0;
+exports.getCurrentDateTime = exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDateTime = exports.convertExcelDateToJSDate = exports.swapMonthDay = exports.formatDateWorld = exports.getYear = exports.isNotNullOrUndefined = exports.getTradeDateYearTradesWithoutTheCentury = exports.getTradeDateYearTrades = exports.formatTradeDate = exports.getCurrentDateVconFormat = exports.verifyTokenFactSheetMember = exports.verifyTokenRiskMember = exports.verifyToken = exports.getTime = exports.formatDateUS = exports.formatDateFile = exports.formatDate = exports.parsePercentage = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = exports.bucket = exports.platform = exports.uri = void 0;
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 exports.uri = "mongodb+srv://" + process.env.MONGODBUSERNAME + ":" + process.env.NEWMONGODBPASSWORD + "@app.ywfxr8w.mongodb.net/?retryWrites=true&w=majority";
+exports.platform = "https://admin.triadacapital.com/";
 exports.bucket = "https://storage.googleapis.com/app-backend-414212.appspot.com";
 function getCurrentMonthDateRange() {
     const now = new Date();
@@ -114,7 +115,7 @@ const verifyToken = (req, res, next) => {
     }
 };
 exports.verifyToken = verifyToken;
-const verifyTokenMember = (req, res, next) => {
+const verifyTokenRiskMember = (req, res, next) => {
     try {
         const token = req.cookies["triada.admin.cookie"].token;
         if (!token) {
@@ -132,7 +133,26 @@ const verifyTokenMember = (req, res, next) => {
         return res.sendStatus(401);
     }
 };
-exports.verifyTokenMember = verifyTokenMember;
+exports.verifyTokenRiskMember = verifyTokenRiskMember;
+const verifyTokenFactSheetMember = (req, res, next) => {
+    try {
+        const token = req.cookies["triada.admin.cookie"].token;
+        if (!token) {
+            return res.sendStatus(401);
+        }
+        const decoded = jwt.verify(token, process.env.SECRET);
+        req.accessRole = decoded.accessRole;
+        if (decoded.accessRole != "member (risk report)" && decoded.accessRole != "admin" && decoded.accessRole != "member (factsheet report)") {
+            return res.sendStatus(401);
+        }
+        next();
+    }
+    catch (error) {
+        console.log(error);
+        return res.sendStatus(401);
+    }
+};
+exports.verifyTokenFactSheetMember = verifyTokenFactSheetMember;
 function getCurrentDateVconFormat() {
     // Get current date
     const date = new Date();

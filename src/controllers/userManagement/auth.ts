@@ -1,11 +1,11 @@
 require("dotenv").config();
 
 import { ObjectId } from "mongodb";
-import { uri } from "./common";
-import { getDateTimeInMongoDBCollectionFormat } from "./reports/common";
-import { insertEditLogs } from "./operations/logs";
-import { sendEmailToResetPassword, sendRegsiterationEmail } from "./operations/email";
+import { uri } from "../common";
+import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
+import { insertEditLogs } from "../operations/logs";
 import { copyFileSync } from "fs";
+import { generateRandomIntegers, sendEmailToResetPassword, sendRegsiterationEmail } from "./tools";
 
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
@@ -40,9 +40,10 @@ export async function registerUser(email: string, password: string, verification
     });
     let salt = await bcrypt.genSalt(parseInt(saltRounds));
     let cryptedPassword = await bcrypt.hash(password, salt);
+    const result = await bcrypt.compare(verificationCode, verificationCodeDB.code);
 
     const user = await usersCollection.findOne({ email: email });
-    if (user == null && verificationCode == verificationCodeDB.code) {
+    if (user == null && result) {
       const updateDoc = {
         email: email,
         password: cryptedPassword,
@@ -90,7 +91,7 @@ export async function checkIfUserExists(email: string, password: string): Promis
             accessRole: user["accessRole"],
           };
         } else {
-          return { message: "wrong password", status: 401, token: null, email: null, accessRole: null };
+          return { message: "Wrong password", status: 401, token: null, email: null, accessRole: null };
         }
       } catch (error) {
         return { message: "unexpected error", status: 401, token: null, email: null, accessRole: null };
@@ -133,14 +134,6 @@ export async function sendResetPasswordRequest(userEmail: string) {
     return { message: "User does not exist, please sign up!", status: 401 };
   }
 }
-export function generateRandomIntegers(n = 5, min = 1, max = 10) {
-  let resetCode = "";
-  for (let i = 0; i < n; i++) {
-    resetCode += Math.floor(Math.random() * (max - min + 1)) + min;
-  }
-  return resetCode;
-}
-
 
 export async function resetPassword(userEmail: string, resetCode: string, enteredPassword: string) {
   const database = client.db("auth");
@@ -245,6 +238,7 @@ export async function editUser(editedUser: any) {
     await insertEditLogs([errorMessage], "Errors", dateTime, "editUser", "src/controllers/auth.ts");
   }
 }
+
 export async function getUser(userId: string) {
   try {
     // Connect to the MongoDB client
@@ -270,6 +264,7 @@ export async function getUser(userId: string) {
     return {};
   }
 }
+
 export async function deleteUser(userId: string, userName: string, userEmail: any) {
   try {
     // Connect to the MongoDB client
@@ -295,6 +290,7 @@ export async function deleteUser(userId: string, userName: string, userEmail: an
     return { error: "Unexpected error 501" };
   }
 }
+
 export async function addUser({ email, name, accessRole }: { email: string; name: string; accessRole: string }): Promise<any> {
   try {
     const database = client.db("auth");
