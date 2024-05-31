@@ -3,7 +3,7 @@ import { verifyToken, generateRandomString, bucket, verifyTokenRiskMember, verif
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../../controllers/reports/common";
 import { getPortfolioWithAnalytics } from "../../controllers/reports/portfolios";
 import { getPortfolio } from "../../controllers/operations/positions";
-import { calculateMonthlyReturn, monthlyData } from "../../controllers/reports/factSheet";
+import { calculateMonthlyReturn, uploadFSData, getFactSheetData } from "../../controllers/reports/factSheet";
 
 require("dotenv").config();
 
@@ -145,8 +145,8 @@ router.get("/fact-sheet", verifyTokenFactSheetMember, async (req: Request, res: 
     let date = getDateTimeInMongoDBCollectionFormat(new Date());
     let sign = 1;
     let sort = "order";
-    let report = monthlyData;
-    let result =  calculateMonthlyReturn(report);
+    let data = await getFactSheetData("triada");
+    let result = calculateMonthlyReturn(data, ["a2"]);
     let countrySectorMacro = await getPortfolioWithAnalytics(date, sort, sign, null, "fact sheet", null);
     res.send({ countrySectorMacro: countrySectorMacro, result: result });
   } catch (error: any) {
@@ -154,5 +154,6 @@ router.get("/fact-sheet", verifyTokenFactSheetMember, async (req: Request, res: 
     res.send({ error: error.toString() });
   }
 });
+
 
 export default router;

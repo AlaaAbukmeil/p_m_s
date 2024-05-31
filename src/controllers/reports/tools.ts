@@ -353,9 +353,9 @@ export function getSampleStandardDeviation(array: any): { sd: number; mean: numb
   return { sd: sd, mean: mean, arrLength: n };
 }
 
-export function updateStats({ data, month, previousMonth, returnMonth, cumulativeReturn, numOfMonths, returns, positiveReturns, negativeReturns, peak, trough, variable, troughReturn, peakReturn }: { data: any; month: any; previousMonth: any; returnMonth: any; cumulativeReturn: any; numOfMonths: any; returns: any; positiveReturns: any; negativeReturns: any; peak: any; trough: any; variable: string; troughReturn: any; peakReturn: any }) {
-  if (data[month][variable] && data[previousMonth][variable]) {
-    returnMonth[variable] = data[month][variable] / data[previousMonth][variable] - 1;
+export function updateStats({ data, returnMonth, cumulativeReturn, numOfMonths, returns, positiveReturns, negativeReturns, peak, trough, variable, troughReturn, peakReturn, monthsIndex }: { data: any; returnMonth: any; cumulativeReturn: any; numOfMonths: any; returns: any; positiveReturns: any; negativeReturns: any; peak: any; trough: any; variable: string; troughReturn: any; peakReturn: any; monthsIndex: any }) {
+  if (data[monthsIndex].data[variable] && data[monthsIndex - 1].data[variable]) {
+    returnMonth[variable] = data[monthsIndex].data[variable] / data[monthsIndex - 1].data[variable] - 1;
     cumulativeReturn[variable] = cumulativeReturn[variable] * (returnMonth[variable] + 1);
     numOfMonths[variable] += 1;
     returns[variable].push(returnMonth[variable]);
@@ -366,11 +366,11 @@ export function updateStats({ data, month, previousMonth, returnMonth, cumulativ
       negativeReturns[variable].push(returnMonth[variable]);
     }
 
-    if (data[month][variable] > peak[variable]) {
-      peak[variable] = data[month][variable];
+    if (data[monthsIndex].data[variable] > peak[variable]) {
+      peak[variable] = data[monthsIndex].data[variable];
     }
-    if (data[month][variable] < trough[variable]) {
-      trough[variable] = data[month][variable];
+    if (data[monthsIndex].data[variable] < trough[variable]) {
+      trough[variable] = data[monthsIndex].data[variable];
     }
     if (returnMonth[variable] > peakReturn[variable]) {
       peakReturn[variable] = returnMonth[variable];

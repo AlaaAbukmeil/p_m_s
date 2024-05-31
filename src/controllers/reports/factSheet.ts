@@ -1,3 +1,4 @@
+import { client } from "../userManagement/auth";
 import { getSampleStandardDeviation, getStatistics, transformData, updateStats } from "./tools";
 
 export let monthlyData: any = {
@@ -110,208 +111,677 @@ export let monthlyData: any = {
   "04/2024": { a2: 1430.97, a3: 1098.44, a4: 975, a5: 958.16, a6: 963.77 },
 };
 
-export function calculateMonthlyReturn(data: any) {
+export let lg30truu = {
+  "29/4/2024": 1541.284,
+  "29/3/2024": 1554.347,
+  "29/2/2024": 1531.19,
+  "31/1/2024": 1519.125,
+  "29/12/2023": 1521.999,
+  "30/11/2023": 1463.106,
+  "31/10/2023": 1388.692,
+  "29/9/2023": 1401.972,
+  "31/8/2023": 1424.61,
+  "31/7/2023": 1431.894,
+  "30/6/2023": 1404.411,
+  "31/5/2023": 1369.465,
+  "28/4/2023": 1385.417,
+  "31/3/2023": 1376.641,
+  "28/2/2023": 1364.076,
+  "31/1/2023": 1390.396,
+  "30/12/2022": 1334.639,
+  "30/11/2022": 1325.917,
+  "31/10/2022": 1262.663,
+  "30/9/2022": 1236.149,
+  "31/8/2022": 1302.407,
+  "29/7/2022": 1322.381,
+  "30/6/2022": 1270.984,
+  "31/5/2022": 1374.428,
+  "29/4/2022": 1375.709,
+  "31/3/2022": 1441.915,
+  "28/2/2022": 1454.397,
+  "31/1/2022": 1490.077,
+  "31/12/2021": 1528.887,
+  "30/11/2021": 1501.108,
+  "29/10/2021": 1531.508,
+  "30/9/2021": 1539.749,
+  "31/8/2021": 1556.907,
+  "30/7/2021": 1547.059,
+  "30/6/2021": 1545.413,
+  "31/5/2021": 1542.389,
+  "30/4/2021": 1528.059,
+  "31/3/2021": 1499.526,
+  "26/2/2021": 1513.531,
+  "29/1/2021": 1511.478,
+  "31/12/2020": 1513.969,
+  "30/11/2020": 1477.503,
+  "30/10/2020": 1407.332,
+  "30/9/2020": 1406.305,
+  "31/8/2020": 1433.082,
+  "31/7/2020": 1410.006,
+  "30/6/2020": 1348.645,
+  "29/5/2020": 1318.625,
+  "30/4/2020": 1254.603,
+  "31/3/2020": 1202.082,
+  "28/2/2020": 1390.434,
+  "31/1/2020": 1416.367,
+  "31/12/2019": 1414.563,
+  "29/11/2019": 1378.84,
+  "31/10/2019": 1377.749,
+  "30/9/2019": 1366.718,
+  "30/8/2019": 1360.27,
+  "31/7/2019": 1381.765,
+  "28/6/2019": 1375.872,
+  "31/5/2019": 1333.475,
+  "30/4/2019": 1347.475,
+  "29/3/2019": 1336.199,
+  "28/2/2019": 1330.043,
+  "31/1/2019": 1311.829,
+  "31/12/2018": 1256.6684,
+  "30/11/2018": 1266.1663,
+  "31/10/2018": 1278.3626,
+  "28/9/2018": 1302.0689,
+  "31/8/2018": 1284.472,
+  "31/7/2018": 1297.8874,
+  "29/6/2018": 1276.7616,
+  "31/5/2018": 1282.5434,
+  "30/4/2018": 1302.1558,
+  "30/3/2018": 1305.1303,
+  "28/2/2018": 1307.0181,
+  "31/1/2018": 1325.4897,
+  "29/12/2017": 1309.8409,
+  "30/11/2017": 1303.8109,
+  "31/10/2017": 1303.4085,
+  "29/9/2017": 1298.5914,
+  "31/8/2017": 1289.776,
+  "31/7/2017": 1281.756,
+  "30/6/2017": 1262.754,
+  "31/5/2017": 1260.633,
+  "28/4/2017": 1244.939,
+  "31/3/2017": 1223.759,
+  "28/2/2017": 1223.051,
+  "31/1/2017": 1208.062,
+  "30/12/2016": 1186.09,
+  "30/11/2016": 1165.7,
+  "31/10/2016": 1184.4944,
+  "30/9/2016": 1188.365,
+  "31/8/2016": 1179.15,
+  "29/7/2016": 1157.269,
+  "30/6/2016": 1128.529,
+  "31/5/2016": 1118.168,
+  "29/4/2016": 1117.801,
+  "31/3/2016": 1080.621,
+  "29/2/2016": 1029.126,
+  "29/1/2016": 1022.48,
+  "31/12/2015": 1037.933,
+  "30/11/2015": 1058.473,
+  "30/10/2015": 1078.4776,
+  "30/9/2015": 1046.9512,
+  "31/8/2015": 1070.713,
+  "31/7/2015": 1084.254,
+  "30/6/2015": 1087.602,
+};
+
+export let beuctruu = {
+  "29/4/2024": 204.5551,
+  "29/3/2024": 205.5342,
+  "29/2/2024": 201.8762,
+  "31/1/2024": 198.5051,
+  "29/12/2023": 193.5439,
+  "30/11/2023": 189.7018,
+  "31/10/2023": 181.9793,
+  "29/9/2023": 182.6958,
+  "31/8/2023": 181.6283,
+  "31/7/2023": 186.9146,
+  "30/6/2023": 188.6661,
+  "31/5/2023": 183.9958,
+  "28/4/2023": 188.7359,
+  "31/3/2023": 189.8076,
+  "28/2/2023": 193.8017,
+  "31/1/2023": 196.5759,
+  "30/12/2022": 184.9303,
+  "30/11/2022": 173.49,
+  "31/10/2022": 153.8387,
+  "30/9/2022": 166.8681,
+  "31/8/2022": 178.6542,
+  "29/7/2022": 172.3585,
+  "30/6/2022": 178.869,
+  "31/5/2022": 189.866,
+  "29/4/2022": 195.5238,
+  "31/3/2022": 197.8855,
+  "28/2/2022": 203.4706,
+  "31/1/2022": 213.2161,
+  "31/12/2021": 221.3517,
+  "30/11/2021": 224.0986,
+  "29/10/2021": 226.7524,
+  "30/9/2021": 239.5743,
+  "31/8/2021": 250.1008,
+  "30/7/2021": 244.6918,
+  "30/6/2021": 254.5741,
+  "31/5/2021": 257.9431,
+  "30/4/2021": 255.9492,
+  "31/3/2021": 252.7659,
+  "26/2/2021": 253.592,
+  "29/1/2021": 252.4675,
+  "31/12/2020": 252.2107,
+  "30/11/2020": 247.6018,
+  "30/10/2020": 241.6722,
+  "30/9/2020": 242.8422,
+  "31/8/2020": 247.2555,
+  "31/7/2020": 242.038,
+  "30/6/2020": 236.4203,
+  "29/5/2020": 228.2939,
+  "30/4/2020": 221.2717,
+  "31/3/2020": 212.0796,
+  "28/2/2020": 241.6289,
+  "31/1/2020": 241.1702,
+  "31/12/2019": 239.6441,
+  "29/11/2019": 237.6784,
+  "31/10/2019": 236.9375,
+  "30/9/2019": 233.5941,
+  "30/8/2019": 232.4289,
+  "31/7/2019": 234.835,
+  "28/6/2019": 233.5024,
+  "31/5/2019": 230.0556,
+  "30/4/2019": 229.9406,
+  "29/3/2019": 229.0585,
+  "28/2/2019": 223.1493,
+  "31/1/2019": 219.9171,
+  "31/12/2018": 212.7746,
+  "30/11/2018": 209.5629,
+  "31/10/2018": 209.7654,
+  "28/9/2018": 214.9733,
+  "31/8/2018": 213.9506,
+  "31/7/2018": 214.1525,
+  "29/6/2018": 210.0622,
+  "31/5/2018": 213.6644,
+  "30/4/2018": 216.2101,
+  "30/3/2018": 218.0658,
+  "28/2/2018": 219.4103,
+  "31/1/2018": 220.9196,
+  "29/12/2017": 220.2803,
+  "30/11/2017": 219.5193,
+  "31/10/2017": 220.2164,
+  "29/9/2017": 218.5001,
+  "31/8/2017": 217.3552,
+  "31/7/2017": 215.094,
+  "30/6/2017": 213.2929,
+  "31/5/2017": 213.3617,
+  "28/4/2017": 214.7595,
+  "31/3/2017": 213.2932,
+  "28/2/2017": 212.5814,
+  "31/1/2017": 208.9942,
+  "30/12/2016": 206.1092,
+  "30/11/2016": 205.2614,
+  "31/10/2016": 207.1261,
+  "30/9/2016": 206.3952,
+  "31/8/2016": 205.0568,
+  "29/7/2016": 204.0044,
+  "30/6/2016": 199.391,
+  "31/5/2016": 196.4028,
+  "29/4/2016": 194.6085,
+  "31/3/2016": 191.2175,
+  "29/2/2016": 184.9747,
+  "29/1/2016": 183.9046,
+  "31/12/2015": 184.8829,
+  "30/11/2015": 185.9623,
+  "30/10/2015": 186.4787,
+  "30/9/2015": 179.8764,
+  "31/8/2015": 180.9855,
+  "31/7/2015": 184.7908,
+  "30/6/2015": 184.6587,
+  "29/5/2015": 183.9021,
+  "30/4/2015": 183.2312,
+  "31/3/2015": 179.7456,
+  "27/2/2015": 179.252,
+  "30/1/2015": 177.2277,
+  "31/12/2014": 176.5508,
+  "28/11/2014": 179.7106,
+  "31/10/2014": 179.3097,
+  "30/9/2014": 178.0952,
+  "29/8/2014": 179.7436,
+  "31/7/2014": 178.3705,
+};
+
+export let emustruu = {
+  "29/4/2024": 1169.407,
+  "29/3/2024": 1188.987,
+  "29/2/2024": 1168.854,
+  "31/1/2024": 1164.461,
+  "29/12/2023": 1171.058,
+  "30/11/2023": 1123.852,
+  "31/10/2023": 1067.263,
+  "29/9/2023": 1083.273,
+  "31/8/2023": 1108.519,
+  "31/7/2023": 1121.995,
+  "30/6/2023": 1108.902,
+  "31/5/2023": 1092.604,
+  "28/4/2023": 1100.904,
+  "31/3/2023": 1096.585,
+  "28/2/2023": 1083.122,
+  "31/1/2023": 1107.865,
+  "30/12/2022": 1073.505,
+  "30/11/2022": 1064.459,
+  "31/10/2022": 998.2557,
+  "30/9/2022": 1007.138,
+  "31/8/2022": 1066.051,
+  "29/7/2022": 1071.828,
+  "30/6/2022": 1049.728,
+  "31/5/2022": 1100.03,
+  "29/4/2022": 1100.2,
+  "31/3/2022": 1149.959,
+  "28/2/2022": 1177.464,
+  "31/1/2022": 1233.478,
+  "31/12/2021": 1266.84,
+  "30/11/2021": 1254.603,
+  "29/10/2021": 1268.181,
+  "30/9/2021": 1273.491,
+  "31/8/2021": 1295.025,
+  "30/7/2021": 1282.53,
+  "30/6/2021": 1280.483,
+  "31/5/2021": 1271.371,
+  "30/4/2021": 1259.798,
+  "31/3/2021": 1243.297,
+  "26/2/2021": 1259.04,
+  "29/1/2021": 1277.197,
+  "31/12/2020": 1288.137,
+  "30/11/2020": 1268.911,
+  "30/10/2020": 1231.117,
+  "30/9/2020": 1232.647,
+  "31/8/2020": 1248.426,
+  "31/7/2020": 1241.698,
+  "30/6/2020": 1204.122,
+  "29/5/2020": 1174.844,
+  "30/4/2020": 1123.052,
+  "31/3/2020": 1094.642,
+  "28/2/2020": 1225.523,
+  "31/1/2020": 1227.939,
+  "31/12/2019": 1209.285,
+  "29/11/2019": 1191.17,
+  "31/10/2019": 1190.827,
+  "30/9/2019": 1184.503,
+  "30/8/2019": 1184.067,
+  "31/7/2019": 1181.125,
+  "28/6/2019": 1169.483,
+  "31/5/2019": 1138.648,
+  "30/4/2019": 1131.685,
+  "29/3/2019": 1127.205,
+  "28/2/2019": 1112.019,
+  "31/1/2019": 1103.185,
+  "31/12/2018": 1069.1127,
+  "30/11/2018": 1054.705,
+  "31/10/2018": 1056.3934,
+  "28/9/2018": 1071.0266,
+  "31/8/2018": 1057.0093,
+  "31/7/2018": 1071.4297,
+  "29/6/2018": 1054.0208,
+  "31/5/2018": 1061.072,
+  "30/4/2018": 1068.8702,
+  "30/3/2018": 1079.8943,
+  "28/2/2018": 1079.2784,
+  "31/1/2018": 1094.1858,
+  "29/12/2017": 1096.0681,
+  "30/11/2017": 1091.8585,
+  "31/10/2017": 1093.5031,
+  "29/9/2017": 1089.332,
+  "31/8/2017": 1088.6936,
+  "31/7/2017": 1074.1751,
+  "30/6/2017": 1065.1086,
+  "31/5/2017": 1067.187,
+  "28/4/2017": 1059.6214,
+  "31/3/2017": 1046.5866,
+  "28/2/2017": 1043.2559,
+  "31/1/2017": 1026.003,
+  "30/12/2016": 1013.3249,
+  "30/11/2016": 1001.9254,
+  "31/10/2016": 1033.729,
+  "30/9/2016": 1040.4327,
+  "31/8/2016": 1038.4334,
+  "29/7/2016": 1024.181,
+  "30/6/2016": 1008.878,
+  "31/5/2016": 980.7968,
+  "29/4/2016": 980.8723,
+  "31/3/2016": 963.9097,
+  "29/2/2016": 935.2223,
+  "29/1/2016": 921.9492,
+  "31/12/2015": 922.1997,
+  "30/11/2015": 935.296,
+  "30/10/2015": 937.7966,
+  "30/9/2015": 913.2438,
+  "31/8/2015": 924.8861,
+  "31/7/2015": 936.7893,
+  "30/6/2015": 935.5775,
+};
+
+export let legatruu = {
+  "29/4/2024": 449.9313,
+  "29/3/2024": 461.58,
+  "29/2/2024": 459.0528,
+  "31/1/2024": 464.8953,
+  "29/12/2023": 471.3998,
+  "30/11/2023": 452.5896,
+  "31/10/2023": 430.8629,
+  "29/9/2023": 436.0752,
+  "31/8/2023": 449.1976,
+  "31/7/2023": 455.4279,
+  "30/6/2023": 452.2958,
+  "31/5/2023": 452.3312,
+  "28/4/2023": 461.3495,
+  "31/3/2023": 459.3227,
+  "28/2/2023": 445.2434,
+  "31/1/2023": 460.5541,
+  "30/12/2022": 445.9152,
+  "30/11/2022": 443.5168,
+  "31/10/2022": 423.5826,
+  "30/9/2022": 426.5159,
+  "31/8/2022": 449.6171,
+  "29/7/2022": 468.0885,
+  "30/6/2022": 458.3446,
+  "31/5/2022": 473.5394,
+  "29/4/2022": 472.2504,
+  "31/3/2022": 499.6239,
+  "28/2/2022": 515.3167,
+  "31/1/2022": 521.5153,
+  "31/12/2021": 532.4266,
+  "30/11/2021": 533.171,
+  "29/10/2021": 534.7351,
+  "30/9/2021": 536.0307,
+  "31/8/2021": 545.7278,
+  "30/7/2021": 548.0067,
+  "30/6/2021": 540.8085,
+  "31/5/2021": 545.6221,
+  "30/4/2021": 540.5455,
+  "31/3/2021": 533.802,
+  "26/2/2021": 544.272,
+  "29/1/2021": 553.8047,
+  "31/12/2020": 558.7254,
+  "30/11/2020": 551.3198,
+  "30/10/2020": 541.4746,
+  "30/9/2020": 540.9572,
+  "31/8/2020": 542.91,
+  "31/7/2020": 543.739,
+  "30/6/2020": 526.9333,
+  "29/5/2020": 522.2931,
+  "30/4/2020": 520.0118,
+  "31/3/2020": 509.9988,
+  "28/2/2020": 521.688,
+  "31/1/2020": 518.2026,
+  "31/12/2019": 511.6712,
+  "29/11/2019": 508.7047,
+  "31/10/2019": 512.5915,
+  "30/9/2019": 509.2007,
+  "30/8/2019": 514.4333,
+  "31/7/2019": 504.1809,
+  "28/6/2019": 505.5858,
+  "31/5/2019": 494.6193,
+  "30/4/2019": 488.0109,
+  "29/3/2019": 489.4602,
+  "28/2/2019": 483.4082,
+  "31/1/2019": 486.2068,
+  "31/12/2018": 478.9153,
+  "30/11/2018": 469.4245,
+  "31/10/2018": 467.9611,
+  "28/9/2018": 473.2476,
+  "31/8/2018": 477.3626,
+  "31/7/2018": 476.8624,
+  "29/6/2018": 477.6598,
+  "31/5/2018": 479.7931,
+  "30/4/2018": 483.4603,
+  "30/3/2018": 491.33,
+  "28/2/2018": 486.1554,
+  "31/1/2018": 490.5078,
+  "29/12/2017": 484.7313,
+  "30/11/2017": 483.0576,
+  "31/10/2017": 477.752,
+  "29/9/2017": 479.5665,
+  "31/8/2017": 483.9256,
+  "31/7/2017": 479.1785,
+  "30/6/2017": 471.2553,
+  "31/5/2017": 471.6692,
+  "28/4/2017": 464.4815,
+  "31/3/2017": 459.3044,
+  "28/2/2017": 458.5996,
+  "31/1/2017": 456.4424,
+  "30/12/2016": 451.3539,
+  "30/11/2016": 453.4371,
+  "31/10/2016": 472.1983,
+  "30/9/2016": 485.6783,
+  "31/8/2016": 483.0188,
+  "29/7/2016": 485.3764,
+  "30/6/2016": 481.7451,
+  "31/5/2016": 468.0762,
+  "29/4/2016": 474.4409,
+  "31/3/2016": 468.2131,
+  "29/2/2016": 455.8935,
+  "29/1/2016": 445.963,
+  "31/12/2015": 442.1315,
+  "30/11/2015": 439.7938,
+  "30/10/2015": 447.1977,
+  "30/9/2015": 446.2552,
+  "31/8/2015": 443.9924,
+  "31/7/2015": 443.4764,
+  "30/6/2015": 442.485,
+};
+
+export function calculateMonthlyReturn(data: any, variables: any) {
   //assue months are sorted in ascending order
-  let months = Object.keys(data);
+
   let monthlyReturns: any = {};
-  let monthsIndex = months.length - 1;
+  let monthsIndex = data.length - 1;
 
-  let peak = { a2: -Infinity, a3: -Infinity, a4: -Infinity, a5: -Infinity, a6: -Infinity };
-  let troughReturn = { a2: Infinity, a3: Infinity, a4: Infinity, a5: Infinity, a6: Infinity };
-  let peakReturn = { a2: -Infinity, a3: -Infinity, a4: -Infinity, a5: -Infinity, a6: -Infinity };
+  let peak: any = {};
+  let trough: any = {};
+  let troughReturn: any = {};
+  let peakReturn: any = {};
 
-  let trough = { a2: Infinity, a3: Infinity, a4: Infinity, a5: Infinity, a6: Infinity };
+  let cumulativeReturn: any = {};
+  let numOfMonths: any = {};
+  let returns: any = {};
+  let positiveReturns: any = {};
+  let negativeReturns: any = {};
+  let annualVolitality: any = {};
 
-  let cumulativeReturn = { a2: 1, a3: 1, a4: 1, a5: 1, a6: 1 };
-  let numOfMonths = { a2: 0, a3: 0, a4: 0, a5: 0, a6: 0 };
-  let returns: any = { a2: [], a3: [], a4: [], a5: [], a6: [] };
-  let positiveReturns: any = { a2: [], a3: [], a4: [], a5: [], a6: [] };
-  let negativeReturns: any = { a2: [], a3: [], a4: [], a5: [], a6: [] };
+  for (let index = 0; index < variables.length; index++) {
+    let variable = variables[index];
+    peak[variable] = -Infinity;
+    trough[variable] = Infinity;
+    troughReturn[variable] = Infinity;
+    peakReturn[variable] = -Infinity;
+
+    cumulativeReturn[variable] = 1;
+    numOfMonths[variable] = 1;
+    returns[variable] = [];
+    positiveReturns[variable] = [];
+    negativeReturns[variable] = [];
+    annualVolitality[variable] = 0;
+  }
 
   let yearlyData: any = {};
   while (monthsIndex >= 0) {
-    let month = months[monthsIndex];
-    let year = (parseInt(month.split("/")[1]) - 1).toString();
     if (monthsIndex == 0) {
+      let month = data[monthsIndex].date;
+      let year = (parseInt(month.split("/")[1]) - 1).toString();
       if (!yearlyData[year]) {
-        yearlyData[year] = { a2: data[month].a2, a3: data[month].a3, a4: data[month].a4, a5: data[month].a5, a6: data[month].a6 };
+        for (let index = 0; index < variables.length; index++) {
+          let variable = variables[index];
+          yearlyData[year] = {};
+          yearlyData[year][variable] = data[monthsIndex].data[variable];
+        }
       }
       monthsIndex--;
     } else {
-      let month = months[monthsIndex];
-      let previousMonth = months[monthsIndex - 1];
-      let returnMonth = { a2: 0, a3: 0, a4: 0, a5: 0, a6: 0 };
-      let year = month.split("/")[1];
-      let variable = "a2";
-
-      updateStats({ data, month, previousMonth, returnMonth, cumulativeReturn, numOfMonths, returns, positiveReturns, negativeReturns, peak, trough, variable, troughReturn, peakReturn });
-      variable = "a3";
-
-      updateStats({ data, month, previousMonth, returnMonth, cumulativeReturn, numOfMonths, returns, positiveReturns, negativeReturns, peak, trough, variable, troughReturn, peakReturn });
-      variable = "a4";
-
-      updateStats({ data, month, previousMonth, returnMonth, cumulativeReturn, numOfMonths, returns, positiveReturns, negativeReturns, peak, trough, variable, troughReturn, peakReturn });
-      variable = "a5";
-
-      updateStats({ data, month, previousMonth, returnMonth, cumulativeReturn, numOfMonths, returns, positiveReturns, negativeReturns, peak, trough, variable, troughReturn, peakReturn });
-      variable = "a6";
-
-      updateStats({ data, month, previousMonth, returnMonth, cumulativeReturn, numOfMonths, returns, positiveReturns, negativeReturns, peak, trough, variable, troughReturn, peakReturn });
-
-      monthlyReturns[month] = {
-        a2: returnMonth.a2,
-        a3: returnMonth.a3,
-        a4: returnMonth.a4,
-        a5: returnMonth.a5,
-        a6: returnMonth.a6,
-      };
-      monthsIndex--;
-      if (!yearlyData[year]) {
-        yearlyData[year] = { a2: data[month].a2, a3: data[month].a3, a4: data[month].a4, a5: data[month].a5, a6: data[month].a6 };
+      let month = data[monthsIndex].date;
+      let returnMonth: any = {};
+      for (let index = 0; index < variables.length; index++) {
+        let variable = variables[index];
+        returnMonth[variable] = 0;
       }
+
+      let year = month.split("/")[1];
+      for (let index = 0; index < variables.length; index++) {
+        let variable = variables[index];
+        updateStats({ data, returnMonth, cumulativeReturn, numOfMonths, returns, positiveReturns, negativeReturns, peak, trough, variable, troughReturn, peakReturn, monthsIndex });
+        monthlyReturns[month] = {};
+        monthlyReturns[month][variable] = returnMonth[variable];
+      }
+
+      if (!yearlyData[year]) {
+        for (let index = 0; index < variables.length; index++) {
+          let variable = variables[index];
+          yearlyData[year] = {};
+          yearlyData[year][variable] = data[monthsIndex].data[variable];
+        }
+      }
+      monthsIndex--;
     }
   }
-
   let years = Object.keys(yearlyData);
   let yearsIndex = years.length - 1;
   let yearlyReturns: any = {};
+
   while (yearsIndex >= 0) {
     let year = years[yearsIndex];
     let previousYear = years[yearsIndex - 1];
-    let yearlyReturn = { a2: 0, a3: 0, a4: 0, a5: 0, a6: 0 };
-    if (yearlyData[year] && yearlyData[previousYear]) {
-      if (yearlyData[year].a2 && yearlyData[previousYear].a2) {
-        yearlyReturn.a2 = yearlyData[year].a2 / yearlyData[previousYear].a2 - 1;
-      }
-      if (yearlyData[year].a3 && yearlyData[previousYear].a3) {
-        yearlyReturn.a3 = yearlyData[year].a3 / yearlyData[previousYear].a3 - 1;
-      }
-      if (yearlyData[year].a4 && yearlyData[previousYear].a4) {
-        yearlyReturn.a4 = yearlyData[year].a4 / yearlyData[previousYear].a4 - 1;
-      }
-      if (yearlyData[year].a5 && yearlyData[previousYear].a5) {
-        yearlyReturn.a5 = yearlyData[year].a5 / yearlyData[previousYear].a5 - 1;
-      }
-      if (yearlyData[year].a6 && yearlyData[previousYear].a6) {
-        yearlyReturn.a6 = yearlyData[year].a6 / yearlyData[previousYear].a6 - 1;
-      }
-      if (!monthlyReturns["Cumulative/" + year]) {
-        monthlyReturns["Cumulative/" + year] = {
-          a2: 0,
-          a3: 0,
-          a4: 0,
-          a5: 0,
-          a6: 0,
-        };
-      }
-      monthlyReturns["Cumulative/" + year]["a2"] = yearlyReturn.a2;
-      monthlyReturns["Cumulative/" + year]["a3"] = yearlyReturn.a3;
-      monthlyReturns["Cumulative/" + year]["a4"] = yearlyReturn.a4;
-      monthlyReturns["Cumulative/" + year]["a5"] = yearlyReturn.a5;
-      monthlyReturns["Cumulative/" + year]["a6"] = yearlyReturn.a6;
 
-      yearlyReturns[year] = {
-        a2: yearlyReturn.a2,
-        a3: yearlyReturn.a3,
-        a4: yearlyReturn.a4,
-        a5: yearlyReturn.a5,
-        a6: yearlyReturn.a6,
-      };
+    let yearlyReturn: any = {};
+    for (let index = 0; index < variables.length; index++) {
+      let variable = variables[index];
+      yearlyReturn[variable] = 0;
+    }
+    if (yearlyData[year] && yearlyData[previousYear]) {
+      for (let index = 0; index < variables.length; index++) {
+        let variable = variables[index];
+        if (yearlyData[year][variable] && yearlyData[previousYear][variable]) {
+          yearlyReturn[variable] = yearlyData[year][variable] / yearlyData[previousYear][variable] - 1;
+        }
+      }
+
+      if (!monthlyReturns["Cumulative/" + year]) {
+        for (let index = 0; index < variables.length; index++) {
+          let variable = variables[index];
+          monthlyReturns["Cumulative/" + year] = {};
+          monthlyReturns["Cumulative/" + year][variable] = 0;
+        }
+      }
+      for (let index = 0; index < variables.length; index++) {
+        let variable = variables[index];
+        monthlyReturns["Cumulative/" + year][variable] = yearlyReturn[variable];
+        yearlyReturns[year] = {};
+        yearlyReturns[year][variable] = yearlyReturn[variable];
+      }
       yearsIndex--;
     } else {
       yearsIndex--;
     }
   }
-  let annualVolitality = { a2: 0, a3: 0, a4: 0, a5: 0, a6: 0 };
+  let maxDrawdown: any = {};
+  let annulizedReturn: any = {};
+  let normal: any = {};
+  let variance: any = {};
+  let positiveAnnualVolitality: any = {};
+  let negativeAnnualVolitality: any = {};
+  let volitality: any = {};
 
-  let maxDrawdown = {
-    a2: { peak: peak.a2, trough: trough.a2, mdd: (trough.a2 - peak.a2) / peak.a2 },
-    a3: { peak: peak.a3, trough: trough.a3, mdd: (trough.a3 - peak.a3) / peak.a3 },
-    a4: { peak: peak.a4, trough: trough.a4, mdd: (trough.a4 - peak.a4) / peak.a4 },
-    a5: { peak: peak.a5, trough: trough.a5, mdd: (trough.a5 - peak.a5) / peak.a5 },
-    a6: { peak: peak.a6, trough: trough.a6, mdd: (trough.a6 - peak.a6) / peak.a6 },
-  };
+  let ratios: any = {};
 
-  let annulizedReturn = {
-    a2: { annualPer: Math.pow(cumulativeReturn.a2, 1 / (numOfMonths.a2 / 12)) - 1, bestMonth: peakReturn.a2, worstMonth: troughReturn.a2 },
-    a3: { annualPer: Math.pow(cumulativeReturn.a3, 1 / (numOfMonths.a3 / 12)) - 1, bestMonth: peakReturn.a2, worstMonth: troughReturn.a2 },
-    a4: { annualPer: Math.pow(cumulativeReturn.a4, 1 / (numOfMonths.a4 / 12)) - 1, bestMonth: peakReturn.a2, worstMonth: troughReturn.a2 },
-    a5: { annualPer: Math.pow(cumulativeReturn.a5, 1 / (numOfMonths.a5 / 12)) - 1, bestMonth: peakReturn.a2, worstMonth: troughReturn.a2 },
-    a6: { annualPer: Math.pow(cumulativeReturn.a6, 1 / (numOfMonths.a6 / 12)) - 1, bestMonth: peakReturn.a2, worstMonth: troughReturn.a2 },
-  };
-  let normal = {
-    a2: getStatistics(returns.a2),
-    a3: getStatistics(returns.a3),
-    a4: getStatistics(returns.a4),
-    a5: getStatistics(returns.a5),
-    a6: getStatistics(returns.a6),
-  };
-  let variance = {
-    a2: Math.pow(normal.a2.sd, 2),
-    a3: Math.pow(normal.a3.sd, 2),
-    a4: Math.pow(normal.a4.sd, 2),
-    a5: Math.pow(normal.a5.sd, 2),
-    a6: Math.pow(normal.a6.sd, 2),
-  };
-  let positiveAnnualVolitality: any = {
-    a2: getSampleStandardDeviation(positiveReturns.a2),
-    a3: getSampleStandardDeviation(positiveReturns.a3),
-    a4: getSampleStandardDeviation(positiveReturns.a4),
-    a5: getSampleStandardDeviation(positiveReturns.a5),
-    a6: getSampleStandardDeviation(positiveReturns.a6),
-  };
-  let negativeAnnualVolitality: any = {
-    a2: getSampleStandardDeviation(negativeReturns.a2),
-    a3: getSampleStandardDeviation(negativeReturns.a3),
-    a4: getSampleStandardDeviation(negativeReturns.a4),
-    a5: getSampleStandardDeviation(negativeReturns.a5),
-    a6: getSampleStandardDeviation(negativeReturns.a6),
-  };
-  annualVolitality.a2 = normal.a2.sd * Math.sqrt(12);
-  annualVolitality.a3 = normal.a3.sd * Math.sqrt(12);
-  annualVolitality.a4 = normal.a4.sd * Math.sqrt(12);
-  annualVolitality.a5 = normal.a5.sd * Math.sqrt(12);
-  annualVolitality.a6 = normal.a6.sd * Math.sqrt(12);
-
-  positiveAnnualVolitality.a2.volitality = positiveAnnualVolitality.a2.sd * Math.sqrt(12);
-  positiveAnnualVolitality.a3.volitality = positiveAnnualVolitality.a3.sd * Math.sqrt(12);
-  positiveAnnualVolitality.a4.volitality = positiveAnnualVolitality.a4.sd * Math.sqrt(12);
-  positiveAnnualVolitality.a5.volitality = positiveAnnualVolitality.a5.sd * Math.sqrt(12);
-  positiveAnnualVolitality.a6.volitality = positiveAnnualVolitality.a6.sd * Math.sqrt(12);
-
-  positiveAnnualVolitality.a2.numOfMonths = positiveAnnualVolitality.a2.arrLength / (positiveAnnualVolitality.a2.arrLength + negativeAnnualVolitality.a2.arrLength);
-  positiveAnnualVolitality.a3.numOfMonths = positiveAnnualVolitality.a3.arrLength / (positiveAnnualVolitality.a3.arrLength + negativeAnnualVolitality.a3.arrLength);
-  positiveAnnualVolitality.a4.numOfMonths = positiveAnnualVolitality.a4.arrLength / (positiveAnnualVolitality.a4.arrLength + negativeAnnualVolitality.a4.arrLength);
-  positiveAnnualVolitality.a5.numOfMonths = positiveAnnualVolitality.a5.arrLength / (positiveAnnualVolitality.a5.arrLength + negativeAnnualVolitality.a5.arrLength);
-  positiveAnnualVolitality.a6.numOfMonths = positiveAnnualVolitality.a6.arrLength / (positiveAnnualVolitality.a6.arrLength + negativeAnnualVolitality.a6.arrLength);
-
-  negativeAnnualVolitality.a2.volitality = negativeAnnualVolitality.a2.sd * Math.sqrt(12);
-  negativeAnnualVolitality.a3.volitality = negativeAnnualVolitality.a3.sd * Math.sqrt(12);
-  negativeAnnualVolitality.a4.volitality = negativeAnnualVolitality.a4.sd * Math.sqrt(12);
-  negativeAnnualVolitality.a5.volitality = negativeAnnualVolitality.a5.sd * Math.sqrt(12);
-  negativeAnnualVolitality.a6.volitality = negativeAnnualVolitality.a6.sd * Math.sqrt(12);
-
-  negativeAnnualVolitality.a2.numOfMonths = negativeAnnualVolitality.a2.arrLength / (positiveAnnualVolitality.a2.arrLength + negativeAnnualVolitality.a2.arrLength);
-  negativeAnnualVolitality.a3.numOfMonths = negativeAnnualVolitality.a3.arrLength / (positiveAnnualVolitality.a3.arrLength + negativeAnnualVolitality.a3.arrLength);
-  negativeAnnualVolitality.a4.numOfMonths = negativeAnnualVolitality.a4.arrLength / (positiveAnnualVolitality.a4.arrLength + negativeAnnualVolitality.a4.arrLength);
-  negativeAnnualVolitality.a5.numOfMonths = negativeAnnualVolitality.a5.arrLength / (positiveAnnualVolitality.a5.arrLength + negativeAnnualVolitality.a5.arrLength);
-  negativeAnnualVolitality.a6.numOfMonths = negativeAnnualVolitality.a6.arrLength / (positiveAnnualVolitality.a6.arrLength + negativeAnnualVolitality.a6.arrLength);
-
-  let volitality = {
-    a2: { annualVolitality: annualVolitality.a2, positiveAnnualVolitality: positiveAnnualVolitality.a2, negativeAnnualVolitality: negativeAnnualVolitality.a2 },
-    a3: { annualVolitality: annualVolitality.a3, positiveAnnualVolitality: positiveAnnualVolitality.a3, negativeAnnualVolitality: negativeAnnualVolitality.a3 },
-    a4: { annualVolitality: annualVolitality.a4, positiveAnnualVolitality: positiveAnnualVolitality.a4, negativeAnnualVolitality: negativeAnnualVolitality.a4 },
-    a5: { annualVolitality: annualVolitality.a5, positiveAnnualVolitality: positiveAnnualVolitality.a5, negativeAnnualVolitality: negativeAnnualVolitality.a5 },
-    a6: { annualVolitality: annualVolitality.a6, positiveAnnualVolitality: positiveAnnualVolitality.a6, negativeAnnualVolitality: negativeAnnualVolitality.a6 },
-  };
-
-  let ratios = {
-    a2: { plRatio: positiveAnnualVolitality.a2.mean / Math.abs(negativeAnnualVolitality.a2.mean || 1), glRatio: ((positiveAnnualVolitality.a2.mean / Math.abs(negativeAnnualVolitality.a2.mean || 1)) * positiveAnnualVolitality.a2.numOfMonths) / negativeAnnualVolitality.a2.numOfMonths },
-    a3: { plRatio: positiveAnnualVolitality.a3.mean / Math.abs(negativeAnnualVolitality.a3.mean || 1), glRatio: ((positiveAnnualVolitality.a3.mean / Math.abs(negativeAnnualVolitality.a3.mean || 1)) * positiveAnnualVolitality.a3.numOfMonths) / negativeAnnualVolitality.a3.numOfMonths },
-    a4: { plRatio: positiveAnnualVolitality.a4.mean / Math.abs(negativeAnnualVolitality.a4.mean || 1), glRatio: ((positiveAnnualVolitality.a4.mean / Math.abs(negativeAnnualVolitality.a4.mean || 1)) * positiveAnnualVolitality.a4.numOfMonths) / negativeAnnualVolitality.a4.numOfMonths },
-    a5: { plRatio: positiveAnnualVolitality.a5.mean / Math.abs(negativeAnnualVolitality.a5.mean || 1), glRatio: ((positiveAnnualVolitality.a5.mean / Math.abs(negativeAnnualVolitality.a5.mean || 1)) * positiveAnnualVolitality.a5.numOfMonths) / negativeAnnualVolitality.a5.numOfMonths },
-    a6: { plRatio: positiveAnnualVolitality.a6.mean / Math.abs(negativeAnnualVolitality.a6.mean || 1), glRatio: ((positiveAnnualVolitality.a6.mean / Math.abs(negativeAnnualVolitality.a6.mean || 1)) * positiveAnnualVolitality.a6.numOfMonths) / negativeAnnualVolitality.a6.numOfMonths },
-  };
+  for (let index = 0; index < variables.length; index++) {
+    let variable = variables[index];
+    maxDrawdown[variable] = { peak: peak[variable], trough: trough[variable], mdd: (trough[variable] - peak[variable]) / peak[variable] };
+    annulizedReturn[variable] = { annualPer: Math.pow(cumulativeReturn[variable], 1 / (numOfMonths[variable] / 12)) - 1, bestMonth: peakReturn[variable], worstMonth: troughReturn[variable] };
+    normal[variable] = getStatistics(returns[variable]);
+    variance[variable] = Math.pow(normal[variable].sd, 2);
+    positiveAnnualVolitality[variable] = getSampleStandardDeviation(positiveReturns[variable]);
+    negativeAnnualVolitality[variable] = getSampleStandardDeviation(negativeReturns[variable]);
+    annualVolitality[variable] = normal[variable].sd * Math.sqrt(12);
+    positiveAnnualVolitality[variable].volitality = positiveAnnualVolitality[variable].sd * Math.sqrt(12);
+    positiveAnnualVolitality[variable].numOfMonths = positiveAnnualVolitality[variable].arrLength / (positiveAnnualVolitality[variable].arrLength + negativeAnnualVolitality[variable].arrLength);
+    negativeAnnualVolitality[variable].volitality = negativeAnnualVolitality[variable].sd * Math.sqrt(12);
+    negativeAnnualVolitality[variable].numOfMonths = negativeAnnualVolitality[variable].arrLength / (positiveAnnualVolitality[variable].arrLength + negativeAnnualVolitality[variable].arrLength);
+    volitality[variable] = { annualVolitality: annualVolitality[variable], positiveAnnualVolitality: positiveAnnualVolitality[variable], negativeAnnualVolitality: negativeAnnualVolitality[variable] };
+    ratios[variable] = { plRatio: positiveAnnualVolitality[variable].mean / Math.abs(negativeAnnualVolitality[variable].mean || 1), glRatio: ((positiveAnnualVolitality[variable].mean / Math.abs(negativeAnnualVolitality[variable].mean || 1)) * positiveAnnualVolitality[variable].numOfMonths) / negativeAnnualVolitality[variable].numOfMonths };
+  }
 
   return { monthlyReturns: transformData(monthlyReturns, yearlyReturns), maxDrawdown: maxDrawdown, annulizedReturn: annulizedReturn, volitality: volitality, variance: variance, ratios: ratios, normal: normal };
+}
+
+export async function uploadFSData(triada: any, lg30truu: any, beuctruu: any, emustruu: any, legatruu: any) {
+  triada = trimDate(triada);
+  lg30truu = trimDate(lg30truu);
+  beuctruu = trimDate(beuctruu);
+  emustruu = trimDate(emustruu);
+  legatruu = trimDate(legatruu);
+
+  await updateOrInsertDataWithBulk(triada, "triada");
+  await updateOrInsertDataWithBulk(lg30truu, "lg30truu");
+  await updateOrInsertDataWithBulk(beuctruu, "beuctruu");
+  await updateOrInsertDataWithBulk(emustruu, "emustruu");
+  await updateOrInsertDataWithBulk(legatruu, "legatruu");
+}
+
+export function trimDate(data: any) {
+  let keys = Object.keys(data);
+  let final = [];
+  for (let index = 0; index < keys.length; index++) {
+    let date = keys[index];
+    let dateArr = date.split("/");
+    let dateFinal = "";
+    if (dateArr.length > 2) {
+      let month = dateArr[1];
+      let year = dateArr[2];
+      if (parseInt(month) < 10) {
+        month = "0" + month;
+      }
+      dateFinal = month + "/" + year;
+      data[dateFinal] = data[date];
+      delete data[date];
+    } else {
+      dateFinal = date;
+    }
+    let dateComponenets = dateFinal.split("/");
+    let timestamp = new Date(dateComponenets[0] + "/01/" + dateComponenets[1]).getTime();
+    let object = {
+      date: dateFinal,
+      timestamp: timestamp,
+      data: data[dateFinal],
+    };
+    final.push(object);
+  }
+  return final;
+}
+
+async function updateOrInsertDataWithBulk(entries: any, collectionName: any) {
+  try {
+    // Connect to MongoDB
+    await client.connect();
+    const database = client.db("factsheet");
+    const collection = database.collection(collectionName);
+
+    // Create bulk operations array
+    const bulkOps = entries.map((entry: any) => {
+      return {
+        updateOne: {
+          filter: { date: entry.date }, // Filter to match documents based on the date
+          update: { $set: { timestamp: entry.timestamp, data: entry.data } },
+          upsert: true, // Insert a new document if no existing document matches
+        },
+      };
+    });
+
+    // Execute bulk operations
+    const result = await collection.bulkWrite(bulkOps);
+    console.log("Bulk operation result:", result);
+  } catch (error) {
+    console.error("Failed in bulk operation:", error);
+  }
+}
+
+export async function getFactSheetData(collectionName: any) {
+  try {
+    // Connect to MongoDB
+    const database = client.db("factsheet");
+    const collection = database.collection(collectionName);
+    let report = collection.find().sort({ timestamp: 1 }).toArray();
+    return report;
+  } catch (error) {
+    console.error("Failed in bulk operation:", error);
+  }
 }
