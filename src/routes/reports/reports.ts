@@ -146,7 +146,7 @@ router.get("/fact-sheet", verifyTokenFactSheetMember, async (req: Request, res: 
     let sign = 1;
     let sort = "order";
     let report = monthlyData;
-    let result = calculateMonthlyReturn(report);
+    let result =  calculateMonthlyReturn(report);
     let countrySectorMacro = await getPortfolioWithAnalytics(date, sort, sign, null, "fact sheet", null);
     res.send({ countrySectorMacro: countrySectorMacro, result: result });
   } catch (error: any) {

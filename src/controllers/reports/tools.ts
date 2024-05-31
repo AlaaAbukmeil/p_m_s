@@ -313,3 +313,125 @@ export function getDaysBetween(startDate: any, endDate: any) {
   // Return the absolute value of the difference in days
   return Math.abs(Math.round(diffInDays)) || 0;
 }
+
+export function getStatistics(array: any) {
+  const n = array.length;
+  if (n < 4) {
+    // Ensure there are enough data points to calculate these metrics
+    throw new Error("Array must contain at least four data points.");
+  }
+
+  const mean = array.reduce((a: any, b: any) => a + b, 0) / n;
+
+  let sumOfSquares = 0;
+  let sumOfCubedDeviations = 0;
+  let sumOfQuarticDeviations = 0;
+
+  array.forEach((x: any) => {
+    const deviation = x - mean;
+    sumOfSquares += deviation ** 2;
+    sumOfCubedDeviations += deviation ** 3;
+    sumOfQuarticDeviations += deviation ** 4;
+  });
+
+  const sd = Math.sqrt(sumOfSquares / (n - 1));
+  const skewness = (n / ((n - 1) * (n - 2))) * (sumOfCubedDeviations / sd ** 3);
+  const kurtosis = ((n * (n + 1)) / ((n - 1) * (n - 2) * (n - 3))) * (sumOfQuarticDeviations / sd ** 4) - (3 * (n - 1) ** 2) / ((n - 2) * (n - 3));
+
+  return {
+    mean: mean,
+    sd: sd,
+    skewness: skewness,
+    kurtosis: kurtosis,
+    arrLength: n,
+  };
+}
+export function getSampleStandardDeviation(array: any): { sd: number; mean: number; arrLength: number } {
+  const n = array.length;
+  const mean = array.reduce((a: any, b: any) => a + b) / n;
+  let sd = Math.sqrt(array.map((x: any) => Math.pow(x - mean, 2)).reduce((a: any, b: any) => a + b, 0) / (n - 1));
+  return { sd: sd, mean: mean, arrLength: n };
+}
+
+export function updateStats({ data, month, previousMonth, returnMonth, cumulativeReturn, numOfMonths, returns, positiveReturns, negativeReturns, peak, trough, variable, troughReturn, peakReturn }: { data: any; month: any; previousMonth: any; returnMonth: any; cumulativeReturn: any; numOfMonths: any; returns: any; positiveReturns: any; negativeReturns: any; peak: any; trough: any; variable: string; troughReturn: any; peakReturn: any }) {
+  if (data[month][variable] && data[previousMonth][variable]) {
+    returnMonth[variable] = data[month][variable] / data[previousMonth][variable] - 1;
+    cumulativeReturn[variable] = cumulativeReturn[variable] * (returnMonth[variable] + 1);
+    numOfMonths[variable] += 1;
+    returns[variable].push(returnMonth[variable]);
+
+    if (returnMonth[variable] >= 0) {
+      positiveReturns[variable].push(returnMonth[variable]);
+    } else {
+      negativeReturns[variable].push(returnMonth[variable]);
+    }
+
+    if (data[month][variable] > peak[variable]) {
+      peak[variable] = data[month][variable];
+    }
+    if (data[month][variable] < trough[variable]) {
+      trough[variable] = data[month][variable];
+    }
+    if (returnMonth[variable] > peakReturn[variable]) {
+      peakReturn[variable] = returnMonth[variable];
+    }
+    if (returnMonth[variable] < troughReturn[variable]) {
+      troughReturn[variable] = returnMonth[variable];
+    }
+  }
+}
+function monthName(monthNum: any) {
+  const monthNames: any = {
+    "01": "Jan",
+    "02": "Feb",
+    "03": "Mar",
+    "04": "Apr",
+    "05": "May",
+    "06": "Jun",
+    "07": "Jul",
+    "08": "Aug",
+    "09": "Sep",
+    "10": "Oct",
+    "11": "Nov",
+    "12": "Dec",
+    Cumulative: "Cumulative",
+  };
+  return monthNames[monthNum];
+}
+
+// Function to transform data
+export function transformData(data: any, yearlyData: any) {
+  const formattedData: any = {};
+  let keys = Object.keys(data);
+  // Initialize formatted data structure
+  keys.forEach((date) => {
+    const [month, year] = date.split("/");
+    const monthStr = monthName(month);
+
+    Object.entries(data[date]).forEach(([key, value]) => {
+      if (!formattedData[key]) {
+        formattedData[key] = {};
+      }
+      if (!formattedData[key][year]) {
+        formattedData[key][year] = {
+          Jan: null,
+          Feb: null,
+          Mar: null,
+          Apr: null,
+          May: null,
+          Jun: null,
+          Jul: null,
+          Aug: null,
+          Sep: null,
+          Oct: null,
+          Nov: null,
+          Dec: null,
+          Cumulative: null,
+        };
+      }
+      formattedData[key][year][monthStr] = value;
+    });
+  });
+
+  return formattedData;
+}
