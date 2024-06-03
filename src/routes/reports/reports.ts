@@ -3,7 +3,7 @@ import { verifyToken, generateRandomString, bucket, verifyTokenRiskMember, verif
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../../controllers/reports/common";
 import { getPortfolioWithAnalytics } from "../../controllers/reports/portfolios";
 import { getPortfolio } from "../../controllers/operations/positions";
-import { calculateMonthlyReturn, uploadFSData, getFactSheetData } from "../../controllers/reports/factSheet";
+import { calculateMonthlyReturn, calculateOutPerformance, calculateOutPerformanceParam, getFactSheetData, uploadFSData } from "../../controllers/reports/factSheet";
 
 require("dotenv").config();
 
@@ -145,15 +145,37 @@ router.get("/fact-sheet", verifyTokenFactSheetMember, async (req: Request, res: 
     let date = getDateTimeInMongoDBCollectionFormat(new Date());
     let sign = 1;
     let sort = "order";
-    let data = await getFactSheetData("triada");
+    let data = await getFactSheetData("Triada");
+    let legatruu = await getFactSheetData("LEGATRUU Index");
+    let emustruu = await getFactSheetData("EMUSTRUU Index");
+    let beuctruu = await getFactSheetData("BEUCTRUU Index");
+    let beuytruu = await getFactSheetData("BEUYTRUU Index");
+    let lg30truu = await getFactSheetData("LG30TRUU Index");
+
     let result = calculateMonthlyReturn(data, ["a2"]);
+    let result_lg30truu = calculateMonthlyReturn(lg30truu, ["main"]);
+    let result_beuctruu = calculateMonthlyReturn(beuctruu, ["main"]);
+    let result_beuytruu = calculateMonthlyReturn(beuytruu, ["main"]);
+    let result_emustruu = calculateMonthlyReturn(emustruu, ["main"]);
+    let result_legatruu = calculateMonthlyReturn(legatruu, ["main"]);
+
     let countrySectorMacro = await getPortfolioWithAnalytics(date, sort, sign, null, "fact sheet", null);
-    res.send({ countrySectorMacro: countrySectorMacro, result: result });
+    let benchmarks = { "LG30TRUU Index": result_lg30truu.monthlyReturns["main"], "BEUCTRUU Index": result_beuctruu.monthlyReturns["main"], "EMUSTRUU Index": result_emustruu.monthlyReturns["main"], "LEGATRUU Index": result_legatruu.monthlyReturns["main"], "BEUYTRUU Index": result_beuytruu.monthlyReturns["main"] };
+    let annulizedReturns = { "LG30TRUU Index": result_lg30truu.annulizedReturn["main"]["annualPer"], "BEUCTRUU Index": result_beuctruu.annulizedReturn["main"]["annualPer"], "EMUSTRUU Index": result_emustruu.annulizedReturn["main"]["annualPer"], "LEGATRUU Index": result_legatruu.annulizedReturn["main"]["annualPer"], "BEUYTRUU Index": result_beuytruu.annulizedReturn["main"]["annualPer"] };
+    let cumulativeReturns = { "LG30TRUU Index": result_lg30truu.cumulativeReturn["main"] - 1, "BEUCTRUU Index": result_beuctruu.cumulativeReturn["main"] - 1, "EMUSTRUU Index": result_emustruu.cumulativeReturn["main"] - 1, "LEGATRUU Index": result_legatruu.cumulativeReturn["main"] - 1, "BEUYTRUU Index": result_beuytruu.cumulativeReturn["main"] - 1 };
+    let outPerformance = calculateOutPerformance({ benchmarks: benchmarks, data: result.monthlyReturns["a2"] });
+    let annulizedReturnBenchMarks = calculateOutPerformanceParam({ benchmarks: annulizedReturns, data: result.annulizedReturn["a2"]["annualPer"] });
+    let cumulativeReturnsBenchMarks = calculateOutPerformanceParam({ benchmarks: cumulativeReturns, data: result.cumulativeReturn["a2"] - 1 });
+
+    res.send({ countrySectorMacro: countrySectorMacro, result: result, outPerformance: outPerformance, annulizedReturnBenchMarks: annulizedReturnBenchMarks, cumulativeReturnsBenchMarks: cumulativeReturnsBenchMarks });
   } catch (error: any) {
     console.log(error);
     res.send({ error: error.toString() });
   }
 });
-
+router.post("/fact-sheet-test", async (req: Request, res: Response, next: NextFunction) => {
+  let test = await uploadFSData();
+  console.log(test);
+});
 
 export default router;

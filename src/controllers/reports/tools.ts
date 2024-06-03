@@ -435,3 +435,34 @@ export function transformData(data: any, yearlyData: any) {
 
   return formattedData;
 }
+
+export function trimDate(data: any) {
+  let keys = Object.keys(data);
+  let final = [];
+  for (let index = 0; index < keys.length; index++) {
+    let date = keys[index];
+    let dateArr = date.split("/");
+    let dateFinal = "";
+    if (dateArr.length > 2) {
+      let month = dateArr[1];
+      let year = dateArr[2];
+      if (parseInt(month) < 10) {
+        month = "0" + month;
+      }
+      dateFinal = month + "/" + year;
+      data[dateFinal] = data[date];
+      delete data[date];
+    } else {
+      dateFinal = date;
+    }
+    let dateComponenets = dateFinal.split("/");
+    let timestamp = new Date(dateComponenets[0] + "/01/" + dateComponenets[1]).getTime();
+    let object = {
+      date: dateFinal,
+      timestamp: timestamp,
+      data: data[dateFinal],
+    };
+    final.push(object);
+  }
+  return final;
+}
