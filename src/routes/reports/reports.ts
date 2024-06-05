@@ -2,8 +2,7 @@ import { NextFunction, Router, Response, Request } from "express";
 import { verifyToken, generateRandomString, bucket, verifyTokenRiskMember, verifyTokenFactSheetMember } from "../../controllers/common";
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../../controllers/reports/common";
 import { getPortfolioWithAnalytics } from "../../controllers/reports/portfolios";
-import { getPortfolio } from "../../controllers/operations/positions";
-import { calculateMonthlyReturn, calculateOutPerformance, calculateOutPerformanceParam, getFactSheetData, uploadFSData } from "../../controllers/reports/factSheet";
+import { calculateBetaCorrelationBenchMarks, calculateMonthlyReturn, calculateOutPerformance, calculateOutPerformanceParam, calculateRatios, calculateRegression, calculateRiskRatios, getFactSheetData, uploadFSData } from "../../controllers/reports/factSheet";
 
 require("dotenv").config();
 
@@ -145,29 +144,61 @@ router.get("/fact-sheet", verifyTokenFactSheetMember, async (req: Request, res: 
     let date = getDateTimeInMongoDBCollectionFormat(new Date());
     let sign = 1;
     let sort = "order";
+    let type: "a2" | "a3" | "a4" | "a5" | "a6" = "a2";
     let data = await getFactSheetData("Triada");
     let legatruu = await getFactSheetData("LEGATRUU Index");
     let emustruu = await getFactSheetData("EMUSTRUU Index");
     let beuctruu = await getFactSheetData("BEUCTRUU Index");
     let beuytruu = await getFactSheetData("BEUYTRUU Index");
     let lg30truu = await getFactSheetData("LG30TRUU Index");
+    let countrySectorMacro = await getPortfolioWithAnalytics(date, sort, sign, null, "fact sheet", null);
 
-    let result = calculateMonthlyReturn(data, ["a2"]);
+    let result = calculateMonthlyReturn(data, [type]);
     let result_lg30truu = calculateMonthlyReturn(lg30truu, ["main"]);
     let result_beuctruu = calculateMonthlyReturn(beuctruu, ["main"]);
     let result_beuytruu = calculateMonthlyReturn(beuytruu, ["main"]);
     let result_emustruu = calculateMonthlyReturn(emustruu, ["main"]);
     let result_legatruu = calculateMonthlyReturn(legatruu, ["main"]);
 
-    let countrySectorMacro = await getPortfolioWithAnalytics(date, sort, sign, null, "fact sheet", null);
     let benchmarks = { "LG30TRUU Index": result_lg30truu.monthlyReturns["main"], "BEUCTRUU Index": result_beuctruu.monthlyReturns["main"], "EMUSTRUU Index": result_emustruu.monthlyReturns["main"], "LEGATRUU Index": result_legatruu.monthlyReturns["main"], "BEUYTRUU Index": result_beuytruu.monthlyReturns["main"] };
     let annulizedReturns = { "LG30TRUU Index": result_lg30truu.annulizedReturn["main"]["annualPer"], "BEUCTRUU Index": result_beuctruu.annulizedReturn["main"]["annualPer"], "EMUSTRUU Index": result_emustruu.annulizedReturn["main"]["annualPer"], "LEGATRUU Index": result_legatruu.annulizedReturn["main"]["annualPer"], "BEUYTRUU Index": result_beuytruu.annulizedReturn["main"]["annualPer"] };
-    let cumulativeReturns = { "LG30TRUU Index": result_lg30truu.cumulativeReturn["main"] - 1, "BEUCTRUU Index": result_beuctruu.cumulativeReturn["main"] - 1, "EMUSTRUU Index": result_emustruu.cumulativeReturn["main"] - 1, "LEGATRUU Index": result_legatruu.cumulativeReturn["main"] - 1, "BEUYTRUU Index": result_beuytruu.cumulativeReturn["main"] - 1 };
-    let outPerformance = calculateOutPerformance({ benchmarks: benchmarks, data: result.monthlyReturns["a2"] });
-    let annulizedReturnBenchMarks = calculateOutPerformanceParam({ benchmarks: annulizedReturns, data: result.annulizedReturn["a2"]["annualPer"] });
-    let cumulativeReturnsBenchMarks = calculateOutPerformanceParam({ benchmarks: cumulativeReturns, data: result.cumulativeReturn["a2"] - 1 });
+    let cumulativeReturns = { "LG30TRUU Index": result_lg30truu.fundReturns.cumulativeReturn["main"] - 1, "BEUCTRUU Index": result_beuctruu.fundReturns.cumulativeReturn["main"] - 1, "EMUSTRUU Index": result_emustruu.fundReturns.cumulativeReturn["main"] - 1, "LEGATRUU Index": result_legatruu.fundReturns.cumulativeReturn["main"] - 1, "BEUYTRUU Index": result_beuytruu.fundReturns.cumulativeReturn["main"] - 1 };
+    let fundReturns = { "LG30TRUU Index": result_lg30truu.fundReturns, "BEUCTRUU Index": result_beuctruu.fundReturns, "EMUSTRUU Index": result_emustruu.fundReturns, "LEGATRUU Index": result_legatruu.fundReturns, "BEUYTRUU Index": result_beuytruu.fundReturns };
 
-    res.send({ countrySectorMacro: countrySectorMacro, result: result, outPerformance: outPerformance, annulizedReturnBenchMarks: annulizedReturnBenchMarks, cumulativeReturnsBenchMarks: cumulativeReturnsBenchMarks });
+    let outPerformance = calculateOutPerformance({ benchmarks: benchmarks, data: result.monthlyReturns[type] });
+    let annulizedReturnBenchMarks = calculateOutPerformanceParam({ benchmarks: annulizedReturns, data: result.annulizedReturn[type]["annualPer"] });
+    let cumulativeReturnsBenchMarks = calculateOutPerformanceParam({ benchmarks: cumulativeReturns, data: result.fundReturns.cumulativeReturn[type] - 1 });
+    let ratiosAndPositiveNegativeCorrelations = calculateRatios({ benchmarks: fundReturns, data: result.fundReturns, type: type });
+
+    let benchmarksBeta = {
+      "LG30TRUU Index": { results: result_lg30truu.returns["main"], normal: result_lg30truu.normal["main"] },
+      "BEUCTRUU Index": { results: result_beuctruu.returns["main"], normal: result_beuctruu.normal["main"] },
+      "EMUSTRUU Index": { results: result_emustruu.returns["main"], normal: result_emustruu.normal["main"] },
+      "LEGATRUU Index": { results: result_legatruu.returns["main"], normal: result_legatruu.normal["main"] },
+      "BEUYTRUU Index": { results: result_beuytruu.returns["main"], normal: result_beuytruu.normal["main"] },
+    };
+
+    let betaCorrelation = calculateBetaCorrelationBenchMarks({ benchmarks: benchmarksBeta, data: { results: result.returns[type], normal: result.normal[type] } });
+    let benchmarksRiskRatios = {
+      "LG30TRUU Index": { annulizedReturn: result_lg30truu.annulizedReturn["main"], maxDrawdown: result_lg30truu.maxDrawdown["main"], normal: result_lg30truu.normal["main"], negativeAnnualVolitality: result_lg30truu.negativeAnnualVolitality["main"], beta: betaCorrelation.betas["LG30TRUU Index"] },
+      "BEUCTRUU Index": { annulizedReturn: result_beuctruu.annulizedReturn["main"], maxDrawdown: result_beuctruu.maxDrawdown["main"], normal: result_beuctruu.normal["main"], negativeAnnualVolitality: result_beuctruu.negativeAnnualVolitality["main"], beta: betaCorrelation.betas["BEUCTRUU Index"] },
+      "EMUSTRUU Index": { annulizedReturn: result_emustruu.annulizedReturn["main"], maxDrawdown: result_emustruu.maxDrawdown["main"], normal: result_emustruu.normal["main"], negativeAnnualVolitality: result_emustruu.negativeAnnualVolitality["main"], beta: betaCorrelation.betas["EMUSTRUU Index"] },
+      "LEGATRUU Index": { annulizedReturn: result_legatruu.annulizedReturn["main"], maxDrawdown: result_legatruu.maxDrawdown["main"], normal: result_legatruu.normal["main"], negativeAnnualVolitality: result_legatruu.negativeAnnualVolitality["main"], beta: betaCorrelation.betas["LEGATRUU Index"] },
+      "BEUYTRUU Index": { annulizedReturn: result_beuytruu.annulizedReturn["main"], maxDrawdown: result_beuytruu.maxDrawdown["main"], normal: result_beuytruu.normal["main"], negativeAnnualVolitality: result_beuytruu.negativeAnnualVolitality["main"], beta: betaCorrelation.betas["BEUYTRUU Index"] },
+    };
+    let riskRatios = calculateRiskRatios({ benchmarks: benchmarksRiskRatios, fundDetails: countrySectorMacro.fundDetails });
+
+    let benchmarksRegression = {
+      "LG30TRUU Index": { results: result_lg30truu.returns["main"], annulizedReturn: result_lg30truu.annulizedReturn["main"], beta: betaCorrelation.betas["LG30TRUU Index"], correlation: betaCorrelation.correlation["LG30TRUU Index"] },
+      "BEUCTRUU Index": { results: result_beuctruu.returns["main"], annulizedReturn: result_beuctruu.annulizedReturn["main"], beta: betaCorrelation.betas["BEUCTRUU Index"], correlation: betaCorrelation.correlation["BEUCTRUU Index"] },
+      "EMUSTRUU Index": { results: result_emustruu.returns["main"], annulizedReturn: result_emustruu.annulizedReturn["main"], beta: betaCorrelation.betas["EMUSTRUU Index"], correlation: betaCorrelation.correlation["EMUSTRUU Index"] },
+      "LEGATRUU Index": { results: result_legatruu.returns["main"], annulizedReturn: result_legatruu.annulizedReturn["main"], beta: betaCorrelation.betas["LEGATRUU Index"], correlation: betaCorrelation.correlation["LEGATRUU Index"] },
+      "BEUYTRUU Index": { results: result_beuytruu.returns["main"], annulizedReturn: result_beuytruu.annulizedReturn["main"], beta: betaCorrelation.betas["BEUYTRUU Index"], correlation: betaCorrelation.correlation["BEUYTRUU Index"] },
+    };
+
+    let correlationAndRegresion = calculateRegression({ benchmarks: benchmarksRegression, fundDetails: countrySectorMacro.fundDetails, data: { results: result.returns[type] }, correlations: ratiosAndPositiveNegativeCorrelations, annulizedReturnBenchMarks: annulizedReturnBenchMarks });
+
+    res.send({ countrySectorMacro: countrySectorMacro, result: result, outPerformance: outPerformance, annulizedReturnBenchMarks: annulizedReturnBenchMarks, cumulativeReturnsBenchMarks: cumulativeReturnsBenchMarks, ratios: ratiosAndPositiveNegativeCorrelations.ratios, riskRatios: riskRatios, correlationAndRegresion: correlationAndRegresion.regression });
   } catch (error: any) {
     console.log(error);
     res.send({ error: error.toString() });

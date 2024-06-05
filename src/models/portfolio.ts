@@ -10,6 +10,7 @@ export interface FundDetails {
   month: string;
   nav: string;
   holdBackRatio: string;
+  "3 month treasury rate": string;
 }
 
 export interface PositionBeforeFormatting {
@@ -203,4 +204,5 @@ export interface FundMTD {
   smvOfNav: number;
   gmvOfNav: number;
   nmvOfNav: number;
+  "3 month treasury rate": string;
 }

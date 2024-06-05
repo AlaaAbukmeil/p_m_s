@@ -18,6 +18,7 @@ export function formatFactSheetStatsTable({ portfolio, date, fund, dates, sort, 
 
     gmv: fundDetails["gmv"] / fundDetails["nav"],
     nmv: fundDetails["nmv"] / fundDetails["nav"],
+    "3 month treasury rate": fundDetails["3 month treasury rate"],
   };
   let analyzedPortfolio = getCountrySectorMacroStatistics({ formattedPortfolio: formattedPortfolio.portfolio, nav: formattedPortfolio.fundDetails.nav, sort: sort, sign: sign, view: "back office", currencies: formattedPortfolio.currencies, format: "summary", sortBy: sortBy, fundDetails: formattedPortfolio.fundDetails, date: date });
   return { fundDetails: formattedFundDetails, analysis: analyzedPortfolio };

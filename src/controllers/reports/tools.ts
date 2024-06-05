@@ -353,17 +353,60 @@ export function getSampleStandardDeviation(array: any): { sd: number; mean: numb
   return { sd: sd, mean: mean, arrLength: n };
 }
 
-export function updateStats({ data, returnMonth, cumulativeReturn, numOfMonths, returns, positiveReturns, negativeReturns, peak, trough, variable, troughReturn, peakReturn, monthsIndex }: { data: any; returnMonth: any; cumulativeReturn: any; numOfMonths: any; returns: any; positiveReturns: any; negativeReturns: any; peak: any; trough: any; variable: string; troughReturn: any; peakReturn: any; monthsIndex: any }) {
+export function updateStats({
+  data,
+  returnMonth,
+  cumulativeReturn,
+  numOfMonths,
+  returns,
+  positiveReturns,
+  positiveReturn,
+  negativeReturns,
+  negativeReturn,
+  peak,
+  trough,
+  variable,
+  troughReturn,
+  peakReturn,
+  monthsIndex,
+  returnsHashTable,
+  positiveReturnsHashTable,
+  negativeReturnsHashTable,
+}: {
+  data: any;
+  returnMonth: any;
+  cumulativeReturn: any;
+  numOfMonths: any;
+  returns: any;
+  positiveReturns: any;
+  positiveReturn: any;
+  negativeReturn: any;
+  negativeReturns: any;
+  peak: any;
+  trough: any;
+  variable: string;
+  troughReturn: any;
+  peakReturn: any;
+  monthsIndex: any;
+  returnsHashTable: any;
+  positiveReturnsHashTable: any;
+  negativeReturnsHashTable: any;
+}) {
   if (data[monthsIndex].data[variable] && data[monthsIndex - 1].data[variable]) {
     returnMonth[variable] = data[monthsIndex].data[variable] / data[monthsIndex - 1].data[variable] - 1;
     cumulativeReturn[variable] = cumulativeReturn[variable] * (returnMonth[variable] + 1);
     numOfMonths[variable] += 1;
     returns[variable].push(returnMonth[variable]);
+    returnsHashTable[variable][data[monthsIndex].date] = returnMonth[variable];
 
     if (returnMonth[variable] >= 0) {
       positiveReturns[variable].push(returnMonth[variable]);
+      positiveReturn[variable] = positiveReturn[variable] * (returnMonth[variable] + 1);
+      positiveReturnsHashTable[variable][data[monthsIndex].date] = returnMonth[variable];
     } else {
       negativeReturns[variable].push(returnMonth[variable]);
+      negativeReturn[variable] = negativeReturn[variable] * (returnMonth[variable] + 1);
+      negativeReturnsHashTable[variable][data[monthsIndex].date] = returnMonth[variable];
     }
 
     if (data[monthsIndex].data[variable] > peak[variable]) {

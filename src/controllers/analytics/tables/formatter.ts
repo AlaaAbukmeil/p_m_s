@@ -324,6 +324,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     nmvOfNav: Math.round(nmv * 10000) / (100 * fund.nav),
     ytdEstInt: ytdEstInt,
     ytdEstIntPercentage: Math.round((ytdEstInt / parseFloat(fundDetailsYTD.nav)) * 100000) / 1000 || 0,
+    "3 month treasury rate": fund["3 month treasury rate"]
   };
   let updatedPortfolio: PositionGeneralFormat[] | any = portfolio;
   return { portfolio: updatedPortfolio, fundDetails: fundDetails, currencies: currencies };
