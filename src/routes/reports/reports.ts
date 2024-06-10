@@ -3,6 +3,7 @@ import { verifyToken, generateRandomString, bucket, verifyTokenRiskMember, verif
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../../controllers/reports/common";
 import { getPortfolioWithAnalytics } from "../../controllers/reports/portfolios";
 import { calculateBetaCorrelationBenchMarks, calculateMonthlyReturn, calculateOutPerformance, calculateOutPerformanceParam, calculateRatios, calculateRegression, calculateRiskRatios, getFactSheetData, uploadFSData } from "../../controllers/reports/factSheet";
+import { getMonthName } from "../../controllers/reports/tools";
 
 require("dotenv").config();
 
@@ -144,7 +145,7 @@ router.get("/fact-sheet", verifyTokenFactSheetMember, async (req: Request, res: 
     let date = getDateTimeInMongoDBCollectionFormat(new Date());
     let sign = 1;
     let sort = "order";
-    let type: "a2" | "a3" | "a4" | "a5" | "a6" = "a2";
+    let type: "a2" | "a3" | "a4" | "a5" | "a6" | any = req.query.type || "a2";
     let data = await getFactSheetData("Triada");
     let legatruu = await getFactSheetData("LEGATRUU Index");
     let emustruu = await getFactSheetData("EMUSTRUU Index");
@@ -152,7 +153,7 @@ router.get("/fact-sheet", verifyTokenFactSheetMember, async (req: Request, res: 
     let beuytruu = await getFactSheetData("BEUYTRUU Index");
     let lg30truu = await getFactSheetData("LG30TRUU Index");
     let countrySectorMacro = await getPortfolioWithAnalytics(date, sort, sign, null, "fact sheet", null);
-
+    let lastDate = getMonthName(data[data.length - 1].date);
     let result = calculateMonthlyReturn(data, [type]);
     let result_lg30truu = calculateMonthlyReturn(lg30truu, ["main"]);
     let result_beuctruu = calculateMonthlyReturn(beuctruu, ["main"]);
@@ -189,24 +190,19 @@ router.get("/fact-sheet", verifyTokenFactSheetMember, async (req: Request, res: 
     let riskRatios = calculateRiskRatios({ benchmarks: benchmarksRiskRatios, fundDetails: countrySectorMacro.fundDetails });
 
     let benchmarksRegression = {
-      "LG30TRUU Index": { results: result_lg30truu.returns["main"], annulizedReturn: result_lg30truu.annulizedReturn["main"], beta: betaCorrelation.betas["LG30TRUU Index"], correlation: betaCorrelation.correlation["LG30TRUU Index"] },
-      "BEUCTRUU Index": { results: result_beuctruu.returns["main"], annulizedReturn: result_beuctruu.annulizedReturn["main"], beta: betaCorrelation.betas["BEUCTRUU Index"], correlation: betaCorrelation.correlation["BEUCTRUU Index"] },
-      "EMUSTRUU Index": { results: result_emustruu.returns["main"], annulizedReturn: result_emustruu.annulizedReturn["main"], beta: betaCorrelation.betas["EMUSTRUU Index"], correlation: betaCorrelation.correlation["EMUSTRUU Index"] },
-      "LEGATRUU Index": { results: result_legatruu.returns["main"], annulizedReturn: result_legatruu.annulizedReturn["main"], beta: betaCorrelation.betas["LEGATRUU Index"], correlation: betaCorrelation.correlation["LEGATRUU Index"] },
-      "BEUYTRUU Index": { results: result_beuytruu.returns["main"], annulizedReturn: result_beuytruu.annulizedReturn["main"], beta: betaCorrelation.betas["BEUYTRUU Index"], correlation: betaCorrelation.correlation["BEUYTRUU Index"] },
+      "LG30TRUU Index": { results: result_lg30truu.returns["main"], annulizedReturn: result_lg30truu.annulizedReturn["main"], beta: betaCorrelation.betas["LG30TRUU Index"], correlation: betaCorrelation.correlation["LG30TRUU Index"], fundReturns: result_lg30truu.fundReturns.returnsHashTable.main },
+      "BEUCTRUU Index": { results: result_beuctruu.returns["main"], annulizedReturn: result_beuctruu.annulizedReturn["main"], beta: betaCorrelation.betas["BEUCTRUU Index"], correlation: betaCorrelation.correlation["BEUCTRUU Index"], fundReturns: result_beuctruu.fundReturns.returnsHashTable.main },
+      "EMUSTRUU Index": { results: result_emustruu.returns["main"], annulizedReturn: result_emustruu.annulizedReturn["main"], beta: betaCorrelation.betas["EMUSTRUU Index"], correlation: betaCorrelation.correlation["EMUSTRUU Index"], fundReturns: result_emustruu.fundReturns.returnsHashTable.main },
+      "LEGATRUU Index": { results: result_legatruu.returns["main"], annulizedReturn: result_legatruu.annulizedReturn["main"], beta: betaCorrelation.betas["LEGATRUU Index"], correlation: betaCorrelation.correlation["LEGATRUU Index"], fundReturns: result_legatruu.fundReturns.returnsHashTable.main },
+      "BEUYTRUU Index": { results: result_beuytruu.returns["main"], annulizedReturn: result_beuytruu.annulizedReturn["main"], beta: betaCorrelation.betas["BEUYTRUU Index"], correlation: betaCorrelation.correlation["BEUYTRUU Index"], fundReturns: result_beuytruu.fundReturns.returnsHashTable.main },
     };
+    let correlationAndRegresion = calculateRegression({ benchmarks: benchmarksRegression, fundDetails: countrySectorMacro.fundDetails, data: { results: result.fundReturns.returnsHashTable[type] }, correlations: ratiosAndPositiveNegativeCorrelations, annulizedReturnBenchMarks: annulizedReturnBenchMarks });
 
-    let correlationAndRegresion = calculateRegression({ benchmarks: benchmarksRegression, fundDetails: countrySectorMacro.fundDetails, data: { results: result.returns[type] }, correlations: ratiosAndPositiveNegativeCorrelations, annulizedReturnBenchMarks: annulizedReturnBenchMarks });
-
-    res.send({ countrySectorMacro: countrySectorMacro, result: result, outPerformance: outPerformance, annulizedReturnBenchMarks: annulizedReturnBenchMarks, cumulativeReturnsBenchMarks: cumulativeReturnsBenchMarks, ratios: ratiosAndPositiveNegativeCorrelations.ratios, riskRatios: riskRatios, correlationAndRegresion: correlationAndRegresion.regression });
+    res.send({ countrySectorMacro: countrySectorMacro, result: result, outPerformance: outPerformance, annulizedReturnBenchMarks: annulizedReturnBenchMarks, cumulativeReturnsBenchMarks: cumulativeReturnsBenchMarks, ratios: ratiosAndPositiveNegativeCorrelations.ratios, riskRatios: riskRatios, correlationAndRegresion: correlationAndRegresion.regression, lastDate: lastDate });
   } catch (error: any) {
     console.log(error);
     res.send({ error: error.toString() });
   }
-});
-router.post("/fact-sheet-test", async (req: Request, res: Response, next: NextFunction) => {
-  let test = await uploadFSData();
-  console.log(test);
 });
 
 export default router;

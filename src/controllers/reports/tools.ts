@@ -334,10 +334,11 @@ export function getStatistics(array: any) {
     sumOfQuarticDeviations += deviation ** 4;
   });
 
-  const sd = Math.sqrt(sumOfSquares / (n - 1));
-  const skewness = (n / ((n - 1) * (n - 2))) * (sumOfCubedDeviations / sd ** 3);
-  const kurtosis = ((n * (n + 1)) / ((n - 1) * (n - 2) * (n - 3))) * (sumOfQuarticDeviations / sd ** 4) - (3 * (n - 1) ** 2) / ((n - 2) * (n - 3));
+  const variance = sumOfSquares / n;
+  const sd = Math.sqrt(variance);
 
+  const skewness = sumOfCubedDeviations / n / sd ** 3;
+  const kurtosis = (n * sumOfQuarticDeviations) / (sumOfSquares ** 2);
   return {
     mean: mean,
     sd: sd,
@@ -508,4 +509,21 @@ export function trimDate(data: any) {
     final.push(object);
   }
   return final;
+}
+export function getMonthName(input: any) {
+  // Create an array of month names
+  const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+  // Split the input string by '/'
+  const parts = input.split("/");
+  const month = parseInt(parts[0], 10); // Convert string to integer
+  const year = parts[1];
+
+  // Check if the month is valid
+  if (month < 1 || month > 12) {
+    throw new Error("Invalid month");
+  }
+
+  // Return the formatted date string
+  return `${months[month - 1]} ${year}`;
 }

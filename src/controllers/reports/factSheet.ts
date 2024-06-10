@@ -51,40 +51,44 @@ export function calculateMonthlyReturn(data: any, variables: any) {
 
   let yearlyData: any = {};
   while (monthsIndex >= 0) {
-    if (monthsIndex == 0) {
-      let month = data[monthsIndex].date;
-      let year = (parseInt(month.split("/")[1]) - 1).toString();
-      if (!yearlyData[year]) {
+    if (data[monthsIndex].data[variables[0]]) {
+      if (monthsIndex == 0) {
+        let month = data[monthsIndex].date;
+        let year = (parseInt(month.split("/")[1]) - 1).toString();
+        if (!yearlyData[year]) {
+          for (let index = 0; index < variables.length; index++) {
+            let variable = variables[index];
+            yearlyData[year] = {};
+            yearlyData[year][variable] = data[monthsIndex].data[variable];
+          }
+        }
+        monthsIndex--;
+      } else {
+        let month = data[monthsIndex].date;
+        let returnMonth: any = {};
         for (let index = 0; index < variables.length; index++) {
           let variable = variables[index];
-          yearlyData[year] = {};
-          yearlyData[year][variable] = data[monthsIndex].data[variable];
+          returnMonth[variable] = 0;
         }
+
+        let year = month.split("/")[1];
+        for (let index = 0; index < variables.length; index++) {
+          let variable = variables[index];
+          updateStats({ data, returnMonth, cumulativeReturn, numOfMonths, returns, positiveReturns, positiveReturn, negativeReturns, negativeReturn, peak, trough, variable, troughReturn, peakReturn, monthsIndex, returnsHashTable, positiveReturnsHashTable, negativeReturnsHashTable });
+          monthlyReturns[month] = {};
+          monthlyReturns[month][variable] = returnMonth[variable];
+        }
+
+        if (!yearlyData[year]) {
+          for (let index = 0; index < variables.length; index++) {
+            let variable = variables[index];
+            yearlyData[year] = {};
+            yearlyData[year][variable] = data[monthsIndex].data[variable];
+          }
+        }
+        monthsIndex--;
       }
-      monthsIndex--;
     } else {
-      let month = data[monthsIndex].date;
-      let returnMonth: any = {};
-      for (let index = 0; index < variables.length; index++) {
-        let variable = variables[index];
-        returnMonth[variable] = 0;
-      }
-
-      let year = month.split("/")[1];
-      for (let index = 0; index < variables.length; index++) {
-        let variable = variables[index];
-        updateStats({ data, returnMonth, cumulativeReturn, numOfMonths, returns, positiveReturns, positiveReturn, negativeReturns, negativeReturn, peak, trough, variable, troughReturn, peakReturn, monthsIndex, returnsHashTable, positiveReturnsHashTable, negativeReturnsHashTable });
-        monthlyReturns[month] = {};
-        monthlyReturns[month][variable] = returnMonth[variable];
-      }
-
-      if (!yearlyData[year]) {
-        for (let index = 0; index < variables.length; index++) {
-          let variable = variables[index];
-          yearlyData[year] = {};
-          yearlyData[year][variable] = data[monthsIndex].data[variable];
-        }
-      }
       monthsIndex--;
     }
   }
@@ -135,7 +139,6 @@ export function calculateMonthlyReturn(data: any, variables: any) {
   let negativeAnnualVolitality: any = {};
   let volitality: any = {};
   let ratios: any = {};
-
   for (let index = 0; index < variables.length; index++) {
     let variable = variables[index];
     let statistics = getStatistics(returns[variable]);
@@ -181,6 +184,7 @@ export async function getFactSheetData(collectionName: any) {
       .find({ timestamp: { $gt: startDate } })
       .sort({ timestamp: 1 })
       .toArray();
+
     return report;
   } catch (error) {
     console.error("Failed in bulk operation:", error);
@@ -296,6 +300,7 @@ export let monthlyData: any = {
   "02/2024": { a2: 1422.73, a3: 1093.48, a4: 969.28, a5: 953.64, a6: 958.83 },
   "03/2024": { a2: 1431.79, a3: 1099.75, a4: 975.65, a5: 959.31, a6: 964.73 },
   "04/2024": { a2: 1430.97, a3: 1098.44, a4: 975, a5: 958.16, a6: 963.77 },
+  "05/2024": { a2: 1454.84, a3: 1116.06, a4: 991.36, a5: 973.5, a6: 979.44 },
 };
 
 export let lg30truu: any = {
@@ -866,11 +871,11 @@ export async function uploadFSData() {
   legatruu = trimDate(legatruu, true);
 
   await updateOrInsertDataWithBulk(monthlyData, "Triada");
-  await updateOrInsertDataWithBulk(lg30truu, "LEGATRUU Index");
+  await updateOrInsertDataWithBulk(legatruu, "LEGATRUU Index");
   await updateOrInsertDataWithBulk(emustruu, "EMUSTRUU Index");
   await updateOrInsertDataWithBulk(beuctruu, "BEUCTRUU Index");
   await updateOrInsertDataWithBulk(beuytruu, "BEUYTRUU Index");
-  await updateOrInsertDataWithBulk(legatruu, "LG30TRUU Index");
+  await updateOrInsertDataWithBulk(lg30truu, "LG30TRUU Index");
 }
 
 export function trimDate(data: any, benchmark = false) {
@@ -990,20 +995,18 @@ export function calculateOutPerformanceParam({ benchmarks, data }: { benchmarks:
 
 export function calculateRatios({ benchmarks, data, type }: { benchmarks: any; data: any; type: "a2" | "a3" | "a4" | "a5" | "a6" }) {
   let ratios: any = {};
-  let numOfNegativeMonthsTriada = data.numOfMonthsNegative[type].length;
-
-  let numOfPositiveMonthsTriada = data.numOfMonthsPositive[type].length;
 
   let negativeCorrelation: any = {};
   let positiveCorrelation: any = {};
-
   for (let benchmark in benchmarks) {
     let negativeReturn = benchmarks[benchmark].negativeReturn["main"];
     let positiveReturn = benchmarks[benchmark].positiveReturn["main"];
     let numOfNegativeMonths = benchmarks[benchmark].numOfMonthsNegative["main"].length;
     let numOfPositiveMonths = benchmarks[benchmark].numOfMonthsPositive["main"].length;
-    let negativeOutperforms = 0;
-    let positiveOutperforms = 0;
+    let numOfNegativeMonthsTriada = 0;
+    let numOfPositiveMonthsTriada = 0;
+    let triadaNegativeOutperforms = 0;
+    let triadaPositiveOutperforms = 0;
 
     let triadaReturnInSpecifiedMonthsNegative = 1;
     let triadaReturnInSpecifiedMonthsPositive = 1;
@@ -1016,8 +1019,11 @@ export function calculateRatios({ benchmarks, data, type }: { benchmarks: any; d
         negativeCorrelation[benchmark].triada.push(triadaReturn);
         negativeCorrelation[benchmark].main.push(benchmarks[benchmark].negativeReturnsHashTable["main"][negativeMonth]);
         triadaReturnInSpecifiedMonthsNegative = triadaReturnInSpecifiedMonthsNegative * triadaReturn;
-        if (benchmarks[benchmark].negativeReturnsHashTable["main"][negativeMonth] > triadaReturn - 1) {
-          negativeOutperforms++;
+        if (benchmarks[benchmark].negativeReturnsHashTable["main"][negativeMonth] < triadaReturn - 1) {
+          triadaNegativeOutperforms++;
+        }
+        if (data.returnsHashTable[type][negativeMonth] < 0) {
+          numOfNegativeMonthsTriada++;
         }
       }
     }
@@ -1030,18 +1036,22 @@ export function calculateRatios({ benchmarks, data, type }: { benchmarks: any; d
         positiveCorrelation[benchmark].triada.push(triadaReturn);
         positiveCorrelation[benchmark].main.push(benchmarks[benchmark].positiveReturnsHashTable["main"][positiveMonth]);
         triadaReturnInSpecifiedMonthsPositive = triadaReturnInSpecifiedMonthsPositive * triadaReturn;
-      }
-      if (benchmarks[benchmark].positiveReturnsHashTable["main"][positiveMonth] > triadaReturn - 1) {
-        positiveOutperforms++;
+        if (benchmarks[benchmark].positiveReturnsHashTable["main"][positiveMonth] < triadaReturn - 1) {
+          triadaPositiveOutperforms++;
+        }
+        if (data.returnsHashTable[type][positiveMonth] > 0) {
+          numOfPositiveMonthsTriada++;
+        }
       }
     }
+
     ratios[benchmark] = {
       "Down Capture Ratio": triadaReturnInSpecifiedMonthsNegative / negativeReturn,
       "Down Number Ratio": numOfNegativeMonths / numOfNegativeMonthsTriada,
-      "Down Percentage Ratio": negativeOutperforms / numOfNegativeMonths,
+      "Down Percentage Ratio": triadaNegativeOutperforms / numOfNegativeMonths,
       "Up Capture Ratio": triadaReturnInSpecifiedMonthsPositive / positiveReturn,
       "Up Number Ratio": numOfPositiveMonths / numOfPositiveMonthsTriada,
-      "Up Percentage Ratio": positiveOutperforms / numOfPositiveMonths,
+      "Up Percentage Ratio": triadaPositiveOutperforms / numOfPositiveMonths,
     };
   }
   return { ratios, negativeCorrelation, positiveCorrelation };
@@ -1062,22 +1072,28 @@ export function calculateBetaCorrelationBenchMarks({ benchmarks, data }: { bench
 
     let normal = benchmarks[benchmark].normal;
     let sd = normal.sd;
+
     let covariance = calculateCovariance(mainMonthlyReturns, monthlyReturns, mainNormal.mean, normal.mean);
+
     betas[benchmark] = covariance / sd ** 2;
     correlation[benchmark] = covariance / (sd * mainNormal.sd);
   }
   return { betas, correlation };
 }
 
-function calculateCovariance(array1: any, array2: any, mean1: any, mean2: any) {
-  while (array1.length !== array2.length) {
-    if (array1.length < array2.length) {
-      array2.shift();
-    }
-    if (array1.length > array2.length) {
-      array1.shift();
-    }
+function calculateCovariance(array1: number[], array2: number[], mean1: number, mean2: number): number {
+  if (!Array.isArray(array1) || !Array.isArray(array2)) {
+    throw new Error("Input should be arrays");
   }
+
+  if (typeof mean1 !== "number" || typeof mean2 !== "number") {
+    throw new Error("Means should be numbers");
+  }
+
+  // Ensure arrays are of the same length by truncating the longer array
+  const minLength = Math.min(array1.length, array2.length);
+  array1 = array1.slice(0, minLength);
+  array2 = array2.slice(0, minLength);
 
   const n = array1.length;
   if (n === 0) {
@@ -1090,7 +1106,7 @@ function calculateCovariance(array1: any, array2: any, mean1: any, mean2: any) {
     covariance += (array1[i] - mean1) * (array2[i] - mean2);
   }
 
-  return covariance / (n - 1);
+  return covariance / n;
 }
 
 export function calculateRiskRatios({ benchmarks, fundDetails }: { benchmarks: any; fundDetails: any }) {
@@ -1103,10 +1119,10 @@ export function calculateRiskRatios({ benchmarks, fundDetails }: { benchmarks: a
     let negativeAnnualVolitality = benchmarks[benchmark].negativeAnnualVolitality;
     let beta = benchmarks[benchmark].beta;
     riskRatios[benchmark] = {
-      "Calmar Ratio": annulizedReturnVar / mdd,
-      "Sharpe Ratio": (annulizedReturnVar - treasuryBenchmark) / normal.sd,
-      "Sortino Ratio": (annulizedReturnVar - treasuryBenchmark) / negativeAnnualVolitality.sd,
-      "Sterling Ratio": annulizedReturnVar / (mdd + 0.1),
+      "Calmar Ratio": annulizedReturnVar / Math.abs(mdd),
+      "Sharpe Ratio": (annulizedReturnVar - treasuryBenchmark) / (normal.sd * Math.sqrt(12)),
+      "Sortino Ratio": (annulizedReturnVar - treasuryBenchmark) / (negativeAnnualVolitality.sd * Math.sqrt(12)),
+      "Sterling Ratio": annulizedReturnVar / (Math.abs(mdd) + 0.1),
       "Treynor Ratio": (annulizedReturnVar - treasuryBenchmark) / beta,
     };
   }
@@ -1125,10 +1141,10 @@ export function calculateRegression({ benchmarks, data, fundDetails, correlation
 
     let beta = benchmarks[benchmark].beta;
     let correlation = benchmarks[benchmark].correlation;
-    let monthlyReturns = benchmarks[benchmark].results;
+    let monthlyReturns = benchmarks[benchmark].fundReturns;
     let annulizedReturnVar = benchmarks[benchmark].annulizedReturn.annualPer;
     let sdDiff = calculateStdDevOfDifferences(monthlyReturns, mainMonthlyReturns);
-    let informationRatio = (annulizedReturnVar - treasuryBenchmark) / sdDiff;
+    let informationRatio = (mainAnnualReturn - annulizedReturnVar) / (sdDiff * Math.sqrt(12));
 
     let negativeNormal = getSampleStandardDeviation(correlations.negativeCorrelation[benchmark].main);
     let negativeMainNormal = getSampleStandardDeviation(correlations.negativeCorrelation[benchmark].triada);
@@ -1147,17 +1163,15 @@ export function calculateRegression({ benchmarks, data, fundDetails, correlation
 }
 
 function calculateStdDevOfDifferences(portfolioReturns: any, benchmarkReturns: any) {
-  if (portfolioReturns.length !== benchmarkReturns.length) {
-    throw new Error("Both arrays must be of the same length.");
-  }
-
-  const n = portfolioReturns.length;
-  if (n === 0) {
-    throw new Error("Arrays cannot be empty.");
-  }
-
   // Calculate the differences array
-  const differences = portfolioReturns.map((r_p: any, index: any) => r_p - benchmarkReturns[index]);
+  let differences = [];
+  for (let month in portfolioReturns) {
+    if (portfolioReturns[month] && benchmarkReturns[month]) {
+      let diff = portfolioReturns[month] - benchmarkReturns[month];
+      differences.push(diff);
+    }
+  }
+  const n = differences.length;
 
   // Calculate the mean of differences
   const meanDifference = differences.reduce((sum: any, val: any) => sum + val, 0) / n;
