@@ -338,7 +338,7 @@ export function getStatistics(array: any) {
   const sd = Math.sqrt(variance);
 
   const skewness = sumOfCubedDeviations / n / sd ** 3;
-  const kurtosis = (n * sumOfQuarticDeviations) / (sumOfSquares ** 2);
+  const kurtosis = (n * sumOfQuarticDeviations) / sumOfSquares ** 2;
   return {
     mean: mean,
     sd: sd,
@@ -364,8 +364,6 @@ export function updateStats({
   positiveReturn,
   negativeReturns,
   negativeReturn,
-  peak,
-  trough,
   variable,
   troughReturn,
   peakReturn,
@@ -373,6 +371,8 @@ export function updateStats({
   returnsHashTable,
   positiveReturnsHashTable,
   negativeReturnsHashTable,
+  reset,
+  cumulativeReturnsHashTable,
 }: {
   data: any;
   returnMonth: any;
@@ -383,8 +383,6 @@ export function updateStats({
   positiveReturn: any;
   negativeReturn: any;
   negativeReturns: any;
-  peak: any;
-  trough: any;
   variable: string;
   troughReturn: any;
   peakReturn: any;
@@ -392,13 +390,48 @@ export function updateStats({
   returnsHashTable: any;
   positiveReturnsHashTable: any;
   negativeReturnsHashTable: any;
+  cumulativeReturnsHashTable: any;
+  reset: any;
 }) {
   if (data[monthsIndex].data[variable] && data[monthsIndex - 1].data[variable]) {
+    let differenceTimestamp = Math.abs(data[monthsIndex].timestamp - data[monthsIndex - 1].timestamp);
+    if (differenceTimestamp >= 12 * 30 * 24 * 60 * 60 * 1000) {
+      reset[variable] = true;
+      // console.log(data[monthsIndex].date, data[monthsIndex - 1].date);
+      return;
+    }
+
     returnMonth[variable] = data[monthsIndex].data[variable] / data[monthsIndex - 1].data[variable] - 1;
     cumulativeReturn[variable] = cumulativeReturn[variable] * (returnMonth[variable] + 1);
     numOfMonths[variable] += 1;
     returns[variable].push(returnMonth[variable]);
     returnsHashTable[variable][data[monthsIndex].date] = returnMonth[variable];
+    let cumulativeIndex = data.length - 1 - monthsIndex;
+
+    if (data[cumulativeIndex - 1]) {
+      let newReturn = data[cumulativeIndex].data[variable] / data[cumulativeIndex - 1].data[variable] - 1;
+      let newDifferenceTimestamp = Math.abs(data[cumulativeIndex].timestamp - data[cumulativeIndex - 1].timestamp);
+      let customStart = parseFloat(data[cumulativeIndex].date.split("/")[1]);
+      if (newDifferenceTimestamp <= 12 * 30 * 24 * 60 * 60 * 1000 && isFinite(newReturn)) {
+        cumulativeReturnsHashTable[variable].cumulative = cumulativeReturnsHashTable[variable].cumulative * (newReturn + 1);
+
+        if (cumulativeReturnsHashTable[variable].cumulative > cumulativeReturnsHashTable[variable].max) {
+          cumulativeReturnsHashTable[variable].max = cumulativeReturnsHashTable[variable].cumulative;
+          cumulativeReturnsHashTable[variable].min = Infinity;
+        }
+
+        if (cumulativeReturnsHashTable[variable].cumulative < cumulativeReturnsHashTable[variable].min) {
+          cumulativeReturnsHashTable[variable].min = cumulativeReturnsHashTable[variable].cumulative;
+        }
+        if (customStart >= 2023) {
+         
+          cumulativeReturnsHashTable[variable].cumulativeSwitch = cumulativeReturnsHashTable[variable].cumulativeSwitch * (newReturn + 1);
+
+          cumulativeReturnsHashTable[variable][data[cumulativeIndex].date] = cumulativeReturnsHashTable[variable].cumulativeSwitch;
+        }
+      }
+      // console.log(data[cumulativeIndex].date, newReturn);
+    }
 
     if (returnMonth[variable] >= 0) {
       positiveReturns[variable].push(returnMonth[variable]);
@@ -410,12 +443,6 @@ export function updateStats({
       negativeReturnsHashTable[variable][data[monthsIndex].date] = returnMonth[variable];
     }
 
-    if (data[monthsIndex].data[variable] > peak[variable]) {
-      peak[variable] = data[monthsIndex].data[variable];
-    }
-    if (data[monthsIndex].data[variable] < trough[variable]) {
-      trough[variable] = data[monthsIndex].data[variable];
-    }
     if (returnMonth[variable] > peakReturn[variable]) {
       peakReturn[variable] = returnMonth[variable];
     }

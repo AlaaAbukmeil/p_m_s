@@ -1,6 +1,6 @@
 import { toTitleCase } from "../tools";
 
-export function getCountrySectorStrategySum(countryPercentage: any, sectorPercentage: any, strategyPercentage: any, issuerPercentage: any, ratingPercentage: any, regionPercentage: any, marketTypePercentage: any, nav: any) {
+export function getCountrySectorStrategySum(countryPercentage: any, sectorPercentage: any, strategyPercentage: any, issuerPercentage: any, ratingPercentage: any, regionPercentage: any, marketTypePercentage: any, assetClassPercentage:any, nav: any) {
   let countries = Object.keys(countryPercentage);
   let sectors = Object.keys(sectorPercentage);
   let strategies = Object.keys(strategyPercentage);

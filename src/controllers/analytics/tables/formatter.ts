@@ -324,7 +324,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     nmvOfNav: Math.round(nmv * 10000) / (100 * fund.nav),
     ytdEstInt: ytdEstInt,
     ytdEstIntPercentage: Math.round((ytdEstInt / parseFloat(fundDetailsYTD.nav)) * 100000) / 1000 || 0,
-    "3 month treasury rate": fund["3 month treasury rate"]
+    "3 month treasury rate": fund["3 month treasury rate"],
   };
   let updatedPortfolio: PositionGeneralFormat[] | any = portfolio;
   return { portfolio: updatedPortfolio, fundDetails: fundDetails, currencies: currencies };
@@ -365,6 +365,9 @@ export function assignColorAndSortParamsBasedOnAssetClass({
   marketTypeNAVPercentage,
   marketTypeGMVPercentage,
   marketTypeLMVPercentage,
+  assetClassNAVPercentage,
+  assetClassGMVPercentage,
+  assetClassLMVPercentage,
 }: {
   countryNAVPercentage: any;
   sectorNAVPercentage: any;
@@ -401,6 +404,9 @@ export function assignColorAndSortParamsBasedOnAssetClass({
   marketTypeNAVPercentage: any;
   marketTypeGMVPercentage: any;
   marketTypeLMVPercentage: any;
+  assetClassNAVPercentage: any;
+  assetClassGMVPercentage: any;
+  assetClassLMVPercentage: any;
 }) {
   let assetClassOrder = view == "exposure" ? assetClassOrderExposure : assetClassOrderFrontOffice;
   for (let locationCode in groupedByLocation) {
@@ -562,6 +568,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       let rating = groupedByLocation[locationCode].data[index]["Rating Score"];
       let region = groupedByLocation[locationCode].data[index]["Region"];
       let marketType = groupedByLocation[locationCode].data[index]["Market Type"];
+      let assetClass = groupedByLocation[locationCode].data[index]["Asset Class"];
 
       if (view == "front office" || view == "exposure") {
         usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["USD Market Value"]) || 0;
@@ -583,6 +590,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
         ratingLMVPercentage[rating] = ratingLMVPercentage[rating] ? ratingLMVPercentage[rating] + absoulteUsdMarketValue : absoulteUsdMarketValue;
         regionLMVPercentage[region] = regionLMVPercentage[region] ? regionLMVPercentage[region] + absoulteUsdMarketValue : absoulteUsdMarketValue;
         marketTypeLMVPercentage[marketType] = marketTypeLMVPercentage[marketType] ? marketTypeLMVPercentage[marketType] + absoulteUsdMarketValue : absoulteUsdMarketValue;
+        assetClassLMVPercentage[assetClass] = assetClassLMVPercentage[assetClass] ? assetClassLMVPercentage[assetClass] + absoulteUsdMarketValue : absoulteUsdMarketValue;
       }
 
       strategyNAVPercentage[strategy] = strategyNAVPercentage[strategy] ? strategyNAVPercentage[strategy] + usdMarketValue : usdMarketValue;
@@ -592,6 +600,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       ratingNAVPercentage[rating] = ratingNAVPercentage[rating] ? ratingNAVPercentage[rating] + usdMarketValue : usdMarketValue;
       regionNAVPercentage[region] = regionNAVPercentage[region] ? regionNAVPercentage[region] + usdMarketValue : usdMarketValue;
       marketTypeNAVPercentage[marketType] = marketTypeNAVPercentage[marketType] ? marketTypeNAVPercentage[marketType] + usdMarketValue : usdMarketValue;
+      assetClassNAVPercentage[assetClass] = assetClassNAVPercentage[assetClass] ? assetClassNAVPercentage[assetClass] + absoulteUsdMarketValue : absoulteUsdMarketValue;
 
       strategyGMVPercentage[strategy] = strategyGMVPercentage[strategy] ? strategyGMVPercentage[strategy] + absoulteUsdMarketValue : absoulteUsdMarketValue;
       issuerGMVPercentage[issuer] = issuerGMVPercentage[issuer] ? issuerGMVPercentage[issuer] + absoulteUsdMarketValue : absoulteUsdMarketValue;
@@ -600,6 +609,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       ratingGMVPercentage[rating] = ratingGMVPercentage[rating] ? ratingGMVPercentage[rating] + absoulteUsdMarketValue : absoulteUsdMarketValue;
       regionGMVPercentage[region] = regionGMVPercentage[region] ? regionGMVPercentage[region] + absoulteUsdMarketValue : absoulteUsdMarketValue;
       marketTypeGMVPercentage[marketType] = marketTypeGMVPercentage[marketType] ? marketTypeGMVPercentage[marketType] + absoulteUsdMarketValue : absoulteUsdMarketValue;
+      assetClassGMVPercentage[assetClass] = assetClassGMVPercentage[assetClass] ? assetClassGMVPercentage[assetClass] + absoulteUsdMarketValue : absoulteUsdMarketValue;
 
       issuerInformation[issuer] = issuerInformation[issuer] ? issuerInformation[issuer] : { rating: "", country: "" };
       issuerInformation[issuer].rating = rating;
@@ -744,6 +754,9 @@ export function getMacroStats({
   ratingLMVPercentage,
   regionLMVPercentage,
   marketTypeLMVPercentage,
+  assetClassNAVPercentage,
+  assetClassGMVPercentage,
+  assetClassLMVPercentage,
 }: {
   countryNAVPercentage: any;
   sectorNAVPercentage: any;
@@ -768,6 +781,9 @@ export function getMacroStats({
   marketTypeNAVPercentage: any;
   marketTypeGMVPercentage: any;
   marketTypeLMVPercentage: any;
+  assetClassNAVPercentage: any;
+  assetClassGMVPercentage: any;
+  assetClassLMVPercentage: any;
 }) {
   for (let locationCode in groupedByLocation) {
     groupedByLocation[locationCode]["DV01 Dollar Value Impact"] = 0;
@@ -785,7 +801,7 @@ export function getMacroStats({
       let issuer = groupedByLocation[locationCode].data[index]["Issuer"] ? groupedByLocation[locationCode].data[index]["Issuer"] : "Unspecified";
       let sector = groupedByLocation[locationCode].data[index]["Sector"] ? groupedByLocation[locationCode].data[index]["Sector"] : "Unspecified";
       let strategy = groupedByLocation[locationCode].data[index]["Strategy"];
-   
+
       let usdMarketValue;
       let dayPl;
       let monthPl;
@@ -793,16 +809,11 @@ export function getMacroStats({
       let rating = groupedByLocation[locationCode].data[index]["Rating Score"];
       let region = groupedByLocation[locationCode].data[index]["Region"];
       let marketType = groupedByLocation[locationCode].data[index]["Market Type"];
+      let assetClass = groupedByLocation[locationCode].data[index]["Asset Class"];
 
-      if (view == "front office" || view == "exposure") {
-        usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["USD Market Value"]) || 0;
-        dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Day P&L (USD)"]);
-        monthPl = parseFloat(groupedByLocation[locationCode].data[index]["MTD P&L (USD)"]);
-      } else {
-        usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["Value (BC)"]) || 0;
-        dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Day P&L (BC)"]);
-        monthPl = parseFloat(groupedByLocation[locationCode].data[index]["MTD P&L (BC)"]);
-      }
+      usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["Value (BC)"]) || 0;
+      dayPl = parseFloat(groupedByLocation[locationCode].data[index]["Day P&L (BC)"]);
+      monthPl = parseFloat(groupedByLocation[locationCode].data[index]["MTD P&L (BC)"]);
 
       let absoulteUsdMarketValue = Math.abs(usdMarketValue);
 
@@ -814,6 +825,7 @@ export function getMacroStats({
         ratingLMVPercentage[rating] = ratingLMVPercentage[rating] ? ratingLMVPercentage[rating] + absoulteUsdMarketValue : absoulteUsdMarketValue;
         regionLMVPercentage[region] = regionLMVPercentage[region] ? regionLMVPercentage[region] + absoulteUsdMarketValue : absoulteUsdMarketValue;
         marketTypeLMVPercentage[marketType] = marketTypeLMVPercentage[marketType] ? marketTypeLMVPercentage[marketType] + absoulteUsdMarketValue : absoulteUsdMarketValue;
+        assetClassLMVPercentage[assetClass] = assetClassLMVPercentage[assetClass] ? assetClassLMVPercentage[assetClass] + absoulteUsdMarketValue : absoulteUsdMarketValue;
       }
 
       strategyNAVPercentage[strategy] = strategyNAVPercentage[strategy] ? strategyNAVPercentage[strategy] + usdMarketValue : usdMarketValue;
@@ -823,6 +835,7 @@ export function getMacroStats({
       ratingNAVPercentage[rating] = ratingNAVPercentage[rating] ? ratingNAVPercentage[rating] + usdMarketValue : usdMarketValue;
       regionNAVPercentage[region] = regionNAVPercentage[region] ? regionNAVPercentage[region] + usdMarketValue : usdMarketValue;
       marketTypeNAVPercentage[marketType] = marketTypeNAVPercentage[marketType] ? marketTypeNAVPercentage[marketType] + usdMarketValue : usdMarketValue;
+      assetClassNAVPercentage[assetClass] = assetClassNAVPercentage[assetClass] ? assetClassNAVPercentage[assetClass] + absoulteUsdMarketValue : absoulteUsdMarketValue;
 
       strategyGMVPercentage[strategy] = strategyGMVPercentage[strategy] ? strategyGMVPercentage[strategy] + absoulteUsdMarketValue : absoulteUsdMarketValue;
       issuerGMVPercentage[issuer] = issuerGMVPercentage[issuer] ? issuerGMVPercentage[issuer] + absoulteUsdMarketValue : absoulteUsdMarketValue;
@@ -831,6 +844,7 @@ export function getMacroStats({
       ratingGMVPercentage[rating] = ratingGMVPercentage[rating] ? ratingGMVPercentage[rating] + absoulteUsdMarketValue : absoulteUsdMarketValue;
       regionGMVPercentage[region] = regionGMVPercentage[region] ? regionGMVPercentage[region] + absoulteUsdMarketValue : absoulteUsdMarketValue;
       marketTypeGMVPercentage[marketType] = marketTypeGMVPercentage[marketType] ? marketTypeGMVPercentage[marketType] + absoulteUsdMarketValue : absoulteUsdMarketValue;
+      assetClassGMVPercentage[assetClass] = assetClassGMVPercentage[assetClass] ? assetClassGMVPercentage[assetClass] + absoulteUsdMarketValue : absoulteUsdMarketValue;
     }
   }
 }
@@ -1218,6 +1232,7 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
   let ratingNAVPercentage: any = {};
   let regionNAVPercentage: any = {};
   let marketTypeNAVPercentage: any = {};
+  let assetClassNAVPercentage: any = {};
 
   let countryGMVPercentage: any = {};
   let sectorGMVPercentage: any = {};
@@ -1226,6 +1241,7 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
   let ratingGMVPercentage: any = {};
   let regionGMVPercentage: any = {};
   let marketTypeGMVPercentage: any = {};
+  let assetClassGMVPercentage: any = {};
 
   let countryLMVPercentage: any = {};
   let sectorLMVPercentage: any = {};
@@ -1234,6 +1250,7 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
   let ratingLMVPercentage: any = {};
   let regionLMVPercentage: any = {};
   let marketTypeLMVPercentage: any = {};
+  let assetClassLMVPercentage: any = {};
 
   let longShort = { Long: { dv01Sum: 0, intSum: 0 }, Short: { dv01Sum: 0, intSum: 0 }, Total: { dv01Sum: 0, intSum: 0 } };
 
@@ -1373,6 +1390,9 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
     rvPairTable: rvPairTable,
     tickerTable: tickerTable,
     date: date,
+    assetClassNAVPercentage: assetClassNAVPercentage,
+    assetClassGMVPercentage: assetClassGMVPercentage,
+    assetClassLMVPercentage: assetClassLMVPercentage,
   });
 
   let portfolio: any = [];
@@ -1398,11 +1418,11 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
     HYDV01Sum: HYDV01Sum,
     cdsNotional: -1 * cdsNotional,
   };
-  getCountrySectorStrategySum(countryNAVPercentage, sectorNAVPercentage, strategyNAVPercentage, issuerNAVPercentage, ratingNAVPercentage, regionNAVPercentage, marketTypeNAVPercentage, fundDetails.nav);
+  getCountrySectorStrategySum(countryNAVPercentage, sectorNAVPercentage, strategyNAVPercentage, issuerNAVPercentage, ratingNAVPercentage, regionNAVPercentage, marketTypeNAVPercentage, assetClassNAVPercentage, fundDetails.nav);
 
-  getCountrySectorStrategySum(countryGMVPercentage, sectorGMVPercentage, strategyGMVPercentage, issuerGMVPercentage, ratingGMVPercentage, regionGMVPercentage, marketTypeGMVPercentage, fundDetails.nav);
+  getCountrySectorStrategySum(countryGMVPercentage, sectorGMVPercentage, strategyGMVPercentage, issuerGMVPercentage, ratingGMVPercentage, regionGMVPercentage, marketTypeGMVPercentage, assetClassGMVPercentage, fundDetails.nav);
 
-  getCountrySectorStrategySum(countryLMVPercentage, sectorLMVPercentage, strategyLMVPercentage, issuerLMVPercentage, ratingLMVPercentage, regionLMVPercentage, marketTypeLMVPercentage, fundDetails.nav);
+  getCountrySectorStrategySum(countryLMVPercentage, sectorLMVPercentage, strategyLMVPercentage, issuerLMVPercentage, ratingLMVPercentage, regionLMVPercentage, marketTypeLMVPercentage, assetClassLMVPercentage, fundDetails.nav);
 
   let capacity = adjustMarginMultiplier(portfolio, sectorGMVPercentage, issuerNAVPercentage);
 
@@ -1422,6 +1442,7 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
     ratingNAVPercentage: sortObjectBasedOnKey(ratingNAVPercentage),
     regionNAVPercentage: sortObjectBasedOnKey(regionNAVPercentage),
     marketTypeNAVPercentage: sortObjectBasedOnKey(marketTypeNAVPercentage),
+    assetClassNAVPercentage: sortObjectBasedOnKey(assetClassNAVPercentage),
 
     countryGMVPercentage: sortObjectBasedOnKey(countryGMVPercentage),
     sectorGMVPercentage: sortObjectBasedOnKey(sectorGMVPercentage),
@@ -1430,6 +1451,7 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
     ratingGMVPercentage: sortObjectBasedOnKey(ratingGMVPercentage),
     regionGMVPercentage: sortObjectBasedOnKey(regionGMVPercentage),
     marketTypeGMVPercentage: sortObjectBasedOnKey(marketTypeGMVPercentage),
+    assetClassGMVPercentage: sortObjectBasedOnKey(assetClassGMVPercentage),
 
     countryLMVPercentage: sortObjectBasedOnKey(countryLMVPercentage),
     sectorLMVPercentage: sortObjectBasedOnKey(sectorLMVPercentage),
@@ -1438,6 +1460,7 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
     ratingLMVPercentage: sortObjectBasedOnKey(ratingLMVPercentage),
     regionLMVPercentage: sortObjectBasedOnKey(regionLMVPercentage),
     marketTypeLMVPercentage: sortObjectBasedOnKey(marketTypeLMVPercentage),
+    assetClassLMVPercentage: sortObjectBasedOnKey(assetClassLMVPercentage),
 
     riskAssessment: riskAssessment,
     topWorstPerformaners: topWorstPerformaners,
@@ -1457,8 +1480,6 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
 export function getCountrySectorMacroStatistics({ formattedPortfolio, nav, sort, sign, view, currencies, format, sortBy, fundDetails, date }: { formattedPortfolio: PositionGeneralFormat[]; nav: number; sort: any; sign: number; view: "front office" | "exposure" | "back office"; currencies: any; format: "risk" | "summary"; sortBy: "pl" | null | "price move"; fundDetails: any; date: "string" }) {
   // Group objects by location
 
-  let issuerInformation: any = {};
-
   let countryNAVPercentage: any = {};
   let sectorNAVPercentage: any = {};
   let strategyNAVPercentage: any = {};
@@ -1466,6 +1487,7 @@ export function getCountrySectorMacroStatistics({ formattedPortfolio, nav, sort,
   let ratingNAVPercentage: any = {};
   let regionNAVPercentage: any = {};
   let marketTypeNAVPercentage: any = {};
+  let assetClassNAVPercentage: any = {};
 
   let countryGMVPercentage: any = {};
   let sectorGMVPercentage: any = {};
@@ -1474,6 +1496,7 @@ export function getCountrySectorMacroStatistics({ formattedPortfolio, nav, sort,
   let ratingGMVPercentage: any = {};
   let regionGMVPercentage: any = {};
   let marketTypeGMVPercentage: any = {};
+  let assetClassGMVPercentage: any = {};
 
   let countryLMVPercentage: any = {};
   let sectorLMVPercentage: any = {};
@@ -1482,6 +1505,8 @@ export function getCountrySectorMacroStatistics({ formattedPortfolio, nav, sort,
   let ratingLMVPercentage: any = {};
   let regionLMVPercentage: any = {};
   let marketTypeLMVPercentage: any = {};
+  let assetClassLMVPercentage: any = {};
+
   const groupedByLocation = formattedPortfolio.reduce((group: any, item: any) => {
     const { Location } = item;
     let notional = item["Notional Amount"];
@@ -1546,12 +1571,15 @@ export function getCountrySectorMacroStatistics({ formattedPortfolio, nav, sort,
     ratingLMVPercentage: ratingLMVPercentage,
     regionLMVPercentage: regionLMVPercentage,
     marketTypeLMVPercentage: marketTypeLMVPercentage,
+    assetClassNAVPercentage: assetClassNAVPercentage,
+    assetClassGMVPercentage: assetClassGMVPercentage,
+    assetClassLMVPercentage: assetClassLMVPercentage,
   });
-  getCountrySectorStrategySum(countryNAVPercentage, sectorNAVPercentage, strategyNAVPercentage, issuerNAVPercentage, ratingNAVPercentage, regionNAVPercentage, marketTypeNAVPercentage, fundDetails.nav);
+  getCountrySectorStrategySum(countryNAVPercentage, sectorNAVPercentage, strategyNAVPercentage, issuerNAVPercentage, ratingNAVPercentage, regionNAVPercentage, marketTypeNAVPercentage, assetClassNAVPercentage, fundDetails.nav);
 
-  getCountrySectorStrategySum(countryGMVPercentage, sectorGMVPercentage, strategyGMVPercentage, issuerGMVPercentage, ratingGMVPercentage, regionGMVPercentage, marketTypeGMVPercentage, fundDetails.nav);
+  getCountrySectorStrategySum(countryGMVPercentage, sectorGMVPercentage, strategyGMVPercentage, issuerGMVPercentage, ratingGMVPercentage, regionGMVPercentage, marketTypeGMVPercentage, assetClassGMVPercentage, fundDetails.nav);
 
-  getCountrySectorStrategySum(countryLMVPercentage, sectorLMVPercentage, strategyLMVPercentage, issuerLMVPercentage, ratingLMVPercentage, regionLMVPercentage, marketTypeLMVPercentage, fundDetails.nav);
+  getCountrySectorStrategySum(countryLMVPercentage, sectorLMVPercentage, strategyLMVPercentage, issuerLMVPercentage, ratingLMVPercentage, regionLMVPercentage, marketTypeLMVPercentage, assetClassLMVPercentage, fundDetails.nav);
 
   return {
     countryNAVPercentage: sortObjectBasedOnKey(countryNAVPercentage),
@@ -1561,6 +1589,8 @@ export function getCountrySectorMacroStatistics({ formattedPortfolio, nav, sort,
     ratingNAVPercentage: sortObjectBasedOnKey(ratingNAVPercentage),
     regionNAVPercentage: sortObjectBasedOnKey(regionNAVPercentage),
     marketTypeNAVPercentage: sortObjectBasedOnKey(marketTypeNAVPercentage),
+    assetClassNAVPercentage: sortObjectBasedOnKey(assetClassNAVPercentage),
+
 
     countryGMVPercentage: sortObjectBasedOnKey(countryGMVPercentage),
     sectorGMVPercentage: sortObjectBasedOnKey(sectorGMVPercentage),
@@ -1569,6 +1599,7 @@ export function getCountrySectorMacroStatistics({ formattedPortfolio, nav, sort,
     ratingGMVPercentage: sortObjectBasedOnKey(ratingGMVPercentage),
     regionGMVPercentage: sortObjectBasedOnKey(regionGMVPercentage),
     marketTypeGMVPercentage: sortObjectBasedOnKey(marketTypeGMVPercentage),
+    assetClassGMVPercentage: sortObjectBasedOnKey(assetClassGMVPercentage),
 
     countryLMVPercentage: sortObjectBasedOnKey(countryLMVPercentage),
     sectorLMVPercentage: sortObjectBasedOnKey(sectorLMVPercentage),
@@ -1577,5 +1608,6 @@ export function getCountrySectorMacroStatistics({ formattedPortfolio, nav, sort,
     ratingLMVPercentage: sortObjectBasedOnKey(ratingLMVPercentage),
     regionLMVPercentage: sortObjectBasedOnKey(regionLMVPercentage),
     marketTypeLMVPercentage: sortObjectBasedOnKey(marketTypeLMVPercentage),
+    assetClassLMVPercentage: sortObjectBasedOnKey(assetClassLMVPercentage),
   };
 }
