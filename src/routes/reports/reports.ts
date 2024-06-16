@@ -149,12 +149,9 @@ router.get("/fact-sheet", uploadToBucket.any(), verifyTokenFactSheetMember, asyn
     let type = req.query.type || "a2";
 
     const now = new Date();
-
     const from2010: any = new Date("2010-01-01").getTime();
-    const from5YearsAgo = new Date(now.setFullYear(now.getFullYear() - 5)).getTime();
-    now.setFullYear(now.getFullYear() + 5); // Reset the date back to now
-    const from2YearsAgo = new Date(now.setFullYear(now.getFullYear() - 2)).getTime();
-    now.setFullYear(now.getFullYear() + 2); // Reset the date back to now
+    const from5YearsAgo = new Date("2019-12-31").getTime();
+    const from2YearsAgo = new Date("2022-12-31").getTime();
 
     let inception = await getFactSheet({ from: from2010, to: now, type });
     let fiveYears = await getFactSheet({ from: from5YearsAgo, to: now, type });

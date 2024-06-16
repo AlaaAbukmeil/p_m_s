@@ -393,26 +393,41 @@ export function updateStats({
   cumulativeReturnsHashTable: any;
   reset: any;
 }) {
-  if (data[monthsIndex].data[variable] && data[monthsIndex - 1].data[variable]) {
-    let differenceTimestamp = Math.abs(data[monthsIndex].timestamp - data[monthsIndex - 1].timestamp);
-    if (differenceTimestamp >= 12 * 30 * 24 * 60 * 60 * 1000) {
-      reset[variable] = true;
-      // console.log(data[monthsIndex].date, data[monthsIndex - 1].date);
-      return;
-    }
+  try {
+    if (monthsIndex != 0) {
+      if ((data[monthsIndex].data[variable] || data[monthsIndex].data[variable] == 0) && (data[monthsIndex - 1].data[variable] || data[monthsIndex - 1].data[variable] == 0)) {
+        returnMonth[variable] = data[monthsIndex].data[variable] / data[monthsIndex - 1].data[variable] - 1;
+        cumulativeReturn[variable] = cumulativeReturn[variable] * (returnMonth[variable] + 1);
+        numOfMonths[variable] += 1;
+        returns[variable].push(returnMonth[variable]);
+        
+        returnsHashTable[variable][data[monthsIndex].date] = returnMonth[variable];
 
-    returnMonth[variable] = data[monthsIndex].data[variable] / data[monthsIndex - 1].data[variable] - 1;
-    cumulativeReturn[variable] = cumulativeReturn[variable] * (returnMonth[variable] + 1);
-    numOfMonths[variable] += 1;
-    returns[variable].push(returnMonth[variable]);
-    returnsHashTable[variable][data[monthsIndex].date] = returnMonth[variable];
+        if (returnMonth[variable] >= 0) {
+          positiveReturns[variable].push(returnMonth[variable]);
+          positiveReturn[variable] = positiveReturn[variable] * (returnMonth[variable] + 1);
+          positiveReturnsHashTable[variable][data[monthsIndex].date] = returnMonth[variable];
+        } else {
+          negativeReturns[variable].push(returnMonth[variable]);
+          negativeReturn[variable] = negativeReturn[variable] * (returnMonth[variable] + 1);
+          negativeReturnsHashTable[variable][data[monthsIndex].date] = returnMonth[variable];
+        }
+
+        if (returnMonth[variable] > peakReturn[variable]) {
+          peakReturn[variable] = returnMonth[variable];
+        }
+        if (returnMonth[variable] < troughReturn[variable]) {
+          troughReturn[variable] = returnMonth[variable];
+        }
+      }
+    }
     let cumulativeIndex = data.length - 1 - monthsIndex;
 
     if (data[cumulativeIndex - 1]) {
       let newReturn = data[cumulativeIndex].data[variable] / data[cumulativeIndex - 1].data[variable] - 1;
-      let newDifferenceTimestamp = Math.abs(data[cumulativeIndex].timestamp - data[cumulativeIndex - 1].timestamp);
       let customStart = parseFloat(data[cumulativeIndex].date.split("/")[1]);
-      if (newDifferenceTimestamp <= 12 * 30 * 24 * 60 * 60 * 1000 && isFinite(newReturn)) {
+
+      if (isFinite(newReturn)) {
         cumulativeReturnsHashTable[variable].cumulative = cumulativeReturnsHashTable[variable].cumulative * (newReturn + 1);
 
         if (cumulativeReturnsHashTable[variable].cumulative > cumulativeReturnsHashTable[variable].max) {
@@ -423,32 +438,16 @@ export function updateStats({
         if (cumulativeReturnsHashTable[variable].cumulative < cumulativeReturnsHashTable[variable].min) {
           cumulativeReturnsHashTable[variable].min = cumulativeReturnsHashTable[variable].cumulative;
         }
+
         if (customStart >= 2023) {
-         
           cumulativeReturnsHashTable[variable].cumulativeSwitch = cumulativeReturnsHashTable[variable].cumulativeSwitch * (newReturn + 1);
 
           cumulativeReturnsHashTable[variable][data[cumulativeIndex].date] = cumulativeReturnsHashTable[variable].cumulativeSwitch;
         }
       }
-      // console.log(data[cumulativeIndex].date, newReturn);
     }
-
-    if (returnMonth[variable] >= 0) {
-      positiveReturns[variable].push(returnMonth[variable]);
-      positiveReturn[variable] = positiveReturn[variable] * (returnMonth[variable] + 1);
-      positiveReturnsHashTable[variable][data[monthsIndex].date] = returnMonth[variable];
-    } else {
-      negativeReturns[variable].push(returnMonth[variable]);
-      negativeReturn[variable] = negativeReturn[variable] * (returnMonth[variable] + 1);
-      negativeReturnsHashTable[variable][data[monthsIndex].date] = returnMonth[variable];
-    }
-
-    if (returnMonth[variable] > peakReturn[variable]) {
-      peakReturn[variable] = returnMonth[variable];
-    }
-    if (returnMonth[variable] < troughReturn[variable]) {
-      troughReturn[variable] = returnMonth[variable];
-    }
+  } catch (error: any) {
+    console.log(error, monthsIndex);
   }
 }
 function monthName(monthNum: any) {
