@@ -371,8 +371,8 @@ export function updateStats({
   returnsHashTable,
   positiveReturnsHashTable,
   negativeReturnsHashTable,
-  reset,
   cumulativeReturnsHashTable,
+  cumulativeReturnsHashTableSince2020,
 }: {
   data: any;
   returnMonth: any;
@@ -391,7 +391,7 @@ export function updateStats({
   positiveReturnsHashTable: any;
   negativeReturnsHashTable: any;
   cumulativeReturnsHashTable: any;
-  reset: any;
+  cumulativeReturnsHashTableSince2020: any;
 }) {
   try {
     if (monthsIndex != 0) {
@@ -400,7 +400,7 @@ export function updateStats({
         cumulativeReturn[variable] = cumulativeReturn[variable] * (returnMonth[variable] + 1);
         numOfMonths[variable] += 1;
         returns[variable].push(returnMonth[variable]);
-        
+
         returnsHashTable[variable][data[monthsIndex].date] = returnMonth[variable];
 
         if (returnMonth[variable] >= 0) {
@@ -439,10 +439,11 @@ export function updateStats({
           cumulativeReturnsHashTable[variable].min = cumulativeReturnsHashTable[variable].cumulative;
         }
 
+        cumulativeReturnsHashTable[variable].cumulativeSwitch = cumulativeReturnsHashTable[variable].cumulativeSwitch * (newReturn + 1);
+        cumulativeReturnsHashTable[variable][data[cumulativeIndex].date] = cumulativeReturnsHashTable[variable].cumulativeSwitch;
         if (customStart >= 2023) {
-          cumulativeReturnsHashTable[variable].cumulativeSwitch = cumulativeReturnsHashTable[variable].cumulativeSwitch * (newReturn + 1);
-
-          cumulativeReturnsHashTable[variable][data[cumulativeIndex].date] = cumulativeReturnsHashTable[variable].cumulativeSwitch;
+          cumulativeReturnsHashTableSince2020[variable].cumulativeSwitch = cumulativeReturnsHashTableSince2020[variable].cumulativeSwitch * (newReturn + 1);
+          cumulativeReturnsHashTableSince2020[variable][data[cumulativeIndex].date] = cumulativeReturnsHashTableSince2020[variable].cumulativeSwitch;
         }
       }
     }
@@ -552,4 +553,16 @@ export function getMonthName(input: any) {
 
   // Return the formatted date string
   return `${months[month - 1]} ${year}`;
+}
+
+export function deleteUnnecessaryValues(object: any, type: any) {
+  delete object.cumulativeReturnsHashTableSince2020[type]["cumulative"];
+  delete object.cumulativeReturnsHashTableSince2020[type]["min"];
+  delete object.cumulativeReturnsHashTableSince2020[type]["max"];
+  delete object.cumulativeReturnsHashTableSince2020[type]["cumulativeSwitch"];
+
+  delete object.cumulativeReturnsHashTable[type]["cumulative"];
+  delete object.cumulativeReturnsHashTable[type]["min"];
+  delete object.cumulativeReturnsHashTable[type]["max"];
+  delete object.cumulativeReturnsHashTable[type]["cumulativeSwitch"];
 }

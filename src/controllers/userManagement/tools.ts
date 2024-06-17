@@ -18,7 +18,7 @@ export function generateRandomIntegers(n = 5, min = 1, max = 10) {
   return resetCode;
 }
 
-export async function sendRegsiterationEmail({ email, password, name }: { email: any; password: any; name: any }) {
+export async function sendRegsiterationEmail({ email, name }: { email: any; name: any }) {
   try {
     let date = getDateAndOneWeekLater();
     let action = new SibApiV3Sdk.TransactionalEmailsApi().sendTransacEmail({
@@ -43,7 +43,7 @@ export async function sendRegsiterationEmail({ email, password, name }: { email:
           ],
           htmlContent:
             `<!DOCTYPE html><html><body>Hello ${name},<br />
-                      <p>An Admin Triada Account was created under the email: ${email} with password: ${password} <br /><br /> Please login with the provided credentials and reset your password between ${date.startDate} -> ${date.endDate} . Otherwise, your account will be deleted. <br /><br /> Platform Link:  ${platform}` + ` </p> Thanks,<br /><br /> Developer</body></html>`,
+                      <p>An Admin Triada Account was created under the email: ${email}. <br /><br /> Please login with the provided credentials and reset your password between ${date.startDate} -> ${date.endDate} . Otherwise, your account will be deleted. <br /><br /> Platform Link:  ${platform}&email=${email}` + ` </p> Thanks,<br /><br /> Developer</body></html>`,
           subject: `Admin Triada - Invitation `,
         },
       ],

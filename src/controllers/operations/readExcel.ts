@@ -378,6 +378,51 @@ export async function readPricingSheet(path: string) {
     return reformedData;
   }
 }
+export async function readUsersSheet(path: string) {
+  const response = await axios.get(path, { responseType: "arraybuffer" });
+
+  /* Parse the data */
+  const workbook = xlsx.read(response.data, { type: "buffer" });
+
+  /* Get first worksheet */
+  const worksheetName = workbook.SheetNames[0];
+
+  const worksheet = workbook.Sheets[worksheetName];
+
+  /* Convert worksheet to JSON */
+  // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
+
+  // Read data
+  let wrongHeaders = null;
+  const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+  const headersFormat = ["Name", "Email", "Share Class"];
+  const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : (wrongHeaders = `app expected ${headers[0][index]} and got ${value}`))); //headersFormat.length === headers[2].length && headersFormat.every((value, index) => value === headers[2][index]);
+  if (!arraysAreEqual) {
+    return {
+      error: "Incompatible format, please upload users sheet xlsx/csv file",
+    };
+  } else if (wrongHeaders) {
+    return {
+      error: wrongHeaders,
+    };
+  } else {
+    const data = xlsx.utils.sheet_to_json(worksheet, {
+      defval: "",
+      range: "A1:C100",
+    });
+    let keys = Object.keys(data[0]);
+    let reformedData: any = [];
+    for (let index = 0; index < data.length; index++) {
+      let object: any = {};
+      for (let keyIndex = 0; keyIndex < keys.length; keyIndex++) {
+        let key = keys[keyIndex].trim();
+        object[key] = data[index][keys[keyIndex]];
+      }
+      reformedData.push(object);
+    }
+    return reformedData;
+  }
+}
 
 export async function uploadToGCloudBucket(data: any, bucketName: any, fileName: any) {
   const bucket = storage.bucket(bucketName);

@@ -140,7 +140,7 @@ router.get("/risk-report", verifyTokenRiskMember, async (req: Request, res: Resp
     res.send({ error: error.toString() });
   }
 });
-router.get("/fact-sheet", uploadToBucket.any(), verifyTokenFactSheetMember, async (req: Request, res: Response, next: NextFunction) => {
+router.get("/fact-sheet", uploadToBucket.any(), verifyTokenFactSheetMember, async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let date = getDateTimeInMongoDBCollectionFormat(new Date());
     let sign = 1;
@@ -150,11 +150,11 @@ router.get("/fact-sheet", uploadToBucket.any(), verifyTokenFactSheetMember, asyn
 
     const now = new Date();
     const from2010: any = new Date("2010-01-01").getTime();
-    const from5YearsAgo = new Date("2019-12-31").getTime();
+    const to2020 = new Date("2020-12-31").getTime();
     const from2YearsAgo = new Date("2022-12-31").getTime();
 
     let inception = await getFactSheet({ from: from2010, to: now, type });
-    let fiveYears = await getFactSheet({ from: from5YearsAgo, to: now, type });
+    let fiveYears = await getFactSheet({ from: from2010, to: to2020, type });
     let twoYears = await getFactSheet({ from: from2YearsAgo, to: now, type });
 
     res.send({ countrySectorMacro: countrySectorMacro, inception: inception, fiveYears: fiveYears, twoYears: twoYears });

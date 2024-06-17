@@ -1,13 +1,19 @@
 import { client } from "../userManagement/auth";
 import { getDateTimeInMongoDBCollectionFormat } from "./common";
 import { getPortfolioWithAnalytics } from "./portfolios";
-import { getMonthName, getSampleStandardDeviation, getStatistics, transformData, updateStats } from "./tools";
+import { deleteUnnecessaryValues, getMonthName, getSampleStandardDeviation, getStatistics, transformData, updateStats } from "./tools";
 export let beforeSwitchRatios: any = {
   a4: 1000 / 1477.16,
   a5: 1000 / 1154.61,
   a6: 1000 / 1154.61,
 };
-export let switchClasses = ["a4", "a5", "a6"];
+export let beforeSwitchRatiosTwo: any = {
+  a3: 1018.05 / 1181.44,
+
+  a5: 881.72 / 1181.44,
+  a6: 881.72 / 1181.44,
+};
+
 export function calculateMonthlyReturn(data: any, variables: any) {
   //assue months are sorted in ascending order
 
@@ -22,6 +28,7 @@ export function calculateMonthlyReturn(data: any, variables: any) {
   let returns: any = {};
   let returnsHashTable: any = {};
   let cumulativeReturnsHashTable: any = {};
+  let cumulativeReturnsHashTableSince2020: any = {};
 
   let positiveReturns: any = {};
   let positiveReturn: any = {};
@@ -49,7 +56,9 @@ export function calculateMonthlyReturn(data: any, variables: any) {
     numOfMonths[variable] = 1;
     returns[variable] = [];
     returnsHashTable[variable] = {};
-    cumulativeReturnsHashTable[variable] = { cumulative: 100, max: -Infinity, min: Infinity, cumulativeSwitch: 100, "12/2022": 100 };
+    cumulativeReturnsHashTable[variable] = { cumulative: 100, max: -Infinity, min: Infinity, cumulativeSwitch: 100 };
+    cumulativeReturnsHashTableSince2020[variable] = { cumulative: 100, cumulativeSwitch: 100, "12/2022": 100 };
+
     positiveReturnsHashTable[variable] = {};
     negativeReturnsHashTable[variable] = {};
 
@@ -70,7 +79,7 @@ export function calculateMonthlyReturn(data: any, variables: any) {
       for (let index = 0; index < variables.length; index++) {
         let variable = variables[index];
 
-        updateStats({ data, returnMonth, cumulativeReturn, numOfMonths, returns, positiveReturns, positiveReturn, negativeReturns, negativeReturn, variable, troughReturn, peakReturn, monthsIndex, returnsHashTable, cumulativeReturnsHashTable, positiveReturnsHashTable, negativeReturnsHashTable, reset });
+        updateStats({ data, returnMonth, cumulativeReturn, numOfMonths, returns, positiveReturns, positiveReturn, negativeReturns, negativeReturn, variable, troughReturn, peakReturn, monthsIndex, returnsHashTable, cumulativeReturnsHashTable, cumulativeReturnsHashTableSince2020, positiveReturnsHashTable, negativeReturnsHashTable });
         monthlyReturns[month] = {};
         monthlyReturns[month][variable] = returnMonth[variable];
       }
@@ -100,7 +109,27 @@ export function calculateMonthlyReturn(data: any, variables: any) {
       monthsIndex--;
     }
   }
-
+  if (variables[0] == "a5" || variables[0] == "a6") {
+    if (monthlyReturns["06/2016"]) {
+      monthlyReturns["06/2016"][variables[0]] = 2.05 / 100;
+    }
+    if (monthlyReturns["12/2021"]) {
+      monthlyReturns["12/2021"][variables[0]] = -0.09 / 100;
+    }
+  }
+  if (variables[0] == "a4") {
+    if (monthlyReturns["06/2016"]) {
+      monthlyReturns["06/2016"][variables[0]] = 2.05 / 100;
+    }
+    if (monthlyReturns["12/2021"]) {
+      monthlyReturns["12/2021"][variables[0]] = -0.16 / 100;
+    }
+  }
+  if (variables[0] == "a3") {
+    if (monthlyReturns["06/2016"]) {
+      monthlyReturns["06/2016"][variables[0]] = 2.05 / 100;
+    }
+  }
   let years = Object.keys(yearlyData);
   let yearsIndex = years.length - 1;
   let yearlyReturns: any = {};
@@ -182,7 +211,7 @@ export function calculateMonthlyReturn(data: any, variables: any) {
     numOfMonthsNegative: negativeReturns,
   };
 
-  return { monthlyReturns: transformData(monthlyReturns, yearlyReturns), maxDrawdown: maxDrawdown, annulizedReturn: annulizedReturn, volitality: volitality, variance: variance, ratios: ratios, normal: normal, fundReturns: fundReturns, returns: returns, negativeAnnualVolitality: negativeAnnualVolitality, cumulativeReturnsHashTable: cumulativeReturnsHashTable };
+  return { monthlyReturns: transformData(monthlyReturns, yearlyReturns), maxDrawdown: maxDrawdown, annulizedReturn: annulizedReturn, volitality: volitality, variance: variance, ratios: ratios, normal: normal, fundReturns: fundReturns, returns: returns, negativeAnnualVolitality: negativeAnnualVolitality, cumulativeReturnsHashTable: cumulativeReturnsHashTable, cumulativeReturnsHashTableSince2020: cumulativeReturnsHashTableSince2020 };
 }
 
 export async function getFactSheetData(collectionName: any, from: any, to: any, variable: any) {
@@ -320,19 +349,19 @@ export let treasuryData: any = {
 };
 
 export let monthlyData: any = {
-  "05/2015": { a2: 1000.029, a3: null, a4: 1000.029, a5: null, a6: null },
-  "06/2015": { a2: 1005.53, a3: null, a4: 1005.53, a5: null, a6: null },
-  "07/2015": { a2: 1018.64, a3: null, a4: 1018.64, a5: null, a6: null },
-  "08/2015": { a2: 1007.34, a3: null, a4: 1007.34, a5: null, a6: null },
-  "09/2015": { a2: 1013, a3: null, a4: 1013, a5: null, a6: null },
-  "10/2015": { a2: 1040.03, a3: null, a4: 1040.03, a5: null, a6: null },
-  "11/2015": { a2: 1042.09, a3: null, a4: 1042.09, a5: null, a6: null },
-  "12/2015": { a2: 1035.53, a3: null, a4: 1035.53, a5: null, a6: null },
-  "01/2016": { a2: 1059.09, a3: null, a4: 1059.09, a5: null, a6: null },
-  "02/2016": { a2: 1082.37, a3: null, a4: 1082.37, a5: null, a6: null },
-  "03/2016": { a2: 1118.06, a3: null, a4: 1118.06, a5: null, a6: null },
-  "04/2016": { a2: 1151.44, a3: null, a4: 1151.44, a5: null, a6: null },
-  "05/2016": { a2: 1181.44, a3: null, a4: 1181.44, a5: null, a6: null },
+  "05/2015": { a2: 1000.029, a3: 1000.029, a4: 1000.029, a5: 1000.029, a6: 1000.029 },
+  "06/2015": { a2: 1005.53, a3: 1005.53, a4: 1005.53, a5: 1005.53, a6: 1005.53 },
+  "07/2015": { a2: 1018.64, a3: 1018.64, a4: 1018.64, a5: 1018.64, a6: 1018.64 },
+  "08/2015": { a2: 1007.34, a3: 1007.34, a4: 1007.34, a5: 1007.34, a6: 1007.34 },
+  "09/2015": { a2: 1013, a3: 1013, a4: 1013, a5: 1013, a6: 1013 },
+  "10/2015": { a2: 1040.03, a3: 1040.03, a4: 1040.03, a5: 1040.03, a6: 1040.03 },
+  "11/2015": { a2: 1042.09, a3: 1042.09, a4: 1042.09, a5: 1042.09, a6: 1042.09 },
+  "12/2015": { a2: 1035.53, a3: 1035.53, a4: 1035.53, a5: 1035.53, a6: 1035.53 },
+  "01/2016": { a2: 1059.09, a3: 1059.09, a4: 1059.09, a5: 1059.09, a6: 1059.09 },
+  "02/2016": { a2: 1082.37, a3: 1082.37, a4: 1082.37, a5: 1082.37, a6: 1082.37 },
+  "03/2016": { a2: 1118.06, a3: 1118.06, a4: 1118.06, a5: 1118.06, a6: 1118.06 },
+  "04/2016": { a2: 1151.44, a3: 1151.44, a4: 1151.44, a5: 1151.44, a6: 1151.44 },
+  "05/2016": { a2: 1181.44, a3: 1181.44, a4: 1181.44, a5: 1181.44, a6: 1181.44 },
   "06/2016": { a2: 1205.71, a3: 1018.05, a4: 1205.71, a5: 1018.05, a6: 1018.05 },
   "07/2016": { a2: 1248.59, a3: 1050.3, a4: 1248.59, a5: 1050.3, a6: 1050.3 },
   "08/2016": { a2: 1277.54, a3: 1071.87, a4: 1277.54, a5: 1071.87, a6: 1071.87 },
@@ -1158,8 +1187,8 @@ export function trimDate(data: any, benchmark = false) {
         data: { main: data[dateFinal] },
       };
     } else {
-      let timestampTest = new Date("2021-11-30").getTime() < timestamp;
-      if (!timestampTest) {
+      let timestampTest = timestamp < new Date("2021-11-30").getTime() && timestamp > new Date("2016-05-30").getTime();
+      if (timestampTest == true) {
         object = {
           date: dateFinal,
           timestamp: timestamp,
@@ -1169,14 +1198,26 @@ export function trimDate(data: any, benchmark = false) {
         object.data.a4 = object.data.a4 * beforeSwitchRatios.a4;
         object.data.a5 = object.data.a5 * beforeSwitchRatios.a5;
         object.data.a6 = object.data.a6 * beforeSwitchRatios.a6;
+        console.log(getDateTimeInMongoDBCollectionFormat(timestamp), "1");
+      } else if (timestamp <= new Date("2016-05-30").getTime()) {
+        object = {
+          date: dateFinal,
+          timestamp: timestamp,
+          data: data[dateFinal],
+        };
 
-        console.log(timestampTest);
+        object.data.a3 = object.data.a3 * beforeSwitchRatiosTwo.a3;
+        object.data.a4 = object.data.a4 * beforeSwitchRatios.a4;
+        object.data.a5 = object.data.a5 * beforeSwitchRatiosTwo.a5;
+        object.data.a6 = object.data.a6 * beforeSwitchRatiosTwo.a6;
+        console.log(getDateTimeInMongoDBCollectionFormat(timestamp), "2");
       } else {
         object = {
           date: dateFinal,
           timestamp: timestamp,
           data: data[dateFinal],
         };
+        console.log(getDateTimeInMongoDBCollectionFormat(timestamp), "3");
       }
     }
 
@@ -1525,20 +1566,20 @@ export async function getFactSheet({ from, to, type }: { from: any; to: any; typ
   let emustruu = await getFactSheetData("EMUSTRUU Index", from, to, "main");
   let beuctruu = await getFactSheetData("BEUCTRUU Index", from, to, "main");
   let beuytruu = await getFactSheetData("BEUYTRUU Index", from, to, "main");
-  let bebgtruu = await getFactSheetData("LG30TRUU Index", from, to, "main");
+  // let lg30truu = await getFactSheetData("LG30TRUU Index", from, to, "main");
 
   let lastDate = getMonthName(data[data.length - 1].date);
   let result = calculateMonthlyReturn(data, [type]);
-  let result_lg30truu = calculateMonthlyReturn(bebgtruu, ["main"]);
+  // let result_lg30truu = calculateMonthlyReturn(lg30truu, ["main"]);
   let result_beuctruu = calculateMonthlyReturn(beuctruu, ["main"]);
   let result_beuytruu = calculateMonthlyReturn(beuytruu, ["main"]);
   let result_emustruu = calculateMonthlyReturn(emustruu, ["main"]);
   let result_legatruu = calculateMonthlyReturn(legatruu, ["main"]);
 
-  let benchmarks = { "BEBGTRUU Index": result_lg30truu.monthlyReturns["main"], "BEUCTRUU Index": result_beuctruu.monthlyReturns["main"], "EMUSTRUU Index": result_emustruu.monthlyReturns["main"], "LEGATRUU Index": result_legatruu.monthlyReturns["main"], "BEUYTRUU Index": result_beuytruu.monthlyReturns["main"] };
-  let annulizedReturns = { "BEBGTRUU Index": result_lg30truu.annulizedReturn["main"]["annualPer"], "BEUCTRUU Index": result_beuctruu.annulizedReturn["main"]["annualPer"], "EMUSTRUU Index": result_emustruu.annulizedReturn["main"]["annualPer"], "LEGATRUU Index": result_legatruu.annulizedReturn["main"]["annualPer"], "BEUYTRUU Index": result_beuytruu.annulizedReturn["main"]["annualPer"] };
-  let cumulativeReturns = { "BEBGTRUU Index": result_lg30truu.fundReturns.cumulativeReturn["main"] - 1, "BEUCTRUU Index": result_beuctruu.fundReturns.cumulativeReturn["main"] - 1, "EMUSTRUU Index": result_emustruu.fundReturns.cumulativeReturn["main"] - 1, "LEGATRUU Index": result_legatruu.fundReturns.cumulativeReturn["main"] - 1, "BEUYTRUU Index": result_beuytruu.fundReturns.cumulativeReturn["main"] - 1 };
-  let fundReturns = { "BEBGTRUU Index": result_lg30truu.fundReturns, "BEUCTRUU Index": result_beuctruu.fundReturns, "EMUSTRUU Index": result_emustruu.fundReturns, "LEGATRUU Index": result_legatruu.fundReturns, "BEUYTRUU Index": result_beuytruu.fundReturns };
+  let benchmarks = { "BEUCTRUU Index": result_beuctruu.monthlyReturns["main"], "EMUSTRUU Index": result_emustruu.monthlyReturns["main"], "LEGATRUU Index": result_legatruu.monthlyReturns["main"], "BEUYTRUU Index": result_beuytruu.monthlyReturns["main"] };
+  let annulizedReturns = { "BEUCTRUU Index": result_beuctruu.annulizedReturn["main"]["annualPer"], "EMUSTRUU Index": result_emustruu.annulizedReturn["main"]["annualPer"], "LEGATRUU Index": result_legatruu.annulizedReturn["main"]["annualPer"], "BEUYTRUU Index": result_beuytruu.annulizedReturn["main"]["annualPer"] };
+  let cumulativeReturns = { "BEUCTRUU Index": result_beuctruu.fundReturns.cumulativeReturn["main"] - 1, "EMUSTRUU Index": result_emustruu.fundReturns.cumulativeReturn["main"] - 1, "LEGATRUU Index": result_legatruu.fundReturns.cumulativeReturn["main"] - 1, "BEUYTRUU Index": result_beuytruu.fundReturns.cumulativeReturn["main"] - 1 };
+  let fundReturns = { "BEUCTRUU Index": result_beuctruu.fundReturns, "EMUSTRUU Index": result_emustruu.fundReturns, "LEGATRUU Index": result_legatruu.fundReturns, "BEUYTRUU Index": result_beuytruu.fundReturns };
 
   let outPerformance = calculateOutPerformance({ benchmarks: benchmarks, data: result.monthlyReturns[type] });
   let annulizedReturnBenchMarks = calculateOutPerformanceParam({ benchmarks: annulizedReturns, data: result.annulizedReturn[type]["annualPer"] });
@@ -1546,7 +1587,6 @@ export async function getFactSheet({ from, to, type }: { from: any; to: any; typ
   let ratiosAndPositiveNegativeCorrelations = calculateRatios({ benchmarks: fundReturns, data: result.fundReturns, type: type });
 
   let benchmarksBeta = {
-    "BEBGTRUU Index": { results: result_lg30truu.returns["main"], normal: result_lg30truu.normal["main"] },
     "BEUCTRUU Index": { results: result_beuctruu.returns["main"], normal: result_beuctruu.normal["main"] },
     "EMUSTRUU Index": { results: result_emustruu.returns["main"], normal: result_emustruu.normal["main"] },
     "LEGATRUU Index": { results: result_legatruu.returns["main"], normal: result_legatruu.normal["main"] },
@@ -1555,7 +1595,6 @@ export async function getFactSheet({ from, to, type }: { from: any; to: any; typ
 
   let betaCorrelation = calculateBetaCorrelationBenchMarks({ benchmarks: benchmarksBeta, data: { results: result.returns[type], normal: result.normal[type] } });
   let benchmarksRiskRatios = {
-    "BEBGTRUU Index": { annulizedReturn: result_lg30truu.annulizedReturn["main"], maxDrawdown: result_lg30truu.maxDrawdown["main"], normal: result_lg30truu.normal["main"], negativeAnnualVolitality: result_lg30truu.negativeAnnualVolitality["main"], beta: betaCorrelation.betas["BEBGTRUU Index"] },
     "BEUCTRUU Index": { annulizedReturn: result_beuctruu.annulizedReturn["main"], maxDrawdown: result_beuctruu.maxDrawdown["main"], normal: result_beuctruu.normal["main"], negativeAnnualVolitality: result_beuctruu.negativeAnnualVolitality["main"], beta: betaCorrelation.betas["BEUCTRUU Index"] },
     "EMUSTRUU Index": { annulizedReturn: result_emustruu.annulizedReturn["main"], maxDrawdown: result_emustruu.maxDrawdown["main"], normal: result_emustruu.normal["main"], negativeAnnualVolitality: result_emustruu.negativeAnnualVolitality["main"], beta: betaCorrelation.betas["EMUSTRUU Index"] },
     "LEGATRUU Index": { annulizedReturn: result_legatruu.annulizedReturn["main"], maxDrawdown: result_legatruu.maxDrawdown["main"], normal: result_legatruu.normal["main"], negativeAnnualVolitality: result_legatruu.negativeAnnualVolitality["main"], beta: betaCorrelation.betas["LEGATRUU Index"] },
@@ -1565,50 +1604,47 @@ export async function getFactSheet({ from, to, type }: { from: any; to: any; typ
   let riskRatios = calculateRiskRatios({ benchmarks: benchmarksRiskRatios, treasuryAnnualRate: treasuryAnnualRate });
 
   let benchmarksRegression = {
-    "BEBGTRUU Index": { results: result_lg30truu.returns["main"], annulizedReturn: result_lg30truu.annulizedReturn["main"], beta: betaCorrelation.betas["BEBGTRUU Index"], correlation: betaCorrelation.correlation["BEBGTRUU Index"], fundReturns: result_lg30truu.fundReturns.returnsHashTable.main },
     "BEUCTRUU Index": { results: result_beuctruu.returns["main"], annulizedReturn: result_beuctruu.annulizedReturn["main"], beta: betaCorrelation.betas["BEUCTRUU Index"], correlation: betaCorrelation.correlation["BEUCTRUU Index"], fundReturns: result_beuctruu.fundReturns.returnsHashTable.main },
     "EMUSTRUU Index": { results: result_emustruu.returns["main"], annulizedReturn: result_emustruu.annulizedReturn["main"], beta: betaCorrelation.betas["EMUSTRUU Index"], correlation: betaCorrelation.correlation["EMUSTRUU Index"], fundReturns: result_emustruu.fundReturns.returnsHashTable.main },
     "LEGATRUU Index": { results: result_legatruu.returns["main"], annulizedReturn: result_legatruu.annulizedReturn["main"], beta: betaCorrelation.betas["LEGATRUU Index"], correlation: betaCorrelation.correlation["LEGATRUU Index"], fundReturns: result_legatruu.fundReturns.returnsHashTable.main },
     "BEUYTRUU Index": { results: result_beuytruu.returns["main"], annulizedReturn: result_beuytruu.annulizedReturn["main"], beta: betaCorrelation.betas["BEUYTRUU Index"], correlation: betaCorrelation.correlation["BEUYTRUU Index"], fundReturns: result_beuytruu.fundReturns.returnsHashTable.main },
   };
   let correlationAndRegresion = calculateRegression({ benchmarks: benchmarksRegression, treasuryAnnualRate: treasuryAnnualRate, data: { results: result.fundReturns.returnsHashTable[type] }, correlations: ratiosAndPositiveNegativeCorrelations, annulizedReturnBenchMarks: annulizedReturnBenchMarks });
-  delete result.cumulativeReturnsHashTable[type]["cumulative"];
-  delete result_lg30truu.cumulativeReturnsHashTable["main"]["cumulative"];
-  delete result_beuctruu.cumulativeReturnsHashTable["main"]["cumulative"];
-  delete result_emustruu.cumulativeReturnsHashTable["main"]["cumulative"];
-  delete result_legatruu.cumulativeReturnsHashTable["main"]["cumulative"];
-  delete result_beuytruu.cumulativeReturnsHashTable["main"]["cumulative"];
 
-  delete result.cumulativeReturnsHashTable[type]["max"];
-  delete result_lg30truu.cumulativeReturnsHashTable["main"]["max"];
-  delete result_beuctruu.cumulativeReturnsHashTable["main"]["max"];
-  delete result_emustruu.cumulativeReturnsHashTable["main"]["max"];
-  delete result_legatruu.cumulativeReturnsHashTable["main"]["max"];
-  delete result_beuytruu.cumulativeReturnsHashTable["main"]["max"];
-
-  delete result.cumulativeReturnsHashTable[type]["min"];
-  delete result_lg30truu.cumulativeReturnsHashTable["main"]["min"];
-  delete result_beuctruu.cumulativeReturnsHashTable["main"]["min"];
-  delete result_emustruu.cumulativeReturnsHashTable["main"]["min"];
-  delete result_legatruu.cumulativeReturnsHashTable["main"]["min"];
-  delete result_beuytruu.cumulativeReturnsHashTable["main"]["min"];
-
-  delete result.cumulativeReturnsHashTable[type]["cumulativeSwitch"];
-  delete result_lg30truu.cumulativeReturnsHashTable["main"]["cumulativeSwitch"];
-  delete result_beuctruu.cumulativeReturnsHashTable["main"]["cumulativeSwitch"];
-  delete result_emustruu.cumulativeReturnsHashTable["main"]["cumulativeSwitch"];
-  delete result_legatruu.cumulativeReturnsHashTable["main"]["cumulativeSwitch"];
-  delete result_beuytruu.cumulativeReturnsHashTable["main"]["cumulativeSwitch"];
+  deleteUnnecessaryValues(result, type);
+  deleteUnnecessaryValues(result_beuctruu, "main");
+  deleteUnnecessaryValues(result_emustruu, "main");
+  deleteUnnecessaryValues(result_legatruu, "main");
+  deleteUnnecessaryValues(result_beuytruu, "main");
 
   let cumulativeReturnsHashTable = {
     triada: result.cumulativeReturnsHashTable[type],
-    "BEBGTRUU Index": result_lg30truu.cumulativeReturnsHashTable["main"],
     "BEUCTRUU Index": result_beuctruu.cumulativeReturnsHashTable["main"],
     "EMUSTRUU Index": result_emustruu.cumulativeReturnsHashTable["main"],
     "LEGATRUU Index": result_legatruu.cumulativeReturnsHashTable["main"],
     "BEUYTRUU Index": result_beuytruu.cumulativeReturnsHashTable["main"],
   };
 
-  let resultFinal = { result: result, outPerformance: outPerformance, annulizedReturnBenchMarks: annulizedReturnBenchMarks, cumulativeReturnsBenchMarks: cumulativeReturnsBenchMarks, ratios: ratiosAndPositiveNegativeCorrelations.ratios, riskRatios: riskRatios, correlationAndRegresion: correlationAndRegresion.regression, lastDate: lastDate, cumulativeReturnsHashTable: cumulativeReturnsHashTable, treasuryAnnualRate: treasuryAnnualRate };
+  let cumulativeReturnsHashTableSince2020 = {
+    triada: result.cumulativeReturnsHashTableSince2020[type],
+    "BEUCTRUU Index": result_beuctruu.cumulativeReturnsHashTableSince2020["main"],
+    "EMUSTRUU Index": result_emustruu.cumulativeReturnsHashTableSince2020["main"],
+    "LEGATRUU Index": result_legatruu.cumulativeReturnsHashTableSince2020["main"],
+    "BEUYTRUU Index": result_beuytruu.cumulativeReturnsHashTableSince2020["main"],
+  };
+
+  let resultFinal = {
+    result: result,
+    outPerformance: outPerformance,
+    annulizedReturnBenchMarks: annulizedReturnBenchMarks,
+    cumulativeReturnsBenchMarks: cumulativeReturnsBenchMarks,
+    ratios: ratiosAndPositiveNegativeCorrelations.ratios,
+    riskRatios: riskRatios,
+    correlationAndRegresion: correlationAndRegresion.regression,
+    lastDate: lastDate,
+    cumulativeReturnsHashTable: cumulativeReturnsHashTable,
+    treasuryAnnualRate: treasuryAnnualRate,
+    cumulativeReturnsHashTableSince2020: cumulativeReturnsHashTableSince2020,
+  };
   return resultFinal;
 }

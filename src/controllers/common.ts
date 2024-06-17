@@ -4,7 +4,7 @@ require("dotenv").config();
 const jwt = require("jsonwebtoken");
 
 export const uri = "mongodb+srv://" + process.env.MONGODBUSERNAME + ":" + process.env.NEWMONGODBPASSWORD + "@app.ywfxr8w.mongodb.net/?retryWrites=true&w=majority";
-export const platform = "https://admin.triadacapital.com/";
+export const platform = "http://localhost:3000/reset-password?sent=none";
 export const bucket = "https://storage.googleapis.com/app-backend-414212.appspot.com";
 export function getCurrentMonthDateRange(): string {
   const now = new Date();
@@ -153,9 +153,9 @@ export const verifyTokenFactSheetMember = (req: Request | any, res: Response, ne
     if (!token) {
       return res.sendStatus(401);
     }
-
     const decoded = jwt.verify(token, process.env.SECRET);
     req.accessRole = decoded.accessRole;
+    req.shareClass = decoded.shareClass;
     if (decoded.accessRole != "member (risk report)" && decoded.accessRole != "admin" && decoded.accessRole != "member (factsheet report)") {
       return res.sendStatus(401);
     }

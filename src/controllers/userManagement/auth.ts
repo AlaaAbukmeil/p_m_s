@@ -72,7 +72,7 @@ export async function checkIfUserExists(email: string, password: string): Promis
       try {
         const result = await bcrypt.compare(password, user.password);
         if (result) {
-          const jwtObject = { email: email, accessRole: user["accessRole"] };
+          const jwtObject = { email: email, accessRole: user["accessRole"], shareClass: user["shareClass"] };
           const token = jwt.sign(jwtObject, jwtSecret, { expiresIn: "24h" });
           const updateDoc = {
             $set: {
@@ -190,7 +190,7 @@ export async function editUser(editedUser: any) {
       let beforeModify = JSON.parse(JSON.stringify(userInfo));
       beforeModify["_id"] = new ObjectId(beforeModify["_id"]);
 
-      let centralizedBlotKeys: any = ["name", "email", "accessRole"];
+      let centralizedBlotKeys: any = ["name", "email", "accessRole", "shareClass"];
       let changes = 0;
       let changesText = [];
       for (let index = 0; index < centralizedBlotKeys.length; index++) {
@@ -291,7 +291,7 @@ export async function deleteUser(userId: string, userName: string, userEmail: an
   }
 }
 
-export async function addUser({ email, name, accessRole }: { email: string; name: string; accessRole: string }): Promise<any> {
+export async function addUser({ email, name, accessRole, shareClass }: { email: string; name: string; accessRole: string; shareClass: string }): Promise<any> {
   try {
     const database = client.db("auth");
     const usersCollection = database.collection("users");
@@ -306,10 +306,11 @@ export async function addUser({ email, name, accessRole }: { email: string; name
         email: email,
         password: cryptedPassword,
         accessRole: accessRole,
+        shareClass: shareClass,
         createdOn: getDateTimeInMongoDBCollectionFormat(new Date()),
       };
       const action = await usersCollection.insertOne(updateDoc);
-      let emailRegisteration = await sendRegsiterationEmail({ email: email, password: password, name: name });
+      let emailRegisteration = await sendRegsiterationEmail({ email: email, name: name });
       return { message: "registered", status: 200, error: `user's password: ${password}` };
     } else if (user) {
       return { error: "user already exist", status: 404 };
