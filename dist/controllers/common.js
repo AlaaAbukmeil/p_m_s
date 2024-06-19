@@ -1,11 +1,22 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCurrentDateTime = exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDateTime = exports.convertExcelDateToJSDate = exports.swapMonthDay = exports.formatDateWorld = exports.getYear = exports.isNotNullOrUndefined = exports.getTradeDateYearTradesWithoutTheCentury = exports.getTradeDateYearTrades = exports.formatTradeDate = exports.getCurrentDateVconFormat = exports.verifyTokenFactSheetMember = exports.verifyTokenRiskMember = exports.verifyToken = exports.getTime = exports.formatDateUS = exports.formatDateFile = exports.formatDate = exports.parsePercentage = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = exports.bucket = exports.platform = exports.uri = void 0;
+exports.getCurrentDateTime = exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDateTime = exports.convertExcelDateToJSDate = exports.swapMonthDay = exports.formatDateWorld = exports.getYear = exports.isNotNullOrUndefined = exports.getTradeDateYearTradesWithoutTheCentury = exports.getTradeDateYearTrades = exports.formatTradeDate = exports.getCurrentDateVconFormat = exports.verifyTokenFactSheetMember = exports.verifyTokenRiskMember = exports.verifyToken = exports.getTime = exports.formatDateUS = exports.formatDateFile = exports.formatDate = exports.parsePercentage = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = exports.generateSignedUrl = exports.bucket = exports.platform = exports.uri = void 0;
+const readExcel_1 = require("./operations/readExcel");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 exports.uri = "mongodb+srv://" + process.env.MONGODBUSERNAME + ":" + process.env.NEWMONGODBPASSWORD + "@app.ywfxr8w.mongodb.net/?retryWrites=true&w=majority";
-exports.platform = "http://localhost:3000/reset-password?sent=none";
-exports.bucket = "https://storage.googleapis.com/app-backend-414212.appspot.com";
+exports.platform = "https://admin.triadacapital.com/reset-password?sent=none";
+exports.bucket = "https://storage.cloud.google.com/app-backend-414212.appspot.com";
+async function generateSignedUrl(fileName) {
+    const options = {
+        version: "v4",
+        action: "read",
+        expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+    };
+    const [url] = await readExcel_1.storage.bucket(process.env.BUCKET).file(fileName).getSignedUrl(options);
+    return url;
+}
+exports.generateSignedUrl = generateSignedUrl;
 function getCurrentMonthDateRange() {
     const now = new Date();
     const currentMonth = now.getMonth();
@@ -143,6 +154,7 @@ const verifyTokenFactSheetMember = (req, res, next) => {
         const decoded = jwt.verify(token, process.env.SECRET);
         req.accessRole = decoded.accessRole;
         req.shareClass = decoded.shareClass;
+        req.email = decoded.email;
         if (decoded.accessRole != "member (risk report)" && decoded.accessRole != "admin" && decoded.accessRole != "member (factsheet report)") {
             return res.sendStatus(401);
         }

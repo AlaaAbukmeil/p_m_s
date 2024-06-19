@@ -18,7 +18,7 @@ const bodyParser = require("body-parser");
 const app = express();
 const path = require("path");
 const rateLimit = require("express-rate-limit");
-const cookieParser = require('cookie-parser');
+const cookieParser = require("cookie-parser");
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 10000,
@@ -28,7 +28,7 @@ const apiLimiter = rateLimit({
 const cors = require("cors");
 app.use(cookieParser());
 const corsOptions = {
-    origin: ["http://localhost:3000", "http://localhost:3001", "https://admin.triadacapital.com"],
+    origin: ["http://localhost:3000", "https://admin.triadacapital.com"],
     credentials: true,
     optionSuccessStatus: 200,
 };

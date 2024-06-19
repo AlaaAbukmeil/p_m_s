@@ -1,12 +1,12 @@
 import { CentralizedTrade } from "../../models/trades";
-import { bucket, convertExcelDateToJSDate, generateRandomString, getTradeDateYearTrades } from "../common";
+import { convertExcelDateToJSDate, generateRandomString, generateSignedUrl, getTradeDateYearTrades } from "../common";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { insertEditLogs } from "./logs";
 
 const xlsx = require("xlsx");
 const axios = require("axios");
 const { Storage } = require("@google-cloud/storage");
-const storage = new Storage({ keyFilename: process.env.KEYPATHFILE });
+export const storage = new Storage({ keyFilename: process.env.KEYPATHFILE });
 const { PassThrough } = require("stream");
 
 export async function readCentralizedEBlot(path: string): Promise<
@@ -622,7 +622,6 @@ export async function readNomuraReconcileFile(path: string) {
 }
 
 export async function readBBGBlot(path: string) {
-  path = bucket + path;
   const response = await axios.get(path, { responseType: "arraybuffer" });
 
   /* Parse the data */
@@ -644,75 +643,11 @@ export async function readBBGBlot(path: string) {
   return data;
 }
 
-export async function readIB(path: string) {
-  try {
-    path = bucket + path;
-    const response = await axios.get(path, { responseType: "arraybuffer" });
 
-    /* Parse the data */
-    const workbook = xlsx.read(response.data, { type: "buffer" });
 
-    /* Get first worksheet */
-    const worksheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[worksheetName];
 
-    let data = xlsx.utils.sheet_to_row_object_array(worksheet);
-    let headers = Object.keys(data[0]);
-    let tradesRowIndex = -1; // Will hold the index of the row where "Trades" is found
-    let tradesRowEndIndex = -1;
-    for (let index = 0; index < data.length; index++) {
-      let row = data[index];
-      // Assuming the first column is named 'A'
-      if (row[headers[0]] === "Trades") {
-        tradesRowIndex = index + 2;
-        break;
-      }
-    }
-    if (tradesRowIndex == -1) {
-      return [];
-    } else {
-      for (let tradesIndex = tradesRowIndex; tradesIndex < data.length; tradesIndex++) {
-        let trade = data[tradesIndex];
-        if (trade[headers[1]] !== "Data" && trade[headers[1]] != "SubTotal") {
-          tradesRowEndIndex = tradesIndex + 1;
-          break;
-        }
-      }
-    }
-    data = xlsx.utils.sheet_to_json(worksheet, { defval: "", range: `A${tradesRowIndex}:Q${tradesRowEndIndex}` });
-    return data;
-  } catch (error: any) {
-    console.log(error);
-    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-
-    await insertEditLogs([errorMessage], "Errors", dateTime, "Get Vcons", "controllers/operations/mufgOperations.ts");
-
-    return [];
-  }
-}
-
-export async function readBBE(path: string) {
-  path = bucket + path;
-  const response = await axios.get(path, { responseType: "arraybuffer" });
-
-  /* Parse the data */
-  const workbook = xlsx.read(response.data, { type: "buffer" });
-
-  /* Get first worksheet */
-  const worksheetName = workbook.SheetNames[0];
-  const worksheet = workbook.Sheets[worksheetName];
-
-  /* Convert worksheet to JSON */
-  // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
-
-  // Read data
-  const data = xlsx.utils.sheet_to_json(worksheet, { defval: "", range: "A1:Z300" });
-  return data;
-}
 
 export async function readFxTrades(path: string) {
-  path = bucket + path;
   const response = await axios.get(path, { responseType: "arraybuffer" });
 
   /* Parse the data */

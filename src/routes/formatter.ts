@@ -1,5 +1,4 @@
 import { checkIfUserExists, registerUser, resetPassword, sendResetPasswordRequest } from "../controllers/userManagement/auth";
-import { bucket, formatDateFile, verifyToken } from "../controllers/common";
 import { formatCentralizedRawFiles, formatEmsxTrades, formatIbTrades, formatNomura } from "../controllers/eblot/excelFormat";
 import { uploadToBucket } from "./reports/reports";
 import { CookieOptions, NextFunction, Router } from "express";
@@ -10,13 +9,15 @@ import { formatFxMufg, formatMufg, formatMufgCDS } from "../controllers/operatio
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/eblot/graphApiConnect";
 import { MufgTrade } from "../models/mufg";
 import { allTrades, allTradesCDS, getTriadaTrades } from "../controllers/operations/trades";
+import { bucket, formatDateFile, generateSignedUrl, verifyToken } from "../controllers/common";
 
 const formatterRouter = Router();
 
 formatterRouter.post("/ib-excel", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     const fileName = req.files[0].filename;
-    const path = bucket + fileName;
+    const path = await generateSignedUrl(fileName);
+
     // to be modified
     let beforeMonth = new Date().getTime() - 6 * 30 * 24 * 60 * 60 * 1000;
     let now = new Date().getTime() + 5 * 24 * 60 * 60 * 1000;
@@ -30,7 +31,7 @@ formatterRouter.post("/ib-excel", verifyToken, uploadToBucket.any(), async (req:
       res.send({ error: action });
     } else {
       let ib = await uploadArrayAndReturnFilePath(action, "ib_formatted", "ib");
-      let downloadEBlotName = bucket + ib;
+      let downloadEBlotName = bucket + ib + "?authuser=2";
       res.send(downloadEBlotName);
     }
   } catch (error) {
@@ -50,7 +51,7 @@ formatterRouter.post("/mufg-excel", verifyToken, uploadToBucket.any(), async (re
     res.send({ error: "No Trades" });
   } else {
     let mufgTrades = await uploadArrayAndReturnFilePath(array, pathName, "mufg");
-    let downloadEBlotName = bucket + mufgTrades;
+    let downloadEBlotName = bucket + mufgTrades + "?authuser=2";
     res.send(downloadEBlotName);
   }
 });
@@ -65,7 +66,7 @@ formatterRouter.post("/mufg-excel-cds", verifyToken, uploadToBucket.any(), async
     res.send({ error: "No Trades" });
   } else {
     let mufgTrades = await uploadArrayAndReturnFilePath(array, pathName, "mufg");
-    let downloadEBlotName = bucket + mufgTrades;
+    let downloadEBlotName = bucket + mufgTrades + +"?authuser=2";
     res.send(downloadEBlotName);
   }
 });
@@ -75,7 +76,7 @@ formatterRouter.post("/mufg-fx", verifyToken, uploadToBucket.any(), async (req: 
 
   let action: any = await formatFxMufg(req.files, tradesCount);
   let url = await uploadArrayAndReturnFilePath(action, "fx_mufg_formatted", "mufg_fx");
-  url = bucket + url;
+  url = bucket + url + +"?authuser=2";
   res.send(url);
 });
 
@@ -101,7 +102,7 @@ formatterRouter.post("/centralized-blotter", verifyToken, uploadToBucket.any(), 
     } else {
       if (action.length > 0) {
         let url = await uploadArrayAndReturnFilePath(action, "centralized_blot", "centralized_blot");
-        url = bucket + url;
+        url = bucket + url + "?authuser=2";
 
         res.send(url);
       } else {
@@ -118,7 +119,8 @@ formatterRouter.post("/emsx-excel", verifyToken, uploadToBucket.any(), async (re
   try {
     let files = req.files;
     const fileName = req.files[0].filename;
-    const path = bucket + fileName;
+    const path = await generateSignedUrl(fileName);
+
     //to be modified
     let beforeMonth = new Date().getTime() - 30 * 24 * 60 * 60 * 1000;
     let now = new Date().getTime() + 5 * 24 * 60 * 60 * 1000;
@@ -133,7 +135,7 @@ formatterRouter.post("/emsx-excel", verifyToken, uploadToBucket.any(), async (re
       res.send({ error: action });
     } else {
       let emsx = await uploadArrayAndReturnFilePath(action, "emsx_formated", "emsx");
-      let downloadEBlotName = bucket + emsx;
+      let downloadEBlotName = bucket + emsx + +"?authuser=2";
       res.send(downloadEBlotName);
     }
   } catch (error) {
@@ -152,7 +154,7 @@ formatterRouter.post("/fx-excel", verifyToken, uploadToBucket.any(), async (req:
     res.send({ error: "No Trades" });
   } else {
     let fxTrades = await uploadArrayAndReturnFilePath(array, pathName, "fx");
-    let downloadEBlotName = bucket + fxTrades;
+    let downloadEBlotName = bucket + fxTrades + "?authuser=2";
     res.send(downloadEBlotName);
   }
 });
@@ -167,7 +169,7 @@ formatterRouter.post("/nomura-excel", verifyToken, uploadToBucket.any(), async (
     res.send({ error: "No Trades" });
   } else {
     let mufgTrades = await uploadArrayAndReturnFilePath(array, pathName, "nomura");
-    let downloadEBlotName = bucket + mufgTrades;
+    let downloadEBlotName = bucket + mufgTrades + +"?authuser=2";
     res.send(downloadEBlotName);
   }
 });

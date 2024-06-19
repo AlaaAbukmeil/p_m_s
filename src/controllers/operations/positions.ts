@@ -97,7 +97,7 @@ export async function updatePositionPortfolio(
     gsTrades: CentralizedTrade[];
     allTrades: CentralizedTrade[];
   },
-  path: string
+  link: string
 ) {
   try {
     let data = trades.allTrades;
@@ -356,7 +356,7 @@ export async function updatePositionPortfolio(
       let action4 = await insertTrade(trades.gsTrades, "gs");
 
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-      await insertEditLogs([positions], "Upload Trades", dateTime, "Num of updated/created positions: " + Object.keys(positions).length, "Link: " + path);
+      await insertEditLogs([positions], "Upload Trades", dateTime, "Num of updated/created positions: " + Object.keys(positions).length, "Link: " + link);
 
       return insertion;
     } catch (error: any) {
@@ -1105,7 +1105,7 @@ export async function insertFXPosition(position: any, date: any) {
     }
   }
 }
-export async function editPositionBulkPortfolio(path: string) {
+export async function editPositionBulkPortfolio(path: string, link: string) {
   let data: any = await readEditInput(path);
 
   if (data.error) {
@@ -1132,7 +1132,7 @@ export async function editPositionBulkPortfolio(path: string) {
         let updatedPortfolio = formatUpdatedPositions(positions, portfolio, "Last edit operation");
         let insertion = await insertTradesInPortfolio(updatedPortfolio.updatedPortfolio);
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-        await insertEditLogs(["bulk edit"], "Bulk Edit", dateTime, "Bulk Edit E-blot", "Link: " + path);
+        await insertEditLogs(["bulk edit"], "Bulk Edit", dateTime, "Bulk Edit E-blot", "Link: " + link);
 
         return insertion;
       } catch (error) {

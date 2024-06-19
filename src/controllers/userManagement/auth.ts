@@ -5,7 +5,7 @@ import { uri } from "../common";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { insertEditLogs } from "../operations/logs";
 import { copyFileSync } from "fs";
-import { generateRandomIntegers, sendEmailToResetPassword, sendRegsiterationEmail } from "./tools";
+import { generateRandomIntegers, sendEmailToResetPassword, sendRegsiterationEmail, sendWelcomeEmail } from "./tools";
 
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
@@ -49,6 +49,7 @@ export async function registerUser(email: string, password: string, verification
         password: cryptedPassword,
         accessRole: "admin",
         createdOn: getDateTimeInMongoDBCollectionFormat(new Date()),
+        resetPassword: "false",
         lastTimeAccessed: getDateTimeInMongoDBCollectionFormat(new Date()),
       };
       const action = await usersCollection.insertOne(updateDoc);
@@ -123,9 +124,13 @@ export async function sendResetPasswordRequest(userEmail: string) {
         },
       };
       let actionInsetResetCode = await usersCollection.updateOne(filter, updateDoc);
-      let actionEmail = await sendEmailToResetPassword(user.email, resetPasswordCode);
+      let actionEmail: any = await sendEmailToResetPassword(user.email, resetPasswordCode);
+      if (actionEmail.status != 200) {
+        let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
 
-      return { status: 200, message: "Reset code have been sent!", email: user.email };
+        await insertEditLogs([`${userEmail} did not recieve email`], "Errors", dateTime, "sendResetPasswordRequest", "controllers/userManagement/auth.ts");
+      }
+      return { status: 200, message: "Reset code has been sent to your email!", email: user.email, actionEmail: actionEmail };
     } catch (error) {
       return error;
       // handle error appropriately
@@ -153,6 +158,7 @@ export async function resetPassword(userEmail: string, resetCode: string, entere
           $set: {
             password: cryptedPassword,
             resetCode: "",
+            resetPassword: "true",
           },
         };
 
@@ -182,6 +188,20 @@ export async function getAllUsers() {
   return users;
 }
 
+export async function checkUserRight(email: string, accessRole: string, shareClass: string) {
+  const database = client.db("auth");
+  const usersCollection = database.collection("users");
+
+  // Find the user with the specified email, access role, and share class
+  const user = await usersCollection.findOne({
+    email: email,
+    accessRole: accessRole,
+    shareClass: shareClass,
+  });
+
+  // Return true if a matching user is found, otherwise false
+  return user !== null;
+}
 export async function editUser(editedUser: any) {
   try {
     let userInfo = await getUser(editedUser["_id"]);
@@ -190,7 +210,7 @@ export async function editUser(editedUser: any) {
       let beforeModify = JSON.parse(JSON.stringify(userInfo));
       beforeModify["_id"] = new ObjectId(beforeModify["_id"]);
 
-      let centralizedBlotKeys: any = ["name", "email", "accessRole", "shareClass"];
+      let centralizedBlotKeys: any = ["name", "email", "accessRole", "resetPassword", "shareClass"];
       let changes = 0;
       let changesText = [];
       for (let index = 0; index < centralizedBlotKeys.length; index++) {
@@ -291,7 +311,7 @@ export async function deleteUser(userId: string, userName: string, userEmail: an
   }
 }
 
-export async function addUser({ email, name, accessRole, shareClass }: { email: string; name: string; accessRole: string; shareClass: string }): Promise<any> {
+export async function addUser({ email, name, accessRole, shareClass, welcome }: { email: string; name: string; accessRole: string; shareClass: string; welcome: boolean }): Promise<any> {
   try {
     const database = client.db("auth");
     const usersCollection = database.collection("users");
@@ -308,10 +328,15 @@ export async function addUser({ email, name, accessRole, shareClass }: { email: 
         accessRole: accessRole,
         shareClass: shareClass,
         createdOn: getDateTimeInMongoDBCollectionFormat(new Date()),
+        resetPassword: "false",
       };
       const action = await usersCollection.insertOne(updateDoc);
-      let emailRegisteration = await sendRegsiterationEmail({ email: email, name: name });
-      return { message: "registered", status: 200, error: `user's password: ${password}` };
+      if (welcome) {
+        let emailRegisteration = await sendWelcomeEmail({ email: email, name: name });
+      } else {
+        let emailRegisteration = await sendRegsiterationEmail({ email: email, name: name });
+      }
+      return { message: "registered", status: 200, error: "" };
     } else if (user) {
       return { error: "user already exist", status: 404 };
     } else {
@@ -320,4 +345,31 @@ export async function addUser({ email, name, accessRole, shareClass }: { email: 
   } catch (error) {
     return { error: "unauthorized", status: 401 };
   }
+}
+export function checkPasswordStrength(password: any) {
+  // Regular expressions to check for different character types
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasLowercase = /[a-z]/.test(password);
+  const hasDigit = /\d/.test(password);
+  const hasSpecialChar = /[\W_]/.test(password); // \W matches any non-word character, _ includes underscore
+  const isLongEnough = password.length >= 8;
+
+  // Check if all conditions are met
+  if (hasUppercase && hasLowercase && hasDigit && hasSpecialChar && isLongEnough) {
+    return true;
+  }
+
+  // Collect missing conditions
+  let missingConditions = [];
+  if (!hasUppercase) missingConditions.push("Uppercase Letter");
+  if (!hasLowercase) missingConditions.push("Lowercase Letter");
+  if (!hasDigit) missingConditions.push("Digit");
+  if (!hasSpecialChar) missingConditions.push("Special Character");
+  if (!isLongEnough) missingConditions.push("Minimum Length of 8 Characters");
+
+  // Create a description string of missing conditions
+  let description = "Password is missing the following conditions: " + missingConditions.join(", ") + ".";
+
+  // Return the description string
+  return description;
 }

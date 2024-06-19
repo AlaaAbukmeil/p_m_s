@@ -1,4 +1,4 @@
-import { bucket, verifyToken } from "../controllers/common";
+import { bucket, generateSignedUrl, verifyToken } from "../controllers/common";
 import { uploadToBucket } from "./reports/reports";
 import { NextFunction, Router } from "express";
 import { Request, Response } from "express";
@@ -17,7 +17,8 @@ reconcileRouter.post("/check-mufg", verifyToken, uploadToBucket.any(), async (re
     let data: any = [];
     if (files) {
       const fileName = req.files[0].filename;
-      const path = bucket + fileName;
+      const path = await generateSignedUrl(fileName);
+
       data = await readMUFGReconcileFile(path);
     }
 
@@ -29,7 +30,7 @@ reconcileRouter.post("/check-mufg", verifyToken, uploadToBucket.any(), async (re
         res.send({ error: action.error });
       } else {
         let link = await uploadArrayAndReturnFilePath(action, `mufg_check_${collectionDate}`, "mufg_check");
-        let downloadEBlotName = bucket + link;
+        let downloadEBlotName = bucket + link + "?authuser=2";
         res.send(downloadEBlotName);
       }
     }
@@ -48,7 +49,8 @@ reconcileRouter.post("/check-nomura", verifyToken, uploadToBucket.any(), async (
     let data: any = [];
     if (files) {
       const fileName = req.files[0].filename;
-      const path = bucket + fileName;
+      const path = await generateSignedUrl(fileName);
+
       data = await readNomuraReconcileFile(path);
     }
 
@@ -60,7 +62,7 @@ reconcileRouter.post("/check-nomura", verifyToken, uploadToBucket.any(), async (
         res.send({ error: action.error });
       } else {
         let link = await uploadArrayAndReturnFilePath(action, `nomura_check_${collectionDate}`, "nomura_check");
-        let downloadEBlotName = bucket + link;
+        let downloadEBlotName = bucket + link + "?authuser=2";
         res.send(downloadEBlotName);
       }
     }

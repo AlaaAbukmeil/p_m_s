@@ -18,7 +18,8 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Bid",
     "Ask",
     "YTW",
-    `Last Mid ${formatMarkDate(dates.today)}`,
+    `Yesterday's Mid ${formatMarkDate(dates.yesterday)}`,
+    `Mid ${formatMarkDate(dates.today)}`,
 
     "Current Spread (T)",
     "Spread (Z)",
@@ -193,11 +194,12 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "CR01 Dollar Value Impact Test Color": "CR01 Dollar Value Impact Test Color",
   };
 
-  let twoDigits = [`${formatMarkDate(dates.lastMonth)}`, `${formatMarkDate(dates.yesterday)}`, `Last Mid ${formatMarkDate(dates.today)}`, "Bid", "Ask", "Duration", "Average Cost", "Entry Price", "Previous Mark", "Day Price Move", "MTD Price Move", "3-Day Price Move"];
+  let twoDigits = [`${formatMarkDate(dates.lastMonth)}`, `${formatMarkDate(dates.yesterday)}`, `Mid ${formatMarkDate(dates.today)}`, `Yesterday's Mid ${formatMarkDate(dates.yesterday)}`, "Bid", "Ask", "Duration", "Average Cost", "Entry Price", "Previous Mark", "Day Price Move", "MTD Price Move", "3-Day Price Move"];
 
   // titlesValues[formatMarkDate(dates.lastMonth)] = "MTD Mark";
   // titlesValues[formatMarkDate(dates.yesterday)] = "Previous Mark";
-  titlesValues[`Last Mid ${formatMarkDate(dates.today)}`] = "Mid";
+  titlesValues[`Mid ${formatMarkDate(dates.today)}`] = "Mid";
+  titlesValues[`Yesterday's Mid ${formatMarkDate(dates.yesterday)}`] = "Previous Mark";
 
   let object: any = {};
   for (let titleIndex = 0; titleIndex < titles.length; titleIndex++) {

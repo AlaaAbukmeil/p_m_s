@@ -1,6 +1,6 @@
 require("dotenv").config();
 
-import { getTradeDateYearTrades, formatDateUS, convertExcelDateToJSDate, convertExcelDateToJSDateTime, generateRandomString, bucket } from "../common";
+import { getTradeDateYearTrades, formatDateUS, convertExcelDateToJSDate, convertExcelDateToJSDateTime, generateRandomString, generateSignedUrl } from "../common";
 import { getSettlementDateYear } from "../reports/tools";
 import { getSecurityInPortfolioWithoutLocationForVcon } from "./graphApiConnect";
 import { uri } from "../common";
@@ -130,19 +130,18 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
     bbeData = [];
   for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
     let file = files[fileIndex];
+    let url = await generateSignedUrl(file["filename"]);
     if (file["fieldname"] == "BBB") {
-      bbbData = await readBBGBlot(file["filename"]);
+      bbbData = await readBBGBlot(url);
       if (bbbData.error) {
         return bbbData;
       }
     } else if (file["fieldname"] == "IB") {
-      let url = bucket + file["filename"];
       ibData = await readIBEblot(url);
       if (ibData.error) {
         return ibData;
       }
     } else if (file["fieldname"] == "BBE") {
-      let url = bucket + file["filename"];
       bbeData = await readEmsxEBlot(url);
       if (bbeData.error) {
         return bbeData;

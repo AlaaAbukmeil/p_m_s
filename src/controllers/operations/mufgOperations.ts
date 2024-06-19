@@ -1,4 +1,5 @@
 import { MufgTrade } from "../../models/mufg";
+import { generateSignedUrl } from "../common";
 import { readFxTrades } from "./readExcel";
 
 export function formatMufg(trades: any, start: string, end: string): MufgTrade[] {
@@ -78,7 +79,6 @@ export function formatMufg(trades: any, start: string, end: string): MufgTrade[]
   return mufgTrades;
 }
 
-
 export function formatMufgCDS(trades: any, start: string, end: string): MufgTrade[] {
   let startTimestamp = new Date(start).getTime() - 1 * 24 * 60 * 60 * 1000;
   let endTimestamp = new Date(end).getTime() + 1 * 24 * 60 * 60 * 1000;
@@ -147,7 +147,9 @@ export async function formatFxMufg(files: any, tradesCount: number) {
   for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
     let file = files[fileIndex];
     if (file["fieldname"] == "fx") {
-      fxData = await readFxTrades(file["filename"]);
+      const path = await generateSignedUrl(file["filename"]);
+
+      fxData = await readFxTrades(path);
     }
   }
 

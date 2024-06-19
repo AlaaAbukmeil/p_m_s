@@ -13,7 +13,7 @@ const bodyParser = require("body-parser");
 const app = express();
 const path = require("path");
 const rateLimit = require("express-rate-limit");
-const cookieParser = require('cookie-parser')
+const cookieParser = require("cookie-parser");
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10000, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
@@ -21,14 +21,14 @@ const apiLimiter = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 const cors = require("cors");
-app.use(cookieParser())
+app.use(cookieParser());
 
 const corsOptions = {
-  origin: ["http://localhost:3000", "http://localhost:3001", "https://admin.triadacapital.com"],
-  credentials:true,            //access-control-allow-credentials:true
+  origin: ["http://localhost:3000", "https://admin.triadacapital.com"],
+  credentials: true, //access-control-allow-credentials:true
   optionSuccessStatus: 200,
 };
-app.use(express.json())
+app.use(express.json());
 app.use(cors(corsOptions));
 
 app.use(express.static(path.join(__dirname, "/public")));
@@ -47,8 +47,6 @@ app.use("/api/web/", tradesRouter);
 app.use("/api/web/", positionsRouter);
 app.use("/api/web/", fundRouter);
 app.use("/api/web/", factSheetRouter);
-
-
 
 app.use(apiLimiter);
 

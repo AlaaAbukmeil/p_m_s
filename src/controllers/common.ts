@@ -1,11 +1,24 @@
 import { Request, Response, NextFunction } from "express";
+import { storage } from "./operations/readExcel";
 require("dotenv").config();
 
 const jwt = require("jsonwebtoken");
 
 export const uri = "mongodb+srv://" + process.env.MONGODBUSERNAME + ":" + process.env.NEWMONGODBPASSWORD + "@app.ywfxr8w.mongodb.net/?retryWrites=true&w=majority";
-export const platform = "http://localhost:3000/reset-password?sent=none";
-export const bucket = "https://storage.googleapis.com/app-backend-414212.appspot.com";
+export const platform = "https://admin.triadacapital.com/reset-password?sent=none";
+export const bucket = "https://storage.cloud.google.com/app-backend-414212.appspot.com";
+export async function generateSignedUrl(fileName: string): Promise<string> {
+  const options = {
+    version: "v4",
+    action: "read",
+    expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+  };
+
+  const [url] = await storage.bucket(process.env.BUCKET).file(fileName).getSignedUrl(options);
+
+  return url;
+}
+
 export function getCurrentMonthDateRange(): string {
   const now = new Date();
   const currentMonth = now.getMonth();
@@ -156,6 +169,7 @@ export const verifyTokenFactSheetMember = (req: Request | any, res: Response, ne
     const decoded = jwt.verify(token, process.env.SECRET);
     req.accessRole = decoded.accessRole;
     req.shareClass = decoded.shareClass;
+    req.email = decoded.email;
     if (decoded.accessRole != "member (risk report)" && decoded.accessRole != "admin" && decoded.accessRole != "member (factsheet report)") {
       return res.sendStatus(401);
     }

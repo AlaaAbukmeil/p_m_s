@@ -672,7 +672,7 @@ export function classifyCountry(country: any) {
       emerging: ["china", "india", "indonesia", "macau", "malaysia", "philippines", "taiwan", "thailand"],
       frontier: ["bangladesh", "laos", "mongolia", "pakistan", "sri lanka", "vietnam","cambodia"],
     },
-    "middle east-africa": {
+    "Middle East Africa": {
       developed: ["israel"],
       emerging: ["bahrain", "egypt", "ivory coast", "kuwait", "morocco", "oman", "qatar", "saudi arabia", "south africa", "turkey", "uae", "tunisia", "mauritius"],
       frontier: ["jordan", "kazakhstan", "kenya", "lebanon", "ghana","uzbekistan"],

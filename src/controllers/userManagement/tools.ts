@@ -22,7 +22,7 @@ export async function sendRegsiterationEmail({ email, name }: { email: any; name
   try {
     let date = getDateAndOneWeekLater();
     let action = new SibApiV3Sdk.TransactionalEmailsApi().sendTransacEmail({
-      sender: { email: "developer.triada@gmail.com", name: "Developer Triada" },
+      sender: { email: "IR@triadacapital.com", name: "Developer Triada" },
       subject: `Admin Triada - Invitation `,
       htmlContent: "<!DOCTYPE html><html><body><p>Invitation .</p></body></html>",
       params: {
@@ -36,14 +36,41 @@ export async function sendRegsiterationEmail({ email, name }: { email: any; name
               email: email,
             },
           ],
-          cc: [
+          htmlContent: `<!DOCTYPE html><html><body>Hello ${name},<br />
+                      <p>An Admin Triada Account was created under the email: ${email}. <br /><br /> Please login with the provided credentials and reset your password between ${date.startDate} -> ${date.endDate} . Otherwise, your account will be deleted. <br /><br /> Platform Link:  ${platform}&email=${email} </p> Thanks,<br /><br /> Developer</body></html>`,
+          subject: `Admin Triada - Invitation `,
+        },
+      ],
+    });
+    return { statusCode: 200 };
+  } catch (error) {
+    return error;
+  }
+}
+
+export async function sendWelcomeEmail({ email, name }: { email: any; name: any }) {
+  try {
+    let date = getDateAndOneWeekLater();
+    let action = new SibApiV3Sdk.TransactionalEmailsApi().sendTransacEmail({
+      sender: { email: "IR@triadacapital.com", name: "Developer Triada" },
+      subject: `Admin Triada - Invitation `,
+      htmlContent: "<!DOCTYPE html><html><body><p>Invitation .</p></body></html>",
+      params: {
+        greeting: "Hello " + name,
+        headline: `Admin Triada Account Set Up`,
+      },
+      messageVersions: [
+        {
+          to: [
             {
-              email: "alaa.abukmeil@triadacapital.com",
+              email: email,
             },
           ],
-          htmlContent:
-            `<!DOCTYPE html><html><body>Hello ${name},<br />
-                      <p>An Admin Triada Account was created under the email: ${email}. <br /><br /> Please login with the provided credentials and reset your password between ${date.startDate} -> ${date.endDate} . Otherwise, your account will be deleted. <br /><br /> Platform Link:  ${platform}&email=${email}` + ` </p> Thanks,<br /><br /> Developer</body></html>`,
+
+          htmlContent: `<!DOCTYPE html><html><body>Dear ${name},<br />
+                      <p>Starting this month (with the Triada May 2024 Factsheet), we will provide a monthly updated factsheet for the share class you are invested in through our new web platform. Your account under the email ${email} has been migrated to our new platform, and you will need to reset your password by clicking on this link: <br /><br />
+                      Platform Link:  <a href="${platform}&email=${email}">Triada Capital Platform</a><br/><br/> 
+                      Going forward, we will post monthly factsheets, quarterly reports, and other documentation related to the fund using this new Triada web platform. You will receive an email notification whenever new information is posted in your private room. <br /><br /> This is an automated message, please email jm@triadacapital.com if you have any questions. <br/><br/> </p> Thank you,<br /><br /> Triada's IR Team</body></html>`,
           subject: `Admin Triada - Invitation `,
         },
       ],
@@ -57,7 +84,7 @@ export async function sendRegsiterationEmail({ email, name }: { email: any; name
 export async function sendEmailToResetPassword(userEmail: string, verificationCode: string) {
   try {
     let email = new SibApiV3Sdk.TransactionalEmailsApi().sendTransacEmail({
-      sender: { email: "developer.triada@gmail.com", name: "Triada Capital" },
+      sender: { email: "developer@triadacapital.com", name: "Triada Capital" },
       subject: "Reset Your Password",
       htmlContent: "<!DOCTYPE html><html><body><p>Reset your Triada Account Password.</p></body></html>",
       params: {
@@ -72,7 +99,7 @@ export async function sendEmailToResetPassword(userEmail: string, verificationCo
               email: userEmail,
             },
           ],
-          htmlContent: "<!DOCTYPE html><html><body><p>Hello there, <br /> Your verification code is " + verificationCode + ". <br /> <br /> If you have not asked to reset your Triada Capital account's password, please ignore this email. <br /><br /> Cheers!<br /> Developer</p></body></html>",
+          htmlContent: "<!DOCTYPE html><html><body><p>Hello there, <br /> <br /> Your verification code is " + verificationCode + "<br /> <br /> If you have not asked to reset your Triada Capital account's password, please ignore this email. <br /><br /> Thank you!<br /><br /> Triada's Developement Team</p></body></html>",
           subject: "Reset Your Password",
         },
       ],

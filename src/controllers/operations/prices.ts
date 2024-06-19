@@ -9,7 +9,7 @@ import { getSecurityInPortfolioWithoutLocation } from "./tools";
 import { getPortfolioOnSpecificDate } from "../reports/portfolios";
 import { insertEditLogs } from "./logs";
 const ObjectId = require("mongodb").ObjectId;
-export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDate: string, path: string) {
+export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDate: string, link: string) {
   try {
     if (data.error) {
       return data;
@@ -50,7 +50,7 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
           let updatedPortfolio = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
 
           let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-          await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "Update Previous Prices based on MUFG", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExists).length, "Link: " + path);
+          await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "Update Previous Prices based on MUFG", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExists).length, "Link: " + link);
           let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio, collectionDate);
           console.log(updatedPricePortfolio.length, "number of positions prices updated");
 
@@ -119,7 +119,7 @@ export async function insertPreviousPricesUpdatesInPortfolio(updatedPortfolio: a
   }
 }
 
-export async function updatePreviousPricesPortfolioBloomberg(data: any, collectionDate: string, path: string) {
+export async function updatePreviousPricesPortfolioBloomberg(data: any, collectionDate: string, link: string) {
   try {
     if (data.error) {
       return data;
@@ -271,10 +271,10 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
         try {
           let updatedPortfolio = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
           let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-          await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "Update Previous Prices based on bloomberg", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExists).length, "Link: " + path);
+          await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "Update Previous Prices based on bloomberg", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExists).length, "Link: " + link);
           let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio, collectionDate);
           console.log(updatedPricePortfolio.length, "number of positions prices updated");
-          
+
           if (Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length) {
             return { error: updatedPortfolio.positionsThatDoNotExistsNames };
           } else {
@@ -292,7 +292,7 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
   }
 }
 
-export async function updatePricesPortfolio(path: string) {
+export async function updatePricesPortfolio(path: string, link: string) {
   try {
     let data: any = await readPricingSheet(path);
 
@@ -441,7 +441,7 @@ export async function updatePricesPortfolio(path: string) {
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
         let updatedPortfolio = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
         let insertion = await insertPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio);
-        await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "Update Prices", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length, "Link: " + path);
+        await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "Update Prices", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length, "Link: " + link);
 
         if (Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length) {
           return { error: updatedPortfolio.positionsThatDoNotExistsNames };

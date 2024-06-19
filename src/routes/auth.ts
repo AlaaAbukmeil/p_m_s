@@ -1,16 +1,23 @@
-import { addUser, checkIfUserExists, deleteUser, editUser, getAllUsers, registerUser, resetPassword, sendResetPasswordRequest } from "../controllers/userManagement/auth";
-import { bucket, verifyToken, verifyTokenFactSheetMember, verifyTokenRiskMember } from "../controllers/common";
+import { addUser, checkIfUserExists, checkPasswordStrength, checkUserRight, deleteUser, editUser, getAllUsers, registerUser, resetPassword, sendResetPasswordRequest } from "../controllers/userManagement/auth";
+import { generateSignedUrl, verifyToken, verifyTokenFactSheetMember, verifyTokenRiskMember } from "../controllers/common";
 import { deleteTrade, editTrade } from "../controllers/operations/trades";
 import { uploadToBucket } from "./reports/reports";
 import { CookieOptions, NextFunction, Router } from "express";
 import { Request, Response } from "express";
-import { readUsersSheet } from "../controllers/operations/readExcel";
+import { readUsersSheet, storage } from "../controllers/operations/readExcel";
+import { getDateTimeInMongoDBCollectionFormat } from "../controllers/reports/common";
+import { insertEditLogs } from "../controllers/operations/logs";
 const bcrypt = require("bcrypt");
 const saltRounds: any = process.env.SALT_ROUNDS;
 const authRouter = Router();
 
 authRouter.get("/auth", uploadToBucket.any(), verifyTokenFactSheetMember, async (req: any, res: Response, next: NextFunction) => {
-  res.send({ status: 200, accessRole: req.accessRole });
+  let test = await checkUserRight(req.email, req.accessRole, req.shareClass);
+  if (test) {
+    res.send({ status: 200, accessRole: req.accessRole, shareClass: req.shareClass });
+  } else {
+    res.sendStatus(401);
+  }
 });
 authRouter.get("/users", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -37,7 +44,14 @@ authRouter.post("/login", uploadToBucket.any(), async (req: Request, res: Respon
   res.cookie("triada.admin.cookie", user, cookie);
   res.send(user);
 });
-
+authRouter.post("/logout", uploadToBucket.any(), async (req: Request, res: Response, next: NextFunction) => {
+  res.clearCookie("triada.admin.cookie", {
+    httpOnly: true, // Set this to true for security
+    sameSite: "strict", // Set this to 'strict' or 'lax' for better security
+    secure: process.env.NODE_ENV === "production", // Set this to true for production
+  });
+  res.send("Cookie cleared successfully");
+});
 authRouter.post("/sign-up", async (req: Request, res: Response, next: NextFunction) => {
   let data = req.body;
   let email = data.email;
@@ -55,9 +69,13 @@ authRouter.post("/send-reset-code", async (req: Request, res: Response, next: Ne
 
 authRouter.post("/reset-password", async (req: Request, res: Response, next: NextFunction) => {
   let data = req.body;
-  let result = await resetPassword(data.email, data.code, data.password);
-
-  res.send(result);
+  let passwordCheck = checkPasswordStrength(data.password);
+  if (passwordCheck == true) {
+    let result = await resetPassword(data.email, data.code, data.password);
+    res.send(result);
+  } else {
+    res.send({ message: passwordCheck });
+  }
 });
 
 authRouter.post("/edit-user", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
@@ -92,8 +110,10 @@ authRouter.post("/add-user", verifyToken, uploadToBucket.any(), async (req: Requ
   try {
     let data = req.body;
     if (data.email && data.name && data.shareClass && data.accessRole) {
+      req.body.welcome = true;
       let action = await addUser(req.body);
-      let result = await sendResetPasswordRequest(req.body.email);
+      let result: any = await sendResetPasswordRequest(req.body.email);
+
       if (action.error) {
         res.send({ error: action.error });
       } else {
@@ -107,12 +127,38 @@ authRouter.post("/add-user", verifyToken, uploadToBucket.any(), async (req: Requ
     res.send({ error: "Something is not correct, check error log records" });
   }
 });
+
 authRouter.post("/add-users", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     const fileName = req.files[0].filename;
-    const path = bucket + fileName;
+    const path = await generateSignedUrl(fileName);
+    console.log(path);
     let users = await readUsersSheet(path);
+    console.log(users);
+    if (users.error == null) {
+      let map: any = {};
+      for (let index = 0; index < users.length; index++) {
+        let user = users[index];
+        let email = user["Email"].toLowerCase();
+        let name = user["Name"];
+        let shareClass = user["Share Class"];
+        if (map[email]) {
+          if (!map[email].shareClass.includes(shareClass)) {
+            map[email].shareClass += " " + shareClass;
+          }
+        } else {
+          map[email] = {
+            name: name,
+            shareClass: shareClass,
+          };
+        }
+      }
+      console.log(map);
+    } else {
+      res.send({ error: users.error });
+    }
   } catch (error) {
+    console.log(error);
     res.send({ error: "fatal error" });
   }
 });

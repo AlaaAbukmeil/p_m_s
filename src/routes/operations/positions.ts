@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { bucket, formatDateFile, verifyToken } from "../../controllers/common";
+import { bucket, formatDateFile, generateSignedUrl, verifyToken } from "../../controllers/common";
 import { uploadToBucket } from "../reports/reports";
 import { Request, Response, NextFunction } from "express";
 import { addFund, deleteFund, editFund, getAllFundDetails } from "../../controllers/operations/fund";
@@ -11,7 +11,7 @@ import { FundDetails } from "../../models/portfolio";
 import { CentralizedTrade } from "../../models/trades";
 import { getAllTradesForSpecificPosition } from "../../controllers/operations/trades";
 import { consumers } from "stream";
-import { getEditLogs } from "../../controllers/operations/logs";
+import { getEditLogs, updateEditLogs } from "../../controllers/operations/logs";
 import { getCollectionDays } from "../../controllers/operations/tools";
 
 const positionsRouter = Router();
@@ -21,6 +21,22 @@ positionsRouter.get("/edit-logs", verifyToken, async (req, res) => {
     const editLogsType: any = req.query.logsType;
 
     let editLogs = await getEditLogs(`${editLogsType}`);
+    // let test2 = ["Update Prices", "Update Previous Prices based on MUFG", "Update Previous Prices based on bloomberg", "Upload Trades"];
+    // console.log(editLogs.length, editLogsType);
+    // for (let index = 0; index < editLogs.length; index++) {
+    //   let log = editLogs[index];
+    //   let identifier = log.identifier;
+    //   let test = identifier.split("/")[identifier.split("/").length - 1];
+    //   let prefix = identifier.split("/")[identifier.split("/").length - 2];
+    //   let newlink = "Link: " + bucket + "/" + prefix + "/" + test + "?authuser=2";
+    //   if (editLogsType == "Edit Position") {
+    //     editLogs[index].identifier = test;
+    //   } else if (test2.includes(editLogsType) && !identifier.includes("authuser")) {
+    //     editLogs[index].identifier = newlink;
+    //   }
+    // }
+    // let test = await updateEditLogs(`${editLogsType}`, editLogs);
+    // console.log(test);
     res.send(editLogs);
   } catch (error) {
     res.status(500).send("An error occurred while reading the file.");
@@ -138,13 +154,15 @@ positionsRouter.post("/upload-trades", verifyToken, uploadToBucket.any(), async 
   try {
     let files = req.files;
     const fileName = files[0].filename;
-    const path = bucket + fileName;
+    const path = await generateSignedUrl(fileName);
+    let link = bucket + "/" + fileName + "?authuser=2";
+
     let allTrades: any = await readCentralizedEBlot(path);
 
     if (allTrades?.error) {
       res.send({ error: allTrades.error });
     } else {
-      let action: any = await updatePositionPortfolio(allTrades, path);
+      let action: any = await updatePositionPortfolio(allTrades, link);
       if (action?.error) {
         console.log(action);
         res.send({ error: action.error });
@@ -162,8 +180,9 @@ positionsRouter.post("/upload-trades", verifyToken, uploadToBucket.any(), async 
 positionsRouter.post("/update-prices", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     const fileName = req.files[0].filename;
-    const path = bucket + fileName;
-    let action: any = await updatePricesPortfolio(path);
+    const path = await generateSignedUrl(fileName);
+    let link = bucket + "/" + fileName + "?authuser=2";
+    let action: any = await updatePricesPortfolio(path, link);
     if (action?.error) {
       res.send({ error: action.error });
     } else {
@@ -179,7 +198,7 @@ positionsRouter.post("/live-prices", verifyToken, uploadToBucket.any(), async (r
     let pathName = "live-positions";
     let livePositions = await uploadArrayAndReturnFilePath(action, pathName, "live-positions");
 
-    let downloadEBlotName = bucket + livePositions;
+    let downloadEBlotName = bucket + livePositions + "?authuser=2";
     res.send(downloadEBlotName);
   } catch (error) {
     res.send({ error: "File Template is not correct" });
@@ -189,8 +208,10 @@ positionsRouter.post("/live-prices", verifyToken, uploadToBucket.any(), async (r
 positionsRouter.post("/bulk-edit", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     const fileName = req.files[0].filename;
-    const path = bucket + fileName;
-    let action: any = await editPositionBulkPortfolio(path);
+    const path = await generateSignedUrl(fileName);
+    let link = bucket + "/" + fileName + "?authuser=2";
+
+    let action: any = await editPositionBulkPortfolio(path, link);
     console.log(action);
     if (action?.error) {
       res.send({ error: action.error });
@@ -209,11 +230,13 @@ positionsRouter.post("/update-previous-prices", verifyToken, uploadToBucket.any(
     let collectionType: string = req.body.collectionType;
 
     const fileName = req.files[0].filename;
-    const path = bucket + fileName;
+    const path = await generateSignedUrl(fileName);
+
     let data: any = collectionType == "MUFG" ? await readMUFGPrices(path) : await readPricingSheet(path);
+    let link = bucket + "/" + fileName + "?authuser=2";
 
     if (!data.error) {
-      let action = collectionType == "MUFG" ? await updatePreviousPricesPortfolioMUFG(data, collectionDate, path) : await updatePreviousPricesPortfolioBloomberg(data, collectionDate, path);
+      let action = collectionType == "MUFG" ? await updatePreviousPricesPortfolioMUFG(data, collectionDate, link) : await updatePreviousPricesPortfolioBloomberg(data, collectionDate, link);
       if (action?.error && Object.keys(action.error).length) {
         res.send({ error: action.error, status: 404 });
       } else {

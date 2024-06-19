@@ -12,7 +12,7 @@ SibApiV3Sdk.ApiClient.instance.authentications["api-key"].apiKey = process.env.S
 export async function errorEmailALert({ errorMessage, functionName, location, date }: { errorMessage: any; functionName: any; location: any; date: any }) {
   try {
     let email = new SibApiV3Sdk.TransactionalEmailsApi().sendTransacEmail({
-      sender: { email: "developer.triada@gmail.com", name: "Developer Triada" },
+      sender: { email: "developer@triadacapital.com", name: "Developer Triada" },
       subject: `Error Function: ${functionName} on ${date}`,
       htmlContent: "<!DOCTYPE html><html><body><p>Error .</p></body></html>",
       params: {
@@ -24,12 +24,7 @@ export async function errorEmailALert({ errorMessage, functionName, location, da
         {
           to: [
             {
-              email: "developer.triada@gmail.com",
-            },
-          ],
-          cc: [
-            {
-              email: "alaa.abukmeil@triadacapital.com",
+              email: "developer@triadacapital.com",
             },
           ],
           htmlContent:
