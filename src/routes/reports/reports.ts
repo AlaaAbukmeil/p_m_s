@@ -158,13 +158,15 @@ router.get("/fact-sheet", uploadToBucket.any(), verifyTokenFactSheetMember, asyn
         const now = new Date();
         const from2015: any = new Date("2015-04-01").getTime();
         const to2020 = new Date("2020-12-31").getTime();
+
         const from2YearsAgo = new Date("2022-12-31").getTime();
 
         let inception = await getFactSheet({ from: from2015, to: now, type });
         let fiveYears = await getFactSheet({ from: from2015, to: to2020, type });
         let twoYears = await getFactSheet({ from: from2YearsAgo, to: now, type });
+        let chinaPeriod = await getFactSheet({ from: to2020, to: from2YearsAgo, type });
 
-        res.send({ countrySectorMacro: countrySectorMacro, inception: inception, fiveYears: fiveYears, twoYears: twoYears });
+        res.send({ countrySectorMacro: countrySectorMacro, inception: inception, fiveYears: fiveYears, twoYears: twoYears, chinaPeriod: chinaPeriod });
       }
     } else {
       type = shareClasses.includes(type) ? type : "a2";
@@ -176,8 +178,9 @@ router.get("/fact-sheet", uploadToBucket.any(), verifyTokenFactSheetMember, asyn
       let inception = await getFactSheet({ from: from2015, to: now, type });
       let fiveYears = await getFactSheet({ from: from2015, to: to2020, type });
       let twoYears = await getFactSheet({ from: from2YearsAgo, to: now, type });
+      let chinaPeriod = await getFactSheet({ from: to2020, to: from2YearsAgo, type });
 
-      res.send({ countrySectorMacro: countrySectorMacro, inception: inception, fiveYears: fiveYears, twoYears: twoYears });
+      res.send({ countrySectorMacro: countrySectorMacro, inception: inception, fiveYears: fiveYears, twoYears: twoYears, chinaPeriod: chinaPeriod });
     }
   } catch (error: any) {
     console.log(error);

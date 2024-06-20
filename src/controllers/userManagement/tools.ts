@@ -52,7 +52,7 @@ export async function sendWelcomeEmail({ email, name }: { email: any; name: any 
   try {
     let date = getDateAndOneWeekLater();
     let action = new SibApiV3Sdk.TransactionalEmailsApi().sendTransacEmail({
-      sender: { email: "IR@triadacapital.com", name: "Developer Triada" },
+      sender: { email: "jm@triadacapital.com", name: "Jean-Marie Barreau" },
       subject: `Admin Triada - Invitation `,
       htmlContent: "<!DOCTYPE html><html><body><p>Invitation .</p></body></html>",
       params: {
@@ -68,9 +68,8 @@ export async function sendWelcomeEmail({ email, name }: { email: any; name: any 
           ],
 
           htmlContent: `<!DOCTYPE html><html><body>Dear ${name},<br />
-                      <p>Starting this month (with the Triada May 2024 Factsheet), we will provide a monthly updated factsheet for the share class you are invested in through our new web platform. Your account under the email ${email} has been migrated to our new platform, and you will need to reset your password by clicking on this link: <br /><br />
-                      Platform Link:  <a href="${platform}&email=${email}">Triada Capital Platform</a><br/><br/> 
-                      Going forward, we will post monthly factsheets, quarterly reports, and other documentation related to the fund using this new Triada web platform. You will receive an email notification whenever new information is posted in your private room. <br /><br /> This is an automated message, please email jm@triadacapital.com if you have any questions. <br/><br/> </p> Thank you,<br /><br /> Triada's IR Team</body></html>`,
+                      <p>Starting this month (with the Triada May 2024 Factsheet), we will provide a monthly updated factsheet for the share class in which you are invested through our new web platform. Your username is your email address: ${email}. You will only need to reset your password by clicking on this link: <a href="${platform}&email=${email}">Triada Capital Platform</a><br/><br/>You will receive a verification code in a separate email. Please check your spam folder in case the email is not in your inbox.<br /><br />
+                      Going forward, we will post monthly factsheets, quarterly reports, and other documentation related to the fund using this new Triada web platform. <br /><br /> Please do not reply to this email, This is an automated message. Please email jm@triadacapital.com seperatly if you have any questions. <br/><br/> </p> Thank you,<br /><br />JM</body></html>`,
           subject: `Admin Triada - Invitation `,
         },
       ],

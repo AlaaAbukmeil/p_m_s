@@ -125,7 +125,7 @@ export async function sendResetPasswordRequest(userEmail: string) {
       };
       let actionInsetResetCode = await usersCollection.updateOne(filter, updateDoc);
       let actionEmail: any = await sendEmailToResetPassword(user.email, resetPasswordCode);
-      if (actionEmail.status != 200) {
+      if (actionEmail.statusCode != 200) {
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
 
         await insertEditLogs([`${userEmail} did not recieve email`], "Errors", dateTime, "sendResetPasswordRequest", "controllers/userManagement/auth.ts");
@@ -205,16 +205,16 @@ export async function checkUserRight(email: string, accessRole: string, shareCla
 export async function editUser(editedUser: any) {
   try {
     let userInfo = await getUser(editedUser["_id"]);
-
+    editedUser["email"] = editedUser["email"].toLowerCase();
     if (userInfo) {
       let beforeModify = JSON.parse(JSON.stringify(userInfo));
       beforeModify["_id"] = new ObjectId(beforeModify["_id"]);
 
-      let centralizedBlotKeys: any = ["name", "email", "accessRole", "resetPassword", "shareClass"];
+      let userKeys: any = ["name", "email", "accessRole", "resetPassword", "shareClass"];
       let changes = 0;
       let changesText = [];
-      for (let index = 0; index < centralizedBlotKeys.length; index++) {
-        let key: any = centralizedBlotKeys[index];
+      for (let index = 0; index < userKeys.length; index++) {
+        let key: any = userKeys[index];
         if (editedUser[key] != "" && editedUser[key]) {
           changesText.push(`${key} changed from ${userInfo[key]} to ${editedUser[key]} `);
           userInfo[key] = editedUser[key];
@@ -313,6 +313,7 @@ export async function deleteUser(userId: string, userName: string, userEmail: an
 
 export async function addUser({ email, name, accessRole, shareClass, welcome }: { email: string; name: string; accessRole: string; shareClass: string; welcome: boolean }): Promise<any> {
   try {
+    email = email.toLocaleLowerCase();
     const database = client.db("auth");
     const usersCollection = database.collection("users");
     let password = uuidv4();

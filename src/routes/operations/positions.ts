@@ -21,22 +21,6 @@ positionsRouter.get("/edit-logs", verifyToken, async (req, res) => {
     const editLogsType: any = req.query.logsType;
 
     let editLogs = await getEditLogs(`${editLogsType}`);
-    // let test2 = ["Update Prices", "Update Previous Prices based on MUFG", "Update Previous Prices based on bloomberg", "Upload Trades"];
-    // console.log(editLogs.length, editLogsType);
-    // for (let index = 0; index < editLogs.length; index++) {
-    //   let log = editLogs[index];
-    //   let identifier = log.identifier;
-    //   let test = identifier.split("/")[identifier.split("/").length - 1];
-    //   let prefix = identifier.split("/")[identifier.split("/").length - 2];
-    //   let newlink = "Link: " + bucket + "/" + prefix + "/" + test + "?authuser=2";
-    //   if (editLogsType == "Edit Position") {
-    //     editLogs[index].identifier = test;
-    //   } else if (test2.includes(editLogsType) && !identifier.includes("authuser")) {
-    //     editLogs[index].identifier = newlink;
-    //   }
-    // }
-    // let test = await updateEditLogs(`${editLogsType}`, editLogs);
-    // console.log(test);
     res.send(editLogs);
   } catch (error) {
     res.status(500).send("An error occurred while reading the file.");

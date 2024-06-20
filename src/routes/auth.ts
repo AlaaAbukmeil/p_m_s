@@ -30,7 +30,7 @@ authRouter.get("/users", verifyToken, async (req: Request, res: Response, next: 
 
 authRouter.post("/login", uploadToBucket.any(), async (req: Request, res: Response, next: NextFunction) => {
   let data = req.body;
-  let email = data.email;
+  let email = data.email.toLocaleLowerCase();
   let password = data.password;
 
   let user = await checkIfUserExists(email, password);
@@ -54,7 +54,7 @@ authRouter.post("/logout", uploadToBucket.any(), async (req: Request, res: Respo
 });
 authRouter.post("/sign-up", async (req: Request, res: Response, next: NextFunction) => {
   let data = req.body;
-  let email = data.email;
+  let email = data.email.toLowerCase();
   let password = data.password;
   let verificationCode = data.verificationCode;
   let result = await registerUser(email, password, verificationCode);
@@ -132,9 +132,7 @@ authRouter.post("/add-users", verifyToken, uploadToBucket.any(), async (req: Req
   try {
     const fileName = req.files[0].filename;
     const path = await generateSignedUrl(fileName);
-    console.log(path);
     let users = await readUsersSheet(path);
-    console.log(users);
     if (users.error == null) {
       let map: any = {};
       for (let index = 0; index < users.length; index++) {
@@ -150,6 +148,9 @@ authRouter.post("/add-users", verifyToken, uploadToBucket.any(), async (req: Req
           map[email] = {
             name: name,
             shareClass: shareClass,
+            email: email,
+            accessRole: "member (factsheet report)",
+            welcome: true,
           };
         }
       }
