@@ -1,9 +1,9 @@
 import { NextFunction, Router, Response, Request } from "express";
 import { verifyToken, generateRandomString, verifyTokenRiskMember, verifyTokenFactSheetMember } from "../../controllers/common";
-import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../../controllers/reports/common";
+import { getDateTimeInMongoDBCollectionFormat, getLastDayOfMonth, monthlyRlzdDate } from "../../controllers/reports/common";
 import { getPortfolioWithAnalytics } from "../../controllers/reports/portfolios";
 import { calculateBetaCorrelationBenchMarks, calculateMonthlyReturn, calculateOutPerformance, calculateOutPerformanceParam, calculateRatios, calculateRegression, calculateRiskRatios, getFactSheet, getFactSheetData, getTreasuryAnnulizedReturn, trimFactSheetData, uploadFSData } from "../../controllers/reports/factSheet";
-import { getMonthName } from "../../controllers/reports/tools";
+import { getEarliestCollectionName, getMonthName } from "../../controllers/reports/tools";
 
 require("dotenv").config();
 let shareClasses = ["a2", "a3", "a4", "a5", "a6"];
@@ -143,42 +143,33 @@ router.get("/risk-report", verifyTokenRiskMember, async (req: Request, res: Resp
 
 router.get("/fact-sheet", uploadToBucket.any(), verifyTokenFactSheetMember, async (req: Request | any, res: Response, next: NextFunction) => {
   try {
-    let date = getDateTimeInMongoDBCollectionFormat(new Date());
     let sign = 1;
     let sort = "order";
-    let countrySectorMacro = await getPortfolioWithAnalytics(date, sort, sign, null, "fact sheet", null);
     let type = req.query.type;
     let shareClass = req.shareClass;
     let accessRole = req.accessRole;
 
-    if (accessRole == "member (factsheet report)") {
-      if (!shareClass.includes(type)) {
-        res.sendStatus(401);
-      } else {
-        const now = new Date();
-        const from2015: any = new Date("2015-04-01").getTime();
-        const to2020 = new Date("2020-12-31").getTime();
-
-        const from2YearsAgo = new Date("2022-12-31").getTime();
-
-        let inception = await getFactSheet({ from: from2015, to: now, type });
-        let fiveYears = await getFactSheet({ from: from2015, to: to2020, type });
-        let twoYears = await getFactSheet({ from: from2YearsAgo, to: now, type });
-        let chinaPeriod = await getFactSheet({ from: to2020, to: from2YearsAgo, type });
-
-        res.send({ countrySectorMacro: countrySectorMacro, inception: inception, fiveYears: fiveYears, twoYears: twoYears, chinaPeriod: chinaPeriod });
-      }
+    if (accessRole == "member (factsheet report)" && !shareClass.includes(type)) {
+      res.sendStatus(401);
     } else {
-      type = shareClasses.includes(type) ? type : "a2";
+      if (accessRole != "member (factsheet report)") {
+        type = shareClasses.includes(type) ? type : "a2";
+      }
+
       const now = new Date();
       const from2015: any = new Date("2015-04-01").getTime();
       const to2020 = new Date("2020-12-31").getTime();
-      const from2YearsAgo = new Date("2022-12-31").getTime();
+      const from2020 = new Date("2020-11-01").getTime();
+
+      const to2YearsAgo = new Date("2022-12-31").getTime();
+      const from2YearsAgo = new Date("2022-11-01").getTime();
 
       let inception = await getFactSheet({ from: from2015, to: now, type });
       let fiveYears = await getFactSheet({ from: from2015, to: to2020, type });
       let twoYears = await getFactSheet({ from: from2YearsAgo, to: now, type });
-      let chinaPeriod = await getFactSheet({ from: to2020, to: from2YearsAgo, type });
+      let chinaPeriod = await getFactSheet({ from: from2020, to: to2YearsAgo, type });
+      let lastDayOfThisMonth = getLastDayOfMonth(inception.lastDateTimestamp);
+      let countrySectorMacro = await getPortfolioWithAnalytics(lastDayOfThisMonth, sort, sign, null, "fact sheet", null);
 
       res.send({ countrySectorMacro: countrySectorMacro, inception: inception, fiveYears: fiveYears, twoYears: twoYears, chinaPeriod: chinaPeriod });
     }

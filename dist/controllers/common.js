@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCurrentDateTime = exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDateTime = exports.convertExcelDateToJSDate = exports.swapMonthDay = exports.formatDateWorld = exports.getYear = exports.isNotNullOrUndefined = exports.getTradeDateYearTradesWithoutTheCentury = exports.getTradeDateYearTrades = exports.formatTradeDate = exports.getCurrentDateVconFormat = exports.verifyTokenFactSheetMember = exports.verifyTokenRiskMember = exports.verifyToken = exports.getTime = exports.formatDateUS = exports.formatDateFile = exports.formatDate = exports.parsePercentage = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = exports.generateSignedUrl = exports.bucket = exports.platform = exports.uri = void 0;
+exports.dateWithNoDay = exports.getCurrentDateTime = exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDateTime = exports.convertExcelDateToJSDate = exports.swapMonthDay = exports.formatDateWorld = exports.getYear = exports.isNotNullOrUndefined = exports.getTradeDateYearTradesWithoutTheCentury = exports.getTradeDateYearTrades = exports.formatTradeDate = exports.getCurrentDateVconFormat = exports.verifyTokenFactSheetMember = exports.verifyTokenRiskMember = exports.verifyToken = exports.getTime = exports.formatDateUS = exports.formatDateFile = exports.formatDate = exports.parsePercentage = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = exports.generateSignedUrl = exports.bucket = exports.platform = exports.uri = void 0;
 const readExcel_1 = require("./operations/readExcel");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
@@ -300,3 +300,8 @@ function getCurrentDateTime() {
     return `${month}/${day}/${year} ${hours}:${minutes}`;
 }
 exports.getCurrentDateTime = getCurrentDateTime;
+function dateWithNoDay(input) {
+    let dateComponenets = input.split("/");
+    return `${dateComponenets[0]}/01/${dateComponenets[1]}`;
+}
+exports.dateWithNoDay = dateWithNoDay;

@@ -42,7 +42,7 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
     let mtdAmount = parseFloat(mtdAmountInput) || 0;
     let accumualteNotional = mtdAmount;
     let averageCost = parseFloat(mtdMark);
-
+    // console.log(documents[0],);
     for (let index = 0; index < documents.length; index++) {
       let trade = documents[index];
       if (!trade["BB Ticker"] && trade["Issue"]) {
@@ -52,6 +52,7 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
 
       let tradeBS = trade["B/S"] == "B" ? 1 : -1;
       let newNotional = parseFloat(trade["Notional Amount"]) * tradeBS;
+      // console.log(averageCost, isin, documents[index]["Settle Date"], newNotional, accumualteNotional, trade["Price"], averageCost, "before");
       if (accumualteNotional + newNotional < accumualteNotional && accumualteNotional > 0) {
         trade["Rlzd"] = "True (Long)";
         trade["Rlzd P&L Amount"] = parseFloat(trade["Notional Amount"]) * (parseFloat(trade["Price"]) / multiplier - averageCost / multiplier);
@@ -73,11 +74,12 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
         trade["Rlzd P&L Amount"] = "0";
         trade["Rlzd"] = "False";
 
-        averageCost = getAverageCost(trade["Notional Amount"], accumualteNotional, trade["Price"], averageCost);
+        averageCost = getAverageCost(newNotional, accumualteNotional, trade["Price"], averageCost);
         trade["Average Cost MTD"] = averageCost;
         accumualteNotional += newNotional;
         trade["Updated Notional"] = accumualteNotional;
       }
+      // console.log(averageCost, isin, documents[index]["Settle Date"], newNotional, accumualteNotional, trade["Price"], averageCost, "after\n\n");
     }
 
     let totalRow: any = {

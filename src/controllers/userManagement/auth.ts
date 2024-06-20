@@ -322,6 +322,8 @@ export async function addUser({ email, name, accessRole, shareClass, welcome }: 
 
     const user = await usersCollection.findOne({ email: email });
     if (user == null) {
+      let resetPasswordCode = generateRandomIntegers();
+
       const updateDoc = {
         name: name,
         email: email,
@@ -330,10 +332,11 @@ export async function addUser({ email, name, accessRole, shareClass, welcome }: 
         shareClass: shareClass,
         createdOn: getDateTimeInMongoDBCollectionFormat(new Date()),
         resetPassword: "false",
+        resetCode: resetPasswordCode,
       };
       const action = await usersCollection.insertOne(updateDoc);
       if (welcome) {
-        let emailRegisteration = await sendWelcomeEmail({ email: email, name: name });
+        let emailRegisteration = await sendWelcomeEmail({ email: email, name: name, resetCode: resetPasswordCode });
       } else {
         let emailRegisteration = await sendRegsiterationEmail({ email: email, name: name });
       }

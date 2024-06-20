@@ -48,7 +48,7 @@ export async function sendRegsiterationEmail({ email, name }: { email: any; name
   }
 }
 
-export async function sendWelcomeEmail({ email, name }: { email: any; name: any }) {
+export async function sendWelcomeEmail({ email, name, resetCode }: { email: any; name: any; resetCode: any }) {
   try {
     let date = getDateAndOneWeekLater();
     let action = new SibApiV3Sdk.TransactionalEmailsApi().sendTransacEmail({
@@ -68,7 +68,7 @@ export async function sendWelcomeEmail({ email, name }: { email: any; name: any 
           ],
 
           htmlContent: `<!DOCTYPE html><html><body>Dear ${name},<br />
-                      <p>Starting this month (with the Triada May 2024 Factsheet), we will provide a monthly updated factsheet for the share class in which you are invested through our new web platform. Your username is your email address: ${email}. You will only need to reset your password by clicking on this link: <a href="${platform}&email=${email}">Triada Capital Platform</a><br/><br/>You will receive a verification code in a separate email. Please check your spam folder in case the email is not in your inbox.<br /><br />
+                      <p>Starting this month (with the Triada May 2024 Factsheet), we will provide a monthly updated factsheet for the share class in which you are invested through our new web platform. Your username is your email address: ${email}. You will only need to reset your password by clicking on this link: <a href="${platform}&email=${email}">Triada Capital Platform</a><br/><br/>Your verification code is ${resetCode}<br /><br />
                       Going forward, we will post monthly factsheets, quarterly reports, and other documentation related to the fund using this new Triada web platform. <br /><br /> Please do not reply to this email, This is an automated message. Please email jm@triadacapital.com seperatly if you have any questions. <br/><br/> </p> Thank you,<br /><br />JM</body></html>`,
           subject: `Admin Triada - Invitation `,
         },

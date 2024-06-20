@@ -112,8 +112,6 @@ authRouter.post("/add-user", verifyToken, uploadToBucket.any(), async (req: Requ
     if (data.email && data.name && data.shareClass && data.accessRole) {
       req.body.welcome = true;
       let action = await addUser(req.body);
-      let result: any = await sendResetPasswordRequest(req.body.email);
-
       if (action.error) {
         res.send({ error: action.error });
       } else {
@@ -154,7 +152,11 @@ authRouter.post("/add-users", verifyToken, uploadToBucket.any(), async (req: Req
           };
         }
       }
-      console.log(map);
+      for (let user in map) {
+        let userInfo = map[user];
+        // let action = await addUser(userInfo);
+        // console.log(action, userInfo.email);
+      }
     } else {
       res.send({ error: users.error });
     }

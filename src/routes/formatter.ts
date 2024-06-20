@@ -135,7 +135,7 @@ formatterRouter.post("/emsx-excel", verifyToken, uploadToBucket.any(), async (re
       res.send({ error: action });
     } else {
       let emsx = await uploadArrayAndReturnFilePath(action, "emsx_formated", "emsx");
-      let downloadEBlotName = bucket + emsx + +"?authuser=2";
+      let downloadEBlotName = bucket + emsx + "?authuser=2";
       res.send(downloadEBlotName);
     }
   } catch (error) {

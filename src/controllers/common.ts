@@ -326,3 +326,8 @@ export function getCurrentDateTime() {
 
   return `${month}/${day}/${year} ${hours}:${minutes}`;
 }
+
+export function dateWithNoDay(input: string) {
+  let dateComponenets = input.split("/");
+  return `${dateComponenets[0]}/01/${dateComponenets[1]}`;
+}

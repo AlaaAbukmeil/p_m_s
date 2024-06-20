@@ -1,3 +1,4 @@
+import { dateWithNoDay } from "../common";
 import { client } from "../userManagement/auth";
 import { getDateTimeInMongoDBCollectionFormat } from "./common";
 import { getPortfolioWithAnalytics } from "./portfolios";
@@ -681,7 +682,6 @@ export let beuytruu: any = {
   "31/7/2015": 184.7908,
   "30/6/2015": 184.6587,
   "29/5/2015": 183.9021,
- 
 };
 
 export let emustruu: any = {
@@ -1560,6 +1560,7 @@ export async function getFactSheet({ from, to, type }: { from: any; to: any; typ
   // let lg30truu = await getFactSheetData("LG30TRUU Index", from, to, "main");
 
   let lastDate = getMonthName(data[data.length - 1].date);
+  let lastDateTimestamp = new Date(dateWithNoDay(data[data.length - 1].date));
   let result = calculateMonthlyReturn(data, [type]);
   // let result_lg30truu = calculateMonthlyReturn(lg30truu, ["main"]);
   let result_beuctruu = calculateMonthlyReturn(beuctruu, ["main"]);
@@ -1633,6 +1634,7 @@ export async function getFactSheet({ from, to, type }: { from: any; to: any; typ
     riskRatios: riskRatios,
     correlationAndRegresion: correlationAndRegresion.regression,
     lastDate: lastDate,
+    lastDateTimestamp: lastDateTimestamp,
     cumulativeReturnsHashTable: cumulativeReturnsHashTable,
     treasuryAnnualRate: treasuryAnnualRate,
     cumulativeReturnsHashTableSince2020: cumulativeReturnsHashTableSince2020,
