@@ -461,10 +461,11 @@ export function formatNomura(tradesInput: any, start: string, end: string) {
   for (let index = 0; index < tradesInput.length; index++) {
     let trade = tradesInput[index];
     let obj: any = {};
-    obj["Transaction-Type-Indicator"] = "AT";
+    let pset = trade["BB Ticker"].split(" ")[0] == "T" ? "DTC" : "EUROCLEAR";
+    obj["Transaction-Type-Indicator"] = "BS";
     obj["Client-Ref"] = trade["Triada Trade Id"];
     obj["Shaped-Trade-Ref"] = trade["Triada Trade Id"];
-    obj["Account-Number"] = "90104-NOMB-INTL";
+    obj["Account-Number"] = "CPB10728";
     obj["Trade-Version"] = "NEW";
     obj["Trade-Date"] = formatDateNomura(trade["Trade Date"]);
     obj["Settlement-Date"] = formatDateNomura(trade["Settle Date"]);
@@ -483,6 +484,8 @@ export function formatNomura(tradesInput: any, start: string, end: string) {
     obj["Proceeds-Currency"] = trade["Currency"];
     obj["Interest"] = trade["Accrued Interest"];
     obj["Prefigured-Indicator"] = "YES";
+    obj["PSET"] = pset;
+
     if (trade["Nomura Upload Status"] != "uploaded") {
       tradesOutput.push(obj);
     }

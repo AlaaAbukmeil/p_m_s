@@ -330,6 +330,21 @@ function getDayURlzdInt(portfolio: any, date: any) {
   return { portfolio: portfolio, lastUpdatePricesDate: lastUpdatePricesDate, lastUploadTradesDate: lastUploadTradesDate };
 }
 
+export function getPrincipal(portfolio: any) {
+  for (let index = 0; index < portfolio.length; index++) {
+    let position = portfolio[index];
+    portfolio[index]["Principal"] = 0;
+    let interestInfo = position["Interest"] || {};
+
+    let settlementDates = Object.keys(interestInfo);
+    for (let indexSettlementDate = 0; indexSettlementDate < settlementDates.length; indexSettlementDate++) {
+      let settlementDate = settlementDates[indexSettlementDate];
+      portfolio[index]["Principal"] += interestInfo[settlementDate];
+    }
+  }
+  return { portfolio: portfolio };
+}
+
 export async function getMTDURlzdInt(portfolio: any, date: any) {
   let currentDayDate: string = new Date(date).toISOString().slice(0, 10);
   let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate);

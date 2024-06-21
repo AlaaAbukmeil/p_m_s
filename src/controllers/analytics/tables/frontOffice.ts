@@ -4,6 +4,8 @@ import { bbgRating, formatMarkDate, moodyRating } from "../tools";
 
 export function formatSummaryPosition(position: any, fundDetails: any, dates: any, sortBy: "pl" | null | "price move") {
   let titles = [
+    "Category",
+    "Group",
     "Type",
     "L/S",
     "Strategy",
@@ -226,6 +228,8 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
   object[`BBG / S&P / Moody / Fitch Rating`] = (position["BBG Composite Rating"] || "NR") + " " + (position["S&P Bond Rating"] || "NR") + " " + (position["Moody's Bond Rating"] || "NR") + " " + (position["Fitch Bond Rating"] || "NR") + " ";
   object["Spread (Z)"] = position["Z Spread"].toFixed(0);
   object["Current Spread (T)"] = "";
+  object["Category"] = "";
+  object["Group"] = "";
 
   object["Entry Spread (T)"] = "";
   return object;

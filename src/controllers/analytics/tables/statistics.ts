@@ -1,6 +1,6 @@
 import { toTitleCase } from "../tools";
 
-export function getCountrySectorStrategySum(countryPercentage: any, sectorPercentage: any, strategyPercentage: any, issuerPercentage: any, ratingPercentage: any, regionPercentage: any, marketTypePercentage: any, assetClassPercentage:any, nav: any) {
+export function getCountrySectorStrategySum(countryPercentage: any, sectorPercentage: any, strategyPercentage: any, issuerPercentage: any, ratingPercentage: any, regionPercentage: any, marketTypePercentage: any, assetClassPercentage: any, nav: any) {
   let countries = Object.keys(countryPercentage);
   let sectors = Object.keys(sectorPercentage);
   let strategies = Object.keys(strategyPercentage);
@@ -8,6 +8,7 @@ export function getCountrySectorStrategySum(countryPercentage: any, sectorPercen
   let ratings = Object.keys(ratingPercentage);
   let regions = Object.keys(regionPercentage);
   let marketTypes = Object.keys(marketTypePercentage);
+  let assetClasss = Object.keys(assetClassPercentage);
 
   let sumCountryInPercentage = 0,
     sumCountryInNotional = 0,
@@ -22,7 +23,9 @@ export function getCountrySectorStrategySum(countryPercentage: any, sectorPercen
     sumRegionInPercentage = 0,
     sumRegionInNotional = 0,
     sumMarketTypeInPercentage = 0,
-    sumMarketTypeInNotional = 0;
+    sumMarketTypeInNotional = 0,
+    sumAssetClassInPercentage = 0,
+    sumAssetClassInNotional = 0;
 
   for (let index = 0; index < countries.length; index++) {
     if (countryPercentage[countries[index]]) {
@@ -97,6 +100,16 @@ export function getCountrySectorStrategySum(countryPercentage: any, sectorPercen
     }
   }
 
+  for (let index = 0; index < assetClasss.length; index++) {
+    if (assetClassPercentage[assetClasss[index]]) {
+      assetClassPercentage[assetClasss[index]] = { percentage: Math.round((assetClassPercentage[assetClasss[index]] / nav) * 10000) / 100, notional: Math.round(assetClassPercentage[assetClasss[index]]) };
+      sumAssetClassInPercentage += assetClassPercentage[assetClasss[index]]["percentage"];
+      sumAssetClassInNotional += assetClassPercentage[assetClasss[index]]["notional"];
+    } else {
+      delete assetClassPercentage[assetClasss[index]];
+    }
+  }
+
   countryPercentage["Total"] = { percentage: Math.round(sumCountryInPercentage * 10) / 10, notional: Math.round(sumCountryInNotional) };
   strategyPercentage["Total"] = { percentage: Math.round(sumStrategyInPercentage * 10) / 10, notional: Math.round(sumStrategyInNotional) };
   sectorPercentage["Total"] = { percentage: Math.round(sumSectorInPercentage * 10) / 10, notional: Math.round(sumSectorInNotional) };
@@ -104,6 +117,7 @@ export function getCountrySectorStrategySum(countryPercentage: any, sectorPercen
   ratingPercentage["Total"] = { percentage: Math.round(sumRatingInPercentage * 10) / 10, notional: Math.round(sumRatingInNotional) };
   regionPercentage["Total"] = { percentage: Math.round(sumRegionInPercentage * 10) / 10, notional: Math.round(sumRegionInNotional) };
   marketTypePercentage["Total"] = { percentage: Math.round(sumMarketTypeInPercentage * 10) / 10, notional: Math.round(sumMarketTypeInNotional) };
+  assetClassPercentage["Total"] = { percentage: Math.round(sumAssetClassInPercentage * 10) / 10, notional: Math.round(sumAssetClassInNotional) };
 
   return;
 }

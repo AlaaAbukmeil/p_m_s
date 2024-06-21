@@ -4,16 +4,18 @@ import { NextFunction, Router } from "express";
 import { Request, Response } from "express";
 import { readMUFGReconcileFile, readNomuraReconcileFile, uploadArrayAndReturnFilePath } from "../controllers/operations/readExcel";
 import { reconcileMUFG, reconcileNomura } from "../controllers/operations/reconcile";
-import { getPortfolioOnSpecificDate } from "../controllers/reports/portfolios";
+import { getPortfolioOnSpecificDate, getPrincipal } from "../controllers/reports/portfolios";
 
 const reconcileRouter = Router();
 
 reconcileRouter.post("/check-mufg", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
-    let collectionDate: string = req.body.collectionDate;
+    let collectionDate: string = new Date().toString() || req.body.collectionDate;
     let files = req.files[0];
 
-    let portfolio = await getPortfolioOnSpecificDate(collectionDate);
+    let portfolio: any = await getPortfolioOnSpecificDate(collectionDate);
+    let portfolioWithPrincipal: any = getPrincipal(portfolio.portfolio).portfolio;
+
     let data: any = [];
     if (files) {
       const fileName = req.files[0].filename;
@@ -25,7 +27,7 @@ reconcileRouter.post("/check-mufg", verifyToken, uploadToBucket.any(), async (re
     if (data?.error) {
       res.send({ error: data.error });
     } else {
-      let action = await reconcileMUFG(data, portfolio.portfolio);
+      let action = await reconcileMUFG(data, portfolioWithPrincipal);
       if (action.error) {
         res.send({ error: action.error });
       } else {

@@ -600,7 +600,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       ratingNAVPercentage[rating] = ratingNAVPercentage[rating] ? ratingNAVPercentage[rating] + usdMarketValue : usdMarketValue;
       regionNAVPercentage[region] = regionNAVPercentage[region] ? regionNAVPercentage[region] + usdMarketValue : usdMarketValue;
       marketTypeNAVPercentage[marketType] = marketTypeNAVPercentage[marketType] ? marketTypeNAVPercentage[marketType] + usdMarketValue : usdMarketValue;
-      assetClassNAVPercentage[assetClass] = assetClassNAVPercentage[assetClass] ? assetClassNAVPercentage[assetClass] + absoulteUsdMarketValue : absoulteUsdMarketValue;
+      assetClassNAVPercentage[assetClass] = assetClassNAVPercentage[assetClass] ? assetClassNAVPercentage[assetClass] + usdMarketValue : usdMarketValue;
 
       strategyGMVPercentage[strategy] = strategyGMVPercentage[strategy] ? strategyGMVPercentage[strategy] + absoulteUsdMarketValue : absoulteUsdMarketValue;
       issuerGMVPercentage[issuer] = issuerGMVPercentage[issuer] ? issuerGMVPercentage[issuer] + absoulteUsdMarketValue : absoulteUsdMarketValue;
@@ -954,8 +954,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
       let newObject: any = {};
       if (portfolioViewType == "front office") {
         newObject = {
-          "L/S": "Total",
-          "BB Ticker": totalTicker,
+          Group: totalTicker,
+          "BB Ticker": "",
           Color: "white",
           Location: locationCode,
           "USD Market Value": groupedByLocation[locationCode].groupUSDMarketValue,
@@ -1590,7 +1590,6 @@ export function getCountrySectorMacroStatistics({ formattedPortfolio, nav, sort,
     regionNAVPercentage: sortObjectBasedOnKey(regionNAVPercentage),
     marketTypeNAVPercentage: sortObjectBasedOnKey(marketTypeNAVPercentage),
     assetClassNAVPercentage: sortObjectBasedOnKey(assetClassNAVPercentage),
-
 
     countryGMVPercentage: sortObjectBasedOnKey(countryGMVPercentage),
     sectorGMVPercentage: sortObjectBasedOnKey(sectorGMVPercentage),

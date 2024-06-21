@@ -66,7 +66,7 @@ formatterRouter.post("/mufg-excel-cds", verifyToken, uploadToBucket.any(), async
     res.send({ error: "No Trades" });
   } else {
     let mufgTrades = await uploadArrayAndReturnFilePath(array, pathName, "mufg");
-    let downloadEBlotName = bucket + mufgTrades + +"?authuser=2";
+    let downloadEBlotName = bucket + mufgTrades + "?authuser=2";
     res.send(downloadEBlotName);
   }
 });
@@ -76,7 +76,7 @@ formatterRouter.post("/mufg-fx", verifyToken, uploadToBucket.any(), async (req: 
 
   let action: any = await formatFxMufg(req.files, tradesCount);
   let url = await uploadArrayAndReturnFilePath(action, "fx_mufg_formatted", "mufg_fx");
-  url = bucket + url + +"?authuser=2";
+  url = bucket + url + "?authuser=2";
   res.send(url);
 });
 
@@ -169,7 +169,7 @@ formatterRouter.post("/nomura-excel", verifyToken, uploadToBucket.any(), async (
     res.send({ error: "No Trades" });
   } else {
     let mufgTrades = await uploadArrayAndReturnFilePath(array, pathName, "nomura");
-    let downloadEBlotName = bucket + mufgTrades + +"?authuser=2";
+    let downloadEBlotName = bucket + mufgTrades + "?authuser=2";
     res.send(downloadEBlotName);
   }
 });

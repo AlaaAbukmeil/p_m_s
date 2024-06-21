@@ -185,8 +185,6 @@ export function padInteger(num: any) {
   return numStr.toFixed(3);
 }
 
-
-
 export function checkPosition(position: any, conditions: any) {
   try {
     let country = position["Country"] ? position["Country"].toString().toLowerCase() : null;
@@ -620,7 +618,7 @@ export function rateSensitive(yieldInput: string, coupon: string, duration: stri
 }
 
 export class AggregateRow {
-  "L/S": string;
+  "Category": string;
   "Color": string;
   "Location": string;
   "USD Market Value": number;
@@ -635,7 +633,7 @@ export class AggregateRow {
   "Row Index": number;
 
   constructor(title: string) {
-    this["L/S"] = title;
+    this["Category"] = title;
     this["Color"] = "#F9F4D2";
     this["Location"] = "Global Hedge";
     this["USD Market Value"] = 0;
@@ -670,12 +668,12 @@ export function classifyCountry(country: any) {
     "asia - oceania": {
       developed: ["australia", "hong kong", "japan", "new zeland", "singapore", "south korea"],
       emerging: ["china", "india", "indonesia", "macau", "malaysia", "philippines", "taiwan", "thailand"],
-      frontier: ["bangladesh", "laos", "mongolia", "pakistan", "sri lanka", "vietnam","cambodia"],
+      frontier: ["bangladesh", "laos", "mongolia", "pakistan", "sri lanka", "vietnam", "cambodia"],
     },
     "Middle East Africa": {
       developed: ["israel"],
       emerging: ["bahrain", "egypt", "ivory coast", "kuwait", "morocco", "oman", "qatar", "saudi arabia", "south africa", "turkey", "uae", "tunisia", "mauritius"],
-      frontier: ["jordan", "kazakhstan", "kenya", "lebanon", "ghana","uzbekistan"],
+      frontier: ["jordan", "kazakhstan", "kenya", "lebanon", "ghana", "uzbekistan"],
     },
   };
   for (const region in countryClassification) {
