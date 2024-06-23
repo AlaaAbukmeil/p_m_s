@@ -231,9 +231,7 @@ export async function updatePositionPortfolio(
           object["MTD Rlzd"] = securityInPortfolio !== 404 ? (securityInPortfolio["MTD Rlzd"] ? securityInPortfolio["MTD Rlzd"] : {}) : {};
 
           object["MTD Rlzd"][thisMonth] = securityInPortfolio !== 404 ? (securityInPortfolio["MTD Rlzd"] ? (securityInPortfolio["MTD Rlzd"][thisMonth] ? securityInPortfolio["MTD Rlzd"][thisMonth] : []) : []) : [];
-          let MTDRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
-          if (rlzdOperation == 1) {
-          }
+      
 
           object["Day Rlzd"] = securityInPortfolio !== 404 ? (securityInPortfolio["Day Rlzd"] ? securityInPortfolio["Day Rlzd"] : {}) : {};
 
@@ -253,7 +251,7 @@ export async function updatePositionPortfolio(
 
           object["Original Face"] = originalFace;
 
-          if (!object["Entry Price"]) {
+          if (typeof object["Entry Price"] !== "object") {
             object["Entry Price"] = {};
           }
           if (!object["Entry Price"][thisMonth]) {

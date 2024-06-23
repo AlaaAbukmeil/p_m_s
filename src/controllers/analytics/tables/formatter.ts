@@ -269,7 +269,6 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
       cr01Sum += parseFloat(position["CR01"]);
     }
   }
-
   let dayplPercentage = Math.round((daypl / parseFloat(fund.nav)) * 100000) / 1000;
   let dayFXGross = Math.round((dayfx / parseFloat(fund.nav)) * 100000) / 1000;
 
@@ -300,7 +299,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     ytdurlzd: "x",
     ytdint: Math.round(ytdinterest * 1000) / 1000,
     ytdfx: "x",
-    ytdintPercentage: Math.round((ytdinterest / parseFloat(fundDetailsYTD.nav)) * 100000) / 1000,
+    ytdintPercentage: Math.round((ytdinterest / parseFloat(fund.nav)) * 100000) / 1000,
     ytdFXGross: "x",
 
     dayplPercentage: padInteger(dayplPercentage),
@@ -323,7 +322,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     gmvOfNav: Math.round((lmv - smv) * 10000) / (100 * fund.nav),
     nmvOfNav: Math.round(nmv * 10000) / (100 * fund.nav),
     ytdEstInt: ytdEstInt,
-    ytdEstIntPercentage: Math.round((ytdEstInt / parseFloat(fundDetailsYTD.nav)) * 100000) / 1000 || 0,
+    ytdEstIntPercentage: Math.round((ytdEstInt / parseFloat(fund.nav)) * 100000) / 1000 || 0,
     "3 month treasury rate": fund["3 month treasury rate"],
   };
   let updatedPortfolio: PositionGeneralFormat[] | any = portfolio;
@@ -1089,7 +1088,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         }
       } else if (portfolioViewType == "exposure") {
         newObject = {
-          "L/S": locationCode,
+          Group: locationCode,
           Color: "white",
           Location: locationCode,
           "USD Market Value": groupedByLocation[locationCode].groupUSDMarketValue,
