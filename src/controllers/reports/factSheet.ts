@@ -1,3 +1,4 @@
+import { parse } from "path";
 import { dateWithNoDay } from "../common";
 import { client } from "../userManagement/auth";
 import { getDateTimeInMongoDBCollectionFormat } from "./common";
@@ -10,10 +11,61 @@ export let beforeSwitchRatios: any = {
 };
 export let beforeSwitchRatiosTwo: any = {
   a3: 1018.05 / 1181.44,
-
   a5: 881.72 / 1181.44,
   a6: 881.72 / 1181.44,
 };
+
+export let beforeSwitchRatiosMaster: any = {
+  ma3: 1029.55 / 1077.9,
+  ma4: 995.07 / 1457.23,
+  ma6: 824.859138472692 / 1077.9,
+};
+export let beforeSwitchRatiosMasterTwo: any = {
+  ma6: 994.59 / 1241.4,
+};
+
+function customEditMonthlyReturn(variables: any, monthlyReturns: any) {
+  if (variables[0] == "a5" || variables[0] == "a6") {
+    if (monthlyReturns["06/2016"]) {
+      monthlyReturns["06/2016"][variables[0]] = 2.05 / 100;
+    }
+    if (monthlyReturns["12/2021"]) {
+      monthlyReturns["12/2021"][variables[0]] = -0.09 / 100;
+    }
+  }
+  if (variables[0] == "a4") {
+    if (monthlyReturns["06/2016"]) {
+      monthlyReturns["06/2016"][variables[0]] = 2.05 / 100;
+    }
+    if (monthlyReturns["12/2021"]) {
+      monthlyReturns["12/2021"][variables[0]] = -0.16 / 100;
+    }
+  }
+  if (variables[0] == "a3") {
+    if (monthlyReturns["06/2016"]) {
+      monthlyReturns["06/2016"][variables[0]] = 2.05 / 100;
+    }
+  }
+
+  if (variables[0] == "ma3") {
+    if (monthlyReturns["03/2016"]) {
+      monthlyReturns["03/2016"][variables[0]] = 3.27 / 100;
+    }
+  }
+  if (variables[0] == "ma4") {
+    if (monthlyReturns["01/2022"]) {
+      monthlyReturns["01/2022"][variables[0]] = -0.5 / 100;
+    }
+  }
+  if (variables[0] == "ma6") {
+    if (monthlyReturns["03/2016"]) {
+      monthlyReturns["03/2016"][variables[0]] = 3.27 / 100;
+    }
+    if (monthlyReturns["01/2022"]) {
+      monthlyReturns["01/2022"][variables[0]] = -0.58 / 100;
+    }
+  }
+}
 
 export function calculateMonthlyReturn(data: any, variables: any) {
   //assue months are sorted in ascending order
@@ -110,27 +162,8 @@ export function calculateMonthlyReturn(data: any, variables: any) {
       monthsIndex--;
     }
   }
-  if (variables[0] == "a5" || variables[0] == "a6") {
-    if (monthlyReturns["06/2016"]) {
-      monthlyReturns["06/2016"][variables[0]] = 2.05 / 100;
-    }
-    if (monthlyReturns["12/2021"]) {
-      monthlyReturns["12/2021"][variables[0]] = -0.09 / 100;
-    }
-  }
-  if (variables[0] == "a4") {
-    if (monthlyReturns["06/2016"]) {
-      monthlyReturns["06/2016"][variables[0]] = 2.05 / 100;
-    }
-    if (monthlyReturns["12/2021"]) {
-      monthlyReturns["12/2021"][variables[0]] = -0.16 / 100;
-    }
-  }
-  if (variables[0] == "a3") {
-    if (monthlyReturns["06/2016"]) {
-      monthlyReturns["06/2016"][variables[0]] = 2.05 / 100;
-    }
-  }
+  customEditMonthlyReturn(variables, monthlyReturns);
+
   let years = Object.keys(yearlyData);
   let yearsIndex = years.length - 1;
   let yearlyReturns: any = {};
@@ -180,9 +213,7 @@ export function calculateMonthlyReturn(data: any, variables: any) {
   let negativeAnnualVolitality: any = {};
   let volitality: any = {};
   let ratios: any = {};
-  if (variables[0] == "a2") {
-    // console.log(positiveReturnsHashTable[variables[0]])
-  }
+
   for (let index = 0; index < variables.length; index++) {
     let variable = variables[index];
     let statistics = getStatistics(returns[variable]);
@@ -1128,28 +1159,141 @@ let bebgtruu: any = {
   "29/5/2015": 1042.6841,
 };
 
+let monthlyDataMaster: any = {
+  "05/2015": { ma2: 1000, ma3: 1000, ma4: 1000, ma6: 1000 },
+  "06/2015": { ma2: 1005.53, ma3: 1005.53, ma4: 1005.53, ma6: 1005.53 },
+  "07/2015": { ma2: 1018.11, ma3: 1018.11, ma4: 1018.11, ma6: 1018.11 },
+  "08/2015": { ma2: 1006.2, ma3: 1006.2, ma4: 1006.2, ma6: 1006.2 },
+  "09/2015": { ma2: 1011.23, ma3: 1011.23, ma4: 1011.23, ma6: 1011.23 },
+  "10/2015": { ma2: 1037.58, ma3: 1037.58, ma4: 1037.58, ma6: 1037.58 },
+  "11/2015": { ma2: 1039.01, ma3: 1039.01, ma4: 1039.01, ma6: 1039.01 },
+  "12/2015": { ma2: 1031.85, ma3: 1031.85, ma4: 1031.85, ma6: 1031.85 },
+  "01/2016": { ma2: 1054.98, ma3: 1054.98, ma4: 1054.98, ma6: 1054.98 },
+  "02/2016": { ma2: 1077.9, ma3: 1077.9, ma4: 1077.9, ma6: 1077.9 },
+  "03/2016": { ma2: 1113.19, ma3: 1029.55, ma4: 1113.19, ma6: 1029.55 },
+  "04/2016": { ma2: 1146.17, ma3: 1057.11, ma4: 1146.17, ma6: 1057.11 },
+  "05/2016": { ma2: 1175.76, ma3: 1081.79, ma4: 1175.76, ma6: 1081.79 },
+  "06/2016": { ma2: 1199.66, ma3: 1101.64, ma4: 1199.66, ma6: 1101.64 },
+  "07/2016": { ma2: 1242.13, ma3: 1136.52, ma4: 1242.13, ma6: 1136.52 },
+  "08/2016": { ma2: 1271.27, ma3: 1159.94, ma4: 1271.27, ma6: 1159.94 },
+  "09/2016": { ma2: 1308.85, ma3: 1190.9, ma4: 1308.85, ma6: 1190.9 },
+  "10/2016": { ma2: 1326.01, ma3: 1204.63, ma4: 1326.01, ma6: 1204.63 },
+  "11/2016": { ma2: 1330.22, ma3: 1208.1, ma4: 1330.22, ma6: 1208.1 },
+  "12/2016": { ma2: 1337.02, ma3: 1213.09, ma4: 1337.02, ma6: 1213.09 },
+  "01/2017": { ma2: 1362.24, ma3: 1233.28, ma4: 1362.24, ma6: 1233.28 },
+  "02/2017": { ma2: 1400.35, ma3: 1264.11, ma4: 1400.35, ma6: 1264.11 },
+  "03/2017": { ma2: 1427.51, ma3: 1285.87, ma4: 1427.51, ma6: 1285.87 },
+  "04/2017": { ma2: 1444.41, ma3: 1299.08, ma4: 1444.41, ma6: 1299.08 },
+  "05/2017": { ma2: 1450.39, ma3: 1303.24, ma4: 1450.39, ma6: 1303.24 },
+  "06/2017": { ma2: 1440.29, ma3: 1294.08, ma4: 1440.29, ma6: 1294.08 },
+  "07/2017": { ma2: 1462.24, ma3: 1311.46, ma4: 1462.24, ma6: 1311.46 },
+  "08/2017": { ma2: 1485.5, ma3: 1329.88, ma4: 1485.5, ma6: 1329.88 },
+  "09/2017": { ma2: 1511.24, ma3: 1350.32, ma4: 1511.24, ma6: 1350.32 },
+  "10/2017": { ma2: 1538.1, ma3: 1371.67, ma4: 1538.1, ma6: 1371.67 },
+  "11/2017": { ma2: 1541.67, ma3: 1373.76, ma4: 1541.67, ma6: 1373.76 },
+  "12/2017": { ma2: 1553.55, ma3: 1382.67, ma4: 1553.55, ma6: 1382.67 },
+  "01/2018": { ma2: 1570.2, ma3: 1395.55, ma4: 1570.2, ma6: 1395.55 },
+  "02/2018": { ma2: 1565.18, ma3: 1390.75, ma4: 1565.18, ma6: 1390.75 },
+  "03/2018": { ma2: 1555.81, ma3: 1382.37, ma4: 1555.81, ma6: 1382.37 },
+  "04/2018": { ma2: 1561.35, ma3: 1386.23, ma4: 1561.35, ma6: 1386.23 },
+  "05/2018": { ma2: 1550.74, ma3: 1375.95, ma4: 1550.74, ma6: 1375.95 },
+  "06/2018": { ma2: 1543.62, ma3: 1368.79, ma4: 1543.62, ma6: 1368.79 },
+  "07/2018": { ma2: 1557.49, ma3: 1380.65, ma4: 1557.49, ma6: 1380.65 },
+  "08/2018": { ma2: 1569.61, ma3: 1390.16, ma4: 1569.61, ma6: 1390.16 },
+  "09/2018": { ma2: 1590.9, ma3: 1406.81, ma4: 1590.9, ma6: 1406.81 },
+  "10/2018": { ma2: 1568.89, ma3: 1388.19, ma4: 1568.89, ma6: 1388.19 },
+  "11/2018": { ma2: 1581.74, ma3: 1397.91, ma4: 1581.74, ma6: 1397.91 },
+  "12/2018": { ma2: 1583.15, ma3: 1398.35, ma4: 1583.15, ma6: 1398.35 },
+  "01/2019": { ma2: 1664.32, ma3: 1463.41, ma4: 1664.32, ma6: 1463.41 },
+  "02/2019": { ma2: 1692.87, ma3: 1485.8, ma4: 1692.87, ma6: 1485.8 },
+  "03/2019": { ma2: 1737.18, ma3: 1520.91, ma4: 1737.18, ma6: 1520.91 },
+  "04/2019": { ma2: 1743.57, ma3: 1525.38, ma4: 1743.57, ma6: 1525.38 },
+  "05/2019": { ma2: 1747.46, ma3: 1527.81, ma4: 1747.46, ma6: 1527.81 },
+  "06/2019": { ma2: 1754.02, ma3: 1532.39, ma4: 1754.02, ma6: 1532.39 },
+  "07/2019": { ma2: 1759.45, ma3: 1536.05, ma4: 1759.45, ma6: 1536.05 },
+  "08/2019": { ma2: 1756.23, ma3: 1532.74, ma4: 1756.23, ma6: 1532.74 },
+  "09/2019": { ma2: 1758.88, ma3: 1534.16, ma4: 1758.88, ma6: 1534.16 },
+  "10/2019": { ma2: 1770.72, ma3: 1542.97, ma4: 1770.72, ma6: 1542.97 },
+  "11/2019": { ma2: 1784.85, ma3: 1553.62, ma4: 1784.85, ma6: 1553.62 },
+  "12/2019": { ma2: 1789.09, ma3: 1556.3, ma4: 1789.09, ma6: 1556.3 },
+  "01/2020": { ma2: 1813.25, ma3: 1574.82, ma4: 1813.25, ma6: 1574.82 },
+  "02/2020": { ma2: 1826.7, ma3: 1584.8, ma4: 1826.7, ma6: 1584.8 },
+  "03/2020": { ma2: 1730.15, ma3: 1502.49, ma4: 1730.15, ma6: 1502.49 },
+  "04/2020": { ma2: 1805.66, ma3: 1566.58, ma4: 1805.66, ma6: 1566.58 },
+  "05/2020": { ma2: 1813.56, ma3: 1572.13, ma4: 1813.56, ma6: 1572.13 },
+  "06/2020": { ma2: 1845.28, ma3: 1596.61, ma4: 1845.28, ma6: 1596.61 },
+  "07/2020": { ma2: 1873.16, ma3: 1618, ma4: 1873.16, ma6: 1618 },
+  "08/2020": { ma2: 1907.93, ma3: 1644.84, ma4: 1907.93, ma6: 1644.84 },
+  "09/2020": { ma2: 1889.24, ma3: 1629.23, ma4: 1889.24, ma6: 1629.23 },
+  "10/2020": { ma2: 1874.43, ma3: 1616.75, ma4: 1874.43, ma6: 1616.75 },
+  "11/2020": { ma2: 1931.52, ma3: 1661.26, ma4: 1931.52, ma6: 1661.26 },
+  "12/2020": { ma2: 2000.36, ma3: 1715.01, ma4: 2000.36, ma6: 1715.01 },
+  "01/2021": { ma2: 1897.79, ma3: 1626.18, ma4: 1897.79, ma6: 1626.18 },
+  "02/2021": { ma2: 1899.79, ma3: 1627, ma4: 1899.79, ma6: 1627 },
+  "03/2021": { ma2: 1899.79, ma3: 1626.1, ma4: 1899.79, ma6: 1626.1 },
+  "04/2021": { ma2: 1929.62, ma3: 1650.73, ma4: 1929.62, ma6: 1650.73 },
+  "05/2021": { ma2: 1954.37, ma3: 1670.99, ma4: 1954.37, ma6: 1670.99 },
+  "06/2021": { ma2: 1907.01, ma3: 1629.59, ma4: 1907.01, ma6: 1629.59 },
+  "07/2021": { ma2: 1783.65, ma3: 1523.34, ma4: 1783.65, ma6: 1523.34 },
+  "08/2021": { ma2: 1774.38, ma3: 1514.61, ma4: 1774.38, ma6: 1514.61 },
+  "09/2021": { ma2: 1692.09, ma3: 1443.59, ma4: 1692.09, ma6: 1443.59 },
+  "10/2021": { ma2: 1491.12, ma3: 1271.59, ma4: 1491.12, ma6: 1271.59 },
+  "11/2021": { ma2: 1458.82, ma3: 1243.4, ma4: 1458.82, ma6: 1243.4 },
+  "12/2021": { ma2: 1457.23, ma3: 1241.4, ma4: 1457.23, ma6: 1241.4 },
+  "01/2022": { ma2: 1449.89, ma3: 1234.25, ma4: 995.07, ma6: 994.59 },
+  "02/2022": { ma2: 1345.56, ma3: 1144.36, ma4: 923.58, ma6: 922.68 },
+  "03/2022": { ma2: 1349.02, ma3: 1146.22, ma4: 926.06, ma6: 924.71 },
+  "04/2022": { ma2: 1289.38, ma3: 1094.5, ma4: 885.22, ma6: 883.49 },
+  "05/2022": { ma2: 1277.88, ma3: 1083.6, ma4: 877.42, ma6: 875.28 },
+  "06/2022": { ma2: 1235.69, ma3: 1046.9, ma4: 848.54, ma6: 846.05 },
+  "07/2022": { ma2: 1220.97, ma3: 1033.43, ma4: 838.55, ma6: 835.67 },
+  "08/2022": { ma2: 1257.44, ma3: 1063.29, ma4: 863.72, ma6: 860.33 },
+  "09/2022": { ma2: 1259.53, ma3: 1064.05, ma4: 865.29, ma6: 861.46 },
+  "10/2022": { ma2: 1210.95, ma3: 1022.03, ma4: 832.03, ma6: 827.93 },
+  "11/2022": { ma2: 1225.2, ma3: 1033.07, ma4: 841.94, ma6: 837.37 },
+  "12/2022": { ma2: 1243.5, ma3: 1047.5, ma4: 854.64, ma6: 849.58 },
+  "01/2023": { ma2: 1270.94, ma3: 1069.6, ma4: 873.63, ma6: 868.02 },
+  "02/2023": { ma2: 1273.74, ma3: 1070.94, ma4: 875.68, ma6: 869.63 },
+  "03/2023": { ma2: 1271.25, ma3: 1067.84, ma4: 874.1, ma6: 867.62 },
+  "04/2023": { ma2: 1282.97, ma3: 1076.67, ma4: 882.29, ma6: 875.32 },
+  "05/2023": { ma2: 1284.53, ma3: 1076.95, ma4: 883.49, ma6: 876.07 },
+  "06/2023": { ma2: 1292.71, ma3: 1082.8, ma4: 889.25, ma6: 881.35 },
+  "07/2023": { ma2: 1310.7, ma3: 1096.83, ma4: 901.76, ma6: 893.3 },
+  "08/2023": { ma2: 1300.27, ma3: 1087.08, ma4: 894.72, ma6: 885.88 },
+  "09/2023": { ma2: 1300.86, ma3: 1086.55, ma4: 895.26, ma6: 885.97 },
+  "10/2023": { ma2: 1286.63, ma3: 1073.7, ma4: 885.64, ma6: 876.02 },
+  "11/2023": { ma2: 1328.92, ma3: 1107.81, ma4: 914.83, ma6: 904.42 },
+  "12/2023": { ma2: 1355.99, ma3: 1129.25, ma4: 933.59, ma6: 922.5 },
+  "01/2024": { ma2: 1379.76, ma3: 1147.9, ma4: 950.09, ma6: 938.32 },
+  "02/2024": { ma2: 1397.32, ma3: 1161.27, ma4: 962.3, ma6: 949.88 },
+  "03/2024": { ma2: 1405.65, ma3: 1166.76, ma4: 968.13, ma6: 955.09 },
+  "04/2024": { ma2: 1404.04, ma3: 1164.23, ma4: 966.95, ma6: 953.43 },
+  "05/2024": { ma2: 1427.55, ma3: 1182.51, ma4: 983.07, ma6: 968.82 },
+};
 export async function uploadFSData() {
-  monthlyData = trimDate(monthlyData);
-  lg30truu = trimDate(lg30truu, true);
-  beuytruu = trimDate(beuytruu, true);
-  beuctruu = trimDate(beuctruu, true);
-  emustruu = trimDate(emustruu, true);
-  legatruu = trimDate(legatruu, true);
-  bebgtruu = trimDate(bebgtruu, true);
+  // monthlyData = trimDate(monthlyData, false, true);
+  monthlyDataMaster = trimDate(monthlyDataMaster, false, false, true);
+  // lg30truu = trimDate(lg30truu, true);
+  // beuytruu = trimDate(beuytruu, true);
+  // beuctruu = trimDate(beuctruu, true);
+  // emustruu = trimDate(emustruu, true);
+  // legatruu = trimDate(legatruu, true);
+  // bebgtruu = trimDate(bebgtruu, true);
+  // treasuryData = trimDate(treasuryData, true);
 
-  treasuryData = trimDate(treasuryData, true);
+  // await updateOrInsertDataWithBulk(monthlyData, "Triada");
+  await updateOrInsertDataWithBulk(monthlyDataMaster, "Triada Master");
 
-  await updateOrInsertDataWithBulk(monthlyData, "Triada");
-  await updateOrInsertDataWithBulk(legatruu, "LEGATRUU Index");
-  await updateOrInsertDataWithBulk(emustruu, "EMUSTRUU Index");
-  await updateOrInsertDataWithBulk(beuctruu, "BEUCTRUU Index");
-  await updateOrInsertDataWithBulk(beuytruu, "BEUYTRUU Index");
-  await updateOrInsertDataWithBulk(lg30truu, "LG30TRUU Index");
-  await updateOrInsertDataWithBulk(treasuryData, "3 Month Treasury");
-  await updateOrInsertDataWithBulk(bebgtruu, "BEBGTRUU Index");
+  // await updateOrInsertDataWithBulk(legatruu, "LEGATRUU Index");
+  // await updateOrInsertDataWithBulk(emustruu, "EMUSTRUU Index");
+  // await updateOrInsertDataWithBulk(beuctruu, "BEUCTRUU Index");
+  // await updateOrInsertDataWithBulk(beuytruu, "BEUYTRUU Index");
+  // await updateOrInsertDataWithBulk(lg30truu, "LG30TRUU Index");
+  // await updateOrInsertDataWithBulk(treasuryData, "3 Month Treasury");
+  // await updateOrInsertDataWithBulk(bebgtruu, "BEBGTRUU Index");
 }
 
-export function trimDate(data: any, benchmark = false) {
+export function trimDate(data: any, benchmark = false, triada = false, masterTriada = false) {
   let keys = Object.keys(data);
   let final = [];
   for (let index = 0; index < keys.length; index++) {
@@ -1177,7 +1321,7 @@ export function trimDate(data: any, benchmark = false) {
         timestamp: timestamp,
         data: { main: data[dateFinal] },
       };
-    } else {
+    } else if (triada) {
       let timestampTest = timestamp < new Date("2021-11-30").getTime() && timestamp > new Date("2016-05-30").getTime();
       if (timestampTest == true) {
         object = {
@@ -1210,6 +1354,37 @@ export function trimDate(data: any, benchmark = false) {
         };
         console.log(getDateTimeInMongoDBCollectionFormat(timestamp), "3");
       }
+    } else if (masterTriada) {
+      let timestampTest = timestamp < new Date("2021-12-30").getTime() && timestamp > new Date("2016-02-28").getTime();
+      if (timestampTest == true) {
+        object = {
+          date: dateFinal,
+          timestamp: timestamp,
+          data: data[dateFinal],
+        };
+
+        object.data.ma4 = object.data.ma4 * beforeSwitchRatiosMaster.ma4;
+        object.data.ma6 = object.data.ma6 * beforeSwitchRatiosMasterTwo.ma6;
+
+        // object.data.ma6 = object.data.ma6 * beforeSwitchRatios.ma6;
+      } else if (timestamp <= new Date("2016-02-28").getTime()) {
+        object = {
+          date: dateFinal,
+          timestamp: timestamp,
+          data: data[dateFinal],
+        };
+
+        object.data.ma3 = object.data.ma3 * beforeSwitchRatiosMaster.ma3;
+        object.data.ma4 = object.data.ma4 * beforeSwitchRatiosMaster.ma4;
+        object.data.ma6 = object.data.ma6 * beforeSwitchRatiosMaster.ma6;
+      } else {
+        object = {
+          date: dateFinal,
+          timestamp: timestamp,
+          data: data[dateFinal],
+        };
+        console.log(getDateTimeInMongoDBCollectionFormat(timestamp), "3");
+      }
     }
 
     final.push(object);
@@ -1223,7 +1398,7 @@ async function updateOrInsertDataWithBulk(entries: any, collectionName: any) {
     await client.connect();
     const database = client.db("factsheet");
     const collection = database.collection(collectionName);
-
+    // await collection.deleteMany({});
     // Create bulk operations array
     const bulkOps = entries.map((entry: any) => {
       return {
@@ -1522,9 +1697,9 @@ export function getTreasuryAnnulizedReturn(data: any) {
   const annualizedReturn = Math.pow(cumulative, 12 / data.length) - 1;
   return annualizedReturn;
 }
-export function trimFactSheetData(triada: any, others: any) {
+export function trimFactSheetData(triada: any, triadaMaster: any, others: any) {
   let months = [];
-  let formmated: any = { a2: {}, a3: {}, a4: {}, a5: {}, a6: {}, "3 Month Treasury": {}, "LEGATRUU Index": {}, "EMUSTRUU Index": {}, "BEUCTRUU Index": {}, "BEUYTRUU Index": {}, "LG30TRUU Index": {}, "BEBGTRUU Index": {} };
+  let formmated: any = { a2: {}, a3: {}, a4: {}, a5: {}, a6: {}, "3 Month Treasury": {}, "LEGATRUU Index": {}, "EMUSTRUU Index": {}, "BEUCTRUU Index": {}, "BEUYTRUU Index": {}, "LG30TRUU Index": {}, "BEBGTRUU Index": {}, ma2: {}, ma3: {}, ma4: {}, ma6: {} };
   for (let index = 0; index < triada.length; index++) {
     let month = triada[index].date;
     let id = triada[index]["_id"];
@@ -1535,6 +1710,17 @@ export function trimFactSheetData(triada: any, others: any) {
     formmated.a4[month] = { _id: id, price: price.a4, month: month, name: "a4" };
     formmated.a5[month] = { _id: id, price: price.a5, month: month, name: "a5" };
     formmated.a6[month] = { _id: id, price: price.a6, month: month, name: "a6" };
+  }
+
+  for (let index = 0; index < triadaMaster.length; index++) {
+    let month = triadaMaster[index].date;
+    let id = triadaMaster[index]["_id"];
+    let price = triadaMaster[index].data;
+
+    formmated.ma2[month] = { _id: id, price: price.ma2, month: month, name: "ma2" };
+    formmated.ma3[month] = { _id: id, price: price.ma3, month: month, name: "ma3" };
+    formmated.ma4[month] = { _id: id, price: price.ma4, month: month, name: "ma4" };
+    formmated.ma6[month] = { _id: id, price: price.ma6, month: month, name: "ma6" };
   }
 
   for (let name in others) {
@@ -1550,9 +1736,12 @@ export function trimFactSheetData(triada: any, others: any) {
 }
 
 export async function getFactSheet({ from, to, type }: { from: any; to: any; type: any }) {
+  let masterClasses = ["ma2", "ma3", "ma4", "ma6"];
+  let db = masterClasses.includes(type) ? "Triada Master" : "Triada";
   let treasuryData = await getFactSheetData("3 Month Treasury", from, to, "main");
   let treasuryAnnualRate = getTreasuryAnnulizedReturn(treasuryData);
-  let data = await getFactSheetData("Triada", from, to, type);
+
+  let data = await getFactSheetData(db, from, to, type);
   let legatruu = await getFactSheetData("LEGATRUU Index", from, to, "main");
   let emustruu = await getFactSheetData("EMUSTRUU Index", from, to, "main");
   let beuctruu = await getFactSheetData("BEUCTRUU Index", from, to, "main");

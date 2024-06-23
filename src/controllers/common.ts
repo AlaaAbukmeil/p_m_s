@@ -331,3 +331,8 @@ export function dateWithNoDay(input: string) {
   let dateComponenets = input.split("/");
   return `${dateComponenets[0]}/01/${dateComponenets[1]}`;
 }
+
+export function dateWithMonthOnly(input: string) {
+  let dateComponenets = input.split("/");
+  return `${dateComponenets[1]}/${dateComponenets[2]}`;
+}

@@ -664,3 +664,35 @@ export async function readFxTrades(path: string) {
   const data = xlsx.utils.sheet_to_json(worksheet, { defval: "", range: "A1:N100" });
   return data;
 }
+
+export async function readFactSheet(path: string) {
+  const response = await axios.get(path, { responseType: "arraybuffer" });
+
+  /* Parse the data */
+  const workbook = xlsx.read(response.data, { type: "buffer" });
+
+  /* Get first worksheet */
+  const worksheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[worksheetName];
+
+  /* Convert worksheet to JSON */
+  // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
+
+  // Read data
+
+  const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+
+  const arraysAreEqual = true;
+  if (!arraysAreEqual) {
+    return {
+      error: "Incompatible format, please upload edit e-blot xlsx/csv file",
+    };
+  } else {
+    let data = xlsx.utils.sheet_to_json(worksheet, {
+      defval: "",
+      range: "A1:E110",
+    });
+
+    return data;
+  }
+}

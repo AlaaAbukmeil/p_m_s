@@ -6,7 +6,7 @@ import { calculateBetaCorrelationBenchMarks, calculateMonthlyReturn, calculateOu
 import { getEarliestCollectionName, getMonthName } from "../../controllers/reports/tools";
 
 require("dotenv").config();
-let shareClasses = ["a2", "a3", "a4", "a5", "a6"];
+let shareClasses = ["a2", "a3", "a4", "a5", "a6","ma2", "ma3", "ma4", "ma6"];
 const multerGoogleStorage = require("multer-google-storage");
 const multer = require("multer");
 export const uploadToBucket = multer({
@@ -148,7 +148,6 @@ router.get("/fact-sheet", uploadToBucket.any(), verifyTokenFactSheetMember, asyn
     let type = req.query.type;
     let shareClass = req.shareClass;
     let accessRole = req.accessRole;
-
     if (accessRole == "member (factsheet report)" && !shareClass.includes(type)) {
       res.sendStatus(401);
     } else {
