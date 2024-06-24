@@ -6,7 +6,7 @@ import { calculateBetaCorrelationBenchMarks, calculateMonthlyReturn, calculateOu
 import { getEarliestCollectionName, getMonthName } from "../../controllers/reports/tools";
 
 require("dotenv").config();
-let shareClasses = ["a2", "a3", "a4", "a5", "a6","ma2", "ma3", "ma4", "ma6"];
+let shareClasses = ["a2", "a3", "a4", "a5", "a6", "ma2", "ma3", "ma4", "ma6"];
 const multerGoogleStorage = require("multer-google-storage");
 const multer = require("multer");
 export const uploadToBucket = multer({
@@ -163,10 +163,10 @@ router.get("/fact-sheet", uploadToBucket.any(), verifyTokenFactSheetMember, asyn
       const to2YearsAgo = new Date("2022-12-31").getTime();
       const from2YearsAgo = new Date("2022-11-01").getTime();
 
-      let inception = await getFactSheet({ from: from2015, to: now, type });
-      let fiveYears = await getFactSheet({ from: from2015, to: to2020, type });
-      let twoYears = await getFactSheet({ from: from2YearsAgo, to: now, type });
-      let chinaPeriod = await getFactSheet({ from: from2020, to: to2YearsAgo, type });
+      let inception = await getFactSheet({ from: from2015, to: now, type, inception: true });
+      let fiveYears = await getFactSheet({ from: from2015, to: to2020, type, inception: false });
+      let twoYears = await getFactSheet({ from: from2YearsAgo, to: now, type, inception: false });
+      let chinaPeriod = await getFactSheet({ from: from2020, to: to2YearsAgo, type, inception: false });
       let lastDayOfThisMonth = getLastDayOfMonth(inception.lastDateTimestamp);
       let countrySectorMacro = await getPortfolioWithAnalytics(lastDayOfThisMonth, sort, sign, null, "fact sheet", null);
 
