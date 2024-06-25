@@ -69,7 +69,7 @@ function customEditMonthlyReturn(variables: any, monthlyReturns: any) {
   }
 }
 
-export function calculateMonthlyReturn(data: any, variables: any, fundData = false, inception = false, rfr: any = {}) {
+export function calculateMonthlyReturn(data: any, variables: any, fundData = false, inception = false, rfr: any = {}, map: any = {}) {
   //assue months are sorted in ascending order
 
   let monthlyReturns: any = {};
@@ -221,20 +221,21 @@ export function calculateMonthlyReturn(data: any, variables: any, fundData = fal
     for (let year in returnsTemp) {
       delete returnsTemp[year]["Cumulative"];
       let values = Object.values(returnsTemp[year]).filter((value) => value != null) || [];
-      let negativeValues = Object.values(returnsTemp[year]).filter((value: any) => (value != null ? (value < 0 ? true : false) : false)) || [];
+      let valuesTreasury: any = Object.values(map[year]).filter((value) => value != null) || [];
+      let diffValues = values.map((value: any, index: any) => value - valuesTreasury[index]);
+      let negativeValues = diffValues.filter((value: any) => (value != null ? (value < 0 ? true : false) : false)) || [];
 
       let stats = getSampleStandardDeviation(values);
       let negativeStats = getSampleStandardDeviation(negativeValues);
-      let volitality = stats.sd * Math.sqrt(12) || null;
-      let negativeVolitality = negativeStats.sd * Math.sqrt(12) || null;
-
-      formmatedReturns[variables[0]][year]["Risk"] = volitality;
-      formmatedReturns[variables[0]][year]["DRisk"] = negativeVolitality;
-      formmatedReturns[variables[0]][year]["Rfr"] = rfr[year];
-      if (formmatedReturns[variables[0]][year]["Risk"] && formmatedReturns[variables[0]][year]["Rfr"]) {
-        formmatedReturns[variables[0]][year]["Sharpe"] = (formmatedReturns[variables[0]][year]["Cumulative"] - formmatedReturns[variables[0]][year]["Rfr"]) / formmatedReturns[variables[0]][year]["Risk"];
-        formmatedReturns[variables[0]][year]["Sortino"] = (formmatedReturns[variables[0]][year]["Cumulative"] - formmatedReturns[variables[0]][year]["Rfr"]) / formmatedReturns[variables[0]][year]["DRisk"];
-      }
+      let volitality = stats.sd * Math.sqrt(12) || 0;
+      let negativeVolitality = negativeStats.sd * Math.sqrt(12) || 0;
+      formmatedReturns[variables[0]][year]["Risk"] = volitality || 0;
+      formmatedReturns[variables[0]][year]["Downside Risk"] = negativeVolitality || 0;
+      formmatedReturns[variables[0]][year]["Annualized Rfr"] = rfr[year];
+      let sharpe = (formmatedReturns[variables[0]][year]["Cumulative"] - formmatedReturns[variables[0]][year]["Annualized Rfr"]) / formmatedReturns[variables[0]][year]["Risk"] || 0;
+      let sortino = (formmatedReturns[variables[0]][year]["Cumulative"] - formmatedReturns[variables[0]][year]["Annualized Rfr"]) / formmatedReturns[variables[0]][year]["Downside Risk"] || 0;
+      formmatedReturns[variables[0]][year]["Sharpe"] = isFinite(sharpe) ? sharpe : 0;
+      formmatedReturns[variables[0]][year]["Sortino"] = isFinite(sortino) ? sortino : 0;
     }
   }
   for (let index = 0; index < variables.length; index++) {
@@ -715,7 +716,7 @@ export function getTreasuryAnnulizedReturn(data: any, inception = false) {
     if (inception) {
       let year = date.split("/")[1];
       map[year] = map[year] ? map[year] : [];
-      map[year].push(main);
+      map[year].push(Math.pow(main / 100 + 1, 1 / 12) - 1);
     }
 
     const returnData = Math.pow(main / 100 + 1, 1 / 12);
@@ -724,14 +725,14 @@ export function getTreasuryAnnulizedReturn(data: any, inception = false) {
   if (inception) {
     for (let year in map) {
       let length = map[year].length;
-      let annualCompound = map[year].reduce((acc: any, value: any) => acc * Math.pow(value / 100 + 1, 1 / 12), 1);
+      let annualCompound = map[year].reduce((acc: any, value: any) => acc * (value + 1), 1);
       let annualizedReturn = Math.pow(annualCompound, 12 / length) - 1;
       rfr[year] = annualizedReturn;
     }
   }
   // console.log(map);
   const annualizedReturn: any = Math.pow(cumulative, 12 / data.length) - 1;
-  return { annualizedReturn, rfr };
+  return { annualizedReturn, rfr, map };
 }
 export function trimFactSheetData(triada: any, triadaMaster: any, others: any) {
   let months = [];
@@ -807,7 +808,7 @@ export async function getFactSheet({ from, to, type, inception }: { from: any; t
 
     let lastDate = getMonthName(data[data.length - 1].date);
     let lastDateTimestamp = new Date(dateWithNoDay(data[data.length - 1].date));
-    let result = calculateMonthlyReturn(data, [type], true, true, treasuryAnnualRate.rfr);
+    let result = calculateMonthlyReturn(data, [type], true, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map);
     // let result_lg30truu = calculateMonthlyReturn(lg30truu, ["main"]);
     let result_beuctruu = calculateMonthlyReturn(beuctruu, ["main"]);
     let result_beuytruu = calculateMonthlyReturn(beuytruu, ["main"]);
