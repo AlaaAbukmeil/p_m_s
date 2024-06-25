@@ -349,6 +349,9 @@ export function getStatistics(array: any) {
 }
 export function getSampleStandardDeviation(array: any): { sd: number; mean: number; arrLength: number } {
   const n = array.length;
+  if (n < 2) {
+    return { sd: 0, mean: 0, arrLength: 0 };
+  }
   const mean = array.reduce((a: any, b: any) => a + b) / n;
   let sd = Math.sqrt(array.map((x: any) => Math.pow(x - mean, 2)).reduce((a: any, b: any) => a + b, 0) / (n - 1));
   return { sd: sd, mean: mean, arrLength: n };

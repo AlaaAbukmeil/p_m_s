@@ -4,6 +4,7 @@ import { getDateTimeInMongoDBCollectionFormat, getLastDayOfMonth, monthlyRlzdDat
 import { getPortfolioWithAnalytics } from "../../controllers/reports/portfolios";
 import { calculateBetaCorrelationBenchMarks, calculateMonthlyReturn, calculateOutPerformance, calculateOutPerformanceParam, calculateRatios, calculateRegression, calculateRiskRatios, getFactSheet, getFactSheetData, getTreasuryAnnulizedReturn, trimFactSheetData, uploadFSData } from "../../controllers/reports/factSheet";
 import { getEarliestCollectionName, getMonthName } from "../../controllers/reports/tools";
+import { getFactSheetDisplay } from "../../controllers/operations/commands";
 
 require("dotenv").config();
 let shareClasses = ["a2", "a3", "a4", "a5", "a6", "ma2", "ma3", "ma4", "ma6"];
@@ -148,11 +149,14 @@ router.get("/fact-sheet", uploadToBucket.any(), verifyTokenFactSheetMember, asyn
     let type = req.query.type;
     let shareClass = req.shareClass;
     let accessRole = req.accessRole;
+    let disabled = await getFactSheetDisplay("view");
+
     if (accessRole == "member (factsheet report)" && !shareClass.includes(type)) {
       res.sendStatus(401);
     } else {
       if (accessRole != "member (factsheet report)") {
         type = shareClasses.includes(type) ? type : "a2";
+        disabled = false;
       }
 
       const now = new Date();
@@ -170,11 +174,11 @@ router.get("/fact-sheet", uploadToBucket.any(), verifyTokenFactSheetMember, asyn
       let lastDayOfThisMonth = getLastDayOfMonth(inception.lastDateTimestamp);
       let countrySectorMacro = await getPortfolioWithAnalytics(lastDayOfThisMonth, sort, sign, null, "fact sheet", null);
 
-      res.send({ countrySectorMacro: countrySectorMacro, inception: inception, fiveYears: fiveYears, twoYears: twoYears, chinaPeriod: chinaPeriod });
+      res.send({ countrySectorMacro: countrySectorMacro, inception: inception, fiveYears: fiveYears, twoYears: twoYears, chinaPeriod: chinaPeriod, disabled: disabled });
     }
   } catch (error: any) {
     console.log(error);
-    res.send({ error: error.toString() });
+    res.send({ error: error.toString(), disabled: true });
   }
 });
 
