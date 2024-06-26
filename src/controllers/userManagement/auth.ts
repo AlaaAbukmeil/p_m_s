@@ -63,7 +63,7 @@ export async function registerUser(email: string, password: string, verification
     return error;
   }
 }
-export async function checkIfUserExists(email: string, password: string): Promise<{ status: 200 | 401; message: null | string; token: string | null; email: string | null; accessRole: string | null }> {
+export async function checkIfUserExists(email: string, password: string): Promise<{ status: 200 | 401; message: null | string; token: string | null; email: string | null; accessRole: string | null; shareClass: string | null }> {
   try {
     const database = client.db("auth");
     const usersCollection = database.collection("users");
@@ -90,20 +90,21 @@ export async function checkIfUserExists(email: string, password: string): Promis
             token: token,
             email: email,
             accessRole: user["accessRole"],
+            shareClass: user["shareClass"],
           };
         } else {
-          return { message: "Wrong password", status: 401, token: null, email: null, accessRole: null };
+          return { message: "Wrong password", status: 401, token: null, email: null, accessRole: null, shareClass: null };
         }
       } catch (error) {
-        return { message: "unexpected error", status: 401, token: null, email: null, accessRole: null };
+        return { message: "unexpected error", status: 401, token: null, email: null, accessRole: null, shareClass: null };
 
         // handle error appropriately
       }
     } else {
-      return { message: "user does not exist", status: 401, token: null, email: null, accessRole: null };
+      return { message: "user does not exist", status: 401, token: null, email: null, accessRole: null, shareClass: null };
     }
   } catch (error) {
-    return { message: "unexpected error", status: 401, token: null, email: null, accessRole: null };
+    return { message: "unexpected error", status: 401, token: null, email: null, accessRole: null, shareClass: null };
   }
 }
 
@@ -199,6 +200,26 @@ export async function checkUserRight(email: string, accessRole: string, shareCla
     shareClass: shareClass,
   });
 
+  // Return true if a matching user is found, otherwise false
+  return user !== null;
+}
+
+export async function checkLinkRight(token: string, accessRole: string, shareClass: string) {
+  const database = client.db("auth");
+  const linksCollection = database.collection("links");
+
+  // Find the user with the specified email, access role, and share class
+  const user = await linksCollection.findOne({
+    token: token,
+    accessRole: accessRole,
+    accessRight: shareClass,
+  });
+  if (user) {
+    // User exists, update lastAccessedTime
+    const currentTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    await linksCollection.updateOne({ _id: user._id }, { $set: { lastAccessedTime: currentTime } });
+    return true;
+  }
   // Return true if a matching user is found, otherwise false
   return user !== null;
 }

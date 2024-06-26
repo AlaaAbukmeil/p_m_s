@@ -218,6 +218,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     if ((!portfolio[index]["Asset Class"] || portfolio[index]["Asset Class"] == "") && ratingScore) {
       portfolio[index]["Asset Class"] = isRatingHigherThanBBBMinus(ratingScore);
     }
+    portfolio[index]["Asset Class"] = portfolio[index]["Asset Class"] == "" ? "Unspecified": portfolio[index]["Asset Class"]
     if (position["Type"] == "FX") {
       position["MTD P&L FX"] = position["MTD P&L (BC)"];
       position["Day P&L FX"] = position["Day P&L (BC)"];

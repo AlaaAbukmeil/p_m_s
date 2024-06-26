@@ -569,3 +569,16 @@ export function deleteUnnecessaryValues(object: any, type: any) {
   delete object.cumulativeReturnsHashTable[type]["max"];
   delete object.cumulativeReturnsHashTable[type]["cumulativeSwitch"];
 }
+export function calculateAnnualizedReturn(monthlyReturns: any) {
+  // Convert percentages to decimals and calculate the compounded return
+  const compoundedReturn = monthlyReturns.reduce((acc: any, curr: any) => acc * (1 + curr), 1);
+
+  // Number of months
+  const n = monthlyReturns.length;
+
+  // Calculate the annualized return
+  const annualizedReturn = (compoundedReturn ** (12 / n) - 1) * 100;
+
+  // Return the annualized return rounded to two decimal places
+  return annualizedReturn / 100;
+}

@@ -147,16 +147,35 @@ const verifyTokenRiskMember = (req, res, next) => {
 exports.verifyTokenRiskMember = verifyTokenRiskMember;
 const verifyTokenFactSheetMember = (req, res, next) => {
     try {
-        const token = req.cookies["triada.admin.cookie"].token;
-        if (!token) {
+        req.cookies["triada.admin.cookie"] = req.cookies["triada.admin.cookie"] ? req.cookies["triada.admin.cookie"] : {};
+        let token = req.cookies["triada.admin.cookie"].token;
+        req.query = req.query ? req.query : {};
+        let tokenQuery = req.query.token;
+        let linkToken = false;
+        if (!token && !tokenQuery) {
             return res.sendStatus(401);
+        }
+        if (!token) {
+            token = tokenQuery;
+            linkToken = true;
         }
         const decoded = jwt.verify(token, process.env.SECRET);
         req.accessRole = decoded.accessRole;
         req.shareClass = decoded.shareClass;
         req.email = decoded.email;
+        req.link = decoded.link;
+        req.token = token;
         if (decoded.accessRole != "member (risk report)" && decoded.accessRole != "admin" && decoded.accessRole != "member (factsheet report)") {
             return res.sendStatus(401);
+        }
+        if (linkToken) {
+            let cookie = {
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+                httpOnly: process.env.PRODUCTION === "production",
+                secure: process.env.PRODUCTION === "production",
+                sameSite: "lax",
+            };
+            res.cookie("triada.admin.cookie", { token: token }, cookie);
         }
         next();
     }

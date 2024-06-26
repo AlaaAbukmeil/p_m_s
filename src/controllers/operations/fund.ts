@@ -20,7 +20,7 @@ export async function getFundDetails(date: string): Promise<FundDetails | {}> {
     console.log(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getFundDetails", "controllers/operations/operations.ts");
+    await insertEditLogs([errorMessage], "Errors", dateTime, "getFundDetails", "controllers/operations/fund.ts");
 
     return {};
   }
@@ -37,7 +37,7 @@ export async function getAllFundDetails(date: string): Promise<FundDetails[]> {
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getAllFundDetails", "controllers/operations/operations.ts");
+    await insertEditLogs([errorMessage], "Errors", dateTime, "getAllFundDetails", "controllers/operations/fund.ts");
 
     return [];
   }

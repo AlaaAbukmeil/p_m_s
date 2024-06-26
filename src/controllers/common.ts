@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction, CookieOptions } from "express";
 import { storage } from "./operations/readExcel";
 require("dotenv").config();
 
@@ -161,17 +161,36 @@ export const verifyTokenRiskMember = (req: Request | any, res: Response, next: N
 };
 export const verifyTokenFactSheetMember = (req: Request | any, res: Response, next: NextFunction) => {
   try {
-    const token = req.cookies["triada.admin.cookie"].token;
-
-    if (!token) {
+    req.cookies["triada.admin.cookie"] = req.cookies["triada.admin.cookie"] ? req.cookies["triada.admin.cookie"] : {};
+    let token = req.cookies["triada.admin.cookie"].token;
+    req.query = req.query ? req.query : {};
+    let tokenQuery = req.query.token;
+    let linkToken = false;
+    if (!token && !tokenQuery) {
       return res.sendStatus(401);
     }
+    if (!token) {
+      token = tokenQuery;
+      linkToken = true;
+    }
+
     const decoded = jwt.verify(token, process.env.SECRET);
     req.accessRole = decoded.accessRole;
     req.shareClass = decoded.shareClass;
     req.email = decoded.email;
+    req.link = decoded.link;
+    req.token = token;
     if (decoded.accessRole != "member (risk report)" && decoded.accessRole != "admin" && decoded.accessRole != "member (factsheet report)") {
       return res.sendStatus(401);
+    }
+    if (linkToken) {
+      let cookie: CookieOptions = {
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        httpOnly: process.env.PRODUCTION === "production",
+        secure: process.env.PRODUCTION === "production", // Set to true if using HTTPS
+        sameSite: "lax",
+      };
+      res.cookie("triada.admin.cookie", { token: token }, cookie);
     }
     next();
   } catch (error) {

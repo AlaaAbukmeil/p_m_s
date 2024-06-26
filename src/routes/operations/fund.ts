@@ -2,7 +2,9 @@ import { Router } from "express";
 import { verifyToken } from "../../controllers/common";
 import { uploadToBucket } from "../reports/reports";
 import { Request, Response, NextFunction } from "express";
-import { addFund, deleteFund, editFund } from "../../controllers/operations/fund";
+import { addFund, deleteFund, editFund, getAllFundDetails } from "../../controllers/operations/fund";
+import { monthlyRlzdDate } from "../../controllers/reports/common";
+import { FundDetails } from "../../models/portfolio";
 
 const fundRouter = Router();
 
@@ -42,6 +44,16 @@ fundRouter.post("/add-fund", verifyToken, uploadToBucket.any(), async (req: Requ
     console.log(error);
     res.send({ error: "Something is not correct, check error log records" });
 
+  }
+});
+fundRouter.get("/fund-details", verifyToken, async (req, res) => {
+  try {
+    const date: any = req.query.date;
+    let thisMonth = monthlyRlzdDate(date);
+    let fundDetails: FundDetails[] = await getAllFundDetails(thisMonth);
+    res.send(fundDetails);
+  } catch (error) {
+    res.status(500).send("An error occurred while reading the file.");
   }
 });
 

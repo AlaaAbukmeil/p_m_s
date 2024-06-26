@@ -1,4 +1,4 @@
-import { addUser, checkIfUserExists, checkPasswordStrength, checkUserRight, deleteUser, editUser, getAllUsers, registerUser, resetPassword, sendResetPasswordRequest } from "../controllers/userManagement/auth";
+import { addUser, checkIfUserExists, checkLinkRight, checkPasswordStrength, checkUserRight, deleteUser, editUser, getAllUsers, registerUser, resetPassword, sendResetPasswordRequest } from "../controllers/userManagement/auth";
 import { generateSignedUrl, verifyToken, verifyTokenFactSheetMember, verifyTokenRiskMember } from "../controllers/common";
 import { deleteTrade, editTrade } from "../controllers/operations/trades";
 import { uploadToBucket } from "./reports/reports";
@@ -13,6 +13,9 @@ const authRouter = Router();
 
 authRouter.get("/auth", uploadToBucket.any(), verifyTokenFactSheetMember, async (req: any, res: Response, next: NextFunction) => {
   let test = await checkUserRight(req.email, req.accessRole, req.shareClass);
+  if (test == false && req.link == true) {
+    test = await checkLinkRight(req.token, req.accessRole, req.shareClass);
+  }
   if (test) {
     res.send({ status: 200, accessRole: req.accessRole, shareClass: req.shareClass });
   } else {

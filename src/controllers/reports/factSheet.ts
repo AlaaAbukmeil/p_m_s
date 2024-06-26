@@ -3,7 +3,7 @@ import { dateWithNoDay } from "../common";
 import { client } from "../userManagement/auth";
 import { getDateTimeInMongoDBCollectionFormat } from "./common";
 import { getPortfolioWithAnalytics } from "./portfolios";
-import { deleteUnnecessaryValues, getMonthName, getSampleStandardDeviation, getStatistics, transformData, updateStats } from "./tools";
+import { calculateAnnualizedReturn, deleteUnnecessaryValues, getMonthName, getSampleStandardDeviation, getStatistics, transformData, updateStats } from "./tools";
 import { fiditbd, pimglba, test } from "./data";
 import { dateWithMonthOnly } from "../common";
 export let beforeSwitchRatios: any = {
@@ -216,9 +216,10 @@ export function calculateMonthlyReturn(data: any, variables: any, fundData = fal
   let volitality: any = {};
   let ratios: any = {};
   let formmatedReturns = transformData(monthlyReturns, yearlyReturns);
-  if (fundData && inception) {
+  if (inception) {
     let returnsTemp = JSON.parse(JSON.stringify(formmatedReturns[variables[0]]));
-    for (let year in returnsTemp) {
+    let years = Object.keys(returnsTemp);
+    for (let year of years) {
       delete returnsTemp[year]["Cumulative"];
       let values = Object.values(returnsTemp[year]).filter((value) => value != null) || [];
       let valuesTreasury: any = Object.values(map[year]).filter((value) => value != null) || [];
@@ -229,11 +230,16 @@ export function calculateMonthlyReturn(data: any, variables: any, fundData = fal
       let negativeStats = getSampleStandardDeviation(negativeValues);
       let volitality = stats.sd * Math.sqrt(12) || 0;
       let negativeVolitality = negativeStats.sd * Math.sqrt(12) || 0;
+      if (year != years[years.length - 1]) {
+        formmatedReturns[variables[0]][year]["Annualized Return"] = formmatedReturns[variables[0]][year]["Cumulative"];
+      } else {
+        formmatedReturns[variables[0]][year]["Annualized Return"] = calculateAnnualizedReturn(values);
+      }
       formmatedReturns[variables[0]][year]["Risk"] = volitality || 0;
       formmatedReturns[variables[0]][year]["Downside Risk"] = negativeVolitality || 0;
       formmatedReturns[variables[0]][year]["Annualized Rfr"] = rfr[year];
-      let sharpe = (formmatedReturns[variables[0]][year]["Cumulative"] - formmatedReturns[variables[0]][year]["Annualized Rfr"]) / formmatedReturns[variables[0]][year]["Risk"] || 0;
-      let sortino = (formmatedReturns[variables[0]][year]["Cumulative"] - formmatedReturns[variables[0]][year]["Annualized Rfr"]) / formmatedReturns[variables[0]][year]["Downside Risk"] || 0;
+      let sharpe = (formmatedReturns[variables[0]][year]["Annualized Return"] - formmatedReturns[variables[0]][year]["Annualized Rfr"]) / formmatedReturns[variables[0]][year]["Risk"] || 0;
+      let sortino = (formmatedReturns[variables[0]][year]["Annualized Return"] - formmatedReturns[variables[0]][year]["Annualized Rfr"]) / formmatedReturns[variables[0]][year]["Downside Risk"] || 0;
       formmatedReturns[variables[0]][year]["Sharpe"] = isFinite(sharpe) ? sharpe : 0;
       formmatedReturns[variables[0]][year]["Sortino"] = isFinite(sortino) ? sortino : 0;
     }
@@ -243,7 +249,7 @@ export function calculateMonthlyReturn(data: any, variables: any, fundData = fal
     let statistics = getStatistics(returns[variable]);
     let negativeStatistics = getSampleStandardDeviation(negativeReturns[variable]);
     maxDrawdown[variable] = { peak: cumulativeReturnsHashTable[variable].max, trough: cumulativeReturnsHashTable[variable].min, mdd: (cumulativeReturnsHashTable[variable].min - cumulativeReturnsHashTable[variable].max) / cumulativeReturnsHashTable[variable].max };
-    annulizedReturn[variable] = { annualPer: Math.pow(cumulativeReturn[variable], 1 / (numOfMonths[variable] / 12)) - 1, bestMonth: peakReturn[variable], worstMonth: troughReturn[variable] };
+    annulizedReturn[variable] = { annualPer: Math.pow(cumulativeReturn[variable], 12 / numOfMonths[variable]) - 1, bestMonth: peakReturn[variable], worstMonth: troughReturn[variable] };
     normal[variable] = statistics;
     variance[variable] = Math.pow(normal[variable].sd, 2);
     positiveAnnualVolitality[variable] = getSampleStandardDeviation(positiveReturns[variable]);
@@ -772,7 +778,7 @@ export function trimFactSheetData(triada: any, triadaMaster: any, others: any) {
   return { formmated: formmated, months: months };
 }
 
-export async function getFactSheet({ from, to, type, inception }: { from: any; to: any; type: any; inception: boolean }) {
+export async function getFactSheet({ from, to, type, inception, mkt }: { from: any; to: any; type: any; inception: boolean; mkt: boolean }) {
   let masterClasses = ["ma2", "ma3", "ma4", "ma6"];
   let db = masterClasses.includes(type) ? "Triada Master" : "Triada";
   let treasuryData = await getFactSheetData("3 Month Treasury", from, to, "main");
@@ -810,12 +816,12 @@ export async function getFactSheet({ from, to, type, inception }: { from: any; t
     let lastDateTimestamp = new Date(dateWithNoDay(data[data.length - 1].date));
     let result = calculateMonthlyReturn(data, [type], true, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map);
     // let result_lg30truu = calculateMonthlyReturn(lg30truu, ["main"]);
-    let result_beuctruu = calculateMonthlyReturn(beuctruu, ["main"]);
-    let result_beuytruu = calculateMonthlyReturn(beuytruu, ["main"]);
-    let result_emustruu = calculateMonthlyReturn(emustruu, ["main"]);
-    let result_legatruu = calculateMonthlyReturn(legatruu, ["main"]);
-    let result_PIMGLBA = calculateMonthlyReturn(PIMGLBA, ["main"]);
-    let result_FIDITBD = calculateMonthlyReturn(FIDITBD, ["main"]);
+    let result_beuctruu = calculateMonthlyReturn(beuctruu, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map);
+    let result_beuytruu = calculateMonthlyReturn(beuytruu, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map);
+    let result_emustruu = calculateMonthlyReturn(emustruu, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map);
+    let result_legatruu = calculateMonthlyReturn(legatruu, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map);
+    let result_PIMGLBA = calculateMonthlyReturn(PIMGLBA, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map);
+    let result_FIDITBD = calculateMonthlyReturn(FIDITBD, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map);
 
     let benchmarks = { "BEUCTRUU Index": result_beuctruu.monthlyReturns["main"], "EMUSTRUU Index": result_emustruu.monthlyReturns["main"], "LEGATRUU Index": result_legatruu.monthlyReturns["main"], "BEUYTRUU Index": result_beuytruu.monthlyReturns["main"], "PIMGLBA ID Equity": result_PIMGLBA.monthlyReturns["main"], "FIDITBD LX Equity": result_FIDITBD.monthlyReturns["main"] };
     let annulizedReturns = { "BEUCTRUU Index": result_beuctruu.annulizedReturn["main"]["annualPer"], "EMUSTRUU Index": result_emustruu.annulizedReturn["main"]["annualPer"], "LEGATRUU Index": result_legatruu.annulizedReturn["main"]["annualPer"], "BEUYTRUU Index": result_beuytruu.annulizedReturn["main"]["annualPer"], "PIMGLBA ID Equity": result_PIMGLBA.annulizedReturn["main"]["annualPer"], "FIDITBD LX Equity": result_FIDITBD.annulizedReturn["main"]["annualPer"] };
@@ -887,7 +893,7 @@ export async function getFactSheet({ from, to, type, inception }: { from: any; t
       "PIMGLBA ID Equity": result_PIMGLBA.cumulativeReturnsHashTableSince2020["main"],
     };
 
-    let resultFinal = {
+    let resultFinal: any = {
       result: result,
       outPerformance: outPerformance,
       annulizedReturnBenchMarks: annulizedReturnBenchMarks,
@@ -901,6 +907,14 @@ export async function getFactSheet({ from, to, type, inception }: { from: any; t
       treasuryAnnualRate: treasuryAnnualRate.annualizedReturn,
       cumulativeReturnsHashTableSince2020: cumulativeReturnsHashTableSince2020,
     };
+    if (mkt) {
+      resultFinal.result_beuctruu = result_beuctruu;
+      resultFinal.result_beuytruu = result_beuytruu;
+      resultFinal.result_emustruu = result_emustruu;
+      resultFinal.result_legatruu = result_legatruu;
+      resultFinal.result_PIMGLBA = result_PIMGLBA;
+      resultFinal.result_FIDITBD = result_FIDITBD;
+    }
     return resultFinal;
   }
 }

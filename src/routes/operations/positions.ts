@@ -36,16 +36,6 @@ positionsRouter.get("/previous-collections", verifyToken, async (req, res) => {
   }
 });
 
-positionsRouter.get("/fund-details", verifyToken, async (req, res) => {
-  try {
-    const date: any = req.query.date;
-    let thisMonth = monthlyRlzdDate(date);
-    let fundDetails: FundDetails[] = await getAllFundDetails(thisMonth);
-    res.send(fundDetails);
-  } catch (error) {
-    res.status(500).send("An error occurred while reading the file.");
-  }
-});
 
 positionsRouter.post("/recalculate-position", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {

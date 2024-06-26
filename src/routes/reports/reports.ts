@@ -167,14 +167,42 @@ router.get("/fact-sheet", uploadToBucket.any(), verifyTokenFactSheetMember, asyn
       const to2YearsAgo = new Date("2022-12-31").getTime();
       const from2YearsAgo = new Date("2022-11-01").getTime();
 
-      let inception = await getFactSheet({ from: from2015, to: now, type, inception: true });
-      let fiveYears = await getFactSheet({ from: from2015, to: to2020, type, inception: false });
-      let twoYears = await getFactSheet({ from: from2YearsAgo, to: now, type, inception: false });
-      let chinaPeriod = await getFactSheet({ from: from2020, to: to2YearsAgo, type, inception: false });
+      let inception = await getFactSheet({ from: from2015, to: now, type, inception: true, mkt: false });
+      let fiveYears = await getFactSheet({ from: from2015, to: to2020, type, inception: false, mkt: false });
+      let twoYears = await getFactSheet({ from: from2YearsAgo, to: now, type, inception: false, mkt: false });
+      let chinaPeriod = await getFactSheet({ from: from2020, to: to2YearsAgo, type, inception: false, mkt: false });
       let lastDayOfThisMonth = getLastDayOfMonth(inception.lastDateTimestamp);
       let countrySectorMacro = await getPortfolioWithAnalytics(lastDayOfThisMonth, sort, sign, null, "fact sheet", null);
 
       res.send({ countrySectorMacro: countrySectorMacro, inception: inception, fiveYears: fiveYears, twoYears: twoYears, chinaPeriod: chinaPeriod, disabled: disabled });
+    }
+  } catch (error: any) {
+    console.log(error);
+    res.send({ error: error.toString(), disabled: true });
+  }
+});
+
+router.get("/fact-sheet-mkt", uploadToBucket.any(), verifyTokenFactSheetMember, async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let type = req.query.type;
+    let shareClass = req.shareClass;
+    let accessRole = req.accessRole;
+    let disabled = await getFactSheetDisplay("view");
+
+    if ((accessRole == "member (factsheet report)" && !shareClass.includes(type)) || (accessRole == "member (factsheet report)" && !shareClass.includes("mkt"))) {
+      res.sendStatus(401);
+    } else {
+      if (accessRole != "member (factsheet report)") {
+        type = shareClasses.includes(type) ? type : "a2";
+        disabled = false;
+      }
+
+      const now = new Date();
+      const from2015: any = new Date("2015-04-01").getTime();
+
+      let inception = await getFactSheet({ from: from2015, to: now, type, inception: true, mkt: true });
+
+      res.send({ inception: inception, disabled: disabled });
     }
   } catch (error: any) {
     console.log(error);
