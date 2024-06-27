@@ -166,6 +166,7 @@ export const verifyTokenFactSheetMember = (req: Request | any, res: Response, ne
     req.query = req.query ? req.query : {};
     let tokenQuery = req.query.token;
     let linkToken = false;
+    // console.log(!token && !tokenQuery, "test 1");
     if (!token && !tokenQuery) {
       return res.sendStatus(401);
     }
@@ -180,6 +181,7 @@ export const verifyTokenFactSheetMember = (req: Request | any, res: Response, ne
     req.email = decoded.email;
     req.link = decoded.link;
     req.token = token;
+    // console.log(decoded.accessRole != "member (risk report)" && decoded.accessRole != "admin" && decoded.accessRole != "member (factsheet report)", "test 2");
     if (decoded.accessRole != "member (risk report)" && decoded.accessRole != "admin" && decoded.accessRole != "member (factsheet report)") {
       return res.sendStatus(401);
     }

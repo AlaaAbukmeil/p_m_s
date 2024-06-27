@@ -3,7 +3,7 @@ import { dateWithNoDay } from "../common";
 import { client } from "../userManagement/auth";
 import { getDateTimeInMongoDBCollectionFormat } from "./common";
 import { getPortfolioWithAnalytics } from "./portfolios";
-import { calculateAnnualizedReturn, deleteUnnecessaryValues, getMonthName, getSampleStandardDeviation, getStatistics, transformData, updateStats } from "./tools";
+import { calculateAnnualizedReturn, deleteUnnecessaryValues, getMonthName, getSampleStandardDeviation, getStatistics, sortObjectByValues, transformData, updateStats } from "./tools";
 import { fiditbd, pimglba, test } from "./data";
 import { dateWithMonthOnly } from "../common";
 export let beforeSwitchRatios: any = {
@@ -69,7 +69,7 @@ function customEditMonthlyReturn(variables: any, monthlyReturns: any) {
   }
 }
 
-export function calculateMonthlyReturn(data: any, variables: any, fundData = false, inception = false, rfr: any = {}, map: any = {}) {
+export function calculateMonthlyReturn(data: any, variables: any, fundData = false, inception = false, rfr: any = {}, map: any = {}, mkt = false, name = "", compare: any = {}) {
   //assue months are sorted in ascending order
 
   let monthlyReturns: any = {};
@@ -240,8 +240,16 @@ export function calculateMonthlyReturn(data: any, variables: any, fundData = fal
       formmatedReturns[variables[0]][year]["Annualized Rfr"] = rfr[year];
       let sharpe = (formmatedReturns[variables[0]][year]["Annualized Return"] - formmatedReturns[variables[0]][year]["Annualized Rfr"]) / formmatedReturns[variables[0]][year]["Risk"] || 0;
       let sortino = (formmatedReturns[variables[0]][year]["Annualized Return"] - formmatedReturns[variables[0]][year]["Annualized Rfr"]) / formmatedReturns[variables[0]][year]["Downside Risk"] || 0;
-      formmatedReturns[variables[0]][year]["Sharpe"] = isFinite(sharpe) ? sharpe : 0;
-      formmatedReturns[variables[0]][year]["Sortino"] = isFinite(sortino) ? sortino : 0;
+      formmatedReturns[variables[0]][year]["Sharpe"] = isFinite(sharpe) ? (sharpe > 10 ? 10 : sharpe) : 0;
+      formmatedReturns[variables[0]][year]["Sortino"] = isFinite(sortino) ? (sortino > 10 ? 10 : sortino) : 0;
+      if (mkt) {
+        compare.ytdReturns[year] = compare.ytdReturns[year] ? compare.ytdReturns[year] : {};
+        compare.ytdReturns[year][name] = formmatedReturns[variables[0]][year]["Cumulative"];
+        compare.volitality[year] = compare.volitality[year] ? compare.volitality[year] : {};
+        compare.volitality[year][name] = volitality;
+        compare.sharpe[year] = compare.sharpe[year] ? compare.sharpe[year] : {};
+        compare.sharpe[year][name] = sharpe;
+      }
     }
   }
   for (let index = 0; index < variables.length; index++) {
@@ -805,6 +813,12 @@ export async function getFactSheet({ from, to, type, inception, mkt }: { from: a
     };
     return resultFinal;
   } else {
+    let compare: any = {
+      ytdReturns: {},
+      volitality: {},
+      sharpe: {},
+    };
+
     let legatruu = await getFactSheetData("LEGATRUU Index", from, to, "main");
     let emustruu = await getFactSheetData("EMUSTRUU Index", from, to, "main");
     let beuctruu = await getFactSheetData("BEUCTRUU Index", from, to, "main");
@@ -814,14 +828,14 @@ export async function getFactSheet({ from, to, type, inception, mkt }: { from: a
 
     let lastDate = getMonthName(data[data.length - 1].date);
     let lastDateTimestamp = new Date(dateWithNoDay(data[data.length - 1].date));
-    let result = calculateMonthlyReturn(data, [type], true, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map);
+    let result = calculateMonthlyReturn(data, [type], true, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "Triada", compare);
     // let result_lg30truu = calculateMonthlyReturn(lg30truu, ["main"]);
-    let result_beuctruu = calculateMonthlyReturn(beuctruu, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map);
-    let result_beuytruu = calculateMonthlyReturn(beuytruu, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map);
-    let result_emustruu = calculateMonthlyReturn(emustruu, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map);
-    let result_legatruu = calculateMonthlyReturn(legatruu, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map);
-    let result_PIMGLBA = calculateMonthlyReturn(PIMGLBA, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map);
-    let result_FIDITBD = calculateMonthlyReturn(FIDITBD, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map);
+    let result_beuctruu = calculateMonthlyReturn(beuctruu, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "BBG EM Asia", compare);
+    let result_beuytruu = calculateMonthlyReturn(beuytruu, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "BBG EM Asia HY", compare);
+    let result_emustruu = calculateMonthlyReturn(emustruu, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "BBG EM Aggregate", compare);
+    let result_legatruu = calculateMonthlyReturn(legatruu, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "BBG Global Aggregate", compare);
+    let result_PIMGLBA = calculateMonthlyReturn(PIMGLBA, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "Pimco Global Bond USD", compare);
+    let result_FIDITBD = calculateMonthlyReturn(FIDITBD, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "Fidelity Global Bond USD", compare);
 
     let benchmarks = { "BEUCTRUU Index": result_beuctruu.monthlyReturns["main"], "EMUSTRUU Index": result_emustruu.monthlyReturns["main"], "LEGATRUU Index": result_legatruu.monthlyReturns["main"], "BEUYTRUU Index": result_beuytruu.monthlyReturns["main"], "PIMGLBA ID Equity": result_PIMGLBA.monthlyReturns["main"], "FIDITBD LX Equity": result_FIDITBD.monthlyReturns["main"] };
     let annulizedReturns = { "BEUCTRUU Index": result_beuctruu.annulizedReturn["main"]["annualPer"], "EMUSTRUU Index": result_emustruu.annulizedReturn["main"]["annualPer"], "LEGATRUU Index": result_legatruu.annulizedReturn["main"]["annualPer"], "BEUYTRUU Index": result_beuytruu.annulizedReturn["main"]["annualPer"], "PIMGLBA ID Equity": result_PIMGLBA.annulizedReturn["main"]["annualPer"], "FIDITBD LX Equity": result_FIDITBD.annulizedReturn["main"]["annualPer"] };
@@ -914,6 +928,12 @@ export async function getFactSheet({ from, to, type, inception, mkt }: { from: a
       resultFinal.result_legatruu = result_legatruu;
       resultFinal.result_PIMGLBA = result_PIMGLBA;
       resultFinal.result_FIDITBD = result_FIDITBD;
+      for (let param in compare) {
+        for (let year in compare[param]) {
+          compare[param][year] = sortObjectByValues(compare[param][year])
+        }
+      }
+      resultFinal.compare = compare;
     }
     return resultFinal;
   }

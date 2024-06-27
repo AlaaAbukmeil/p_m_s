@@ -461,7 +461,7 @@ export function formatNomura(tradesInput: any, start: string, end: string) {
   for (let index = 0; index < tradesInput.length; index++) {
     let trade = tradesInput[index];
     let obj: any = {};
-    let pset = trade["BB Ticker"].split(" ")[0] == "T" ? "DTC" : "EUROCLEAR";
+    let pset = trade["BB Ticker"].split(" ")[0] == "T" ? "default" : "EUROCLEAR";
     obj["Transaction-Type-Indicator"] = "BS";
     obj["Client-Ref"] = trade["Triada Trade Id"];
     obj["Shaped-Trade-Ref"] = trade["Triada Trade Id"];

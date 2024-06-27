@@ -16,6 +16,7 @@ authRouter.get("/auth", uploadToBucket.any(), verifyTokenFactSheetMember, async 
   if (test == false && req.link == true) {
     test = await checkLinkRight(req.token, req.accessRole, req.shareClass);
   }
+  // console.log(test)
   if (test) {
     res.send({ status: 200, accessRole: req.accessRole, shareClass: req.shareClass });
   } else {

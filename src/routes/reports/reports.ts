@@ -152,9 +152,11 @@ router.get("/fact-sheet", uploadToBucket.any(), verifyTokenFactSheetMember, asyn
     let disabled = await getFactSheetDisplay("view");
 
     if (accessRole == "member (factsheet report)" && !shareClass.includes(type)) {
+      // console.log("fact sheet error", shareClass, type)
       res.sendStatus(401);
     } else {
       if (accessRole != "member (factsheet report)") {
+
         type = shareClasses.includes(type) ? type : "a2";
         disabled = false;
       }
