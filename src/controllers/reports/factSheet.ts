@@ -834,8 +834,8 @@ export async function getFactSheet({ from, to, type, inception, mkt }: { from: a
     let result_beuytruu = calculateMonthlyReturn(beuytruu, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "BBG EM Asia HY", compare);
     let result_emustruu = calculateMonthlyReturn(emustruu, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "BBG EM Aggregate", compare);
     let result_legatruu = calculateMonthlyReturn(legatruu, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "BBG Global Aggregate", compare);
-    let result_PIMGLBA = calculateMonthlyReturn(PIMGLBA, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "Pimco Global Bond USD", compare);
-    let result_FIDITBD = calculateMonthlyReturn(FIDITBD, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "Fidelity Global Bond USD", compare);
+    let result_PIMGLBA = calculateMonthlyReturn(PIMGLBA, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "Pimco Global Bond", compare);
+    let result_FIDITBD = calculateMonthlyReturn(FIDITBD, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "Fidelity Global Bond", compare);
 
     let benchmarks = { "BEUCTRUU Index": result_beuctruu.monthlyReturns["main"], "EMUSTRUU Index": result_emustruu.monthlyReturns["main"], "LEGATRUU Index": result_legatruu.monthlyReturns["main"], "BEUYTRUU Index": result_beuytruu.monthlyReturns["main"], "PIMGLBA ID Equity": result_PIMGLBA.monthlyReturns["main"], "FIDITBD LX Equity": result_FIDITBD.monthlyReturns["main"] };
     let annulizedReturns = { "BEUCTRUU Index": result_beuctruu.annulizedReturn["main"]["annualPer"], "EMUSTRUU Index": result_emustruu.annulizedReturn["main"]["annualPer"], "LEGATRUU Index": result_legatruu.annulizedReturn["main"]["annualPer"], "BEUYTRUU Index": result_beuytruu.annulizedReturn["main"]["annualPer"], "PIMGLBA ID Equity": result_PIMGLBA.annulizedReturn["main"]["annualPer"], "FIDITBD LX Equity": result_FIDITBD.annulizedReturn["main"]["annualPer"] };
@@ -930,7 +930,7 @@ export async function getFactSheet({ from, to, type, inception, mkt }: { from: a
       resultFinal.result_FIDITBD = result_FIDITBD;
       for (let param in compare) {
         for (let year in compare[param]) {
-          compare[param][year] = sortObjectByValues(compare[param][year])
+          compare[param][year] = sortObjectByValues(compare[param][year], param)
         }
       }
       resultFinal.compare = compare;

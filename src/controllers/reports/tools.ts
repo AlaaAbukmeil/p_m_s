@@ -582,15 +582,28 @@ export function calculateAnnualizedReturn(monthlyReturns: any) {
   // Return the annualized return rounded to two decimal places
   return annualizedReturn / 100;
 }
-export function sortObjectByValues(obj: any) {
+export function sortObjectByValues(obj: any, param = "") {
   // Extract object keys and sort them based on their corresponding values
-  const sortedKeys = Object.keys(obj).sort((key1, key2) => obj[key2] - obj[key1]);
+  if (param == "volitality") {
+    // console.log(param);
+    const sortedKeys = Object.keys(obj).sort((key1, key2) => obj[key1] - obj[key2]);
 
-  // Create a new object and populate it with sorted keys
-  const sortedObj: any = {};
-  for (const key of sortedKeys) {
-    sortedObj[key] = obj[key];
+    // Create a new object and populate it with sorted keys
+    const sortedObj: any = {};
+    for (const key of sortedKeys) {
+      sortedObj[key] = obj[key];
+    }
+
+    return sortedObj;
+  } else {
+    const sortedKeys = Object.keys(obj).sort((key1, key2) => obj[key2] - obj[key1]);
+
+    // Create a new object and populate it with sorted keys
+    const sortedObj: any = {};
+    for (const key of sortedKeys) {
+      sortedObj[key] = obj[key];
+    }
+
+    return sortedObj;
   }
-
-  return sortedObj;
 }
