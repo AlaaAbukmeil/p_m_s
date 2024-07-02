@@ -750,7 +750,7 @@ export function getTreasuryAnnulizedReturn(data: any, inception = false) {
 }
 export function trimFactSheetData(triada: any, triadaMaster: any, others: any) {
   let months = [];
-  let formmated: any = { a2: {}, a3: {}, a4: {}, a5: {}, a6: {}, "3 Month Treasury": {}, "LEGATRUU Index": {}, "EMUSTRUU Index": {}, "BEUCTRUU Index": {}, "BEUYTRUU Index": {}, "LG30TRUU Index": {}, "BEBGTRUU Index": {}, ma2: {}, ma3: {}, ma4: {}, ma6: {} };
+  let formmated: any = { a2: {}, a3: {}, a4: {}, a5: {}, a6: {}, "3 Month Treasury": {}, "LEGATRUU Index": {}, "EMUSTRUU Index": {}, "BEUCTRUU Index": {}, "LG30TRUU Index": {}, "BEBGTRUU Index": {}, ma2: {}, ma3: {}, ma4: {}, ma6: {} };
   for (let index = 0; index < triada.length; index++) {
     let month = triada[index].date;
     let id = triada[index]["_id"];
@@ -822,7 +822,7 @@ export async function getFactSheet({ from, to, type, inception, mkt }: { from: a
     let legatruu = await getFactSheetData("LEGATRUU Index", from, to, "main");
     let emustruu = await getFactSheetData("EMUSTRUU Index", from, to, "main");
     let beuctruu = await getFactSheetData("BEUCTRUU Index", from, to, "main");
-    let beuytruu = await getFactSheetData("BEUYTRUU Index", from, to, "main");
+    // let beuytruu = await getFactSheetData("BEUYTRUU Index", from, to, "main");
     let PIMGLBA = await getFactSheetData("PIMGLBA ID Equity", from, to, "main");
     let FIDITBD = await getFactSheetData("FIDITBD LX Equity", from, to, "main");
 
@@ -831,16 +831,16 @@ export async function getFactSheet({ from, to, type, inception, mkt }: { from: a
     let result = calculateMonthlyReturn(data, [type], true, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "Triada", compare);
     // let result_lg30truu = calculateMonthlyReturn(lg30truu, ["main"]);
     let result_beuctruu = calculateMonthlyReturn(beuctruu, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "BBG EM Asia", compare);
-    let result_beuytruu = calculateMonthlyReturn(beuytruu, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "BBG EM Asia HY", compare);
+    // let result_beuytruu = calculateMonthlyReturn(beuytruu, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "BBG EM Asia HY", compare);
     let result_emustruu = calculateMonthlyReturn(emustruu, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "BBG EM Aggregate", compare);
     let result_legatruu = calculateMonthlyReturn(legatruu, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "BBG Global Aggregate", compare);
     let result_PIMGLBA = calculateMonthlyReturn(PIMGLBA, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "Pimco Global Bond", compare);
     let result_FIDITBD = calculateMonthlyReturn(FIDITBD, ["main"], false, true, treasuryAnnualRate.rfr, treasuryAnnualRate.map, mkt, "Fidelity Global Bond", compare);
 
-    let benchmarks = { "BEUCTRUU Index": result_beuctruu.monthlyReturns["main"], "EMUSTRUU Index": result_emustruu.monthlyReturns["main"], "LEGATRUU Index": result_legatruu.monthlyReturns["main"], "BEUYTRUU Index": result_beuytruu.monthlyReturns["main"], "PIMGLBA ID Equity": result_PIMGLBA.monthlyReturns["main"], "FIDITBD LX Equity": result_FIDITBD.monthlyReturns["main"] };
-    let annulizedReturns = { "BEUCTRUU Index": result_beuctruu.annulizedReturn["main"]["annualPer"], "EMUSTRUU Index": result_emustruu.annulizedReturn["main"]["annualPer"], "LEGATRUU Index": result_legatruu.annulizedReturn["main"]["annualPer"], "BEUYTRUU Index": result_beuytruu.annulizedReturn["main"]["annualPer"], "PIMGLBA ID Equity": result_PIMGLBA.annulizedReturn["main"]["annualPer"], "FIDITBD LX Equity": result_FIDITBD.annulizedReturn["main"]["annualPer"] };
-    let cumulativeReturns = { "BEUCTRUU Index": result_beuctruu.fundReturns.cumulativeReturn["main"] - 1, "EMUSTRUU Index": result_emustruu.fundReturns.cumulativeReturn["main"] - 1, "LEGATRUU Index": result_legatruu.fundReturns.cumulativeReturn["main"] - 1, "BEUYTRUU Index": result_beuytruu.fundReturns.cumulativeReturn["main"] - 1, "PIMGLBA ID Equity": result_PIMGLBA.fundReturns.cumulativeReturn["main"] - 1, "FIDITBD LX Equity": result_FIDITBD.fundReturns.cumulativeReturn["main"] - 1 };
-    let fundReturns = { "BEUCTRUU Index": result_beuctruu.fundReturns, "EMUSTRUU Index": result_emustruu.fundReturns, "LEGATRUU Index": result_legatruu.fundReturns, "BEUYTRUU Index": result_beuytruu.fundReturns, "PIMGLBA ID Equity": result_PIMGLBA.fundReturns, "FIDITBD LX Equity": result_FIDITBD.fundReturns };
+    let benchmarks = { "BEUCTRUU Index": result_beuctruu.monthlyReturns["main"], "EMUSTRUU Index": result_emustruu.monthlyReturns["main"], "LEGATRUU Index": result_legatruu.monthlyReturns["main"], "PIMGLBA ID Equity": result_PIMGLBA.monthlyReturns["main"], "FIDITBD LX Equity": result_FIDITBD.monthlyReturns["main"] };
+    let annulizedReturns = { "BEUCTRUU Index": result_beuctruu.annulizedReturn["main"]["annualPer"], "EMUSTRUU Index": result_emustruu.annulizedReturn["main"]["annualPer"], "LEGATRUU Index": result_legatruu.annulizedReturn["main"]["annualPer"], "PIMGLBA ID Equity": result_PIMGLBA.annulizedReturn["main"]["annualPer"], "FIDITBD LX Equity": result_FIDITBD.annulizedReturn["main"]["annualPer"] };
+    let cumulativeReturns = { "BEUCTRUU Index": result_beuctruu.fundReturns.cumulativeReturn["main"] - 1, "EMUSTRUU Index": result_emustruu.fundReturns.cumulativeReturn["main"] - 1, "LEGATRUU Index": result_legatruu.fundReturns.cumulativeReturn["main"] - 1, "PIMGLBA ID Equity": result_PIMGLBA.fundReturns.cumulativeReturn["main"] - 1, "FIDITBD LX Equity": result_FIDITBD.fundReturns.cumulativeReturn["main"] - 1 };
+    let fundReturns = { "BEUCTRUU Index": result_beuctruu.fundReturns, "EMUSTRUU Index": result_emustruu.fundReturns, "LEGATRUU Index": result_legatruu.fundReturns, "PIMGLBA ID Equity": result_PIMGLBA.fundReturns, "FIDITBD LX Equity": result_FIDITBD.fundReturns };
 
     let outPerformance = calculateOutPerformance({ benchmarks: benchmarks, data: result.monthlyReturns[type] });
     let annulizedReturnBenchMarks = calculateOutPerformanceParam({ benchmarks: annulizedReturns, data: result.annulizedReturn[type]["annualPer"] });
@@ -851,7 +851,6 @@ export async function getFactSheet({ from, to, type, inception, mkt }: { from: a
       "BEUCTRUU Index": { results: result_beuctruu.returns["main"], normal: result_beuctruu.normal["main"] },
       "EMUSTRUU Index": { results: result_emustruu.returns["main"], normal: result_emustruu.normal["main"] },
       "LEGATRUU Index": { results: result_legatruu.returns["main"], normal: result_legatruu.normal["main"] },
-      "BEUYTRUU Index": { results: result_beuytruu.returns["main"], normal: result_beuytruu.normal["main"] },
       "FIDITBD LX Equity": { results: result_FIDITBD.returns["main"], normal: result_FIDITBD.normal["main"] },
       "PIMGLBA ID Equity": { results: result_PIMGLBA.returns["main"], normal: result_PIMGLBA.normal["main"] },
     };
@@ -861,7 +860,6 @@ export async function getFactSheet({ from, to, type, inception, mkt }: { from: a
       "BEUCTRUU Index": { annulizedReturn: result_beuctruu.annulizedReturn["main"], maxDrawdown: result_beuctruu.maxDrawdown["main"], normal: result_beuctruu.normal["main"], negativeAnnualVolitality: result_beuctruu.negativeAnnualVolitality["main"], beta: betaCorrelation.betas["BEUCTRUU Index"] },
       "EMUSTRUU Index": { annulizedReturn: result_emustruu.annulizedReturn["main"], maxDrawdown: result_emustruu.maxDrawdown["main"], normal: result_emustruu.normal["main"], negativeAnnualVolitality: result_emustruu.negativeAnnualVolitality["main"], beta: betaCorrelation.betas["EMUSTRUU Index"] },
       "LEGATRUU Index": { annulizedReturn: result_legatruu.annulizedReturn["main"], maxDrawdown: result_legatruu.maxDrawdown["main"], normal: result_legatruu.normal["main"], negativeAnnualVolitality: result_legatruu.negativeAnnualVolitality["main"], beta: betaCorrelation.betas["LEGATRUU Index"] },
-      "BEUYTRUU Index": { annulizedReturn: result_beuytruu.annulizedReturn["main"], maxDrawdown: result_beuytruu.maxDrawdown["main"], normal: result_beuytruu.normal["main"], negativeAnnualVolitality: result_beuytruu.negativeAnnualVolitality["main"], beta: betaCorrelation.betas["BEUYTRUU Index"] },
       "FIDITBD LX Equity": { annulizedReturn: result_FIDITBD.annulizedReturn["main"], maxDrawdown: result_FIDITBD.maxDrawdown["main"], normal: result_FIDITBD.normal["main"], negativeAnnualVolitality: result_FIDITBD.negativeAnnualVolitality["main"], beta: betaCorrelation.betas["FIDITBD LX Equity"] },
       "PIMGLBA ID Equity": { annulizedReturn: result_PIMGLBA.annulizedReturn["main"], maxDrawdown: result_PIMGLBA.maxDrawdown["main"], normal: result_PIMGLBA.normal["main"], negativeAnnualVolitality: result_PIMGLBA.negativeAnnualVolitality["main"], beta: betaCorrelation.betas["PIMGLBA ID Equity"] },
 
@@ -873,7 +871,6 @@ export async function getFactSheet({ from, to, type, inception, mkt }: { from: a
       "BEUCTRUU Index": { results: result_beuctruu.returns["main"], annulizedReturn: result_beuctruu.annulizedReturn["main"], beta: betaCorrelation.betas["BEUCTRUU Index"], correlation: betaCorrelation.correlation["BEUCTRUU Index"], fundReturns: result_beuctruu.fundReturns.returnsHashTable.main },
       "EMUSTRUU Index": { results: result_emustruu.returns["main"], annulizedReturn: result_emustruu.annulizedReturn["main"], beta: betaCorrelation.betas["EMUSTRUU Index"], correlation: betaCorrelation.correlation["EMUSTRUU Index"], fundReturns: result_emustruu.fundReturns.returnsHashTable.main },
       "LEGATRUU Index": { results: result_legatruu.returns["main"], annulizedReturn: result_legatruu.annulizedReturn["main"], beta: betaCorrelation.betas["LEGATRUU Index"], correlation: betaCorrelation.correlation["LEGATRUU Index"], fundReturns: result_legatruu.fundReturns.returnsHashTable.main },
-      "BEUYTRUU Index": { results: result_beuytruu.returns["main"], annulizedReturn: result_beuytruu.annulizedReturn["main"], beta: betaCorrelation.betas["BEUYTRUU Index"], correlation: betaCorrelation.correlation["BEUYTRUU Index"], fundReturns: result_beuytruu.fundReturns.returnsHashTable.main },
       "FIDITBD LX Equity": { results: result_FIDITBD.returns["main"], annulizedReturn: result_FIDITBD.annulizedReturn["main"], beta: betaCorrelation.betas["FIDITBD LX Equity"], correlation: betaCorrelation.correlation["FIDITBD LX Equity"], fundReturns: result_FIDITBD.fundReturns.returnsHashTable.main },
       "PIMGLBA ID Equity": { results: result_PIMGLBA.returns["main"], annulizedReturn: result_PIMGLBA.annulizedReturn["main"], beta: betaCorrelation.betas["PIMGLBA ID Equity"], correlation: betaCorrelation.correlation["PIMGLBA ID Equity"], fundReturns: result_PIMGLBA.fundReturns.returnsHashTable.main },
     };
@@ -883,7 +880,6 @@ export async function getFactSheet({ from, to, type, inception, mkt }: { from: a
     deleteUnnecessaryValues(result_beuctruu, "main");
     deleteUnnecessaryValues(result_emustruu, "main");
     deleteUnnecessaryValues(result_legatruu, "main");
-    deleteUnnecessaryValues(result_beuytruu, "main");
     deleteUnnecessaryValues(result_FIDITBD, "main");
     deleteUnnecessaryValues(result_PIMGLBA, "main");
 
@@ -892,7 +888,6 @@ export async function getFactSheet({ from, to, type, inception, mkt }: { from: a
       "BEUCTRUU Index": result_beuctruu.cumulativeReturnsHashTable["main"],
       "EMUSTRUU Index": result_emustruu.cumulativeReturnsHashTable["main"],
       "LEGATRUU Index": result_legatruu.cumulativeReturnsHashTable["main"],
-      "BEUYTRUU Index": result_beuytruu.cumulativeReturnsHashTable["main"],
       "FIDITBD LX Equity": result_FIDITBD.cumulativeReturnsHashTable["main"],
       "PIMGLBA ID Equity": result_PIMGLBA.cumulativeReturnsHashTable["main"],
     };
@@ -902,7 +897,6 @@ export async function getFactSheet({ from, to, type, inception, mkt }: { from: a
       "BEUCTRUU Index": result_beuctruu.cumulativeReturnsHashTableSince2020["main"],
       "EMUSTRUU Index": result_emustruu.cumulativeReturnsHashTableSince2020["main"],
       "LEGATRUU Index": result_legatruu.cumulativeReturnsHashTableSince2020["main"],
-      "BEUYTRUU Index": result_beuytruu.cumulativeReturnsHashTableSince2020["main"],
       "FIDITBD LX Equity": result_FIDITBD.cumulativeReturnsHashTableSince2020["main"],
       "PIMGLBA ID Equity": result_PIMGLBA.cumulativeReturnsHashTableSince2020["main"],
     };
@@ -923,7 +917,6 @@ export async function getFactSheet({ from, to, type, inception, mkt }: { from: a
     };
     if (mkt) {
       resultFinal.result_beuctruu = result_beuctruu;
-      resultFinal.result_beuytruu = result_beuytruu;
       resultFinal.result_emustruu = result_emustruu;
       resultFinal.result_legatruu = result_legatruu;
       resultFinal.result_PIMGLBA = result_PIMGLBA;

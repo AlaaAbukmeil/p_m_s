@@ -46,6 +46,7 @@ fundRouter.post("/add-fund", verifyToken, uploadToBucket.any(), async (req: Requ
 
   }
 });
+
 fundRouter.get("/fund-details", verifyToken, async (req, res) => {
   try {
     const date: any = req.query.date;

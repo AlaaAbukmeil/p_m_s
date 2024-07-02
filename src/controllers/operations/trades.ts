@@ -3,6 +3,8 @@ import { client } from "../userManagement/auth";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { CentralizedTrade } from "../../models/trades";
 import { insertEditLogs } from "./logs";
+import { sendBrokerEmail } from "./tradesConfirmation";
+import { printObjectValues } from "./tools";
 
 export async function getAllTradesForSpecificPosition(tradeType: string, isin: string, location: string, date: string) {
   try {
@@ -75,11 +77,48 @@ export async function editTrade(editedTrade: any, tradeType: any) {
       let beforeModify = JSON.parse(JSON.stringify(tradeInfo));
       beforeModify["_id"] = new ObjectId(beforeModify["_id"]);
 
-      let centralizedBlotKeys: any = ["B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Nomura Upload Status", "Edit Note"];
+      let centralizedBlotKeys: any = [
+        "B/S",
+        "BB Ticker",
+        "Location",
+        "Trade Date",
+        "Trade Time",
+        "Settle Date",
+        "Price",
+        "Notional Amount",
+        "Settlement Amount",
+        "Principal",
+        "Counter Party",
+        "Triada Trade Id",
+        "Seq No",
+        "ISIN",
+        "Cuisp",
+        "Currency",
+        "Yield",
+        "Accrued Interest",
+        "Original Face",
+        "Comm/Fee",
+        "Trade Type",
+        "Nomura Upload Status",
+        // "Broker Email Status",
+        // "Broker Email",
+        // "Triada-Broker Notes",
+        // // "Nomura Upload Status",
+        // "Settlement Venue",
+        "Edit Note",
+      ];
       let changes = 0;
       let changesText = [];
       for (let index = 0; index < centralizedBlotKeys.length; index++) {
         let key: any = centralizedBlotKeys[index];
+        // if (key == "Broker Email Status" && editedTrade[key] == "sent" && editedTrade["Settlement Venue"] && editedTrade["Broker Email"]) {
+        //   // console.log(editedTrade["Broker Email"], editedTrade["Settlement Venue"], editedTrade["Triada-Broker Notes"]);
+        //   let action = editedTrade["Trade"]["B/S"] == "B" ? "Buys" : "Sells";
+        //   let amount = parseInt(editedTrade["Trade"]["Notional Amount"]) / 1000000;
+        //   let subject = `Triada ${action} ${Math.round(amount * 1000) / 1000} MM || Ticker ${editedTrade["Trade"]["BB Ticker"]} || ISIN ${editedTrade["Trade"]["ISIN"]}`;
+        //   let pdf = await printObjectValues(editedTrade["Trade"]);
+        //   await sendBrokerEmail({ email: editedTrade["Broker Email"], subject: subject, content: pdf.output, attachment: pdf.url });
+        // }
         if (editedTrade[key] != "" && editedTrade[key]) {
           changesText.push(`${key} changed from ${tradeInfo[key]} to ${editedTrade[key]} `);
           tradeInfo[key] = editedTrade[key];
@@ -90,7 +129,6 @@ export async function editTrade(editedTrade: any, tradeType: any) {
       if (!changes) {
         return { error: "The trade is still the same." };
       }
-
 
       // Access the 'structure' database
       const database = client.db("trades_v_2");
@@ -118,7 +156,7 @@ export async function editTrade(editedTrade: any, tradeType: any) {
     }
   } catch (error: any) {
     console.log(error);
-    return { error: "unexpected error, please contact PWWP team" };
+    return { error: error };
   }
 }
 

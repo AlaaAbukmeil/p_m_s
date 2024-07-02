@@ -3,13 +3,13 @@ import { verifyToken, generateRandomString, verifyTokenRiskMember, verifyTokenFa
 import { getDateTimeInMongoDBCollectionFormat, getLastDayOfMonth, monthlyRlzdDate } from "../../controllers/reports/common";
 import { getPortfolioWithAnalytics } from "../../controllers/reports/portfolios";
 import { calculateBetaCorrelationBenchMarks, calculateMonthlyReturn, calculateOutPerformance, calculateOutPerformanceParam, calculateRatios, calculateRegression, calculateRiskRatios, getFactSheet, getFactSheetData, getTreasuryAnnulizedReturn, trimFactSheetData, uploadFSData } from "../../controllers/reports/factSheet";
-import { getEarliestCollectionName, getMonthName } from "../../controllers/reports/tools";
 import { getFactSheetDisplay } from "../../controllers/operations/commands";
 
 require("dotenv").config();
 let shareClasses = ["a2", "a3", "a4", "a5", "a6", "ma2", "ma3", "ma4", "ma6"];
 const multerGoogleStorage = require("multer-google-storage");
 const multer = require("multer");
+
 export const uploadToBucket = multer({
   storage: multerGoogleStorage.storageEngine({
     autoRetry: true,

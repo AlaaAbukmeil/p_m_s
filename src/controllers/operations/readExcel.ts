@@ -2,6 +2,7 @@ import { CentralizedTrade } from "../../models/trades";
 import { convertExcelDateToJSDate, generateRandomString, generateSignedUrl, getTradeDateYearTrades } from "../common";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { insertEditLogs } from "./logs";
+require("dotenv").config();
 
 const xlsx = require("xlsx");
 const axios = require("axios");
@@ -44,13 +45,13 @@ export async function readCentralizedEBlot(path: string): Promise<
     } else {
       let data = xlsx.utils.sheet_to_json(worksheet, {
         defval: "",
-        range: "A1:V300",
+        range: "A1:AA300",
       });
 
       let filtered = data.filter((trade: any, index: any) => trade["Trade App Status"] == "new");
       filtered.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
 
-      let missingLocation = data.filter((trade: any, index: any) => trade["Location"] == "" || (trade["ISIN"] == "" && trade["Trade Type"] == "vcon") || !trade["Location"] || trade["Location"].trim().split(" ").length > 1);
+      let missingLocation = data.filter((trade: any, index: any) => trade["Location"] == "" || (trade["ISIN"] == "" && trade["Trade Type"].includes("vcon")) || !trade["Location"] || trade["Location"].trim().split(" ").length > 1);
       if (missingLocation.length) {
         let issueMissing = "";
         for (let indexMissingIssue = 0; indexMissingIssue < missingLocation.length; indexMissingIssue++) {
@@ -59,7 +60,7 @@ export async function readCentralizedEBlot(path: string): Promise<
         }
         return { error: `BB Ticker ${issueMissing} has missing or more than one location/ISIN` };
       }
-      let vconTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "vcon");
+      let vconTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"].includes("vcon"));
       let ibTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "ib");
       let emsxTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "emsx");
       let gsTrades = filtered.filter((trade: any, index: any) => trade["Trade Type"] == "gs");
@@ -448,7 +449,6 @@ export async function uploadArrayAndReturnFilePath(data: any, pathName: string, 
   // Name your sheet
   xlsx.utils.book_append_sheet(wb, binaryWS, "Binary values");
   // export your excel
-  const stream = new PassThrough();
   const buffer = xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
   let randomString = generateRandomString(6);
   let fileName = `${folderName}/${pathName.replace(/[!@#$%^&*(),.?":{}|<>\/\[\]\\;'\-=+`~]/g, "_")}_${randomString}.xlsx`;
@@ -457,6 +457,23 @@ export async function uploadArrayAndReturnFilePath(data: any, pathName: string, 
 
   return "/" + fileName;
 }
+export async function uploadToGCloudBucketPDF(data: any, fileName: any) {
+  const bucket = storage.bucket(process.env.BUCKET_PUBLIC);
+  const file = bucket.file(fileName);
+
+  const stream = file.createWriteStream({
+    metadata: {
+      contentType: "application/pdf",
+    },
+    resumable: false,
+  });
+
+  stream.write(data);
+  stream.end();
+
+  return "/" + fileName;
+}
+
 export async function readEditInput(path: string) {
   const response = await axios.get(path, { responseType: "arraybuffer" });
 
@@ -642,10 +659,6 @@ export async function readBBGBlot(path: string) {
   const data = xlsx.utils.sheet_to_json(worksheet, { defval: "", range: "A1:ZY500" });
   return data;
 }
-
-
-
-
 
 export async function readFxTrades(path: string) {
   const response = await axios.get(path, { responseType: "arraybuffer" });

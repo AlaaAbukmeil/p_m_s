@@ -27,7 +27,7 @@ tradesRouter.get("/all-trades", verifyToken, async (req, res) => {
     let vcons: any = await getVcons(token, start + 2 * 24 * 60 * 60 * 1000, end - 2 * 24 * 60 * 60 * 1000, vconTrades);
 
     vcons = vcons.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app" && new Date(trade["Trade Date"]).getTime() > start && new Date(trade["Trade Date"]).getTime() < end);
-    let action: any = await formatCentralizedRawFiles({}, vcons, [], [], []);
+    let action: any = await formatCentralizedRawFiles({}, vcons, [], [], [], true);
     // action = action.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app");
     let allTrades = action.concat(trades).sort((a: any, b: any) => new Date(b["Trade Date"]).getTime() - new Date(a["Trade Date"]).getTime());
     res.send({ trades: allTrades });
@@ -69,6 +69,7 @@ tradesRouter.get("/rlzd-trades", verifyToken, async (req, res) => {
     res.status(500).send("An error occurred while reading the file.");
   }
 });
+
 tradesRouter.post("/edit-trade", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let action = await editTrade(req.body, req.body.tradeType);

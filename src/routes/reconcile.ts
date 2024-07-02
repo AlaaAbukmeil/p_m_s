@@ -59,6 +59,7 @@ reconcileRouter.post("/check-nomura", verifyToken, uploadToBucket.any(), async (
     if (data?.error) {
       res.send({ error: data.error });
     } else {
+      console.log(portfolio.portfolio);
       let action = await reconcileNomura(data, portfolio.portfolio);
       if (action.error) {
         res.send({ error: action.error });

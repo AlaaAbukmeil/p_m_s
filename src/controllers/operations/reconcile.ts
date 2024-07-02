@@ -149,9 +149,9 @@ export function updatePortfolioBasedOnIsin(portfolio: any) {
     let isin = isins[index];
     let positions = updatedPortfolio[isin];
     let updatedPosition = {
-      "Principal": 0,
+      Principal: 0,
       "Average Cost": 0,
-
+      "Notional Amount": 0,
       "Original Face": positions[0]["Original Face"],
       Mid: positions[0]["Mid"],
       ISIN: isin,
@@ -163,7 +163,8 @@ export function updatePortfolioBasedOnIsin(portfolio: any) {
       let quantity = data["Principal"];
       let averageCost = data["Average Cost"];
       updatedPosition["Principal"] += quantity;
-      updatedPosition["Average Cost"] += data["Principal"] * data["Average Cost"];
+      updatedPosition["Notional Amount"] += data["Notional Amount"];
+      updatedPosition["Average Cost"] += data["Principal"] * averageCost;
     }
     updatedPosition["Average Cost"] /= updatedPosition["Principal"];
     aggregatedPortfolio.push(updatedPosition);

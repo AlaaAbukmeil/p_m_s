@@ -113,7 +113,7 @@ export async function updatePositionPortfolio(
       let object: any = {};
       let location = row["Location"].trim();
       let securityInPortfolio: any = getSecurityInPortfolio(portfolio, identifier, location);
-      let type = row["Trade Type"] == "vcon" ? "vcons" : row["Trade Type"].trim();
+      let type = row["Trade Type"].includes("vcon") ? "vcons" : row["Trade Type"].trim();
 
       if (securityInPortfolio !== 404) {
         object = securityInPortfolio;
@@ -231,7 +231,6 @@ export async function updatePositionPortfolio(
           object["MTD Rlzd"] = securityInPortfolio !== 404 ? (securityInPortfolio["MTD Rlzd"] ? securityInPortfolio["MTD Rlzd"] : {}) : {};
 
           object["MTD Rlzd"][thisMonth] = securityInPortfolio !== 404 ? (securityInPortfolio["MTD Rlzd"] ? (securityInPortfolio["MTD Rlzd"][thisMonth] ? securityInPortfolio["MTD Rlzd"][thisMonth] : []) : []) : [];
-      
 
           object["Day Rlzd"] = securityInPortfolio !== 404 ? (securityInPortfolio["Day Rlzd"] ? securityInPortfolio["Day Rlzd"] : {}) : {};
 
@@ -833,7 +832,7 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
       let previousQuantity = 0;
       let tradeType = row["B/S"];
       let operation = tradeType == "B" ? 1 : -1;
-      let divider = row["Trade Type"] == "vcon" ? 100 : 1;
+      let divider = row["Trade Type"].includes("vcon") ? 100 : 1;
 
       let currentPrice: any = parseFloat(row["Price"]) / divider;
       let currentQuantity: any = parseFloat(row["Notional Amount"].toString().replace(/,/g, "")) * operation;

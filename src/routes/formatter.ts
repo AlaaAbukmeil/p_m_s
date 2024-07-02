@@ -95,7 +95,7 @@ formatterRouter.post("/centralized-blotter", verifyToken, uploadToBucket.any(), 
     vcons = vcons.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app" && new Date(trade["Trade Date"]).getTime() > startLimit && new Date(trade["Trade Date"]).getTime() < endLimit);
     let ibTrades = await getTriadaTrades("ib", start, end);
     let emsxTrades = await getTriadaTrades("emsx", start, end);
-    let action: any = await formatCentralizedRawFiles(req.files, vcons, vconTrades, ibTrades, emsxTrades);
+    let action: any = await formatCentralizedRawFiles(req.files, vcons, vconTrades, ibTrades, emsxTrades, false);
 
     if (action.error) {
       res.send({ error: action.error });
@@ -158,6 +158,7 @@ formatterRouter.post("/fx-excel", verifyToken, uploadToBucket.any(), async (req:
     res.send(downloadEBlotName);
   }
 });
+
 formatterRouter.post("/nomura-excel", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   let data = req.body;
   let pathName = "nomura" + formatDateFile(data.timestamp_start) + "_" + formatDateFile(data.timestamp_end) + "_";

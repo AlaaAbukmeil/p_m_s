@@ -125,7 +125,7 @@ export function renderVcon(emailContent: string): Vcon {
   return vcon;
 }
 
-export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTrades: any, ibTrades: any, emsxTrades: any): Promise<CentralizedTrade[]> {
+export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTrades: any, ibTrades: any, emsxTrades: any, fullFormat = false): Promise<CentralizedTrade[]> {
   let ibData = [],
     bbeData = [];
   for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
@@ -151,6 +151,7 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
   let blot_vcons = vconTrades.map(({ "Edit Note": _, "Updated Notional": __, ...rest }: any) => rest);
   let blot_ib = ibTrades.map(({ "Edit Note": _, "Updated Notional": __, ...rest }: any) => rest);
   let blot_emsx = emsxTrades.map(({ "Edit Note": _, "Updated Notional": __, ...rest }: any) => rest);
+
   let blot: any = [];
   let counter = 1;
   let bbbCurrency: any = {
@@ -160,7 +161,7 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
     "£": "GBP",
     SGD: "SGD",
   };
-  let centralizedBlotterHeader = ["B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Trade App Status"];
+  let centralizedBlotterHeader: any = ["B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Trade App Status"];
   // vcons already checking if duplicate trade and removes it. ib and emsx no. ib trades to be implement with their API
   for (let index = 0; index < bbbData.length; index++) {
     let obj: any = {};
@@ -187,8 +188,14 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
       obj["Accrued Interest"] = trade["Accrued Interest"];
       obj["Original Face"] = "1000";
       obj["Comm/Fee"] = "";
-      obj["Trade Type"] = "vcon";
+      obj["Trade Type"] = "vcons";
       obj["Trade App Status"] = trade["Trade App Status"];
+      // obj["Nomura Upload Status"] = trade["Nomura Upload Status"] ? trade["Nomura Upload Status"] : "not uploaded";
+      // obj["Broker Email Status"] = trade["Broker Email Status"] ? trade["Broker Email Status"] : "not sent";
+      // obj["Broker Email"] = trade["Broker Email"] ? trade["Broker Email"] : "";
+      // obj["Settlement Venue"] = trade["Settlement Venue"] ? trade["Settlement Venue"] : "";
+      // obj["Triada-Broker Notes"] = trade["Triada-Broker Notes"] ? trade["Triada-Broker Notes"] : "";
+
       blot_vcons.push(obj);
       counter++;
     }
@@ -222,6 +229,12 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
       obj["Comm/Fee"] = trade["Comm/Fee"];
       obj["Trade Type"] = "ib";
       obj["Trade App Status"] = trade["Trade App Status"];
+      // obj["Nomura Upload Status"] = trade["Nomura Upload Status"] ? trade["Nomura Upload Status"] : "not uploaded";
+      // obj["Broker Email Status"] = trade["Broker Email Status"] ? trade["Broker Email Status"] : "not sent";
+      // obj["Broker Email"] = trade["Broker Email"] ? trade["Broker Email"] : "";
+      // obj["Settlement Venue"] = trade["Settlement Venue"] ? trade["Settlement Venue"] : "";
+      // obj["Triada-Broker Notes"] = trade["Triada-Broker Notes"] ? trade["Triada-Broker Notes"] : "";
+
       blot_ib.push(obj);
       counter++;
     }
@@ -255,6 +268,12 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
       obj["Comm/Fee"] = "";
       obj["Trade Type"] = "emsx";
       obj["Trade App Status"] = trade["Trade App Status"];
+      // obj["Nomura Upload Status"] = trade["Nomura Upload Status"] ? trade["Nomura Upload Status"] : "not uploaded";
+      // obj["Broker Email Status"] = trade["Broker Email Status"] ? trade["Broker Email Status"] : "not sent";
+      // obj["Broker Email"] = trade["Broker Email"] ? trade["Broker Email"] : "";
+      // obj["Settlement Venue"] = trade["Settlement Venue"] ? trade["Settlement Venue"] : "";
+      // obj["Triada-Broker Notes"] = trade["Triada-Broker Notes"] ? trade["Triada-Broker Notes"] : "";
+
       blot_emsx.push(obj);
       counter++;
     }
@@ -263,14 +282,19 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
   blot_emsx.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
   blot = [...blot_vcons, ...blot_ib, ...blot_emsx];
   if (blot.length > 0) {
-    let formattedObject: any = {};
-    centralizedBlotterHeader.forEach((title) => {
-      // If the original object has the key, add it to the formatted object
-      if (blot[0].hasOwnProperty(title)) {
-        formattedObject[title] = blot[0][title];
-      }
-    });
-    blot[0] = formattedObject;
+    // for (let i = 0; i < blot.length; i++) {
+    //   blot[i]["Nomura Upload Status"] = blot[i]["Nomura Upload Status"] ? blot[i]["Nomura Upload Status"] : "not uploaded";
+    //   blot[i]["Broker Email Status"] = blot[i]["Broker Email Status"] ? blot[i]["Broker Email Status"] : "not sent";
+    //   blot[i]["Broker Email"] = blot[i]["Broker Email"] ? blot[i]["Broker Email"] : "";
+    //   blot[i]["Triada-Broker Notes"] = blot[i]["Triada-Broker Notes"] ? blot[i]["Triada-Broker Notes"] : "";
+    //   blot[i]["Settlement Venue"] = blot[i]["Settlement Venue"] ? blot[i]["Settlement Venue"] : "";
+    // }
+    let temp = blot[0];
+    blot[0] = {};
+    for (let i = 0; i < centralizedBlotterHeader.length; i++) {
+      blot[0][centralizedBlotterHeader[i]] = temp[centralizedBlotterHeader[i]];
+    }
+
     return blot;
   } else {
     return [];

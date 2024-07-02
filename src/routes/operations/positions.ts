@@ -36,7 +36,6 @@ positionsRouter.get("/previous-collections", verifyToken, async (req, res) => {
   }
 });
 
-
 positionsRouter.post("/recalculate-position", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let data = req.body;
@@ -95,6 +94,7 @@ positionsRouter.post("/fx-add-position", verifyToken, uploadToBucket.any(), asyn
     res.send({ error: "something is not correct, check error log records" });
   }
 });
+
 positionsRouter.post("/pin-position", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let action = await pinPosition(req.body);
@@ -166,6 +166,7 @@ positionsRouter.post("/update-prices", verifyToken, uploadToBucket.any(), async 
     res.send({ error: "File Template is not correct" });
   }
 });
+
 positionsRouter.post("/live-prices", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let action: any = await checkLivePositions();
@@ -224,5 +225,6 @@ positionsRouter.post("/update-previous-prices", verifyToken, uploadToBucket.any(
     res.send({ error: "fatal error" });
   }
 });
+
 
 export default positionsRouter;
