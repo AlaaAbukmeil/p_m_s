@@ -34,8 +34,8 @@ router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: 
     let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | any = req.query.sort || "order";
     let sign: any = req.query.sign || 1;
     let conditions: any = req.query || {};
+    console.log(conditions);
     let report: any = await getPortfolioWithAnalytics(date, sort, sign, conditions, "back office", null);
-
     if (report.error) {
       res.send({ error: report.error });
     } else {
@@ -59,6 +59,8 @@ router.get("/summary-portfolio", verifyToken, async (req: Request, res: Response
     }
 
     date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
+    console.log(conditions);
+
     let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, "front office", null);
     if (report.error) {
       res.send({ error: report.error });
@@ -156,7 +158,6 @@ router.get("/fact-sheet", uploadToBucket.any(), verifyTokenFactSheetMember, asyn
       res.sendStatus(401);
     } else {
       if (accessRole != "member (factsheet report)") {
-
         type = shareClasses.includes(type) ? type : "a2";
         disabled = false;
       }

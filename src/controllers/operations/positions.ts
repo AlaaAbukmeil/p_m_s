@@ -9,11 +9,12 @@ import { CentralizedTrade } from "../../models/trades";
 import { modifyTradesDueToRecalculate } from "./trades";
 import { insertEditLogs } from "./logs";
 import { getSecurityInPortfolioById } from "./tools";
+import { swapMonthDay } from "../common";
 const ObjectId = require("mongodb").ObjectId;
 
-export async function getPortfolio(): Promise<Position[]> {
+export async function getPortfolio(date = null): Promise<Position[]> {
   try {
-    let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 0 * 24 * 60 * 60 * 1000));
+    let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date(date ? date : new Date()).getTime() - 0 * 24 * 60 * 60 * 1000));
     const database = client.db("portfolios");
     let latestCollectionTodayDate = day.split(" ")[0] + " 23:59";
     let earliestCollectionName = await getEarliestCollectionName(latestCollectionTodayDate);
@@ -1030,7 +1031,8 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
 }
 
 export async function insertFXPosition(position: any, date: any) {
-  let today = getTradeDateYearTrades(convertExcelDateToJSDate(new Date(date)));
+  console.log(date, new Date(date), position);
+  let today = swapMonthDay(date);
   let fxPositions: any = {
     Type: "FX",
     "Notional Amount": parseInt(position["Notional Amount"]),
@@ -1045,49 +1047,25 @@ export async function insertFXPosition(position: any, date: any) {
   };
   fxPositions.Interest[today] = parseInt(position["Notional Amount"]);
 
-  let portfolio = await getPortfolio();
-  portfolio.push(fxPositions);
   const database = client.db("portfolios");
-  let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date(date).getTime()));
+  let day = getDateTimeInMongoDBCollectionFormat(new Date(today));
 
-  let checkCollectionDay = await getCollectionName(day);
+  let checkCollectionDay = await getEarliestCollectionName(day);
+  console.log(checkCollectionDay, "chec");
   if (checkCollectionDay) {
-    day = checkCollectionDay;
+    day = checkCollectionDay.predecessorDate;
   }
   // Create an array of updateOne operations
 
   // Execute the operations in bulk
   try {
     //so the latest updated version portfolio profits will not be copied into a new instance
-    const updatedOperations = portfolio.map((position: any) => {
-      // Start with the known filters
-      const filters: any = [];
-      // Only add the "BB Ticker" filter if it's present in the trade object
 
-      if (position["ISIN"]) {
-        filters.push({
-          ISIN: position["ISIN"],
-          Location: position["Location"],
-        });
-      } else if (position["BB Ticker"]) {
-        filters.push({
-          "BB Ticker": position["BB Ticker"],
-          Location: position["Location"],
-        });
-      }
-
-      return {
-        updateOne: {
-          filter: { $or: filters },
-          update: { $set: position },
-          upsert: true,
-        },
-      };
-    });
     console.log(day, "inserted date");
     let updatedCollection = database.collection(`portfolio-${day}`);
 
-    let updatedResult = await updatedCollection.bulkWrite(updatedOperations);
+    let updatedResult = await updatedCollection.insertOne(fxPositions);
+    console.log(updatedResult, "fx position added");
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
 
     await insertEditLogs([fxPositions], "FX Position", dateTime, "insertFXPosition", "controllers/operations/positions.ts");

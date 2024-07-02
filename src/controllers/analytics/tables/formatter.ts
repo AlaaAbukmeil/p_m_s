@@ -202,7 +202,8 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     position["Region"] = regionClassInfo.region;
     position["Market Type"] = regionClassInfo.marketType;
 
-    position["CR01"] = isFinite(position["CR01"]) ? position["CR01"] : 0;
+    position["CR01"] = isFinite(position["CR01"]) ? position["CR01"] || 0 : 0;
+
     position["CR01"] = (position["CR01"] / 1000000) * position["Notional Amount"] * usdRatio;
     position["CR01"] = Math.round(position["CR01"] * 100) / 100 || 0;
 
@@ -218,7 +219,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     if ((!portfolio[index]["Asset Class"] || portfolio[index]["Asset Class"] == "") && ratingScore) {
       portfolio[index]["Asset Class"] = isRatingHigherThanBBBMinus(ratingScore);
     }
-    portfolio[index]["Asset Class"] = portfolio[index]["Asset Class"] == "" ? "Unspecified": portfolio[index]["Asset Class"]
+    portfolio[index]["Asset Class"] = portfolio[index]["Asset Class"] == "" ? "Unspecified" : portfolio[index]["Asset Class"];
     if (position["Type"] == "FX") {
       position["MTD P&L FX"] = position["MTD P&L (BC)"];
       position["Day P&L FX"] = position["Day P&L (BC)"];
@@ -247,7 +248,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
         dayrlzd += position["Day Rlzd (BC)"];
         dv01Sum += position["DV01"];
         ytdEstInt += position["365-Day Int. EST"];
-        cr01Sum += parseFloat(position["CR01"]);
+        cr01Sum += parseFloat(position["CR01"] || 0);
       } else {
         delete portfolio[index];
       }
@@ -267,7 +268,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
       dayrlzd += position["Day Rlzd (BC)"];
       dv01Sum += position["DV01"];
       ytdEstInt += position["365-Day Int. EST"];
-      cr01Sum += parseFloat(position["CR01"]);
+      cr01Sum += parseFloat(position["CR01"] || 0);
     }
   }
   let dayplPercentage = Math.round((daypl / parseFloat(fund.nav)) * 100000) / 1000;

@@ -169,7 +169,7 @@ formatterRouter.post("/nomura-excel", verifyToken, uploadToBucket.any(), async (
   if (array.length == 0) {
     res.send({ error: "No Trades" });
   } else {
-    let mufgTrades = await uploadArrayAndReturnFilePath(array, pathName, "nomura");
+    let mufgTrades = await uploadArrayAndReturnFilePath(array, pathName, "nomura", "csv");
     let downloadEBlotName = bucket + mufgTrades + "?authuser=2";
     res.send(downloadEBlotName);
   }

@@ -192,6 +192,7 @@ export function checkPosition(position: any, conditions: any) {
     let strategy = position["Strategy"] ? position["Strategy"].toString().toLowerCase() : null;
     let duration = position["Duration"] ? position["Duration"].toString().toLowerCase() : null;
     let currency = position["Currency"] ? position["Currency"].toString().toLowerCase() : null;
+    // console.log(currency, conditions.currency);
     let issuer = position["Issuer"] ? position["Issuer"].toString().toLowerCase() : null;
     let ticker = position["BB Ticker"] ? position["BB Ticker"].toString().toLowerCase() : null;
     let coupon = position["Coupon Rate"] ? parsePercentage(position["Coupon Rate"]) : 0;

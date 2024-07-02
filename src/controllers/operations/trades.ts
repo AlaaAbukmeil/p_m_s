@@ -77,48 +77,12 @@ export async function editTrade(editedTrade: any, tradeType: any) {
       let beforeModify = JSON.parse(JSON.stringify(tradeInfo));
       beforeModify["_id"] = new ObjectId(beforeModify["_id"]);
 
-      let centralizedBlotKeys: any = [
-        "B/S",
-        "BB Ticker",
-        "Location",
-        "Trade Date",
-        "Trade Time",
-        "Settle Date",
-        "Price",
-        "Notional Amount",
-        "Settlement Amount",
-        "Principal",
-        "Counter Party",
-        "Triada Trade Id",
-        "Seq No",
-        "ISIN",
-        "Cuisp",
-        "Currency",
-        "Yield",
-        "Accrued Interest",
-        "Original Face",
-        "Comm/Fee",
-        "Trade Type",
-        "Nomura Upload Status",
-        // "Broker Email Status",
-        // "Broker Email",
-        // "Triada-Broker Notes",
-        // // "Nomura Upload Status",
-        // "Settlement Venue",
-        "Edit Note",
-      ];
+      let centralizedBlotKeys: any = ["B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Nomura Upload Status", "Edit Note"];
       let changes = 0;
       let changesText = [];
       for (let index = 0; index < centralizedBlotKeys.length; index++) {
         let key: any = centralizedBlotKeys[index];
-        // if (key == "Broker Email Status" && editedTrade[key] == "sent" && editedTrade["Settlement Venue"] && editedTrade["Broker Email"]) {
-        //   // console.log(editedTrade["Broker Email"], editedTrade["Settlement Venue"], editedTrade["Triada-Broker Notes"]);
-        //   let action = editedTrade["Trade"]["B/S"] == "B" ? "Buys" : "Sells";
-        //   let amount = parseInt(editedTrade["Trade"]["Notional Amount"]) / 1000000;
-        //   let subject = `Triada ${action} ${Math.round(amount * 1000) / 1000} MM || Ticker ${editedTrade["Trade"]["BB Ticker"]} || ISIN ${editedTrade["Trade"]["ISIN"]}`;
-        //   let pdf = await printObjectValues(editedTrade["Trade"]);
-        //   await sendBrokerEmail({ email: editedTrade["Broker Email"], subject: subject, content: pdf.output, attachment: pdf.url });
-        // }
+
         if (editedTrade[key] != "" && editedTrade[key]) {
           changesText.push(`${key} changed from ${tradeInfo[key]} to ${editedTrade[key]} `);
           tradeInfo[key] = editedTrade[key];

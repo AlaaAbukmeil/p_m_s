@@ -10,9 +10,9 @@ const reconcileRouter = Router();
 
 reconcileRouter.post("/check-mufg", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
-    let collectionDate: string = new Date().toString() || req.body.collectionDate;
+    let collectionDate: string = req.body.collectionDate || new Date().toString();
     let files = req.files[0];
-
+    console.log(collectionDate, "collectionDate");
     let portfolio: any = await getPortfolioOnSpecificDate(collectionDate);
     let portfolioWithPrincipal: any = getPrincipal(portfolio.portfolio).portfolio;
 

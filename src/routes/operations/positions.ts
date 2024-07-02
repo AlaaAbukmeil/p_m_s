@@ -82,11 +82,12 @@ positionsRouter.post("/fx-add-position", verifyToken, uploadToBucket.any(), asyn
         checkResultElement = element;
       }
     }
-    console.log(data);
     if (checkResult) {
       res.send({ error: "missing param: " + checkResultElement });
     } else {
-      let action = await insertFXPosition(req.body, req.body.date);
+      let dateBroken = req.body.date.split("-");
+      let newDate = dateBroken[2] + "/" + dateBroken[1] + "/" + dateBroken[0];
+      let action = await insertFXPosition(req.body, newDate);
       res.sendStatus(200);
     }
   } catch (error) {
@@ -225,6 +226,5 @@ positionsRouter.post("/update-previous-prices", verifyToken, uploadToBucket.any(
     res.send({ error: "fatal error" });
   }
 });
-
 
 export default positionsRouter;

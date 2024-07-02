@@ -190,12 +190,7 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
       obj["Comm/Fee"] = "";
       obj["Trade Type"] = "vcons";
       obj["Trade App Status"] = trade["Trade App Status"];
-      // obj["Nomura Upload Status"] = trade["Nomura Upload Status"] ? trade["Nomura Upload Status"] : "not uploaded";
-      // obj["Broker Email Status"] = trade["Broker Email Status"] ? trade["Broker Email Status"] : "not sent";
-      // obj["Broker Email"] = trade["Broker Email"] ? trade["Broker Email"] : "";
-      // obj["Settlement Venue"] = trade["Settlement Venue"] ? trade["Settlement Venue"] : "";
-      // obj["Triada-Broker Notes"] = trade["Triada-Broker Notes"] ? trade["Triada-Broker Notes"] : "";
-
+     
       blot_vcons.push(obj);
       counter++;
     }
@@ -229,12 +224,7 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
       obj["Comm/Fee"] = trade["Comm/Fee"];
       obj["Trade Type"] = "ib";
       obj["Trade App Status"] = trade["Trade App Status"];
-      // obj["Nomura Upload Status"] = trade["Nomura Upload Status"] ? trade["Nomura Upload Status"] : "not uploaded";
-      // obj["Broker Email Status"] = trade["Broker Email Status"] ? trade["Broker Email Status"] : "not sent";
-      // obj["Broker Email"] = trade["Broker Email"] ? trade["Broker Email"] : "";
-      // obj["Settlement Venue"] = trade["Settlement Venue"] ? trade["Settlement Venue"] : "";
-      // obj["Triada-Broker Notes"] = trade["Triada-Broker Notes"] ? trade["Triada-Broker Notes"] : "";
-
+    
       blot_ib.push(obj);
       counter++;
     }
@@ -268,12 +258,7 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
       obj["Comm/Fee"] = "";
       obj["Trade Type"] = "emsx";
       obj["Trade App Status"] = trade["Trade App Status"];
-      // obj["Nomura Upload Status"] = trade["Nomura Upload Status"] ? trade["Nomura Upload Status"] : "not uploaded";
-      // obj["Broker Email Status"] = trade["Broker Email Status"] ? trade["Broker Email Status"] : "not sent";
-      // obj["Broker Email"] = trade["Broker Email"] ? trade["Broker Email"] : "";
-      // obj["Settlement Venue"] = trade["Settlement Venue"] ? trade["Settlement Venue"] : "";
-      // obj["Triada-Broker Notes"] = trade["Triada-Broker Notes"] ? trade["Triada-Broker Notes"] : "";
-
+    
       blot_emsx.push(obj);
       counter++;
     }
@@ -282,13 +267,7 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
   blot_emsx.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
   blot = [...blot_vcons, ...blot_ib, ...blot_emsx];
   if (blot.length > 0) {
-    // for (let i = 0; i < blot.length; i++) {
-    //   blot[i]["Nomura Upload Status"] = blot[i]["Nomura Upload Status"] ? blot[i]["Nomura Upload Status"] : "not uploaded";
-    //   blot[i]["Broker Email Status"] = blot[i]["Broker Email Status"] ? blot[i]["Broker Email Status"] : "not sent";
-    //   blot[i]["Broker Email"] = blot[i]["Broker Email"] ? blot[i]["Broker Email"] : "";
-    //   blot[i]["Triada-Broker Notes"] = blot[i]["Triada-Broker Notes"] ? blot[i]["Triada-Broker Notes"] : "";
-    //   blot[i]["Settlement Venue"] = blot[i]["Settlement Venue"] ? blot[i]["Settlement Venue"] : "";
-    // }
+   
     let temp = blot[0];
     blot[0] = {};
     for (let i = 0; i < centralizedBlotterHeader.length; i++) {

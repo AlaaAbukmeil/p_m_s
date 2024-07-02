@@ -545,6 +545,7 @@ export async function getPortfolioOnSpecificDate(collectionDate: string): Promis
     const database = client.db("portfolios");
     let date = getDateTimeInMongoDBCollectionFormat(new Date(collectionDate)).split(" ")[0] + " 23:59";
     let earliestCollectionName = await getEarliestCollectionName(date);
+    console.log(earliestCollectionName, "check");
     const reportCollection = database.collection(`portfolio-${earliestCollectionName.predecessorDate}`);
     let documents = await reportCollection.find().toArray();
     for (let index = 0; index < documents.length; index++) {

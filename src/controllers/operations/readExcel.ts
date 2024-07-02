@@ -45,7 +45,7 @@ export async function readCentralizedEBlot(path: string): Promise<
     } else {
       let data = xlsx.utils.sheet_to_json(worksheet, {
         defval: "",
-        range: "A1:AA300",
+        range: "A1:V300",
       });
 
       let filtered = data.filter((trade: any, index: any) => trade["Trade App Status"] == "new");
@@ -441,7 +441,7 @@ export async function uploadToGCloudBucket(data: any, bucketName: any, fileName:
 
   return new Promise((resolve, reject) => stream.on("error", reject).on("finish", resolve));
 }
-export async function uploadArrayAndReturnFilePath(data: any, pathName: string, folderName: string) {
+export async function uploadArrayAndReturnFilePath(data: any, pathName: string, folderName: string, type="xlsx") {
   // Create a new Workbook
   var wb = xlsx.utils.book_new();
 
@@ -449,9 +449,9 @@ export async function uploadArrayAndReturnFilePath(data: any, pathName: string, 
   // Name your sheet
   xlsx.utils.book_append_sheet(wb, binaryWS, "Binary values");
   // export your excel
-  const buffer = xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
+  const buffer = xlsx.write(wb, { type: "buffer", bookType: type });
   let randomString = generateRandomString(6);
-  let fileName = `${folderName}/${pathName.replace(/[!@#$%^&*(),.?":{}|<>\/\[\]\\;'\-=+`~]/g, "_")}_${randomString}.xlsx`;
+  let fileName = `${folderName}/${pathName.replace(/[!@#$%^&*(),.?":{}|<>\/\[\]\\;'\-=+`~]/g, "_")}_${randomString}.${type}`;
 
   uploadToGCloudBucket(buffer, process.env.BUCKET, fileName).then().catch(console.error);
 
