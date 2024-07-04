@@ -1,12 +1,12 @@
 import { checkIfUserExists, registerUser, resetPassword, sendResetPasswordRequest } from "../controllers/userManagement/auth";
-import { formatCentralizedRawFiles, formatEmsxTrades, formatIbTrades, formatNomura } from "../controllers/eblot/excelFormat";
+import { formatCentralizedRawFiles, formatConfirmation, formatEmsxTrades, formatIbTrades, formatNomura } from "../controllers/eblot/excelFormat";
 import { uploadToBucket } from "./reports/reports";
 import { CookieOptions, NextFunction, Router } from "express";
 import { Request, Response } from "express";
 import { readEmsxRawExcel, readIBRawExcel, uploadArrayAndReturnFilePath } from "../controllers/operations/readExcel";
 import { getPortfolio } from "../controllers/operations/positions";
 import { formatFxMufg, formatMufg, formatMufgCDS } from "../controllers/operations/mufgOperations";
-import { getFxTrades, getGraphToken, getVcons } from "../controllers/eblot/graphApiConnect";
+import { getConfirmation, getFxTrades, getGraphToken, getVcons } from "../controllers/eblot/graphApiConnect";
 import { MufgTrade } from "../models/mufg";
 import { allTrades, allTradesCDS, getTriadaTrades } from "../controllers/operations/trades";
 import { bucket, formatDateFile, generateSignedUrl, verifyToken } from "../controllers/common";
@@ -109,6 +109,25 @@ formatterRouter.post("/centralized-blotter", verifyToken, uploadToBucket.any(), 
         res.send({ error: "no trades" });
       }
     }
+  } catch (error) {
+    console.log(error);
+    res.send({ error: error });
+  }
+});
+
+formatterRouter.post("/confirmation-excel", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let data = req.body;
+    let token = await getGraphToken();
+    let confirmation: any = await getConfirmation(token, data.timestamp_start, data.timestamp_end);
+    let startLimit = new Date(data.timestamp_start).getTime() - 12 * 60 * 60 * 1000;
+    let endLimit = new Date(data.timestamp_end).getTime() + 12 * 60 * 60 * 1000;
+    let vconTrades = await getTriadaTrades("vcons", startLimit, endLimit);
+    let formmated = formatConfirmation(confirmation, vconTrades);
+    let url = await uploadArrayAndReturnFilePath(formmated, "eblot", "confirmation");
+    url = bucket + url + "?authuser=2";
+    res.send(url);
+    // to be modified
   } catch (error) {
     console.log(error);
     res.send({ error: error });

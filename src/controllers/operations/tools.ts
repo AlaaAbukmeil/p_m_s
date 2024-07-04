@@ -11,8 +11,8 @@ export function formatDateNomura(dateString: any) {
   const parts = dateString.split("/");
 
   // Extract month, day, and year from the parts
-  const month = parts;
-  const day = parts;
+  const month = parts[0];
+  const day = parts[1];
   const year = parts[2];
 
   // Return the formatted string in 'yyyymmdd' format

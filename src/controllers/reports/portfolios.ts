@@ -95,6 +95,8 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
       }
       if (monthsTrades.includes(thisMonth)) {
         return position;
+      } else {
+        
       }
     } else {
       return position;

@@ -1,14 +1,18 @@
 require("dotenv").config();
 
-import { getTime } from "../common";
+import { bucketPublic, getTime } from "../common";
 import { getPortfolio } from "../operations/positions";
 import { getDateTimeInMongoDBCollectionFormat, mergeSort } from "../reports/common";
 import { renderVcon, renderFx } from "./excelFormat";
 import { Vcon } from "../../models/trades";
 import { insertEditLogs } from "../operations/logs";
+import { uploadToGCloudBucketPDF } from "../operations/readExcel";
+import { generateContent } from "../gcloudServices/vertex";
+const pdf = require("pdf-parse");
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
 const FormData = require("form-data");
+const fs = require("fs");
 
 export async function getGraphToken(): Promise<string> {
   try {
@@ -105,6 +109,76 @@ export async function getVcons(token: string, start_time: any, end_time: any, tr
 
     await insertEditLogs([errorMessage], "Errors", dateTime, "Get Vcons", "controllers/eblot/graphApiConnect.ts");
 
+    return [];
+  }
+}
+
+export async function parsePDF(buffer: any, date: any) {
+  const pdfBuffer = Buffer.from(buffer, "base64");
+  // Try without password first
+  return pdf(pdfBuffer)
+    .then((data: any) => {
+      return data.text; // The text content of the PDF
+    })
+    .catch(async (err: any) => {
+      return false;
+      // throw new Error("Unable to parse PDF with available passwords.");
+    });
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+export async function getConfirmation(token: string, start_time: any, end_time: any): Promise<any> {
+  try {
+    let url = `https://graph.microsoft.com/v1.0/users/operations@triadacapital.com/messages?$filter=contains(subject,'Confirmation') and receivedDateTime ge ${format_date_ISO(start_time)} and receivedDateTime le ${format_date_ISO(end_time)} and hasAttachments eq true&$top=1000000`;
+    let action = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    let values = action.data.value;
+    let messages: any = "";
+    let num = 1;
+ 
+    for (let message of values) {
+      if (message.hasAttachments) {
+        let urlMessage = `https://graph.microsoft.com/v1.0/users/operations@triadacapital.com/messages/${message.id}/attachments`;
+        let actionMessage = await axios.get(urlMessage, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        for (let file of actionMessage.data.value) {
+          if (file.contentType == "application/pdf") {
+            let text = await parsePDF(file.contentBytes, new Date(file.lastModifiedDateTime));
+            if (text && text.toString().trim() != "" && text.length > 200) {
+              console.log("recieved text");
+              messages += "\n\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ next message " + text;
+            }
+            console.log("done", num);
+            num++;
+          }
+        }
+        await delay(1000);
+      }
+    }
+    console.log("completed");
+
+    if (messages != "") {
+      let jsonConfirmation = await generateContent(messages);
+      return jsonConfirmation;
+    } else {
+      return [];
+    }
+  } catch (error: any) {
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    await insertEditLogs([errorMessage], "Errors", dateTime, "getConfirmation", "controllers/eblot/getConfirmation.ts");
+
+    console.log(error);
     return [];
   }
 }

@@ -4,7 +4,7 @@ import { deleteTrade, editTrade } from "../controllers/operations/trades";
 import { uploadToBucket } from "./reports/reports";
 import { CookieOptions, NextFunction, Router } from "express";
 import { Request, Response } from "express";
-import { readUsersSheet, storage } from "../controllers/operations/readExcel";
+import { readUsersSheet } from "../controllers/operations/readExcel";
 import { getDateTimeInMongoDBCollectionFormat } from "../controllers/reports/common";
 import { insertEditLogs } from "../controllers/operations/logs";
 const bcrypt = require("bcrypt");

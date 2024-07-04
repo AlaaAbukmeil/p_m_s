@@ -4,7 +4,7 @@ import formatterRouter from "./routes/formatter";
 import router from "./routes/reports/reports";
 import positionsRouter from "./routes/operations/positions";
 import tradesRouter from "./routes/operations/trades";
-import reconcileRouter from "./routes/reconcile";
+import reconcileRouter from "./routes/operations/reconcile";
 import fundRouter from "./routes/operations/fund";
 import factSheetRouter from "./routes/operations/factSheet";
 import linksRouter from "./routes/operations/links";

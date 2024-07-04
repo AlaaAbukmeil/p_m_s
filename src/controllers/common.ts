@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction, CookieOptions } from "express";
-import { storage } from "./operations/readExcel";
 require("dotenv").config();
 
 const jwt = require("jsonwebtoken");
@@ -8,6 +7,10 @@ export const uri = "mongodb+srv://" + process.env.MONGODBUSERNAME + ":" + proces
 export const platform = "https://admin.triadacapital.com/reset-password?sent=none";
 export const bucket = "https://storage.cloud.google.com/app-backend-414212.appspot.com";
 export const bucketPublic = "https://storage.googleapis.com/public_triada_admin";
+const { Storage } = require("@google-cloud/storage");
+const { PassThrough } = require("stream");
+
+export const storage = new Storage({ keyFilename: process.env.KEYPATHFILE });
 
 export async function generateSignedUrl(fileName: string): Promise<string> {
   const options = {

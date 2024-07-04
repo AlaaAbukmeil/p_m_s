@@ -579,20 +579,20 @@ export async function editPosition(editedPosition: any, date: string) {
       if (!unEditableParams.includes(title) && editedPosition[title] != "") {
         if (title == "Notional Amount") {
           if (editedPosition["Event Type"] == "Sink Factor") {
-            let payInKindFactorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
-
-            positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
-            positionInPortfolio["Interest"][payInKindFactorDate] = parseFloat(editedPosition[title]);
-
-            changes.push(`Notional Amount Changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]} on ${payInKindFactorDate} (pay in kind)`);
-            positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
-          } else if (editedPosition["Event Type"] == "Pay In Kind") {
             let sinkFactorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
 
             positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
-            positionInPortfolio["Interest"][sinkFactorDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Notional Amount"]);
+            positionInPortfolio["Interest"][sinkFactorDate] = parseFloat(editedPosition[title]);
 
-            changes.push(`Notional Amount Changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]} on ${sinkFactorDate}`);
+            changes.push(`Notional Amount Changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]} on ${sinkFactorDate} (sink factor)`);
+            positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
+          } else if (editedPosition["Event Type"] == "Pay In Kind") {
+            let payInKindFactorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
+
+            positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
+            positionInPortfolio["Interest"][payInKindFactorDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Notional Amount"]);
+
+            changes.push(`Notional Amount Changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]} on ${payInKindFactorDate}`);
             positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
 
             positionInPortfolio["Net"] = parseFloat(editedPosition[title]);

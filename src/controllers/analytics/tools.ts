@@ -220,7 +220,8 @@ export function checkPosition(position: any, conditions: any) {
       }
     }
     if (conditions.currency) {
-      if (!checkPassedCondition(conditions.currency, currency)) {
+      if (position["Type"] == "FX" && checkPassedCondition(conditions.currency, position["ISIN"])) {
+      } else if (!checkPassedCondition(conditions.currency, currency)) {
         return false;
       }
     }

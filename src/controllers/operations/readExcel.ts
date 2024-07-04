@@ -1,14 +1,11 @@
 import { CentralizedTrade } from "../../models/trades";
-import { convertExcelDateToJSDate, generateRandomString, generateSignedUrl, getTradeDateYearTrades } from "../common";
+import { convertExcelDateToJSDate, generateRandomString, generateSignedUrl, getTradeDateYearTrades, storage } from "../common";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { insertEditLogs } from "./logs";
 require("dotenv").config();
 
 const xlsx = require("xlsx");
 const axios = require("axios");
-const { Storage } = require("@google-cloud/storage");
-export const storage = new Storage({ keyFilename: process.env.KEYPATHFILE });
-const { PassThrough } = require("stream");
 
 export async function readCentralizedEBlot(path: string): Promise<
   | {

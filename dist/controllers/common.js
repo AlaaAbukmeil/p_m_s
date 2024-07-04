@@ -1,20 +1,22 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.dateWithMonthOnly = exports.dateWithNoDay = exports.getCurrentDateTime = exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDateTime = exports.convertExcelDateToJSDate = exports.swapMonthDay = exports.formatDateWorld = exports.getYear = exports.isNotNullOrUndefined = exports.getTradeDateYearTradesWithoutTheCentury = exports.getTradeDateYearTrades = exports.formatTradeDate = exports.getCurrentDateVconFormat = exports.verifyTokenFactSheetMember = exports.verifyTokenRiskMember = exports.verifyToken = exports.getTime = exports.formatDateUS = exports.formatDateFile = exports.formatDate = exports.parsePercentage = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = exports.generateSignedUrl = exports.bucketPublic = exports.bucket = exports.platform = exports.uri = void 0;
-const readExcel_1 = require("./operations/readExcel");
+exports.dateWithMonthOnly = exports.dateWithNoDay = exports.getCurrentDateTime = exports.generateRandomString = exports.convertBBGEmexDate = exports.convertExcelDateToJSDateTime = exports.convertExcelDateToJSDate = exports.swapMonthDay = exports.formatDateWorld = exports.getYear = exports.isNotNullOrUndefined = exports.getTradeDateYearTradesWithoutTheCentury = exports.getTradeDateYearTrades = exports.formatTradeDate = exports.getCurrentDateVconFormat = exports.verifyTokenFactSheetMember = exports.verifyTokenRiskMember = exports.verifyToken = exports.getTime = exports.formatDateUS = exports.formatDateFile = exports.formatDate = exports.parsePercentage = exports.getDate = exports.getOrdinalSuffix = exports.getCurrentMonthDateRange = exports.generateSignedUrl = exports.storage = exports.bucketPublic = exports.bucket = exports.platform = exports.uri = void 0;
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 exports.uri = "mongodb+srv://" + process.env.MONGODBUSERNAME + ":" + process.env.NEWMONGODBPASSWORD + "@app.ywfxr8w.mongodb.net/?retryWrites=true&w=majority";
 exports.platform = "https://admin.triadacapital.com/reset-password?sent=none";
 exports.bucket = "https://storage.cloud.google.com/app-backend-414212.appspot.com";
 exports.bucketPublic = "https://storage.googleapis.com/public_triada_admin";
+const { Storage } = require("@google-cloud/storage");
+const { PassThrough } = require("stream");
+exports.storage = new Storage({ keyFilename: process.env.KEYPATHFILE });
 async function generateSignedUrl(fileName) {
     const options = {
         version: "v4",
         action: "read",
         expires: Date.now() + 15 * 60 * 1000, // 15 minutes
     };
-    const [url] = await readExcel_1.storage.bucket(process.env.BUCKET).file(fileName).getSignedUrl(options);
+    const [url] = await exports.storage.bucket(process.env.BUCKET).file(fileName).getSignedUrl(options);
     return url;
 }
 exports.generateSignedUrl = generateSignedUrl;

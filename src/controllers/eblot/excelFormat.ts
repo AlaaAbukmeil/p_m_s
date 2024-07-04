@@ -190,7 +190,7 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
       obj["Comm/Fee"] = "";
       obj["Trade Type"] = "vcons";
       obj["Trade App Status"] = trade["Trade App Status"];
-     
+
       blot_vcons.push(obj);
       counter++;
     }
@@ -224,7 +224,7 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
       obj["Comm/Fee"] = trade["Comm/Fee"];
       obj["Trade Type"] = "ib";
       obj["Trade App Status"] = trade["Trade App Status"];
-    
+
       blot_ib.push(obj);
       counter++;
     }
@@ -258,7 +258,7 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
       obj["Comm/Fee"] = "";
       obj["Trade Type"] = "emsx";
       obj["Trade App Status"] = trade["Trade App Status"];
-    
+
       blot_emsx.push(obj);
       counter++;
     }
@@ -267,7 +267,6 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
   blot_emsx.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
   blot = [...blot_vcons, ...blot_ib, ...blot_emsx];
   if (blot.length > 0) {
-   
     let temp = blot[0];
     blot[0] = {};
     for (let i = 0; i < centralizedBlotterHeader.length; i++) {
@@ -494,4 +493,73 @@ export function formatNomura(tradesInput: any, start: string, end: string) {
     }
   }
   return tradesOutput;
+}
+
+export function formatConfirmation(confirmation: any, vconTrades: any) {
+  let formmated = [];
+  let vconNotFound = [];
+  let confirmationNotFound = [];
+
+  for (let index = 0; index < vconTrades.length; index++) {
+    let vconTrade = vconTrades[index];
+    let notional = parseFloat(vconTrade["Notional Amount"]);
+    let settlementDate = vconTrade["Settle Date"];
+    let found = false;
+    for (let j = 0; j < confirmation.length; j++) {
+      let confirmMessage = confirmation[j];
+      let notionalMessage = parseFloat(confirmMessage["Notional Amount"].toString().replace(/,/g, ""));
+      let settlementDateMessage = confirmMessage["Settlement Date"];
+      if (((notionalMessage >= notional * 0.98 && notionalMessage <= notional * 1.02) || vconTrade["ISIN"] == confirmMessage["ISIN"]) && settlementDateMessage == settlementDate) {
+        let object = {
+          "BB Ticker": vconTrade["BB Ticker"],
+          ISIN: vconTrade["ISIN"],
+          "Notional Amount VCON": notional,
+          "Notional Amount Confirmation": notionalMessage,
+          "Settlement Date": settlementDateMessage,
+          "Triada Venue": confirmMessage["Triada Venue"],
+          "Counter Venue": confirmMessage["Counter Venue"],
+          Found: "True",
+        };
+        formmated.push(object);
+        found = true;
+        confirmation[j]["Found"] = true;
+        break;
+      }
+    }
+    if (!found) {
+      let object = {
+        "BB Ticker": vconTrade["BB Ticker"],
+        ISIN: vconTrade["ISIN"],
+        "Notional Amount VCON": notional,
+        "Notional Amount Confirmation": "",
+        "Settlement Date": settlementDate,
+        "Triada Venue": "",
+        "Counter Venue": "",
+        Found: "Confirmation Not Found",
+      };
+      vconNotFound.push(object);
+    }
+  }
+
+  for (let j = 0; j < confirmation.length; j++) {
+    let confirmMessage = confirmation[j];
+    let notionalMessage = parseFloat(confirmMessage["Notional Amount"].toString().replace(/,/g, ""));
+    let settlementDateMessage = confirmMessage["Settlement Date"];
+    if (!confirmMessage["Found"]) {
+      let object = {
+        "BB Ticker": confirmMessage["BB Ticker"],
+        ISIN: confirmMessage["ISIN"],
+
+        "Notional Amount VCON": "",
+        "Notional Amount Confirmation": notionalMessage,
+        "Settlement Date": settlementDateMessage,
+        "Triada Venue": confirmMessage["Triada Venue"],
+        "Counter Venue": confirmMessage["Counter Venue"],
+        Found: "Vcon Not Found",
+      };
+      confirmationNotFound.push(object);
+    }
+  }
+
+  return [...formmated, ...vconNotFound, ...confirmationNotFound];
 }

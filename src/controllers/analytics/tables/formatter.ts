@@ -50,7 +50,13 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
       }
     }
     ///////
-    position["FX Rate"] = usdRatio;
+    if (position["Type"] == "FX") {
+      position["FX Rate"] = 1;
+      position["Previous FX"] = 1;
+      position["MTD FX"] = 1;
+    } else {
+      position["FX Rate"] = usdRatio;
+    }
 
     position["Cost (BC)"] = position["Type"] == "CDS" ? Math.round((position["Average Cost"] * position["Notional Amount"] * usdRatio) / position["Original Face"]) : Math.round(position["Average Cost"] * position["Notional Amount"] * usdRatio);
     position["FX Rate"] = Math.round(position["FX Rate"] * 1000) / 1000;
@@ -98,7 +104,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     }
 
     position["MTD FX"] = position["MTD FX"] ? Math.round(position["MTD FX"] * 1000) / 1000 : Math.round(position["Previous FX"] * 1000) / 1000;
-
+   
     position["MTD Int. (LC)"] = Math.round(position["MTD Int."] * holdBackRatio);
     position["MTD Rlzd (LC)"] = Math.round(position["MTD Rlzd"] * holdBackRatio);
     position["MTD URlzd (LC)"] = Math.round(position["MTD URlzd"] * holdBackRatio);
@@ -221,6 +227,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     }
     portfolio[index]["Asset Class"] = portfolio[index]["Asset Class"] == "" ? "Unspecified" : portfolio[index]["Asset Class"];
     if (position["Type"] == "FX") {
+      // console.log(usdRatio);
       position["MTD P&L FX"] = position["MTD P&L (BC)"];
       position["Day P&L FX"] = position["Day P&L (BC)"];
 
