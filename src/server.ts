@@ -8,6 +8,7 @@ import reconcileRouter from "./routes/operations/reconcile";
 import fundRouter from "./routes/operations/fund";
 import factSheetRouter from "./routes/operations/factSheet";
 import linksRouter from "./routes/operations/links";
+import analyticsRouter from "./routes/analytics/compare";
 require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -49,6 +50,7 @@ app.use("/api/web/", positionsRouter);
 app.use("/api/web/", fundRouter);
 app.use("/api/web/", factSheetRouter);
 app.use("/api/web/", linksRouter);
+app.use("/api/web/", analyticsRouter);
 
 app.use(apiLimiter);
 

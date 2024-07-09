@@ -1,5 +1,5 @@
 import { checkIfUserExists, registerUser, resetPassword, sendResetPasswordRequest } from "../controllers/userManagement/auth";
-import { formatCentralizedRawFiles, formatConfirmation, formatEmsxTrades, formatIbTrades, formatNomura } from "../controllers/eblot/excelFormat";
+import { formatCentralizedRawFiles, formatConfirmation, formatEmsxTrades, formatIbTrades, formatNomura, handlePasswordPDF } from "../controllers/eblot/excelFormat";
 import { uploadToBucket } from "./reports/reports";
 import { CookieOptions, NextFunction, Router } from "express";
 import { Request, Response } from "express";
@@ -10,7 +10,7 @@ import { getConfirmation, getFxTrades, getGraphToken, getVcons } from "../contro
 import { MufgTrade } from "../models/mufg";
 import { allTrades, allTradesCDS, getTriadaTrades } from "../controllers/operations/trades";
 import { bucket, formatDateFile, generateSignedUrl, verifyToken } from "../controllers/common";
-
+const { exec } = require('child_process');
 const formatterRouter = Router();
 
 formatterRouter.post("/ib-excel", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
@@ -127,12 +127,12 @@ formatterRouter.post("/confirmation-excel", verifyToken, uploadToBucket.any(), a
     let url = await uploadArrayAndReturnFilePath(formmated, "eblot", "confirmation");
     url = bucket + url + "?authuser=2";
     res.send(url);
-    // to be modified
   } catch (error) {
     console.log(error);
     res.send({ error: error });
   }
 });
+
 
 formatterRouter.post("/emsx-excel", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {

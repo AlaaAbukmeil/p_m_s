@@ -18,7 +18,6 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   const database = client.db("portfolios");
   let earliestPortfolioName = await getEarliestCollectionName(date);
 
-  let sameDayCollectionsPublished = earliestPortfolioName.collectionNames;
   let yesterdayPortfolioName = getDateTimeInMongoDBCollectionFormat(new Date(new Date(earliestPortfolioName.predecessorDate).getTime() - 1 * 24 * 60 * 60 * 1000)).split(" ")[0] + " 23:59";
   let lastDayBeforeToday = await getEarliestCollectionName(yesterdayPortfolioName);
   let lastDayOfThisMonth = getLastDayOfMonth(date);
@@ -96,7 +95,6 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
       if (monthsTrades.includes(thisMonth)) {
         return position;
       } else {
-        
       }
     } else {
       return position;
@@ -110,7 +108,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   let dayParamsWithLatestUpdates = await getDayURlzdInt(documents, new Date(date));
   documents = dayParamsWithLatestUpdates.portfolio;
 
-  documents = await getPL(documents, latestCollectionDate, date, lastYearLastCollectionName.predecessorDate);
+  documents = await getPL(documents, latestCollectionDate, date);
   let dates = {
     today: earliestPortfolioName.predecessorDate,
     yesterday: lastDayBeforeToday.predecessorDate,
@@ -144,7 +142,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
     }
     let fundDetails = portfolioFormattedSorted.fundDetails;
     documents = portfolioFormattedSorted.portfolio;
-    return { portfolio: documents, sameDayCollectionsPublished: sameDayCollectionsPublished, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: dayParamsWithLatestUpdates.lastUploadTradesDate, updatePriceDate: dayParamsWithLatestUpdates.lastUpdatePricesDate };
+    return { portfolio: documents, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: dayParamsWithLatestUpdates.lastUploadTradesDate, updatePriceDate: dayParamsWithLatestUpdates.lastUpdatePricesDate };
   }
 }
 
@@ -351,7 +349,6 @@ export async function getMTDURlzdInt(portfolio: any, date: any) {
   let currentDayDate: string = new Date(date).toISOString().slice(0, 10);
   let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate);
   let monthlyInterest: any = {};
-  let test = true;
 
   for (let index = 0; index < portfolio.length; index++) {
     let position = portfolio[index];
@@ -360,7 +357,7 @@ export async function getMTDURlzdInt(portfolio: any, date: any) {
 
     let tradeType = "vcons";
     let identifier = portfolio[index]["ISIN"];
-    let typeCheck = portfolio[index]["Type"];
+    let typeCheck = portfolio[index]["Type"] || "";
     if (identifier.includes("IB")) {
       tradeType = "ib";
     } else if (identifier.includes("1393")) {
@@ -443,7 +440,7 @@ export function getYTDInt(portfolio: any, lastYearDate: any, date: any) {
   return { portfolio: portfolio, ytdinterest: ytdinterest };
 }
 
-async function getPL(portfolio: any, latestPortfolioThisMonth: any, date: any, lastYearDate: any) {
+async function getPL(portfolio: any, latestPortfolioThisMonth: any, date: any) {
   let thisMonth = monthlyRlzdDate(date);
   let thisDay = formatDateRlzdDaily(date);
   for (let index = 0; index < portfolio.length; index++) {

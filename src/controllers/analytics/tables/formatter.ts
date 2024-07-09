@@ -3,7 +3,7 @@ import { formatDateUS, parsePercentage } from "../../common";
 import { calculateAccruedSinceInception } from "../../reports/portfolios";
 import { parseBondIdentifier } from "../../reports/tools";
 import { getCountrySectorStrategySum } from "./statistics";
-import { sortObjectBasedOnKey, oasWithChange, checkPosition, yearsUntil, getDuration, AggregatedData, assignAssetClass, getDurationBucket, assetClassOrderFrontOffice, assetClassOrderExposure, rateSensitive, toTitleCase, AggregateRow, getStandardRating, classifyCountry, padInteger, isRatingHigherThanBBBMinus } from "../tools";
+import { sortObjectBasedOnKey, oasWithChange, checkPosition, yearsUntil, getDuration, AggregatedData, assignAssetClass, getDurationBucket, assetClassOrderFrontOffice, assetClassOrderExposure, rateSensitive, toTitleCase, AggregateRow, getStandardRating, classifyCountry, padInteger, isRatingHigherThanBBBMinus, isNotInteger } from "../tools";
 import { getTopWorst } from "./frontOffice";
 import { adjustMarginMultiplier, nomuraRuleMargin } from "../cash/rules";
 import { sumTable } from "./riskTables";
@@ -59,7 +59,6 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     }
 
     position["Cost (BC)"] = position["Type"] == "CDS" ? Math.round((position["Average Cost"] * position["Notional Amount"] * usdRatio) / position["Original Face"]) : Math.round(position["Average Cost"] * position["Notional Amount"] * usdRatio);
-    position["FX Rate"] = Math.round(position["FX Rate"] * 1000) / 1000;
     position["Value (LC)"] = position["Type"] == "CDS" ? Math.round((position["Notional Amount"] * position["Mid"]) / originalFace) || 0 : Math.round(position["Principal"] * position["Mid"]) || 0;
     position["Value (BC)"] = position["Type"] == "CDS" ? Math.round((position["Notional Amount"] * position["Mid"] * usdRatio) / originalFace) || 0 : Math.round(position["Principal"] * position["Mid"] * usdRatio) || 0;
 
@@ -94,6 +93,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     position["DV01"] = Math.round(position["DV01"] * 100) / 100 || 0;
 
     position["Day P&L FX"] = (position["FX Rate"] - position["Previous FX"]) * position["Value (BC)"];
+
     position["MTD P&L FX"] = (position["FX Rate"] - position["MTD FX"]) * position["Value (BC)"];
 
     if (!position["Day P&L FX"]) {
@@ -104,7 +104,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     }
 
     position["MTD FX"] = position["MTD FX"] ? Math.round(position["MTD FX"] * 1000) / 1000 : Math.round(position["Previous FX"] * 1000) / 1000;
-   
+
     position["MTD Int. (LC)"] = Math.round(position["MTD Int."] * holdBackRatio);
     position["MTD Rlzd (LC)"] = Math.round(position["MTD Rlzd"] * holdBackRatio);
     position["MTD URlzd (LC)"] = Math.round(position["MTD URlzd"] * holdBackRatio);
@@ -226,6 +226,8 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
       portfolio[index]["Asset Class"] = isRatingHigherThanBBBMinus(ratingScore);
     }
     portfolio[index]["Asset Class"] = portfolio[index]["Asset Class"] == "" ? "Unspecified" : portfolio[index]["Asset Class"];
+    position["FX Rate"] = Math.round(position["FX Rate"] * 1000) / 1000;
+
     if (position["Type"] == "FX") {
       // console.log(usdRatio);
       position["MTD P&L FX"] = position["MTD P&L (BC)"];
@@ -945,6 +947,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
           groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = "#C5E1A5";
           //   //no need for borders when rlzd
           //   // continue;
+        } else if (isNotInteger(groupedByLocation[locationCode].data[groupPositionIndex]["Notional Amount"])) {
+          groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = "red";
         } else {
           groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = groupedByLocation[locationCode].color;
         }

@@ -2,16 +2,20 @@ require("dotenv").config();
 
 import { getTradeDateYearTrades, formatDateUS, convertExcelDateToJSDate, convertExcelDateToJSDateTime, generateRandomString, generateSignedUrl } from "../common";
 import { getSettlementDateYear } from "../reports/tools";
-import { getSecurityInPortfolioWithoutLocationForVcon } from "./graphApiConnect";
+import { getSecurityInPortfolioWithoutLocationForVcon, parsePDF, parsePDFOnce } from "./graphApiConnect";
 import { uri } from "../common";
 import { readBBGBlot, readEmsxEBlot, readIBEblot, uploadToGCloudBucket } from "../operations/readExcel";
 import { client } from "../userManagement/auth";
 import { CentralizedTrade, Vcon } from "../../models/trades";
 import { formatDateNomura } from "../operations/tools";
+import { pdfPassword } from "./data";
 const xlsx = require("xlsx");
 const { PassThrough } = require("stream");
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
+const pdf = require("pdf-parse");
+const fs = require("fs");
+const qpdf = require("node-qpdf");
 
 function extractValuesVcon(lines: any) {
   let variables = [
@@ -507,10 +511,13 @@ export function formatConfirmation(confirmation: any, vconTrades: any) {
     let found = false;
     for (let j = 0; j < confirmation.length; j++) {
       let confirmMessage = confirmation[j];
+      confirmMessage["Notional Amount"] = confirmMessage["Notional Amount"] ? confirmMessage["Notional Amount"] : 0;
       let notionalMessage = parseFloat(confirmMessage["Notional Amount"].toString().replace(/,/g, ""));
       let settlementDateMessage = confirmMessage["Settlement Date"];
-      if (((notionalMessage >= notional * 0.98 && notionalMessage <= notional * 1.02) || vconTrade["ISIN"] == confirmMessage["ISIN"]) && settlementDateMessage == settlementDate) {
+      if (((notionalMessage >= notional * 0.98 && notionalMessage <= notional * 1.02) || vconTrade["ISIN"] == confirmMessage["ISIN"]) && settlementDateMessage == settlementDate && confirmMessage["B/S"].includes(vconTrade["B/S"])) {
         let object = {
+          "B/S": vconTrade["B/S"],
+
           "BB Ticker": vconTrade["BB Ticker"],
           ISIN: vconTrade["ISIN"],
           "Notional Amount VCON": notional,
@@ -518,6 +525,9 @@ export function formatConfirmation(confirmation: any, vconTrades: any) {
           "Settlement Date": settlementDateMessage,
           "Triada Venue": confirmMessage["Triada Venue"],
           "Counter Venue": confirmMessage["Counter Venue"],
+          "Broker Name": confirmMessage["Broker Name"],
+          "Email Link": confirmMessage["Web Link"],
+
           Found: "True",
         };
         formmated.push(object);
@@ -528,6 +538,8 @@ export function formatConfirmation(confirmation: any, vconTrades: any) {
     }
     if (!found) {
       let object = {
+        "B/S": vconTrade["B/S"],
+
         "BB Ticker": vconTrade["BB Ticker"],
         ISIN: vconTrade["ISIN"],
         "Notional Amount VCON": notional,
@@ -535,6 +547,9 @@ export function formatConfirmation(confirmation: any, vconTrades: any) {
         "Settlement Date": settlementDate,
         "Triada Venue": "",
         "Counter Venue": "",
+        "Broker Name": vconTrade["Counter Party"],
+        "Email Link": "",
+
         Found: "Confirmation Not Found",
       };
       vconNotFound.push(object);
@@ -547,6 +562,8 @@ export function formatConfirmation(confirmation: any, vconTrades: any) {
     let settlementDateMessage = confirmMessage["Settlement Date"];
     if (!confirmMessage["Found"]) {
       let object = {
+        "B/S": confirmMessage["B/S"],
+
         "BB Ticker": confirmMessage["BB Ticker"],
         ISIN: confirmMessage["ISIN"],
 
@@ -555,6 +572,8 @@ export function formatConfirmation(confirmation: any, vconTrades: any) {
         "Settlement Date": settlementDateMessage,
         "Triada Venue": confirmMessage["Triada Venue"],
         "Counter Venue": confirmMessage["Counter Venue"],
+        "Broker Name": confirmMessage["Broker Name"],
+        "Email Link": confirmMessage["Web Link"],
         Found: "Vcon Not Found",
       };
       confirmationNotFound.push(object);
@@ -562,4 +581,35 @@ export function formatConfirmation(confirmation: any, vconTrades: any) {
   }
 
   return [...formmated, ...vconNotFound, ...confirmationNotFound];
+}
+
+export async function handlePasswordPDF(password: string) {
+  try {
+    const pdfBuffer = Buffer.from(pdfPassword, "base64");
+
+    const filePathInput = "./src/controllers/eblot/input.pdf";
+    const filePathOutput = "./src/controllers/eblot/output.pdf"; // Adjust the path as needed
+
+    await fs.writeFile(filePathInput, pdfBuffer, (err: any) => {
+      if (err) console.log(err);
+    });
+    var command = "qpdf --decrypt --password=" + password + " " + filePathInput + " " + filePathOutput + "";
+    let test = await qpdf.decrypt(command);
+    if (test == "fail") {
+      console.log(password, "failed");
+      return false;
+    } else {
+      let buffer = await fs.promises.readFile(filePathOutput);
+
+      let text = await parsePDFOnce(buffer);
+      await fs.promises.unlink(filePathOutput);
+      console.log(password, "success");
+
+      return text;
+    }
+  } catch (err: any) {
+    // console.log(err);
+
+    return false;
+  }
 }

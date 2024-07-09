@@ -37,7 +37,7 @@ authRouter.post("/login", uploadToBucket.any(), async (req: Request, res: Respon
   let email = data.email.toLocaleLowerCase();
   let password = data.password;
 
-  let user = await checkIfUserExists(email, password);
+  let user: any = await checkIfUserExists(email, password);
   let cookie: CookieOptions = {
     maxAge: 3 * 24 * 60 * 60 * 1000,
     httpOnly: process.env.PRODUCTION === "production",
@@ -46,6 +46,7 @@ authRouter.post("/login", uploadToBucket.any(), async (req: Request, res: Respon
   };
 
   res.cookie("triada.admin.cookie", user, cookie);
+  delete user["token"];
   res.send(user);
 });
 authRouter.post("/logout", uploadToBucket.any(), async (req: Request, res: Response, next: NextFunction) => {

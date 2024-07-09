@@ -596,6 +596,16 @@ export async function editPosition(editedPosition: any, date: string) {
             positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
 
             positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
+          } else if (editedPosition["Event Type"] == "Settlement Edit") {
+            let factorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
+
+            positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
+            positionInPortfolio["Interest"][factorDate] = parseFloat(editedPosition[title]);
+
+            changes.push(`Notional Amount Changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]} on ${factorDate}`);
+            positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
+
+            positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
           } else if (editedPosition["Event Type"] == "Redeemped") {
             let factorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
             positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};

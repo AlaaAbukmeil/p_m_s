@@ -687,3 +687,6 @@ export function classifyCountry(country: any) {
   }
   return { marketType: "NA", region: "NA", country: country };
 }
+export function isNotInteger(value: any) {
+  return isNaN(parseInt(value, 10));
+}
