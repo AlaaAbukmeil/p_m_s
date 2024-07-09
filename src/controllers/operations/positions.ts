@@ -664,29 +664,30 @@ export async function pinPosition(position: PinnedPosition) {
 
     const reportCollection = database.collection("pinned");
     position["Pin Timestamp"] = new Date().getTime();
-    const query = { ISIN: position.ISIN, Location: position.Location };
 
-    // Find the document
-    const existingPosition = await reportCollection.findOne(query);
-    if (existingPosition) {
-      // If found, update the Pin property
-      const updateResult = await reportCollection.updateOne(query, { $set: { Pin: position.Pin } });
+    if (position.ISIN) {
+      let positions = position.ISIN.split("&");
+      for (let index = 0; index < positions.length; index++) {
+        const element = positions[index];
+        const query = { ISIN: element, Location: position.Location };
+        const newInsert = { ISIN: element, Location: position.Location, Pin: position.Pin };
 
-      if (updateResult.matchedCount === 1) {
-        return { status: 200, message: "Position updated successfully." };
-      } else {
-        throw new Error("Position update failed.");
-      }
-    } else {
-      // If not found, insert a new document
-      const insertResult = await reportCollection.insertOne(position);
+        console.log(query, position.Pin );
 
-      if (insertResult.insertedId) {
-        return { status: 200, message: "Position inserted successfully." };
-      } else {
-        return { error: "fatal error" };
+        // Find the document
+        const existingPosition = await reportCollection.findOne(query);
+        if (existingPosition) {
+          // If found, update the Pin property
+          const updateResult = await reportCollection.updateOne(query, { $set: { Pin: position.Pin } });
+          console.log(updateResult);
+        } else {
+          // If not found, insert a new document
+          const insertResult = await reportCollection.insertOne(newInsert);
+          console.log(insertResult);
+        }
       }
     }
+    return { status: 200, message: "Position inserted successfully." };
   } catch (error: any) {
     console.log(error);
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());

@@ -942,6 +942,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         });
       }
       let totalTicker = "";
+      groupedByLocation[locationCode]["Pin"] = "pinned";
       for (let groupPositionIndex = 0; groupPositionIndex < groupedByLocation[locationCode].data.length; groupPositionIndex++) {
         if (groupedByLocation[locationCode].data[groupPositionIndex]["Notional Amount"] == 0) {
           groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = "#C5E1A5";
@@ -959,6 +960,16 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         }
         let bbticker = groupedByLocation[locationCode].data[groupPositionIndex]["BB Ticker"].toString().split(" ");
         totalTicker += bbticker[0] + " " + (bbticker[1] || "") + (groupPositionIndex < length - 1 ? " + " : "");
+
+        if (groupedByLocation[locationCode]["ISIN"]) {
+          groupedByLocation[locationCode]["ISIN"] = (groupedByLocation[locationCode]["ISIN"] || "") + "&" + groupedByLocation[locationCode].data[groupPositionIndex]["ISIN"];
+        } else {
+          groupedByLocation[locationCode]["ISIN"] = groupedByLocation[locationCode].data[groupPositionIndex]["ISIN"];
+        }
+
+        if (groupedByLocation[locationCode].data[groupPositionIndex]["Pin"] == "not pinned") {
+          groupedByLocation[locationCode]["Pin"] = "not pinned";
+        }
       }
 
       let portfolioViewType = view;
@@ -985,6 +996,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
           "Day P&L (USD)": groupedByLocation[locationCode].groupDayPl,
           "MTD P&L (USD)": groupedByLocation[locationCode].groupMTDPl,
           "Notional Amount": groupedByLocation[locationCode].groupNotional,
+          ISIN: groupedByLocation[locationCode]["ISIN"],
+          Pin: groupedByLocation[locationCode]["Pin"],
         };
         if (groupedByLocation[locationCode].groupSpreadTZ || groupedByLocation[locationCode].groupSpreadTZ == 0) {
           newObject["Current Spread (T)"] = Math.round(groupedByLocation[locationCode].groupSpreadTZ * 100);

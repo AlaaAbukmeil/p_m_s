@@ -14,7 +14,7 @@ import { isRatingHigherThanBBBMinus } from "../analytics/tools";
 import { getRlzdTrades } from "./trades";
 import { insertEditLogs } from "../operations/logs";
 import { getMonthInFundDetailsFormat } from "../operations/tools";
-export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions = null, view: "front office" | "back office" | "exposure" | "fact sheet", sortBy: "pl" | "price move" | null) {
+export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions: any = null, view: "front office" | "back office" | "exposure" | "fact sheet", sortBy: "pl" | "price move" | null) {
   const database = client.db("portfolios");
   let earliestPortfolioName = await getEarliestCollectionName(date);
 
@@ -277,7 +277,7 @@ export function getMTDParams(portfolio: any, lastMonthPortfolio: any, dateInput:
   }
 }
 
-function getDayURlzdInt(portfolio: any, date: any) {
+export function getDayURlzdInt(portfolio: any, date: any) {
   let lastUploadTradesDate = 0,
     lastUpdatePricesDate = 0;
   let daysRemaining = remainingDaysInYear(date);
@@ -440,7 +440,7 @@ export function getYTDInt(portfolio: any, lastYearDate: any, date: any) {
   return { portfolio: portfolio, ytdinterest: ytdinterest };
 }
 
-async function getPL(portfolio: any, latestPortfolioThisMonth: any, date: any) {
+export async function getPL(portfolio: any, latestPortfolioThisMonth: any, date: any) {
   let thisMonth = monthlyRlzdDate(date);
   let thisDay = formatDateRlzdDaily(date);
   for (let index = 0; index < portfolio.length; index++) {
