@@ -142,7 +142,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
     }
     let fundDetails = portfolioFormattedSorted.fundDetails;
     documents = portfolioFormattedSorted.portfolio;
-    return { portfolio: documents, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: dayParamsWithLatestUpdates.lastUploadTradesDate, updatePriceDate: dayParamsWithLatestUpdates.lastUpdatePricesDate };
+    return { portfolio: documents, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: dayParamsWithLatestUpdates.lastUploadTradesDate, updatePriceDate: dayParamsWithLatestUpdates.lastUpdatePricesDate, collectionName: earliestPortfolioName.predecessorDate };
   }
 }
 
@@ -302,6 +302,7 @@ export function getDayURlzdInt(portfolio: any, date: any) {
 
     let todayPrice: any = parseFloat(position["Mid"]);
     portfolio[index]["Day URlzd"] = portfolio[index]["Type"] == "CDS" ? ((parseFloat(todayPrice) - parseFloat(yesterdayPrice)) * portfolio[index]["Notional Amount"]) / portfolio[index]["Original Face"] : (parseFloat(todayPrice) - parseFloat(yesterdayPrice)) * portfolio[index]["Notional Amount"] || 0;
+
     if (portfolio[index]["Day URlzd"] == 0) {
       portfolio[index]["Day URlzd"] = 0;
     } else if (!portfolio[index]["Day URlzd"]) {
@@ -459,7 +460,8 @@ export async function getPL(portfolio: any, latestPortfolioThisMonth: any, date:
     portfolio[index]["Day P&L"] = parseFloat(portfolio[index]["Day Int."]) + parseFloat(portfolio[index]["Day Rlzd"]) + parseFloat(portfolio[index]["Day URlzd"]) ? parseFloat(portfolio[index]["Day Int."]) + parseFloat(portfolio[index]["Day Rlzd"]) + parseFloat(portfolio[index]["Day URlzd"]) : 0;
     portfolio[index]["MTD P&L"] = parseFloat(portfolio[index]["MTD Rlzd"]) + (parseFloat(portfolio[index]["MTD URlzd"]) || 0) + parseFloat(portfolio[index]["MTD Int."]) || 0;
     portfolio[index]["YTD P&L"] = (parseFloat(portfolio[index]["YTD Rlzd"]) || 0) + (parseFloat(portfolio[index]["YTD URlzd"]) || 0) + parseFloat(portfolio[index]["YTD Int."]) || 0;
-    portfolio[index]["Entry Price"] = portfolio[index]["Entry Price"] ? getEarliestDateKeyAndValue(portfolio[index]["Entry Price"]).value : 0;
+
+    portfolio[index]["Entry Price"] = portfolio[index]["Entry Price"] ? (portfolio[index]["Entry Price"][thisMonth] ? portfolio[index]["Entry Price"][thisMonth] : portfolio[index]["MTD Mark"]) : portfolio[index]["MTD Mark"];
   }
   return portfolio;
 }

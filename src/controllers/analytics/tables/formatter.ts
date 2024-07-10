@@ -1131,6 +1131,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
 
           "MTD P&L (USD)": groupedByLocation[locationCode].groupMTDPl,
           "Notional Amount": groupedByLocation[locationCode].groupNotional,
+          ISIN: groupedByLocation[locationCode]["ISIN"],
+          Pin: groupedByLocation[locationCode]["Pin"],
         };
         if (groupedByLocation[locationCode].groupSpreadTZ || groupedByLocation[locationCode].groupSpreadTZ == 0) {
           newObject["Current Spread (T)"] = Math.round(groupedByLocation[locationCode].groupSpreadTZ * 100);
