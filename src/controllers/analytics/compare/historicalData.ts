@@ -32,7 +32,7 @@ export async function getCollectionsInRange(start: any, end: any): Promise<any> 
   return finalCollectionsArray;
 }
 
-export function breakdown(portfolio: any, fundDetails: any) {
+export function breakdown(portfolio: any, fundDetails: any, name: any) {
   let analytics: any = {
     country: {},
     sector: {},
@@ -87,7 +87,7 @@ export function breakdown(portfolio: any, fundDetails: any) {
   return analytics;
 }
 
-function sumParameter(analytics: AnalyticsSample | any, { dayUnrlzd, dayRlzd, dayInt, dayFx, dayPNL, mtdUnrlzd, mtdRlzd, mtdInt, mtdFx, mtdPNL, nav, usdValue }: any, param: any) {
+function sumParameter(analytics: AnalyticsSample | any, { dayUnrlzd, dayRlzd, dayInt, dayFx, dayPNL, mtdUnrlzd, mtdRlzd, mtdInt, mtdFx, mtdPNL, nav }: any, param: any) {
   if (!analytics[param]) {
     analytics[param] = {};
   }
@@ -116,19 +116,9 @@ function sumParameter(analytics: AnalyticsSample | any, { dayUnrlzd, dayRlzd, da
   analytics[param].mtdFxOfNAV = (analytics[param].mtdFxOfNAV || 0) + mtdFx / nav;
   analytics[param].mtdPNLOfNAV = (analytics[param].mtdPNLOfNAV || 0) + mtdPNL / nav;
 
-  //   if (usdValue != 0) {
-  //     analytics[param].dayUnrlzdUniform = (analytics[param].dayUnrlzdUniform || 1) * (dayUnrlzd / usdValue + 1);
-  //     analytics[param].dayRlzdUniform = (analytics[param].dayRlzdUniform || 1) * (dayRlzd / usdValue + 1);
-  //     analytics[param].dayIntUniform = (analytics[param].dayIntUniform || 1) * (dayInt / usdValue + 1);
-  //     analytics[param].dayFxUniform = (analytics[param].dayFxUniform || 1) * (dayFx / usdValue + 1);
-  //     analytics[param].dayPNLUniform = (analytics[param].dayPNLUniform || 1) * (dayPNL / usdValue + 1);
-
-  //     analytics[param].mtdUnrlzdUniform = (analytics[param].mtdUnrlzdUniform || 1) * (mtdUnrlzd / usdValue + 1);
-  //     analytics[param].mtdRlzdUniform = (analytics[param].mtdRlzdUniform || 1) * (mtdRlzd / usdValue + 1);
-  //     analytics[param].mtdIntUniform = (analytics[param].mtdIntUniform || 1) * (mtdInt / usdValue + 1);
-  //     analytics[param].mtdFxUniform = (analytics[param].mtdFxUniform || 1) * (mtdFx / usdValue + 1);
-  //     analytics[param].mtdPNLUniform = (analytics[param].mtdPNLUniform || 1) * (mtdPNL / usdValue + 1);
-  //   }
+  if (param == "Algo") {
+    console.log(analytics[param].dayUnrlzdOfNAV, dayUnrlzd, nav);
+  }
 }
 
 export async function updateAnalytics(analytics: any, name: string) {
@@ -180,14 +170,27 @@ export function extractAnalytics(analytics: any, conditions: any, notOperation =
     Object.keys(document.region).forEach((key) => regions.add(key));
     Object.keys(document.marketType).forEach((key) => marketTypes.add(key));
     let data = {};
-    if (type == "pnl") {
-      checkAnalyticsConditions(document, conditions, data);
-    } else if (type == "percentage") {
-      checkAnalyticsConditionsOfNAV(document, conditions, data);
+    if (notOperation == "false") {
+      if (type == "pnl") {
+        checkAnalyticsConditions(document, conditions, data, name);
+      } else if (type == "percentage") {
+        checkAnalyticsConditionsOfNAV(document, conditions, data, name);
+      }
+    } else {
+      if (type == "pnl") {
+        let tempData = {};
+        checkAnalyticsConditions(document, { portfolio: "portfolio" }, data, name);
+        checkAnalyticsConditions(document, conditions, tempData, name);
+        substractParams(data, tempData);
+      } else if (type == "percentage") {
+        let tempData = {};
+
+        checkAnalyticsConditionsOfNAV(document, { portfolio: "portfolio" }, data, name);
+        checkAnalyticsConditionsOfNAV(document, conditions, tempData, name);
+        substractParams(data, tempData);
+      }
     }
-    // } else if (type == "performance") {
-    //   checkAnalyticsConditionsUniform(document, conditions, data);
-    // }
+
     final[name] = data;
   }
   strategies = Array.from(strategies).sort();
@@ -202,7 +205,7 @@ export function extractAnalytics(analytics: any, conditions: any, notOperation =
   return { final, strategies, countries, sectors, assetClass, issuers, ratings, regions, marketTypes };
 }
 
-function checkAnalyticsConditions(portfolio: any, conditions: any, data: any) {
+function checkAnalyticsConditions(portfolio: any, conditions: any, data: any, name: any) {
   console.log(conditions);
   for (let param in conditions) {
     let values = conditions[param].split("@");
@@ -239,7 +242,7 @@ function checkAnalyticsConditions(portfolio: any, conditions: any, data: any) {
   }
 }
 
-function checkAnalyticsConditionsOfNAV(portfolio: any, conditions: any, data: any) {
+function checkAnalyticsConditionsOfNAV(portfolio: any, conditions: any, data: any, name: any) {
   for (let param in conditions) {
     let values = conditions[param].split("@");
 
@@ -248,17 +251,21 @@ function checkAnalyticsConditionsOfNAV(portfolio: any, conditions: any, data: an
         portfolio[param][values[index]] = portfolio[param][values[index]]
           ? portfolio[param][values[index]]
           : {
-              dayUnrlzd: 0,
-              dayRlzd: 0,
-              dayInt: 0,
-              dayFx: 0,
-              dayPNL: 0,
-              mtdUnrlzd: 0,
-              mtdRlzd: 0,
-              mtdInt: 0,
-              mtdFx: 0,
-              mtdPNL: 0,
+              dayUnrlzdOfNAV: 0,
+              dayRlzdOfNAV: 0,
+              dayIntOfNAV: 0,
+              dayFxOfNAV: 0,
+              dayPNLOfNAV: 0,
+              mtdUnrlzdOfNAV: 0,
+              mtdRlzdOfNAV: 0,
+              mtdIntOfNAV: 0,
+              mtdFxOfNAV: 0,
+              mtdPNLOfNAV: 0,
             };
+        if (name == "2024-04-19") {
+          console.log(data, portfolio[param][values[index]], "before 1");
+          // console.log((data.dayUnrlzd || 0), portfolio[param][values[index]], name);
+        }
         data.dayUnrlzd = (data.dayUnrlzd || 0) + portfolio[param][values[index]].dayUnrlzdOfNAV;
         data.dayRlzd = (data.dayRlzd || 0) + portfolio[param][values[index]].dayRlzdOfNAV;
         data.dayInt = (data.dayInt || 0) + portfolio[param][values[index]].dayIntOfNAV;
@@ -270,8 +277,16 @@ function checkAnalyticsConditionsOfNAV(portfolio: any, conditions: any, data: an
         data.mtdInt = (data.mtdInt || 0) + portfolio[param][values[index]].mtdIntOfNAV;
         data.mtdFx = (data.mtdFx || 0) + portfolio[param][values[index]].mtdFxOfNAV;
         data.mtdPNL = (data.mtdPNL || 0) + portfolio[param][values[index]].mtdPNLOfNAV;
+        if (name == "2024-04-19") {
+          console.log(data, "after 1");
+          // console.log((data.dayUnrlzd || 0), portfolio[param][values[index]], name);
+        }
       }
     }
+  }
+  if (name == "2024-04-19") {
+    console.log(data, "tew after");
+    // console.log((data.dayUnrlzd || 0), portfolio[param][values[index]], name);
   }
   data.dayUnrlzd = data.dayUnrlzd * 100;
   data.dayRlzd = data.dayRlzd * 100;
@@ -286,49 +301,8 @@ function checkAnalyticsConditionsOfNAV(portfolio: any, conditions: any, data: an
   data.mtdPNL = data.mtdPNL * 100;
 }
 
-// function checkAnalyticsConditionsUniform(portfolio: any, conditions: any, data: any) {
-//   for (let param in conditions) {
-//     let values = conditions[param].split("@");
-
-//     for (let index = 0; index < values.length; index++) {
-//       if (values[index] != "") {
-//         portfolio[param][values[index]] = portfolio[param][values[index]]
-//           ? portfolio[param][values[index]]
-//           : {
-//               dayUnrlzd: 1,
-//               dayRlzd: 1,
-//               dayInt: 1,
-//               dayFx: 1,
-//               dayPNL: 1,
-//               mtdUnrlzd: 1,
-//               mtdRlzd: 1,
-//               mtdInt: 1,
-//               mtdFx: 1,
-//               mtdPNL: 1,
-//             };
-//         data.dayUnrlzd = (data.dayUnrlzd || 1) * portfolio[param][values[index]].dayUnrlzdUniform;
-//         data.dayRlzd = (data.dayRlzd || 1) * portfolio[param][values[index]].dayRlzdUniform;
-//         data.dayInt = (data.dayInt || 1) * portfolio[param][values[index]].dayIntUniform;
-//         data.dayFx = (data.dayFx || 1) * portfolio[param][values[index]].dayFxUniform;
-//         data.dayPNL = (data.dayPNL || 1) * portfolio[param][values[index]].dayPNLUniform;
-
-//         data.mtdUnrlzd = (data.mtdUnrlzd || 1) * portfolio[param][values[index]].mtdUnrlzdUniform;
-//         data.mtdRlzd = (data.mtdRlzd || 1) * portfolio[param][values[index]].mtdRlzdUniform;
-//         data.mtdInt = (data.mtdInt || 1) * portfolio[param][values[index]].mtdIntUniform;
-//         data.mtdFx = (data.mtdFx || 1) * portfolio[param][values[index]].mtdFxUniform;
-//         data.mtdPNL = (data.mtdPNL || 1) * portfolio[param][values[index]].mtdPNLUniform;
-//       }
-//     }
-//   }
-//   data.dayUnrlzd = data.dayUnrlzd - 1;
-//   data.dayRlzd = data.dayRlzd - 1;
-//   data.dayInt = data.dayInt - 1;
-//   data.dayFx = data.dayFx - 1;
-//   data.dayPNL = data.dayPNL - 1;
-
-//   data.mtdUnrlzd = data.mtdUnrlzd - 1;
-//   data.mtdRlzd = data.mtdRlzd - 1;
-//   data.mtdInt = data.mtdInt - 1;
-//   data.mtdFx = data.mtdFx - 1;
-//   data.mtdPNL = data.mtdPNL - 1;
-// }
+function substractParams(object: any, reference: any) {
+  for (let param in object) {
+    object[param] = object[param] - reference[param];
+  }
+}

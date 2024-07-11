@@ -27,7 +27,7 @@ analyticsRouter.get("/compare", uploadToBucket.any(), async (req: Request | any,
     delete conditions.start;
     delete conditions.end;
 
-    if (notOperation == "false" && Object.keys(conditions).length == 0) {
+    if (Object.keys(conditions).length == 0) {
       // console.log("she",conditions)
       conditions = {};
       conditions.portfolio = "portfolio";
@@ -41,7 +41,7 @@ analyticsRouter.get("/compare", uploadToBucket.any(), async (req: Request | any,
 
     analytics = extractAnalytics(analytics, conditions, notOperation, type);
 
-    console.log(analytics[0]);
+    // console.log(analytics);
     res.send(analytics);
   } catch (error: any) {
     console.log(error);
@@ -58,8 +58,8 @@ analyticsRouter.post("/update-compare", uploadToBucket.any(), async (req: Reques
     for (let index = 0; index < list.length; index++) {
       let date = list[index].split(" ")[0] + " 23:59";
       let report: any = await getPortfolioWithAnalytics(date, "order", 1, {}, "back office", null);
-      let analytics = breakdown(report.portfolio, report.fundDetails);
       let name = report.collectionName.split(" ");
+      let analytics = breakdown(report.portfolio, report.fundDetails, name);
       analytics.name = name[0];
 
       analytics.timestamp = new Date(analytics.name + " 23:59").getTime();

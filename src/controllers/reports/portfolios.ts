@@ -350,6 +350,7 @@ export async function getMTDURlzdInt(portfolio: any, date: any) {
   let currentDayDate: string = new Date(date).toISOString().slice(0, 10);
   let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate);
   let monthlyInterest: any = {};
+  let thisDay = formatDateRlzdDaily(date);
 
   for (let index = 0; index < portfolio.length; index++) {
     let position = portfolio[index];
