@@ -93,7 +93,7 @@ export async function checkIfUserExists(email: string, password: string): Promis
             shareClass: user["shareClass"],
           };
         } else {
-          return { message: "Wrong password", status: 401, token: null, email: null, accessRole: null, shareClass: null };
+          return { message: "Wrong Password", status: 401, token: null, email: null, accessRole: null, shareClass: null };
         }
       } catch (error) {
         return { message: "unexpected error", status: 401, token: null, email: null, accessRole: null, shareClass: null };
@@ -305,6 +305,31 @@ export async function getUser(userId: string) {
     return {};
   }
 }
+export async function getUserByEmail(email: string) {
+  try {
+    // Connect to the MongoDB client
+
+    // Access the 'structure' database
+    const database = client.db("auth");
+
+    // Access the collection named by the 'customerId' parameter
+    const collection = database.collection("users");
+
+    // Perform your operations, such as find documents in the collection
+    // This is an example operation that fetches all documents in the collection
+    // Empty query object means "match all documents"
+    const options = {}; // You can set options for the find operation if needed
+    const query = { email: email }; // Replace yourIdValue with the actual ID you're querying
+    const results = await collection.find(query, options).toArray();
+
+    // The 'results' variable now contains an array of documents from the collection
+    return results[0];
+  } catch (error) {
+    // Handle any errors that occurred during the operation
+    console.error("An error occurred while retrieving data from MongoDB:", error);
+    return {};
+  }
+}
 
 export async function deleteUser(userId: string, userName: string, userEmail: any) {
   try {
@@ -397,4 +422,36 @@ export function checkPasswordStrength(password: any) {
 
   // Return the description string
   return description;
+}
+
+export async function updateUser(userInfo: any, newFileNames: any) {
+  try {
+    // Access the 'structure' database
+    const database = client.db("auth");
+
+    // Access the collection named by the 'customerId' parameter
+    const collection = database.collection("users");
+
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    await insertEditLogs(newFileNames, "Upload User", dateTime, "User uploaded a new file", userInfo["email"] + " " + userInfo["name"]);
+
+    let action = await collection.updateOne(
+      { _id: userInfo["_id"] }, // Filter to match the document
+      { $set: userInfo } // Update operation
+    );
+
+    if (action) {
+      return { error: null };
+    } else {
+      return {
+        error: "unexpected error, please contact Triada team",
+      };
+    }
+  } catch (error: any) {
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.log(error);
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    await insertEditLogs([errorMessage], "Errors", dateTime, "updateUser", "src/controllers/auth.ts");
+  }
 }

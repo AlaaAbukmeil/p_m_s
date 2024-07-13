@@ -109,8 +109,10 @@ export async function addLink(data: any): Promise<any> {
     const insertResult = await reportCollection.insertOne(newData);
     let email = newData["email"];
     let name = newData["name"];
-    let result = await sendLinkEmail({ email, name, link: base });
-    console.log(result);
+    if (email != "") {
+      let result = await sendLinkEmail({ email, name, link: base });
+      console.log(result);
+    }
     // The insertOne operation returns an InsertOneResult object
     // You can check the result by inspecting `insertedCount` and `insertedId`
     if (insertResult.insertedCount === 0) {

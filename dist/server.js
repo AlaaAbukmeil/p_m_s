@@ -34,13 +34,16 @@ const corsOptions = {
     credentials: true,
     optionSuccessStatus: 200,
 };
-app.use(express.json());
+// app.use(bodyParser.json({ limit: '50mb' }));
+// app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+app.use(bodyParser.json({ limit: "50mb" }));
+app.use(bodyParser.urlencoded({
+    limit: "50mb",
+    extended: true,
+    parameterLimit: 50000,
+}));
 app.use(cors(corsOptions));
 app.use(express.static(path.join(__dirname, "/public")));
-app.use(bodyParser.urlencoded({
-    extended: false,
-}));
-app.use(bodyParser.json());
 app.use("/api/web/", reports_1.default);
 app.use("/api/web/", auth_1.default);
 app.use("/api/web/", formatter_1.default);

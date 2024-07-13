@@ -169,13 +169,13 @@ export async function updatePreviousPricesPortfolioBloomberg(data: any, collecti
             for (let index = 0; index < positions.length; index++) {
               let object = positions[index];
 
-              if (row["Today's Mid"] && row["Today's Mid"].toString().includes("N/A")) {
+              if (isNaN(row["Today's Mid"]) || row["Today's Mid"].toString().includes("N/A")) {
                 return { error: `${object["BB Ticker"]}' price has error, please review prices` };
               }
-              if (row["Today's Ask"] && row["Today's Ask"].toString().includes("N/A")) {
+              if (isNaN(row["Today's Ask"]) || row["Today's Ask"].toString().includes("N/A")) {
                 return { error: `${object["BB Ticker"]}' price has error, please review prices` };
               }
-              if (row["Today's Bid"] && row["Today's Bid"].toString().includes("N/A")) {
+              if (isNaN(row["Today's Bid"]) || row["Today's Bid"].toString().includes("N/A")) {
                 return { error: `${object["BB Ticker"]}' price has error, please review prices` };
               }
               object["Mid"] = parseFloat(row["Today's Mid"]) / divider;
@@ -338,13 +338,13 @@ export async function updatePricesPortfolio(path: string, link: string) {
 
           for (let index = 0; index < positions.length; index++) {
             let object = positions[index];
-            if (row["Today's Mid"] && row["Today's Mid"].toString().includes("N/A")) {
+            if (isNaN(row["Today's Mid"]) || row["Today's Mid"].toString().includes("N/A")) {
               return { error: `${object["BB Ticker"]}' price has error, please review prices` };
             }
-            if (row["Today's Ask"] && row["Today's Ask"].toString().includes("N/A")) {
+            if (isNaN(row["Today's Ask"]) || row["Today's Ask"].toString().includes("N/A")) {
               return { error: `${object["BB Ticker"]}' price has error, please review prices` };
             }
-            if (row["Today's Bid"] && row["Today's Bid"].toString().includes("N/A")) {
+            if (isNaN(row["Today's Bid"]) || row["Today's Bid"].toString().includes("N/A")) {
               return { error: `${object["BB Ticker"]}' price has error, please review prices` };
             }
             object["Mid"] = parseFloat(row["Today's Mid"]) / divider;

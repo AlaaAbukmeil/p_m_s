@@ -1,12 +1,10 @@
-import { addUser, checkIfUserExists, checkLinkRight, checkPasswordStrength, checkUserRight, deleteUser, editUser, getAllUsers, registerUser, resetPassword, sendResetPasswordRequest } from "../controllers/userManagement/auth";
-import { generateSignedUrl, verifyToken, verifyTokenFactSheetMember, verifyTokenRiskMember } from "../controllers/common";
-import { deleteTrade, editTrade } from "../controllers/operations/trades";
-import { uploadToBucket } from "./reports/reports";
+import { addUser, checkIfUserExists, checkLinkRight, checkPasswordStrength, checkUserRight, deleteUser, editUser, getAllUsers, getUserByEmail, registerUser, resetPassword, sendResetPasswordRequest, updateUser } from "../controllers/userManagement/auth";
+import { bucketPublic, bucketPublicBucket, generateSignedUrl, verifyToken, verifyTokenFactSheetMember } from "../controllers/common";
+import { bucketPublicTest, multerTest, uploadToBucket, uploadToBucketPublic } from "./reports/reports";
 import { CookieOptions, NextFunction, Router } from "express";
 import { Request, Response } from "express";
 import { readUsersSheet } from "../controllers/operations/readExcel";
 import { getDateTimeInMongoDBCollectionFormat } from "../controllers/reports/common";
-import { insertEditLogs } from "../controllers/operations/logs";
 const bcrypt = require("bcrypt");
 const saltRounds: any = process.env.SALT_ROUNDS;
 const authRouter = Router();
@@ -23,6 +21,7 @@ authRouter.get("/auth", uploadToBucket.any(), verifyTokenFactSheetMember, async 
     res.sendStatus(401);
   }
 });
+
 authRouter.get("/users", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
     let result = await getAllUsers();
@@ -32,9 +31,25 @@ authRouter.get("/users", verifyToken, async (req: Request, res: Response, next: 
   }
 });
 
+authRouter.get("/user", verifyTokenFactSheetMember, async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let selected = req.query.selected && req.query.selected != "" ? req.query.selected : req.email;
+
+    if (!selected) {
+      res.send(401);
+    } else {
+      let result = await getUserByEmail(selected);
+
+      res.send(result);
+    }
+  } catch (error) {
+    res.send(404);
+  }
+});
+
 authRouter.post("/login", uploadToBucket.any(), async (req: Request, res: Response, next: NextFunction) => {
   let data = req.body;
-  let email = data.email.toLocaleLowerCase();
+  let email = data.email.toLocaleLowerCase().trim();
   let password = data.password;
 
   let user: any = await checkIfUserExists(email, password);
@@ -49,6 +64,7 @@ authRouter.post("/login", uploadToBucket.any(), async (req: Request, res: Respon
   delete user["token"];
   res.send(user);
 });
+
 authRouter.post("/logout", uploadToBucket.any(), async (req: Request, res: Response, next: NextFunction) => {
   res.clearCookie("triada.admin.cookie", {
     httpOnly: true, // Set this to true for security
@@ -57,6 +73,7 @@ authRouter.post("/logout", uploadToBucket.any(), async (req: Request, res: Respo
   });
   res.send("Cookie cleared successfully");
 });
+
 authRouter.post("/sign-up", async (req: Request, res: Response, next: NextFunction) => {
   let data = req.body;
   let email = data.email.toLowerCase();
@@ -66,6 +83,7 @@ authRouter.post("/sign-up", async (req: Request, res: Response, next: NextFuncti
   console.log(result);
   res.send(result);
 });
+
 authRouter.post("/send-reset-code", async (req: Request, res: Response, next: NextFunction) => {
   let data = req.body;
   let result = await sendResetPasswordRequest(data.email);
@@ -97,6 +115,7 @@ authRouter.post("/edit-user", verifyToken, uploadToBucket.any(), async (req: Req
     res.send({ error: "something is not correct, check error log records" });
   }
 });
+
 authRouter.post("/delete-user", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let data = req.body;
@@ -111,6 +130,7 @@ authRouter.post("/delete-user", verifyToken, uploadToBucket.any(), async (req: R
     res.send({ error: "Unexpected Error" });
   }
 });
+
 authRouter.post("/add-user", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let data = req.body;
@@ -180,4 +200,48 @@ authRouter.post("/send-fact-sheet-welcome", verifyToken, async (req: Request, re
   }
 });
 
+authRouter.post("/user-upload-files", verifyToken, multerTest.any(), async (req: Request | any, res: Response, next: any) => {
+  try {
+    const files = req.files;
+    let userInfo = await getUserByEmail(req.email);
+    const purpose = req.body["files-purpose"];
+    userInfo.files = userInfo.files ? userInfo.files : [];
+    let newFileNames: any = [];
+
+    const uploadFile = (file: any) => {
+      return new Promise((resolve, reject) => {
+        const blob = bucketPublicTest.file(file.originalname);
+        newFileNames.push(file.originalname);
+        const blobStream = blob.createWriteStream();
+
+        blobStream.on("error", (err: any) => {
+          reject(err);
+        });
+
+        blobStream.on("finish", () => {
+          const publicUrl = `${bucketPublic}/${blob.name}`;
+          userInfo.files.push({
+            name: file.originalname,
+            link: publicUrl,
+            purpose: purpose,
+            createdOn: getDateTimeInMongoDBCollectionFormat(new Date()) + " HKT",
+          });
+          resolve(null);
+        });
+
+        blobStream.end(file.buffer);
+      });
+    };
+
+    // Await all file uploads
+    await Promise.all(files.map((file: any) => uploadFile(file)));
+
+    console.log(userInfo.name, userInfo.files.length);
+    const action = await updateUser(userInfo, newFileNames);
+    res.send(action);
+  } catch (error) {
+    console.log(error);
+    res.send({ error: error });
+  }
+});
 export default authRouter;

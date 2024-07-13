@@ -43,6 +43,8 @@ export function breakdown(portfolio: any, fundDetails: any, name: any) {
     region: {},
     marketType: {},
     portfolio: {},
+    positions: {},
+    isinNames: {},
   };
 
   for (let index = 0; index < portfolio.length; index++) {
@@ -58,6 +60,9 @@ export function breakdown(portfolio: any, fundDetails: any, name: any) {
       let region = position["Region"];
       let marketType = position["Market Type"];
       let usdValue = Math.abs(position["Value (BC)"]);
+      let isin = position["ISIN"];
+      let bbTicker = position["BB Ticker"];
+      analytics.isinNames[isin] = bbTicker;
 
       let dayUnrlzd = parseFloat(position["Day URlzd (BC)"]);
       let dayRlzd = parseFloat(position["Day Rlzd (BC)"]);
@@ -79,9 +84,8 @@ export function breakdown(portfolio: any, fundDetails: any, name: any) {
       sumParameter(analytics.rating, { dayUnrlzd, dayRlzd, dayInt, dayFx, dayPNL, mtdUnrlzd, mtdRlzd, mtdInt, mtdFx, mtdPNL, nav: fundDetails.nav, usdValue }, rating);
       sumParameter(analytics.region, { dayUnrlzd, dayRlzd, dayInt, dayFx, dayPNL, mtdUnrlzd, mtdRlzd, mtdInt, mtdFx, mtdPNL, nav: fundDetails.nav, usdValue }, region);
       sumParameter(analytics.marketType, { dayUnrlzd, dayRlzd, dayInt, dayFx, dayPNL, mtdUnrlzd, mtdRlzd, mtdInt, mtdFx, mtdPNL, nav: fundDetails.nav, usdValue }, marketType);
+      sumParameter(analytics.positions, { dayUnrlzd, dayRlzd, dayInt, dayFx, dayPNL, mtdUnrlzd, mtdRlzd, mtdInt, mtdFx, mtdPNL, nav: fundDetails.nav, usdValue }, isin);
       sumParameter(analytics.portfolio, { dayUnrlzd, dayRlzd, dayInt, dayFx, dayPNL, mtdUnrlzd, mtdRlzd, mtdInt, mtdFx, mtdPNL, nav: fundDetails.nav, usdValue }, "portfolio");
-
-      //   console.log(type, country, sector, assetClass, strategy, issuer, rating, region, marketType);
     }
   }
   return analytics;
@@ -115,10 +119,6 @@ function sumParameter(analytics: AnalyticsSample | any, { dayUnrlzd, dayRlzd, da
   analytics[param].mtdIntOfNAV = (analytics[param].mtdIntOfNAV || 0) + mtdInt / nav;
   analytics[param].mtdFxOfNAV = (analytics[param].mtdFxOfNAV || 0) + mtdFx / nav;
   analytics[param].mtdPNLOfNAV = (analytics[param].mtdPNLOfNAV || 0) + mtdPNL / nav;
-
-  if (param == "Algo") {
-    console.log(analytics[param].dayUnrlzdOfNAV, dayUnrlzd, nav);
-  }
 }
 
 export async function updateAnalytics(analytics: any, name: string) {
@@ -157,6 +157,7 @@ export function extractAnalytics(analytics: any, conditions: any, notOperation =
   let ratings: any = new Set();
   let regions: any = new Set();
   let marketTypes: any = new Set();
+  let isinNames: any = [];
 
   for (let index = 0; index < analytics.length; index++) {
     let document = analytics[index];
@@ -169,6 +170,8 @@ export function extractAnalytics(analytics: any, conditions: any, notOperation =
     Object.keys(document.rating).forEach((key) => ratings.add(key));
     Object.keys(document.region).forEach((key) => regions.add(key));
     Object.keys(document.marketType).forEach((key) => marketTypes.add(key));
+    Object.keys(document.isinNames).forEach((key) => isinNames.push({ value: key, label: document.isinNames[key] }));
+
     let data = {};
     if (notOperation == "false") {
       if (type == "pnl") {
@@ -201,12 +204,12 @@ export function extractAnalytics(analytics: any, conditions: any, notOperation =
   ratings = Array.from(ratings).sort();
   regions = Array.from(regions).sort();
   marketTypes = Array.from(marketTypes).sort();
+  isinNames = isinNames.sort((a: any, b: any) => a.label - b.label);
 
-  return { final, strategies, countries, sectors, assetClass, issuers, ratings, regions, marketTypes };
+  return { final, strategies, countries, sectors, assetClass, issuers, ratings, regions, marketTypes, isinNames };
 }
 
 function checkAnalyticsConditions(portfolio: any, conditions: any, data: any, name: any) {
-  console.log(conditions);
   for (let param in conditions) {
     let values = conditions[param].split("@");
 
@@ -262,10 +265,7 @@ function checkAnalyticsConditionsOfNAV(portfolio: any, conditions: any, data: an
               mtdFxOfNAV: 0,
               mtdPNLOfNAV: 0,
             };
-        if (name == "2024-04-19") {
-          console.log(data, portfolio[param][values[index]], "before 1");
-          // console.log((data.dayUnrlzd || 0), portfolio[param][values[index]], name);
-        }
+
         data.dayUnrlzd = (data.dayUnrlzd || 0) + portfolio[param][values[index]].dayUnrlzdOfNAV;
         data.dayRlzd = (data.dayRlzd || 0) + portfolio[param][values[index]].dayRlzdOfNAV;
         data.dayInt = (data.dayInt || 0) + portfolio[param][values[index]].dayIntOfNAV;
@@ -277,17 +277,10 @@ function checkAnalyticsConditionsOfNAV(portfolio: any, conditions: any, data: an
         data.mtdInt = (data.mtdInt || 0) + portfolio[param][values[index]].mtdIntOfNAV;
         data.mtdFx = (data.mtdFx || 0) + portfolio[param][values[index]].mtdFxOfNAV;
         data.mtdPNL = (data.mtdPNL || 0) + portfolio[param][values[index]].mtdPNLOfNAV;
-        if (name == "2024-04-19") {
-          console.log(data, "after 1");
-          // console.log((data.dayUnrlzd || 0), portfolio[param][values[index]], name);
-        }
       }
     }
   }
-  if (name == "2024-04-19") {
-    console.log(data, "tew after");
-    // console.log((data.dayUnrlzd || 0), portfolio[param][values[index]], name);
-  }
+
   data.dayUnrlzd = data.dayUnrlzd * 100;
   data.dayRlzd = data.dayRlzd * 100;
   data.dayInt = data.dayInt * 100;
