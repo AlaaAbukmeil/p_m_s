@@ -69,7 +69,7 @@ export async function getTrade(tradeType: string, tradeId: string) {
   }
 }
 
-export async function editTrade(editedTrade: any, tradeType: any) {
+export async function editTrade(editedTrade: any, tradeType: any, logs = false) {
   try {
     let tradeInfo = await getTrade(tradeType, editedTrade["_id"]);
 
@@ -77,11 +77,22 @@ export async function editTrade(editedTrade: any, tradeType: any) {
       let beforeModify = JSON.parse(JSON.stringify(tradeInfo));
       beforeModify["_id"] = new ObjectId(beforeModify["_id"]);
 
-      let centralizedBlotKeys: any = ["B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Nomura Upload Status", "Edit Note"];
+      let centralizedBlotKeys: any = ["B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Nomura Upload Status", "Broker Full Name & Account", "Broker Email Status", "Broker Email", "Primary (True/False)", "Settlement Venue", "Edit Note"];
       let changes = 0;
       let changesText = [];
       for (let index = 0; index < centralizedBlotKeys.length; index++) {
         let key: any = centralizedBlotKeys[index];
+        if (key == "Broker Email Status" && editedTrade[key] == "sent" && editedTrade["Settlement Venue"] && editedTrade["Broker Email"]) {
+          // console.log(editedTrade["Broker Email"], editedTrade["Settlement Venue"], editedTrade["Triada-Broker Notes"]);
+          let action = editedTrade["Trade"]["B/S"] == "B" ? "Buys" : "Sells";
+          let amount = parseInt(editedTrade["Trade"]["Notional Amount"]) / 1000000;
+          let subject = `Triada ${action} ${Math.round(amount * 1000) / 1000} MM || Ticker ${editedTrade["Trade"]["BB Ticker"]} || ISIN ${editedTrade["Trade"]["ISIN"]}`;
+          let buyer = editedTrade["Trade"]["B/S"] == "B" ? "TRIADA CAPITAL LIMITED" : editedTrade["Trade"]["Broker Full Name & Account"];
+          let seller = editedTrade["Trade"]["B/S"] == "S" ? "TRIADA CAPITAL LIMITED" : editedTrade["Trade"]["Broker Full Name & Account"];
+
+          let pdf = await printObjectValues(editedTrade["Trade"], buyer, seller);
+          await sendBrokerEmail({ email: editedTrade["Broker Email"], subject: subject, content: pdf.output, attachment: pdf.url });
+        }
 
         if (editedTrade[key] != "" && editedTrade[key]) {
           changesText.push(`${key} changed from ${tradeInfo[key]} to ${editedTrade[key]} `);
@@ -101,7 +112,9 @@ export async function editTrade(editedTrade: any, tradeType: any) {
       const collection = database.collection(tradeType);
 
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-      await insertEditLogs(changesText, "Edit Trade", dateTime, tradeInfo["Edit Note"], tradeInfo["BB Ticker"] + " " + tradeInfo["Location"]);
+      if (logs) {
+        await insertEditLogs(changesText, "Edit Trade", dateTime, tradeInfo["Edit Note"], tradeInfo["BB Ticker"] + " " + tradeInfo["Location"]);
+      }
 
       let action = await collection.updateOne(
         { _id: tradeInfo["_id"] }, // Filter to match the document

@@ -72,7 +72,9 @@ tradesRouter.get("/rlzd-trades", verifyToken, async (req, res) => {
 
 tradesRouter.post("/edit-trade", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
-    let action = await editTrade(req.body, req.body.tradeType);
+    let logs = req.query.logs == "false" ? false : true;
+
+    let action = await editTrade(req.body, req.body.tradeType, logs);
 
     if (action.error) {
       res.send({ error: action.error });
@@ -82,7 +84,6 @@ tradesRouter.post("/edit-trade", verifyToken, uploadToBucket.any(), async (req: 
   } catch (error) {
     console.log(error);
     res.send({ error: "something is not correct, check error log records" });
-
   }
 });
 
@@ -102,6 +103,5 @@ tradesRouter.post("/delete-trade", verifyToken, uploadToBucket.any(), async (req
     res.send({ error: "Unexpected Error" });
   }
 });
-
 
 export default tradesRouter;

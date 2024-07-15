@@ -271,10 +271,12 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
   blot_emsx.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
   blot = [...blot_vcons, ...blot_ib, ...blot_emsx];
   if (blot.length > 0) {
-    let temp = blot[0];
-    blot[0] = {};
-    for (let i = 0; i < centralizedBlotterHeader.length; i++) {
-      blot[0][centralizedBlotterHeader[i]] = temp[centralizedBlotterHeader[i]];
+    for (let index = 0; index < blot.length; index++) {
+      let temp = blot[index];
+      blot[index] = {};
+      for (let i = 0; i < centralizedBlotterHeader.length; i++) {
+        blot[index][centralizedBlotterHeader[i]] = temp[centralizedBlotterHeader[i]];
+      }
     }
 
     return blot;
@@ -491,6 +493,7 @@ export function formatNomura(tradesInput: any, start: string, end: string) {
     obj["Interest"] = trade["Accrued Interest"];
     obj["Prefigured-Indicator"] = "YES";
     obj["PSET"] = pset;
+    obj["Repo Option"] = "";
 
     if (trade["Nomura Upload Status"] != "uploaded") {
       tradesOutput.push(obj);

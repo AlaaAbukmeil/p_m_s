@@ -5,6 +5,7 @@ import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { insertEditLogs } from "./logs";
 import puppeteer from "puppeteer";
 import { uploadToGCloudBucketPDF } from "./readExcel";
+import { parseBondIdentifier } from "../reports/tools";
 
 export function formatDateNomura(dateString: any) {
   // Split the input date string by '/'
@@ -127,7 +128,7 @@ export function getDateAndOneWeekLater() {
     endDate: formattedEndDate,
   };
 }
-export async function printObjectValues(obj: any) {
+export async function printObjectValues(obj: any, buyer: any, seller: any) {
   let html = `<!DOCTYPE html>
   <html lang="en">
   <head>
@@ -137,18 +138,22 @@ export async function printObjectValues(obj: any) {
       <style>
           body {
               font-family: 'Arial', sans-serif;
-              margin: 20px;
+              margin: 10px;
               padding: 0;
               background: #f4f4f4;
           }
           .container {
               background: white;
-              padding: 20px;
-              margin-top: 20px;
+              padding: 10px;
+              margin-top: 10px;
               border: 1px solid #ddd;
           }
           h1, h2, h3 {
               color: #333;
+              margin: 0 0 2px 0;
+          }
+          h1{
+          text-align:center;
           }
           table {
               width: 100%;
@@ -159,6 +164,11 @@ export async function printObjectValues(obj: any) {
               padding: 8px;
               text-align: left;
           }
+          .logo {
+              display: block;
+              margin: 0;
+              max-width: 200px;
+          }
           footer {
               margin-top: 20px;
               text-align: center;
@@ -168,64 +178,57 @@ export async function printObjectValues(obj: any) {
   </head>
   <body>
       <div class="container">
+      <div>
+      <img src="https://admin.triadacapital.com/photos/triada-logo.png" alt="Triada Capital Logo" class="logo"/>
           <h1>CONFIRMATION</h1>
-          <p><strong>From:</strong> CREDIT AGRICOLE CORPORATE AND INVESTMENT BANK<br>
-          12, Place des Etats-Unis - CS 70052, 92547, Montrouge Cedex, FRA</p>
-          <p><strong>To:</strong> TRIADA CAPITAL LIMITED<br>
+          
+          </div>
+          <p><strong>From:</strong> TRIADA CAPITAL LIMITED<br>
+          Unit 520, 5/F, Dina House, Ruttonjee Centre, 3-11 Duddell Street, Central, Hong Kong</p>
+          <p><strong>To:</strong> ${obj["Broker Full Name & Account"]}<br>
           Bonds Settlement Department</p>
-          <p><strong>Message reference:</strong> CYC00302096032CS</p>
-          <p><strong>Generated On:</strong> 26/06/24 7:11:53.227 o'clock AM GMT</p>
-          <p>We hereby confirm your securities PURCHASE on the PRIMARY market.</p>
-  
+          <p><strong>Message reference:</strong> ${obj["_id"]}</p>
+          <p><strong>Generated On:</strong> ${getDateTimeInMongoDBCollectionFormat(new Date()) + " HKT"}</p>
+          <p>We hereby confirm your securities ${obj["B/S"] == "B" ? "SELL" : "PURCHASE"}  on the ${obj["Primary (True/False)"] == "True" ? "PRIMARY" : "SECONDARY"} market.</p>
+  <hr  style="border-top: dotted 1px;" />
           <h2>Main Information</h2>
           <table>
-              <tr><td>Our reference</td><td>42682653</td></tr>
-              <tr><td>Buyer</td><td>TRIADA CAPITAL LIMITED 0001141531</td></tr>
-              <tr><td>Seller</td><td>CREDIT AGRICOLE CORPORATE AND INVESTMENT BANK</td></tr>
-              <tr><td>Trade date</td><td>25/06/2024</td></tr>
-              <tr><td>Settlement date</td><td>02/07/2024</td></tr>
-              <tr><td>Accrued interest amount</td><td>$0.00</td></tr>
-              <tr><td>Clean price</td><td>100.00</td></tr>
-              <tr><td>Dirty price</td><td>100.00</td></tr>
-              <tr><td>Cash countervalue</td><td>$1,700,000.00 USD</td></tr>
-              <tr><td>Nominal</td><td>$1,700,000.00 USD</td></tr>
-              <tr><td>Execution time</td><td>26/06/24 6:30:41.000 AM GMT</td></tr>
+              <tr><td>Buyer</td><td>${buyer}</td></tr>
+              <tr><td>Seller</td><td>${seller}</td></tr>
+              <tr><td>Trade date</td><td>${obj["Trade Date"]}</td></tr>
+              <tr><td>Settlement date</td><td>${obj["Settle Date"]}</td></tr>
+              <tr><td>Accrued interest amount</td><td>${obj["Accrued Interest"]}</td></tr>
+              <tr><td>Price</td><td>${obj["Price"]}</td></tr>
+              <tr><td>Execution time</td><td>${obj["Trade Date"] + " " + obj["Trade Time"] + " HKT"}</td></tr>
           </table>
+  <hr  style="border-top: dotted 1px;" />
+          
   
           <h2>Financial Instrument Attributes</h2>
-          <p><strong>ISIN:</strong> XS2841151553<br>
-          <strong>Currency:</strong> USD<br>
-          <strong>Issuer:</strong> CHINA GREAT WALL INTERNATIONAL HOLDINGS VI LIMITED<br>
-          <strong>Issue date:</strong> JULY 2, 2024<br>
-          <strong>Rate:</strong> 7.15<br>
-          <strong>Maturity date:</strong> JULY 2, 2027<br>
-          <strong>Spread:</strong> (not specified)</p>
+          <strong>Ticker:</strong> ${obj["BB Ticker"]}<br>
+          <strong>ISIN:</strong> ${obj["ISIN"]}<br>
+          <strong>CUSIP:</strong> ${obj["Cuisp"]}<br>
+          <strong>Currency:</strong> ${obj["Currency"]}<br>
+          <strong>Yield:</strong> ${obj["Yield"]}<br>
+          <strong>Maturity date:</strong> ${parseBondIdentifier(obj["BB Ticker"]).date}<br>
+  <hr  style="border-top: dotted 1px;" />
   
-          <h2>CREDIT AGRICOLE CORPORATE AND INVESTMENT BANK instructions</h2>
-          <p><strong>ACCOUNT:</strong> 70496<br>
-          <strong>WITH:</strong> CLEARSTREAM - CEDELULLXXX<br>
-          <strong>BENEFICIARY:</strong> Crédit Agricole CIB - BSUIFRPPXXX</p>
-  
-          <h2>TRIADA CAPITAL LIMITED instructions</h2>
-          <p><strong>SECURITY SETTLEMENT SYSTEM AGAINST PAYMENT:</strong> EUROCLEAR - MGTCBEBEECL<br>
-          <strong>ACCOUNT:</strong> 25342<br>
-          <strong>WITH EUROCLEAR BANK SA NV:</strong> MGTCBEBEECL<br>
-          <strong>BENEFICIARY:</strong> TRIADA CAPITAL LIMITED</p>
+          <h2>Settlement venue instructions</h2>
+          <strong>WITH:</strong> ${obj["Settlement Venue"]}<br>
   
           <p>You will be deemed to have accepted the above offer on the terms set out unless we hear from you to the contrary within 48 hours from confirmation date.</p>
           <p>This document has been produced automatically and requires no official signature.</p>
   
           <footer>
               <p>Contact Bonds Back-Office: CLIENT SETTLEMENT TEAM</p>
-              <p>Email: <a href="mailto:Bondsettlement@ca-cib.com">Bondsettlement@ca-cib.com</a></p>
-              <p>Phone:</p>
-              <p>Fax: 33(0)141894320</p>
+              <p>Email: <a href="mailto:jm@triadacapital.com">jm@triadacapital.com</a></p>
+              <p>Phone:+852 3468 8529</p>
           </footer>
       </div>
   </body>
   </html>`;
-  let output = ""
-  let centralizedBlotterHeader: any = ["B/S", "BB Ticker", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Settlement Venue", "Triada-Broker Notes"];
+  let output = "";
+  let centralizedBlotterHeader: any = ["B/S", "BB Ticker", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Settlement Venue"];
 
   // Loop through the centralizedBlotterHeader and format them
   for (let i = 0; i < centralizedBlotterHeader.length; i += 2) {
@@ -243,9 +246,31 @@ export async function printObjectValues(obj: any) {
 export async function htmlToPDFandUpload(html: string, pathName: string, folderName: string): Promise<string> {
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
+  const scaledHtml = `
+    <style>
+      @page {
+        size: A4;
+        margin: 0;
+      }
+      body {
+        margin: 0;
+        padding: 10mm;
+        box-sizing: border-box;
+      }
+      .container {
+        transform-origin: top left;
+        transform: scale(0.75); /* Adjust this scale as needed */
+        width: 1000px; /* Adjust this width as needed */
+      }
+    </style>
+    ${html}
+  `;
+
+  await page.setContent(scaledHtml);
+
   await page.setContent(html);
 
-  const pdfBuffer = await page.pdf({ format: "A4" });
+  const pdfBuffer = await page.pdf({ format: "A4", printBackground: true, margin: { top: 0, right: 0, bottom: 0, left: 0 } });
   await browser.close();
 
   let randomString = generateRandomString(6);
