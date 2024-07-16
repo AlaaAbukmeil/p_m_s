@@ -130,13 +130,13 @@ export async function parsePDF(buffer: any, date: any) {
     .catch(async (err: any) => {
       try {
         if (err.message.includes("No password given")) {
-          let test1 = await handlePasswordPDF(passwords[0]);
+          let test1 = await handlePasswordPDF(passwords[0], pdfBuffer);
 
           if (test1) {
             console.log("password one used");
             return test1;
           } else {
-            let test2 = await handlePasswordPDF(passwords[1]);
+            let test2 = await handlePasswordPDF(passwords[1], pdfBuffer);
 
             if (test2) {
               console.log("password two used");

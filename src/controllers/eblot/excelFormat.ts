@@ -8,7 +8,6 @@ import { readBBGBlot, readEmsxEBlot, readIBEblot, uploadToGCloudBucket } from ".
 import { client } from "../userManagement/auth";
 import { CentralizedTrade, Vcon } from "../../models/trades";
 import { formatDateNomura } from "../operations/tools";
-import { pdfPassword } from "./data";
 const xlsx = require("xlsx");
 const { PassThrough } = require("stream");
 const { v4: uuidv4 } = require("uuid");
@@ -586,14 +585,12 @@ export function formatConfirmation(confirmation: any, vconTrades: any) {
   return [...formmated, ...vconNotFound, ...confirmationNotFound];
 }
 
-export async function handlePasswordPDF(password: string) {
+export async function handlePasswordPDF(password: string, pdfBufferInput: any) {
   try {
-    const pdfBuffer = Buffer.from(pdfPassword, "base64");
-
     const filePathInput = "./src/controllers/eblot/input.pdf";
     const filePathOutput = "./src/controllers/eblot/output.pdf"; // Adjust the path as needed
 
-    await fs.writeFile(filePathInput, pdfBuffer, (err: any) => {
+    await fs.writeFile(filePathInput, pdfBufferInput, (err: any) => {
       if (err) console.log(err);
     });
     var command = "qpdf --decrypt --password=" + password + " " + filePathInput + " " + filePathOutput + "";

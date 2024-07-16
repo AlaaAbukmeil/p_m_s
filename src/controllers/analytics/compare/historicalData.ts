@@ -62,7 +62,7 @@ export function breakdown(portfolio: any, fundDetails: any, name: any) {
       let usdValue = Math.abs(position["Value (BC)"]);
       let isin = position["ISIN"];
       let bbTicker = position["BB Ticker"];
-      analytics.isinNames[isin] = bbTicker;
+      analytics.isinNames[isin] = { "BB Ticker": bbTicker, Currency: position["Currency"], ISIN: isin, CUSIP: position["CUSIP"] };
 
       let dayUnrlzd = parseFloat(position["Day URlzd (BC)"]);
       let dayRlzd = parseFloat(position["Day Rlzd (BC)"]);
@@ -158,6 +158,7 @@ export function extractAnalytics(analytics: any, conditions: any, notOperation =
   let regions: any = new Set();
   let marketTypes: any = new Set();
   let isinNames: any = [];
+  let isinInformation: any = [];
 
   for (let index = 0; index < analytics.length; index++) {
     let document = analytics[index];
@@ -170,7 +171,8 @@ export function extractAnalytics(analytics: any, conditions: any, notOperation =
     Object.keys(document.rating).forEach((key) => ratings.add(key));
     Object.keys(document.region).forEach((key) => regions.add(key));
     Object.keys(document.marketType).forEach((key) => marketTypes.add(key));
-    Object.keys(document.isinNames).forEach((key) => isinNames.push({ value: key, label: document.isinNames[key] }));
+    Object.keys(document.isinNames).forEach((key) => isinNames.push({ value: key, label: document.isinNames[key]["ISIN"] }));
+    Object.keys(document.isinNames).forEach((key) => isinInformation.push(document.isinNames[key]));
 
     let data = {};
     if (notOperation == "false") {
@@ -206,7 +208,7 @@ export function extractAnalytics(analytics: any, conditions: any, notOperation =
   marketTypes = Array.from(marketTypes).sort();
   isinNames = isinNames.sort((a: any, b: any) => a.label - b.label);
 
-  return { final, strategies, countries, sectors, assetClass, issuers, ratings, regions, marketTypes, isinNames };
+  return { final, strategies, countries, sectors, assetClass, issuers, ratings, regions, marketTypes, isinNames, isinInformation };
 }
 
 function checkAnalyticsConditions(portfolio: any, conditions: any, data: any, name: any) {

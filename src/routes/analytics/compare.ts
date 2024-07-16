@@ -26,14 +26,15 @@ analyticsRouter.get("/compare", uploadToBucket.any(), verifyToken, async (req: R
     let analytics = await getAnalytics(start, end);
 
     analytics = extractAnalytics(analytics, conditions, notOperation, type);
-
+    console.log(analytics.isinInformation);
     res.send(analytics);
+    // await insertPositions(analytics.isinInformation);
   } catch (error: any) {
     console.log(error);
     res.send({ error: error.toString() });
   }
 });
-analyticsRouter.post("/update-compare", uploadToBucket.any(), verifyToken, async (req: Request | any, res: Response | any, next: NextFunction) => {
+analyticsRouter.post("/update-compare", uploadToBucket.any(), async (req: Request | any, res: Response | any, next: NextFunction) => {
   try {
     let start = new Date(req.body.start).getTime();
     let end = new Date(req.body.end).getTime();

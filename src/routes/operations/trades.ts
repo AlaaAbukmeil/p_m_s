@@ -9,6 +9,7 @@ import { getAllTrades, getNewTrades } from "../../controllers/eblot/eblot";
 import { addNewTrade, deleteNewTrade, deleteTrade, editTrade, getTriadaTrades } from "../../controllers/operations/trades";
 import { CentralizedTrade } from "../../models/trades";
 import { getDateTimeInMongoDBCollectionFormat } from "../../controllers/reports/common";
+import { getAllPositionsInformation } from "../../controllers/analytics/data";
 const { v4: uuidv4 } = require("uuid");
 
 const tradesRouter = Router();
@@ -32,8 +33,10 @@ tradesRouter.get("/all-trades", verifyToken, async (req, res) => {
     // action = action.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app");
     let allTrades = action.concat(trades).sort((a: any, b: any) => new Date(b["Trade Date"]).getTime() - new Date(a["Trade Date"]).getTime());
     let newTrades = await getNewTrades();
+
     let allTradesUpdated = [...newTrades, ...allTrades];
-    res.send({ trades: allTradesUpdated, newTrades: newTrades.length });
+    let positionsInformation = await getAllPositionsInformation();
+    res.send({ trades: allTradesUpdated, newTrades: newTrades.length, positionsInformation: positionsInformation });
   } catch (error) {
     console.log(error);
     res.status(500).send("An error occurred while reading the file.");

@@ -1,4 +1,5 @@
 import { CentralizedTrade } from "../../models/trades";
+import { insertPositionsInfo } from "../analytics/data";
 import { convertExcelDateToJSDate, generateRandomString, generateSignedUrl, getTradeDateYearTrades, storage } from "../common";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { insertEditLogs } from "./logs";
@@ -112,6 +113,23 @@ export async function readCentralizedEBlot(path: string): Promise<
         gsTrades[gsTradesIndex]["Trade App Status"] = "uploaded_to_app";
       }
 
+      let allTrades = [...vconTrades, ...ibTrades, ...emsxTrades, ...gsTrades];
+      let newPositions = [];
+      for (let index = 0; index < allTrades.length; index++) {
+        let newTrade = allTrades[index];
+        let object = {
+          "BB Ticker": newTrade["BB Ticker"],
+          Currency: newTrade["Currency"],
+          ISIN: newTrade["ISIN"],
+          CUSIP: newTrade["Cusip"],
+        };
+        newPositions.push(object);
+      }
+      try {
+        await insertPositionsInfo(newPositions);
+      } catch (error) {
+        console.log(error);
+      }
       return {
         vconTrades: vconTrades,
         ibTrades: ibTrades,
@@ -438,7 +456,7 @@ export async function uploadToGCloudBucket(data: any, bucketName: any, fileName:
 
   return new Promise((resolve, reject) => stream.on("error", reject).on("finish", resolve));
 }
-export async function uploadArrayAndReturnFilePath(data: any, pathName: string, folderName: string, type="xlsx") {
+export async function uploadArrayAndReturnFilePath(data: any, pathName: string, folderName: string, type = "xlsx") {
   // Create a new Workbook
   var wb = xlsx.utils.book_new();
 
