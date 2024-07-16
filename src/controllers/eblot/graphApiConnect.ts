@@ -220,7 +220,7 @@ export async function getConfirmation(token: string, start_time: any, end_time: 
 
     if (messages != "") {
       let jsonConfirmation = await generateContent(messages);
-      // console.log(messages, jsonConfirmation, "ai response");
+      console.log("ai response completed");
       return jsonConfirmation;
     } else {
       return [];
@@ -232,7 +232,7 @@ export async function getConfirmation(token: string, start_time: any, end_time: 
     await insertEditLogs([errorMessage], "Errors", dateTime, "getConfirmation", "controllers/eblot/getConfirmation.ts");
 
     console.log(error);
-    return [];
+    return { error: error };
   }
 }
 

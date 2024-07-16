@@ -226,7 +226,7 @@ export function assignPinnedPositions(portfolio: Position[], pinnedPositions: an
   for (let index = 0; index < portfolio.length; index++) {
     let position = portfolio[index];
 
-    let pinnedPosition = pinnedPositions ? pinnedPositions.find((pinned: any) => pinned["ISIN"] == position["ISIN"] && pinned["Location"] == position["Location"]) : null;
+    let pinnedPosition = pinnedPositions ? pinnedPositions.find((pinned: any) => pinned["ISIN"] == position["ISIN"] && pinned["Location"].replace(" Rlzd", "") == position["Location"]) : null;
     if (pinnedPosition) {
       portfolio[index]["Pin"] = pinnedPosition["Pin"];
     } else {

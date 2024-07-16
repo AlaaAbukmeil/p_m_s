@@ -10,7 +10,7 @@ import { getConfirmation, getFxTrades, getGraphToken, getVcons } from "../contro
 import { MufgTrade } from "../models/mufg";
 import { allTrades, allTradesCDS, getTriadaTrades } from "../controllers/operations/trades";
 import { bucket, formatDateFile, generateSignedUrl, verifyToken } from "../controllers/common";
-const { exec } = require('child_process');
+const { exec } = require("child_process");
 const formatterRouter = Router();
 
 formatterRouter.post("/ib-excel", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
@@ -120,19 +120,23 @@ formatterRouter.post("/confirmation-excel", verifyToken, uploadToBucket.any(), a
     let data = req.body;
     let token = await getGraphToken();
     let confirmation: any = await getConfirmation(token, data.timestamp_start, data.timestamp_end);
-    let startLimit = new Date(data.timestamp_start).getTime() - 12 * 60 * 60 * 1000;
-    let endLimit = new Date(data.timestamp_end).getTime() + 12 * 60 * 60 * 1000;
-    let vconTrades = await getTriadaTrades("vcons", startLimit, endLimit);
-    let formmated = formatConfirmation(confirmation, vconTrades);
-    let url = await uploadArrayAndReturnFilePath(formmated, "eblot", "confirmation");
-    url = bucket + url + "?authuser=2";
-    res.send(url);
+    if (confirmation.error) {
+      res.send({ error: confirmation.error });
+    } else {
+      let startLimit = new Date(data.timestamp_start).getTime() - 12 * 60 * 60 * 1000;
+      let endLimit = new Date(data.timestamp_end).getTime() + 12 * 60 * 60 * 1000;
+      let vconTrades = await getTriadaTrades("vcons", startLimit, endLimit);
+      console.log("checking formatting");
+      let formmated = formatConfirmation(confirmation, vconTrades);
+      let url = await uploadArrayAndReturnFilePath(formmated, "eblot", "confirmation");
+      url = bucket + url + "?authuser=2";
+      res.send(url);
+    }
   } catch (error) {
     console.log(error);
     res.send({ error: error });
   }
 });
-
 
 formatterRouter.post("/emsx-excel", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
