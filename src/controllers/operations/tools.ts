@@ -105,6 +105,7 @@ export function getMonthInFundDetailsFormat(date: any) {
   let year = date.getFullYear();
   return `${year}/${month}`;
 }
+
 export function getDateAndOneWeekLater() {
   // Create a Date object from the input date
   let startDate = new Date();
@@ -129,104 +130,198 @@ export function getDateAndOneWeekLater() {
   };
 }
 export async function printObjectValues(obj: any, buyer: any, seller: any) {
-  let html = `<!DOCTYPE html>
+  let bondAtt = parseBondIdentifier(obj["BB Ticker"]);
+  let html = `
+  <!DOCTYPE html>
   <html lang="en">
+  
   <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Confirmation Document</title>
-      <style>
-          body {
-              font-family: 'Arial', sans-serif;
-              margin: 10px;
-              padding: 0;
-              background: #f4f4f4;
-          }
-          .container {
-              background: white;
-              padding: 10px;
-              margin-top: 10px;
-              border: 1px solid #ddd;
-          }
-          h1, h2, h3 {
-              color: #333;
-              margin: 0 0 2px 0;
-          }
-          h1{
-          text-align:center;
-          }
-          table {
-              width: 100%;
-              border-collapse: collapse;
-          }
-          th, td {
-              border: 1px solid black;
-              padding: 8px;
-              text-align: left;
-          }
-          .logo {
-              display: block;
-              margin: 0;
-              max-width: 200px;
-          }
-          footer {
-              margin-top: 20px;
-              text-align: center;
-              font-size: 0.85em;
-          }
-      </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmation Document</title>
+    <style>
+      body {
+        font-family: 'Arial', sans-serif;
+        margin: 10px;
+        padding: 0;
+        background: #f4f4f4;
+        width: 794px;
+        /* A4 width in pixels at 96 DPI */
+        height: 1123px;
+  
+      }
+  
+      .container {
+        background: white;
+        padding: 10px;
+        margin-top: 10px;
+        border: 1px solid #ddd;
+        transform: scale(0.85);
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        padding: 10mm;
+      }
+  
+  
+      .content {
+        transform: scale(0.85);
+        /* Adjust this scale as needed */
+        
+        width: 1000px;
+        /* Adjust this width as needed */
+      }
+  
+      h1,
+      h2,
+      h3 {
+        color: #333;
+        margin: 0 0 2px 0;
+      }
+  
+      h1 {
+        text-align: center;
+      }
+  
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+  
+      td {
+        border: 1px dotted black;
+        width: 20%;
+        padding: 8px;
+      }
+  
+      .logo {
+        display: block;
+        margin: 0;
+        max-width: 200px;
+      }
+  
+      footer {
+        margin-top: 20px;
+        text-align: center;
+        font-size: 0.85em;
+      }
+  
+      hr {
+        border-top: dotted 1px;
+      }
+    </style>
   </head>
+  
   <body>
-      <div class="container">
-      <div>
-      <img src="https://admin.triadacapital.com/photos/triada-logo.png" alt="Triada Capital Logo" class="logo"/>
-          <h1>CONFIRMATION</h1>
-          
-          </div>
-          <p><strong>From:</strong> TRIADA CAPITAL LIMITED<br>
-          Unit 520, 5/F, Dina House, Ruttonjee Centre, 3-11 Duddell Street, Central, Hong Kong</p>
-          <p><strong>To:</strong> ${obj["Broker Full Name & Account"]}<br>
-          Bonds Settlement Department</p>
-          <p><strong>Message reference:</strong> ${obj["_id"]}</p>
-          <p><strong>Generated On:</strong> ${getDateTimeInMongoDBCollectionFormat(new Date()) + " HKT"}</p>
-          <p>We hereby confirm your securities ${obj["B/S"] == "B" ? "SELL" : "PURCHASE"}  on the ${obj["Primary (True/False)"] == "True" ? "PRIMARY" : "SECONDARY"} market.</p>
-  <hr  style="border-top: dotted 1px;" />
-          <h2>Main Information</h2>
-          <table>
-              <tr><td>Buyer</td><td>${buyer}</td></tr>
-              <tr><td>Seller</td><td>${seller}</td></tr>
-              <tr><td>Trade date</td><td>${obj["Trade Date"]}</td></tr>
-              <tr><td>Settlement date</td><td>${obj["Settle Date"]}</td></tr>
-              <tr><td>Accrued interest amount</td><td>${obj["Accrued Interest"]}</td></tr>
-              <tr><td>Price</td><td>${obj["Price"]}</td></tr>
-              <tr><td>Execution time</td><td>${obj["Trade Date"] + " " + obj["Trade Time"] + " HKT"}</td></tr>
-          </table>
-  <hr  style="border-top: dotted 1px;" />
-          
+    <div class="container">
+      <div class="content">
   
-          <h2>Financial Instrument Attributes</h2>
-          <strong>Ticker:</strong> ${obj["BB Ticker"]}<br>
-          <strong>ISIN:</strong> ${obj["ISIN"]}<br>
-          <strong>CUSIP:</strong> ${obj["Cuisp"]}<br>
-          <strong>Currency:</strong> ${obj["Currency"]}<br>
-          <strong>Yield:</strong> ${obj["Yield"]}<br>
-          <strong>Maturity date:</strong> ${parseBondIdentifier(obj["BB Ticker"]).date}<br>
-  <hr  style="border-top: dotted 1px;" />
+        <div>
+          <img src="https://admin.triadacapital.com/photos/triada-logo.png" alt="Triada Capital Logo" class="logo"/>
+          <center>
+          <h2>CONFIRMATION</h2>
+          </center>
   
-          <h2>Settlement venue instructions</h2>
-          <strong>WITH:</strong> ${obj["Settlement Venue"]}<br>
+        </div>
+        <p><strong>From:</strong> TRIADA CAPITAL LIMITED<br>
+            Unit 520, 5/F, Dina House, Ruttonjee Centre, 3-11 Duddell Street, Central, Hong Kong</p>
+        <p><strong>To:</strong> ${obj["Broker Full Name & Account"]}<br>
+            Bonds Settlement Department</p>
+        <p><strong>Triada Trade Id:</strong> ${obj["Triada Trade Id"]}</p>
+        <p><strong>Generated On:</strong> ${getDateTimeInMongoDBCollectionFormat(new Date()) + " HKT"}</p>
+        <p>We hereby confirm your securities ${obj["B/S"] == "B" ? "SELL" : "PURCHASE"} on the ${obj["Primary (True/False)"] == "True" ? "PRIMARY" : "SECONDARY"} market.</p>
+        <hr style="border-top: dotted 1px;" />
+        <h2>Main Information</h2>
+        <table>
+          <tr>
+            <td>Buyer</td>
+            <td>${buyer}</td>
+          </tr>
+          <tr>
+            <td>Seller</td>
+            <td>${seller}</td>
+          </tr>
+          <tr>
+            <td>Trade date</td>
+            <td>${obj["Trade Date"]}</td>
+          </tr>
+          <tr>
+            <td>Settlement date</td>
+            <td>${obj["Settle Date"]}</td>
+          </tr>
+          <tr>
+            <td>Notional Amount</td>
+            <td>${obj["Notional Amount"]}</td>
+          </tr>
+          <tr>
+            <td>Settlement Amount</td>
+            <td>${obj["Settlement Amount"]}</td>
+          </tr>
+          <tr>
+            <td>Accrued interest amount</td>
+            <td>${obj["Accrued Interest"]}</td>
+          </tr>
+          <tr>
+            <td>Price</td>
+            <td>${obj["Price"]}</td>
+          </tr>
+          <tr>
+            <td>Execution time</td>
+            <td>${obj["Trade Date"] + " " + obj["Trade Time"]}</td>
+          </tr>
+        </table>
+        <hr />
   
-          <p>You will be deemed to have accepted the above offer on the terms set out unless we hear from you to the contrary within 48 hours from confirmation date.</p>
-          <p>This document has been produced automatically and requires no official signature.</p>
+        <h2>Financial Instrument Attributes</h2>
+        <table>
+          <tr>
+            <td>Ticker</td>
+            <td>${obj["BB Ticker"]}</td>
+          </tr>
+          <tr>
+            <td>ISIN</td>
+            <td>${obj["ISIN"]}</td>
+          </tr>
+          <tr>
+            <td>Cusip</td>
+            <td>${obj["Cuisp"]}</td>
+          </tr>
+          <tr>
+            <td>Currency</td>
+            <td>${obj["Currency"]}</td>
+          </tr>
+          <tr>
+            <td>Coupon</td>
+            <td>${bondAtt.rate == "" ? "0" : bondAtt.rate + " %"}</td>
+          </tr>
+          <tr>
+            <td>Maturity date</td>
+            <td>${bondAtt.date}</td>
+          </tr>
+        </table>
+        <hr />
+        <h2>Settlement venue instructions</h2>
+        <strong>WITH:</strong> ${obj["Settlement Venue"]}<br>
   
-          <footer>
-              <p>Contact Bonds Back-Office: CLIENT SETTLEMENT TEAM</p>
-              <p>Email: <a href="mailto:jm@triadacapital.com">jm@triadacapital.com</a></p>
-              <p>Phone:+852 3468 8529</p>
-          </footer>
+        <p>You will be deemed to have accepted the above offer on the terms set out unless we hear from you to the
+          contrary within 48 hours from confirmation date.</p>
+        <p>This document has been produced automatically and requires no official signature.</p>
+  
+        <footer>
+          <p>Contact Bonds Back-Office: Triada Operations Team</p>
+          <p>Email: <a href="mailto:operations@triadacapital.com">operations@triadacapital.com</a></p>
+        </footer>
       </div>
+    </div>
+  
   </body>
-  </html>`;
+  
+  </html>`
   let output = "";
   let centralizedBlotterHeader: any = ["B/S", "BB Ticker", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Settlement Venue"];
 
@@ -243,30 +338,10 @@ export async function printObjectValues(obj: any, buyer: any, seller: any) {
   let test = await htmlToPDFandUpload(html, "broker", "confirmation");
   return { url: test, output: output };
 }
+
 export async function htmlToPDFandUpload(html: string, pathName: string, folderName: string): Promise<string> {
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
-  const scaledHtml = `
-    <style>
-      @page {
-        size: A4;
-        margin: 0;
-      }
-      body {
-        margin: 0;
-        padding: 10mm;
-        box-sizing: border-box;
-      }
-      .container {
-        transform-origin: top left;
-        transform: scale(0.75); /* Adjust this scale as needed */
-        width: 1000px; /* Adjust this width as needed */
-      }
-    </style>
-    ${html}
-  `;
-
-  await page.setContent(scaledHtml);
 
   await page.setContent(html);
 

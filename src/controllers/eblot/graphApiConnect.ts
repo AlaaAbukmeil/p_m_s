@@ -83,7 +83,7 @@ export async function getVcons(token: string, start_time: any, end_time: any, tr
       vcon["Notional Amount"] = vcon["Quantity"];
       let securityInPortfolioLocation = getSecurityInPortfolioWithoutLocationForVcon(portfolio, identifier);
       let location = securityInPortfolioLocation.trim();
-      let trade_status = "new";
+      let trade_status = "new, found in vcon inbox";
       let triadaId = trades.find(function (trade: any) {
         return trade["Seq No"] == vcon["Seq No"] && trade["ISIN"] == vcon["ISIN"];
       });
@@ -211,7 +211,6 @@ export async function getConfirmation(token: string, start_time: any, end_time: 
         if (text && text.toString().trim() != "" && text.length > 200) {
           console.log("recieved text");
           messages += "\n\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ next message " + text + "\n\n web link: " + webLink + "\n\n broker name: " + name;
-
         }
         console.log("done (no attachment)", num);
         num++;

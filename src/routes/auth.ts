@@ -5,6 +5,7 @@ import { CookieOptions, NextFunction, Router } from "express";
 import { Request, Response } from "express";
 import { readUsersSheet } from "../controllers/operations/readExcel";
 import { getDateTimeInMongoDBCollectionFormat } from "../controllers/reports/common";
+import { numberOfNewTrades } from "../controllers/operations/trades";
 const bcrypt = require("bcrypt");
 const saltRounds: any = process.env.SALT_ROUNDS;
 const authRouter = Router();
@@ -16,7 +17,8 @@ authRouter.get("/auth", uploadToBucket.any(), verifyTokenFactSheetMember, async 
   }
   // console.log(test)
   if (test) {
-    res.send({ status: 200, accessRole: req.accessRole, shareClass: req.shareClass });
+    let newTrades = await numberOfNewTrades();
+    res.send({ status: 200, accessRole: req.accessRole, shareClass: req.shareClass, newTrades: newTrades });
   } else {
     res.sendStatus(401);
   }

@@ -82,11 +82,13 @@ export async function editTrade(editedTrade: any, tradeType: any, logs = false) 
       let changesText = [];
       for (let index = 0; index < centralizedBlotKeys.length; index++) {
         let key: any = centralizedBlotKeys[index];
-        if (key == "Broker Email Status" && editedTrade[key] == "sent" && editedTrade["Settlement Venue"] && editedTrade["Broker Email"]) {
+        if (key == "Broker Email Status" && editedTrade[key] == "sent" && editedTrade["Settlement Venue"] && editedTrade["Broker Email"] && editedTrade["Trade"]["Broker Full Name & Account"]) {
           // console.log(editedTrade["Broker Email"], editedTrade["Settlement Venue"], editedTrade["Triada-Broker Notes"]);
           let action = editedTrade["Trade"]["B/S"] == "B" ? "Buys" : "Sells";
+          let actionOpposite = editedTrade["Trade"]["B/S"] == "B" ? "Sells" : "Buys";
+
           let amount = parseInt(editedTrade["Trade"]["Notional Amount"]) / 1000000;
-          let subject = `Triada ${action} ${Math.round(amount * 1000) / 1000} MM || Ticker ${editedTrade["Trade"]["BB Ticker"]} || ISIN ${editedTrade["Trade"]["ISIN"]}`;
+          let subject = `Triada ${action}/ ${editedTrade["Trade"]["Broker Full Name & Account"]} ${actionOpposite} ${Math.round(amount * 1000) / 1000} MM || Ticker ${editedTrade["Trade"]["BB Ticker"]} || ISIN ${editedTrade["Trade"]["ISIN"]}`;
           let buyer = editedTrade["Trade"]["B/S"] == "B" ? "TRIADA CAPITAL LIMITED" : editedTrade["Trade"]["Broker Full Name & Account"];
           let seller = editedTrade["Trade"]["B/S"] == "S" ? "TRIADA CAPITAL LIMITED" : editedTrade["Trade"]["Broker Full Name & Account"];
 
@@ -156,6 +158,29 @@ export async function deleteTrade(tradeType: string, tradeId: string, tradeIssue
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
       await insertEditLogs(["deleted"], "Edit Trade", dateTime, "deleted", tradeIssue + " " + location);
       console.log("deleted");
+      return { error: null };
+    }
+  } catch (error) {
+    console.error(`An error occurred while deleting the document: ${error}`);
+    return { error: "Unexpected error 501" };
+  }
+}
+export async function deleteNewTrade(triadaTradeId: string) {
+  try {
+    // Connect to the MongoDB client
+
+    // Get the database and the specific collection
+    const database = client.db("trades_v_2");
+    const collection = database.collection("new_trades");
+
+    let query = { "Triada Trade Id": triadaTradeId };
+
+    // Delete the document with the specified _id
+    const result = await collection.deleteOne(query);
+
+    if (result.deletedCount === 0) {
+      return { error: `Trade does not exist!` };
+    } else {
       return { error: null };
     }
   } catch (error) {
@@ -311,4 +336,36 @@ export async function getTriadaTrades(tradeType: any, fromTimestamp: number | nu
     delete trade["timestamp"];
   }
   return reportCollection;
+}
+export async function addNewTrade(data: any): Promise<any> {
+  try {
+    const database = client.db("trades_v_2");
+    const reportCollection = database.collection("new_trades");
+    // Insert the new document into the collection
+    const insertResult = await reportCollection.insertOne(data);
+
+    // The insertOne operation returns an InsertOneResult object
+    // You can check the result by inspecting `insertedCount` and `insertedId`
+    if (insertResult.insertedCount === 0) {
+      return { error: "Failed to insert document" };
+    }
+
+    return { success: true, insertedId: insertResult.insertedId, error: null };
+  } catch (error: any) {
+    return { error: error.message }; // Return the error message
+  }
+}
+export async function numberOfNewTrades(): Promise<any> {
+  try {
+    const database = client.db("trades_v_2");
+    const reportCollection = database.collection("new_trades");
+    // Insert the new document into the collection
+    const stats = await reportCollection.countDocuments();
+
+    // Extract the size in bytes
+    return stats;
+    // The insertOne operation returns an InsertOneResult object
+  } catch (error: any) {
+    return { error: error.message }; // Return the error message
+  }
 }

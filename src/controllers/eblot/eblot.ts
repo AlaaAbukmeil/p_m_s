@@ -6,7 +6,7 @@ import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 export async function getAllTrades(from: number, to: number): Promise<CentralizedTrade[]> {
   try {
     const database = client.db("trades_v_2");
-    const collections = [database.collection("vcons"), database.collection("ib"), database.collection("emsx"),database.collection("gs")];
+    const collections = [database.collection("vcons"), database.collection("ib"), database.collection("emsx"), database.collection("gs")];
 
     // The query to be used on all collections
     const query = {
@@ -43,5 +43,28 @@ export async function getAllTrades(from: number, to: number): Promise<Centralize
     await insertEditLogs([errorMessage], "Errors", dateTime, "Get All Trades", "controllers/eblot/eblot.ts");
 
     return [];
+  }
+}
+
+export async function getNewTrades() {
+  try {
+    // Connect to the MongoDB client
+
+    // Access the 'structure' database
+    const database = client.db("trades_v_2");
+
+    // Access the collection named by the 'customerId' parameter
+    const collection = database.collection("new_trades");
+
+    // Perform your operations, such as find documents in the collection
+    // This is an example operation that fetches all documents in the collection
+    // Empty query object means "match all documents"
+    const results = await collection.find().toArray();
+
+    // The 'results' variable now contains an array of documents from the collection
+    return results;
+  } catch (error) {
+    // Handle any errors that occurred during the operation
+    console.error("An error occurred while retrieving data from MongoDB:", error);
   }
 }

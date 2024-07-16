@@ -7,7 +7,7 @@ SibApiV3Sdk.ApiClient.instance.authentications["api-key"].apiKey = process.env.S
 export async function sendBrokerEmail({ email, subject, content, attachment }: { email: any; subject: any; content: any; attachment: any }) {
   try {
     let action = new SibApiV3Sdk.TransactionalEmailsApi().sendTransacEmail({
-      sender: { email: "jm@triadacapital.com", name: "Jean-Marie Barreau" },
+      sender: { email: "operations@triadacapital.com", name: "Jean-Marie Barreau" },
       subject: subject,
       htmlContent: "<!DOCTYPE html><html><body><p>Confirmation .</p></body></html>",
       attachment: [
