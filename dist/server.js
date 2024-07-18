@@ -30,7 +30,7 @@ const apiLimiter = rateLimit({
 const cors = require("cors");
 app.use(cookieParser());
 const corsOptions = {
-    origin: ["http://localhost:3000", "https://admin.triadacapital.com"],
+    origin: ["http://localhost:3000", "http://localhost:3001", "https://admin.triadacapital.com", "https://eblot.triadacapital.com"],
     credentials: true,
     optionSuccessStatus: 200,
 };

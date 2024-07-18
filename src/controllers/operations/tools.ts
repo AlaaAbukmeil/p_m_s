@@ -3,7 +3,7 @@ import { client } from "../userManagement/auth";
 import { bucket, bucketPublic, formatDateUS, generateRandomString } from "../common";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { insertEditLogs } from "./logs";
-import puppeteer from "puppeteer";
+import { chromium } from "@playwright/test";
 import { uploadToGCloudBucketPDF } from "./readExcel";
 import { parseBondIdentifier } from "../reports/tools";
 
@@ -321,7 +321,7 @@ export async function printObjectValues(obj: any, buyer: any, seller: any) {
   
   </body>
   
-  </html>`
+  </html>`;
   let output = "";
   let centralizedBlotterHeader: any = ["B/S", "BB Ticker", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Settlement Venue"];
 
@@ -340,8 +340,9 @@ export async function printObjectValues(obj: any, buyer: any, seller: any) {
 }
 
 export async function htmlToPDFandUpload(html: string, pathName: string, folderName: string): Promise<string> {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
+  const browser = await chromium.launch({ args: ["--no-sandbox"] });
+  const context = await browser.newContext();
+  const page = await context.newPage();
 
   await page.setContent(html);
 

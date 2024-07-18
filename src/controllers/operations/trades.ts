@@ -359,10 +359,12 @@ export async function numberOfNewTrades(): Promise<any> {
   try {
     const database = client.db("trades_v_2");
     const reportCollection = database.collection("new_trades");
-    // Insert the new document into the collection
-    const stats = await reportCollection.countDocuments();
 
-    // Extract the size in bytes
+    // Define the query to count documents with 'Resolved' equal to an empty string
+    const query = { Resolved: "false" };
+
+    // Count the documents that match the query
+    const stats = await reportCollection.countDocuments(query);
     return stats;
     // The insertOne operation returns an InsertOneResult object
   } catch (error: any) {

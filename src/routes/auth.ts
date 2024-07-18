@@ -1,11 +1,11 @@
 import { addUser, checkIfUserExists, checkLinkRight, checkPasswordStrength, checkUserRight, deleteUser, editUser, getAllUsers, getUserByEmail, registerUser, resetPassword, sendResetPasswordRequest, updateUser } from "../controllers/userManagement/auth";
 import { bucketPublic, bucketPublicBucket, generateSignedUrl, verifyToken, verifyTokenFactSheetMember } from "../controllers/common";
-import { bucketPublicTest, multerTest, uploadToBucket, uploadToBucketPublic } from "./reports/reports";
 import { CookieOptions, NextFunction, Router } from "express";
 import { Request, Response } from "express";
 import { readUsersSheet } from "../controllers/operations/readExcel";
 import { getDateTimeInMongoDBCollectionFormat } from "../controllers/reports/common";
 import { numberOfNewTrades } from "../controllers/operations/trades";
+import { bucketPublicTest, multerTest, uploadToBucket } from "../controllers/userManagement/tools";
 const bcrypt = require("bcrypt");
 const saltRounds: any = process.env.SALT_ROUNDS;
 const authRouter = Router();
@@ -15,7 +15,6 @@ authRouter.get("/auth", uploadToBucket.any(), verifyTokenFactSheetMember, async 
   if (test == false && req.link == true) {
     test = await checkLinkRight(req.token, req.accessRole, req.shareClass);
   }
-  // console.log(test)
   if (test) {
     let newTrades = await numberOfNewTrades();
     res.send({ status: 200, accessRole: req.accessRole, shareClass: req.shareClass, newTrades: newTrades });
@@ -60,6 +59,8 @@ authRouter.post("/login", uploadToBucket.any(), async (req: Request, res: Respon
     httpOnly: process.env.PRODUCTION === "production",
     secure: process.env.PRODUCTION === "production", // Set to true if using HTTPS
     sameSite: "lax",
+    domain: ".triadacapital.com", // Common domain for both servers
+    path: "/",
   };
 
   res.cookie("triada.admin.cookie", user, cookie);
@@ -71,7 +72,9 @@ authRouter.post("/logout", uploadToBucket.any(), async (req: Request, res: Respo
   res.clearCookie("triada.admin.cookie", {
     httpOnly: true, // Set this to true for security
     sameSite: "strict", // Set this to 'strict' or 'lax' for better security
-    secure: process.env.NODE_ENV === "production", // Set this to true for production
+    secure: process.env.NODE_ENV === "production",
+    domain: ".triadacapital.com", // Ensure this matches all subdomains
+    path: "/", // Set this to true for production
   });
   res.send("Cookie cleared successfully");
 });

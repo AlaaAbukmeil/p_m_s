@@ -653,27 +653,6 @@ export async function readNomuraReconcileFile(path: string) {
   }
 }
 
-export async function readBBGBlot(path: string) {
-  const response = await axios.get(path, { responseType: "arraybuffer" });
-
-  /* Parse the data */
-  const workbook = xlsx.read(response.data, { type: "buffer" });
-
-  /* Get first worksheet */
-  const worksheetName = workbook.SheetNames[0];
-  const worksheet = workbook.Sheets[worksheetName];
-
-  /* Convert worksheet to JSON */
-  // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
-
-  // Read data
-
-  let headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
-  // headers = Object.keys(headers)
-
-  const data = xlsx.utils.sheet_to_json(worksheet, { defval: "", range: "A1:ZY500" });
-  return data;
-}
 
 export async function readFxTrades(path: string) {
   const response = await axios.get(path, { responseType: "arraybuffer" });

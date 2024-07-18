@@ -1,10 +1,10 @@
 import { Router } from "express";
 import { verifyToken } from "../../controllers/common";
-import { uploadToBucket } from "../reports/reports";
 import { Request, Response, NextFunction } from "express";
 import { addFund, deleteFund, editFund, getAllFundDetails } from "../../controllers/operations/fund";
 import { monthlyRlzdDate } from "../../controllers/reports/common";
 import { FundDetails } from "../../models/portfolio";
+import { uploadToBucket } from "../../controllers/userManagement/tools";
 
 const fundRouter = Router();
 

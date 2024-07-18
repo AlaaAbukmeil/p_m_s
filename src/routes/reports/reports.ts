@@ -4,47 +4,10 @@ import { getDateTimeInMongoDBCollectionFormat, getLastDayOfMonth, monthlyRlzdDat
 import { getPortfolioWithAnalytics } from "../../controllers/reports/portfolios";
 import { calculateBetaCorrelationBenchMarks, calculateMonthlyReturn, calculateOutPerformance, calculateOutPerformanceParam, calculateRatios, calculateRegression, calculateRiskRatios, getFactSheet, getFactSheetData, getTreasuryAnnulizedReturn, trimFactSheetData, uploadFSData } from "../../controllers/reports/factSheet";
 import { getFactSheetDisplay } from "../../controllers/operations/commands";
+import { uploadToBucket } from "../../controllers/userManagement/tools";
 
 require("dotenv").config();
 let shareClasses = ["a2", "a3", "a4", "a5", "a6", "ma2", "ma3", "ma4", "ma6"];
-const multerGoogleStorage = require("multer-google-storage");
-const multer = require("multer");
-const path = require("path");
-const { Storage } = require("@google-cloud/storage");
-process.env.GOOGLE_APPLICATION_CREDENTIALS;
-export const uploadToBucket = multer({
-  storage: multerGoogleStorage.storageEngine({
-    autoRetry: true,
-    bucket: process.env.BUCKET,
-    projectId: process.env.PROJECTID,
-    keyFilename: process.env.KEYPATHFILE,
-
-    filename: (req: Request, file: any, cb: (err: boolean, fileName: string) => void) => {
-      cb(false, `v2/${generateRandomString(6)}_${file.originalname.replace(/[!@#$%^&*(),?":{}|<>/\[\]\\;'\-=+`~ ]/g, "_")}`);
-    },
-  }),
-});
-export const uploadToBucketPublic = multer({
-  storage: multerGoogleStorage.storageEngine({
-    autoRetry: true,
-    bucket: process.env.BUCKET_PUBLIC,
-    projectId: process.env.PROJECTID,
-    keyFilename: process.env.KEYPATHFILE,
-
-    filename: (req: Request, file: any, cb: (err: boolean, fileName: string) => void) => {
-      cb(false, `v2/${generateRandomString(6)}_${file.originalname.replace(/[!@#$%^&*(),?":{}|<>/\[\]\\;'\-=+`~ ]/g, "_")}`);
-    },
-  }),
-});
-
-const storage = new Storage();
-export const multerTest = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024, // no larger than 5mb, you can change as needed.
-  },
-});
-export const bucketPublicTest = storage.bucket(process.env.BUCKET_PUBLIC);
 
 const router = Router();
 
@@ -59,7 +22,6 @@ router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: 
     let sign: any = req.query.sign || 1;
     let conditions: any = req.query || {};
     let report: any = await getPortfolioWithAnalytics(date, sort, sign, conditions, "back office", null);
-    console.log(report.fundDetails);
     if (report.error) {
       res.send({ error: report.error });
     } else {

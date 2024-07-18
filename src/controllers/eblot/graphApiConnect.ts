@@ -83,12 +83,10 @@ export async function getVcons(token: string, start_time: any, end_time: any, tr
       vcon["Notional Amount"] = vcon["Quantity"];
       let securityInPortfolioLocation = getSecurityInPortfolioWithoutLocationForVcon(portfolio, identifier);
       let location = securityInPortfolioLocation.trim();
-      let trade_status = "new, found in vcon inbox";
+      let trade_status = "new";
       let triadaId = trades.find(function (trade: any) {
         return trade["Seq No"] == vcon["Seq No"] && trade["ISIN"] == vcon["ISIN"];
       });
-
-      // console.log(vcon["Issue"], vcon["Seq No"],triadaId)
 
       if (triadaId) {
         continue;

@@ -4,7 +4,7 @@ import { getTradeDateYearTrades, formatDateUS, convertExcelDateToJSDate, convert
 import { getSettlementDateYear } from "../reports/tools";
 import { getSecurityInPortfolioWithoutLocationForVcon, parsePDF, parsePDFOnce } from "./graphApiConnect";
 import { uri } from "../common";
-import { readBBGBlot, readEmsxEBlot, readIBEblot, uploadToGCloudBucket } from "../operations/readExcel";
+import { readEmsxEBlot, readIBEblot, uploadToGCloudBucket } from "../operations/readExcel";
 import { client } from "../userManagement/auth";
 import { CentralizedTrade, Vcon } from "../../models/trades";
 import { formatDateNomura } from "../operations/tools";
@@ -134,12 +134,7 @@ export async function formatCentralizedRawFiles(files: any, bbbData: any, vconTr
   for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
     let file = files[fileIndex];
     let url = await generateSignedUrl(file["filename"]);
-    if (file["fieldname"] == "BBB") {
-      bbbData = await readBBGBlot(url);
-      if (bbbData.error) {
-        return bbbData;
-      }
-    } else if (file["fieldname"] == "IB") {
+    if (file["fieldname"] == "IB") {
       ibData = await readIBEblot(url);
       if (ibData.error) {
         return ibData;

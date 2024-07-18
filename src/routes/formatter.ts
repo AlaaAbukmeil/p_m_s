@@ -1,6 +1,5 @@
 import { checkIfUserExists, registerUser, resetPassword, sendResetPasswordRequest } from "../controllers/userManagement/auth";
 import { formatCentralizedRawFiles, formatConfirmation, formatEmsxTrades, formatIbTrades, formatNomura, handlePasswordPDF } from "../controllers/eblot/excelFormat";
-import { uploadToBucket } from "./reports/reports";
 import { CookieOptions, NextFunction, Router } from "express";
 import { Request, Response } from "express";
 import { readEmsxRawExcel, readIBRawExcel, uploadArrayAndReturnFilePath } from "../controllers/operations/readExcel";
@@ -10,6 +9,7 @@ import { getConfirmation, getFxTrades, getGraphToken, getVcons } from "../contro
 import { MufgTrade } from "../models/mufg";
 import { allTrades, allTradesCDS, getTriadaTrades } from "../controllers/operations/trades";
 import { bucket, formatDateFile, generateSignedUrl, verifyToken } from "../controllers/common";
+import { uploadToBucket } from "../controllers/userManagement/tools";
 const { exec } = require("child_process");
 const formatterRouter = Router();
 

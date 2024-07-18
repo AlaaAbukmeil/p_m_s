@@ -1,8 +1,8 @@
 import { NextFunction, Router, query } from "express";
-import { uploadToBucket } from "../reports/reports";
 import { breakdown, extractAnalytics, getAnalytics, getCollectionsInRange, updateAnalytics } from "../../controllers/analytics/compare/historicalData";
 import { getPortfolioWithAnalytics } from "../../controllers/reports/portfolios";
 import { verifyToken } from "../../controllers/common";
+import { uploadToBucket } from "../../controllers/userManagement/tools";
 const analyticsRouter = Router();
 
 analyticsRouter.get("/compare", uploadToBucket.any(), verifyToken, async (req: Request | any, res: Response | any, next: NextFunction) => {

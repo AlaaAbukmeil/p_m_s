@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { bucket, formatDateFile, generateSignedUrl, verifyToken } from "../../controllers/common";
-import { uploadToBucket } from "../reports/reports";
 import { Request, Response, NextFunction } from "express";
 import { addFund, deleteFund, editFund, getAllFundDetails } from "../../controllers/operations/fund";
 import { deletePosition, editPosition, editPositionBulkPortfolio, insertFXPosition, pinPosition, readCalculatePosition, updatePositionPortfolio } from "../../controllers/operations/positions";
@@ -13,6 +12,7 @@ import { getAllTradesForSpecificPosition } from "../../controllers/operations/tr
 import { consumers } from "stream";
 import { getEditLogs, updateEditLogs } from "../../controllers/operations/logs";
 import { getCollectionDays } from "../../controllers/operations/tools";
+import { uploadToBucket } from "../../controllers/userManagement/tools";
 
 const positionsRouter = Router();
 

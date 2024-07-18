@@ -1,12 +1,12 @@
 import { NextFunction, Router } from "express";
 import { bucket, dateWithMonthOnly, generateSignedUrl, verifyToken } from "../../controllers/common";
 import { getFactSheetData, trimFactSheetData } from "../../controllers/reports/factSheet";
-import { uploadToBucket } from "../reports/reports";
 import { addFactSheet, deleteFactSheet, editFactSheet } from "../../controllers/operations/factSheet";
 import { readFactSheet } from "../../controllers/operations/readExcel";
 import { formatExcelDate } from "../../controllers/reports/common";
 import { dateWithNoDay } from "../../controllers/common";
 import { editFactSheetDisplay, getFactSheetDisplay } from "../../controllers/operations/commands";
+import { uploadToBucket } from "../../controllers/userManagement/tools";
 const factSheetRouter = Router();
 
 factSheetRouter.get("/fact-sheet-data", uploadToBucket.any(), verifyToken, async (req: Request | any, res: Response | any, next: NextFunction) => {

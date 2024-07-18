@@ -1,11 +1,11 @@
 import { bucket, generateSignedUrl, verifyToken } from "../../controllers/common";
-import { uploadToBucket } from "../reports/reports";
 import { NextFunction, Router } from "express";
 import { Request, Response } from "express";
 import { readMUFGReconcileFile, readNomuraReconcileFile, uploadArrayAndReturnFilePath } from "../../controllers/operations/readExcel";
 import { reconcileMUFG, reconcileNomura } from "../../controllers/operations/reconcile";
 import { getPortfolioOnSpecificDate, getPrincipal } from "../../controllers/reports/portfolios";
 import { monthlyRlzdDate } from "../../controllers/reports/common";
+import { uploadToBucket } from "../../controllers/userManagement/tools";
 
 const reconcileRouter = Router();
 

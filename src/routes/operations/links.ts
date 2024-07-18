@@ -1,7 +1,7 @@
 import { NextFunction, Router } from "express";
-import { uploadToBucket } from "../reports/reports";
 import { addLink, deleteLink, editLink, getLinks } from "../../controllers/operations/links";
 import { verifyToken } from "../../controllers/common";
+import { uploadToBucket } from "../../controllers/userManagement/tools";
 const linksRouter = Router();
 
 linksRouter.get("/links", uploadToBucket.any(), verifyToken, async (req: Request | any, res: Response | any, next: NextFunction) => {
