@@ -84,6 +84,8 @@ export async function readCentralizedEBlot(path: string): Promise<
         if (!ibTrades[ibTradesIndex]["Settle Date"].includes("/")) {
           ibTrades[ibTradesIndex]["Settle Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(ibTrades[ibTradesIndex]["Settle Date"]));
         }
+        ibTrades[ibTradesIndex]["Notional Amount"] = Math.round(parseFloat(ibTrades[ibTradesIndex]["Notional Amount"]));
+
         ibTrades[ibTradesIndex]["timestamp"] = new Date(ibTrades[ibTradesIndex]["Trade Date"]).getTime();
         ibTrades[ibTradesIndex]["Trade App Status"] = "uploaded_to_app";
       }
@@ -652,7 +654,6 @@ export async function readNomuraReconcileFile(path: string) {
     return data;
   }
 }
-
 
 export async function readFxTrades(path: string) {
   const response = await axios.get(path, { responseType: "arraybuffer" });

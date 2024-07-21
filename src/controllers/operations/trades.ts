@@ -3,8 +3,6 @@ import { client } from "../userManagement/auth";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { CentralizedTrade } from "../../models/trades";
 import { insertEditLogs } from "./logs";
-import { sendBrokerEmail } from "./tradesConfirmation";
-import { printObjectValues } from "./tools";
 
 export async function getAllTradesForSpecificPosition(tradeType: string, isin: string, location: string, date: string) {
   try {
@@ -82,19 +80,6 @@ export async function editTrade(editedTrade: any, tradeType: any, logs = false) 
       let changesText = [];
       for (let index = 0; index < centralizedBlotKeys.length; index++) {
         let key: any = centralizedBlotKeys[index];
-        if (key == "Broker Email Status" && editedTrade[key] == "sent" && editedTrade["Settlement Venue"] && editedTrade["Broker Email"] && editedTrade["Trade"]["Broker Full Name & Account"]) {
-          // console.log(editedTrade["Broker Email"], editedTrade["Settlement Venue"], editedTrade["Triada-Broker Notes"]);
-          let action = editedTrade["Trade"]["B/S"] == "B" ? "Buys" : "Sells";
-          let actionOpposite = editedTrade["Trade"]["B/S"] == "B" ? "Sells" : "Buys";
-
-          let amount = parseInt(editedTrade["Trade"]["Notional Amount"]) / 1000000;
-          let subject = `Triada ${action}/ ${editedTrade["Trade"]["Broker Full Name & Account"]} ${actionOpposite} ${Math.round(amount * 1000) / 1000} MM || Ticker ${editedTrade["Trade"]["BB Ticker"]} || ISIN ${editedTrade["Trade"]["ISIN"]}`;
-          let buyer = editedTrade["Trade"]["B/S"] == "B" ? "TRIADA CAPITAL LIMITED" : editedTrade["Trade"]["Broker Full Name & Account"];
-          let seller = editedTrade["Trade"]["B/S"] == "S" ? "TRIADA CAPITAL LIMITED" : editedTrade["Trade"]["Broker Full Name & Account"];
-
-          let pdf = await printObjectValues(editedTrade["Trade"], buyer, seller);
-          await sendBrokerEmail({ email: editedTrade["Broker Email"], subject: subject, content: pdf.output, attachment: pdf.url });
-        }
 
         if (editedTrade[key] != "" && editedTrade[key]) {
           changesText.push(`${key} changed from ${tradeInfo[key]} to ${editedTrade[key]} `);
@@ -355,6 +340,7 @@ export async function addNewTrade(data: any): Promise<any> {
     return { error: error.message }; // Return the error message
   }
 }
+
 export async function numberOfNewTrades(): Promise<any> {
   try {
     const database = client.db("trades_v_2");

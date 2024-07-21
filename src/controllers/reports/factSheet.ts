@@ -72,6 +72,7 @@ function customEditMonthlyReturn(variables: any, monthlyReturns: any) {
 export function calculateMonthlyReturn(data: any, variables: any, fundData = false, inception = false, rfr: any = {}, map: any = {}, mkt = false, name = "", compare: any = {}) {
   //assue months are sorted in ascending order
 
+
   let monthlyReturns: any = {};
   let monthsIndex = data.length - 1;
 
@@ -170,6 +171,7 @@ export function calculateMonthlyReturn(data: any, variables: any, fundData = fal
   let yearsIndex = years.length - 1;
   let yearlyReturns: any = {};
 
+
   while (yearsIndex >= 0) {
     let year = years[yearsIndex];
 
@@ -189,6 +191,17 @@ export function calculateMonthlyReturn(data: any, variables: any, fundData = fal
       }
 
       if (!monthlyReturns["Cumulative/" + year]) {
+        for (let index = 0; index < variables.length; index++) {
+          let variable = variables[index];
+          monthlyReturns["Cumulative/" + year] = {};
+          monthlyReturns["Cumulative/" + year][variable] = 0;
+        }
+      }
+      for (let index = 0; index < variables.length; index++) {
+        let variable = variables[index];
+        monthlyReturns["Cumulative/" + year][variable] = yearlyReturn[variable];
+        yearlyReturns[year] = {};
+        yearlyReturns[year][variable] = yearlyReturn[variable];
         for (let index = 0; index < variables.length; index++) {
           let variable = variables[index];
           monthlyReturns["Cumulative/" + year] = {};

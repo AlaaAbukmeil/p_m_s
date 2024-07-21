@@ -54,16 +54,28 @@ authRouter.post("/login", uploadToBucket.any(), async (req: Request, res: Respon
   let password = data.password;
 
   let user: any = await checkIfUserExists(email, password);
-  let cookie: CookieOptions = {
-    maxAge: 3 * 24 * 60 * 60 * 1000,
-    httpOnly: process.env.PRODUCTION === "production",
+  let adminCookieOptions: CookieOptions = {
+    maxAge: 3 * 24 * 60 * 60 * 1000, // 3 days
+    httpOnly: true,
     secure: process.env.PRODUCTION === "production", // Set to true if using HTTPS
     sameSite: "lax",
-    domain: ".triadacapital.com", // Common domain for both servers
+    domain: "admin.triadacapital.com", // Specific to admin subdomain
     path: "/",
   };
 
-  res.cookie("triada.admin.cookie", user, cookie);
+  // Set cookies for eblot.triadacapital.com
+  let eblotCookieOptions: CookieOptions = {
+    maxAge: 3 * 24 * 60 * 60 * 1000, // 3 days
+    httpOnly: true,
+    secure: process.env.PRODUCTION === "production", // Set to true if using HTTPS
+    sameSite: "lax",
+    domain: "eblot.triadacapital.com", // Specific to eblot subdomain
+    path: "/",
+  };
+
+  res.cookie("triada.admin.cookie", user, adminCookieOptions);
+  res.cookie("triada.admin.cookie", user, eblotCookieOptions);
+
   delete user["token"];
   res.send(user);
 });
@@ -71,9 +83,16 @@ authRouter.post("/login", uploadToBucket.any(), async (req: Request, res: Respon
 authRouter.post("/logout", uploadToBucket.any(), async (req: Request, res: Response, next: NextFunction) => {
   res.clearCookie("triada.admin.cookie", {
     httpOnly: true, // Set this to true for security
-    sameSite: "strict", // Set this to 'strict' or 'lax' for better security
+    sameSite: "lax", // Set this to 'strict' or 'lax' for better security
     secure: process.env.NODE_ENV === "production",
-    domain: ".triadacapital.com", // Ensure this matches all subdomains
+    domain: "admin.triadacapital.com", // Specific to eblot subdomain
+    path: "/", // Set this to true for production
+  });
+  res.clearCookie("triada.admin.cookie", {
+    httpOnly: true, // Set this to true for security
+    sameSite: "lax", // Set this to 'strict' or 'lax' for better security
+    secure: process.env.NODE_ENV === "production",
+    domain: "eblot.triadacapital.com", // Specific to eblot subdomain
     path: "/", // Set this to true for production
   });
   res.send("Cookie cleared successfully");
