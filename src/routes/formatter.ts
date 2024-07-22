@@ -1,11 +1,11 @@
 import { checkIfUserExists, registerUser, resetPassword, sendResetPasswordRequest } from "../controllers/userManagement/auth";
-import { formatCentralizedRawFiles, formatConfirmation, formatEmsxTrades, formatIbTrades, formatNomura, handlePasswordPDF } from "../controllers/eblot/excelFormat";
+import { formatCentralizedRawFiles, formatConfirmation, formatEmsxTrades, formatIbTrades, formatNomura } from "../controllers/eblot/excelFormat";
 import { CookieOptions, NextFunction, Router } from "express";
 import { Request, Response } from "express";
 import { readEmsxRawExcel, readIBRawExcel, uploadArrayAndReturnFilePath } from "../controllers/operations/readExcel";
 import { getPortfolio } from "../controllers/operations/positions";
 import { formatFxMufg, formatMufg, formatMufgCDS } from "../controllers/operations/mufgOperations";
-import { getConfirmation, getFxTrades, getGraphToken, getVcons } from "../controllers/eblot/graphApiConnect";
+import { getFxTrades, getGraphToken, getVcons } from "../controllers/eblot/graphApiConnect";
 import { MufgTrade } from "../models/mufg";
 import { allTrades, allTradesCDS, getTriadaTrades } from "../controllers/operations/trades";
 import { bucket, formatDateFile, generateSignedUrl, verifyToken } from "../controllers/common";
@@ -115,28 +115,7 @@ formatterRouter.post("/centralized-blotter", verifyToken, uploadToBucket.any(), 
   }
 });
 
-formatterRouter.post("/confirmation-excel", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  try {
-    let data = req.body;
-    let token = await getGraphToken();
-    let confirmation: any = await getConfirmation(token, data.timestamp_start, data.timestamp_end);
-    if (confirmation.error) {
-      res.send({ error: confirmation.error });
-    } else {
-      let startLimit = new Date(data.timestamp_start).getTime() - 12 * 60 * 60 * 1000;
-      let endLimit = new Date(data.timestamp_end).getTime() + 12 * 60 * 60 * 1000;
-      let vconTrades = await getTriadaTrades("vcons", startLimit, endLimit);
-      console.log("checking formatting");
-      let formmated = formatConfirmation(confirmation, vconTrades);
-      let url = await uploadArrayAndReturnFilePath(formmated, "eblot", "confirmation");
-      url = bucket + url + "?authuser=2";
-      res.send(url);
-    }
-  } catch (error) {
-    console.log(error);
-    res.send({ error: error });
-  }
-});
+
 
 formatterRouter.post("/emsx-excel", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {

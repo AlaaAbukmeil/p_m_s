@@ -37,7 +37,7 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
 
     let documents = await reportCollection.find(query).sort({ "Trade Date": 1 }).toArray();
 
-    let multiplier = tradeType == "vcons" ? 100 : 1;
+    let multiplier = tradeType == "vcons" ? 100 : tradeType == "gs" ? 1000000 : 1;
     let total = 0;
 
     let mtdAmount = parseFloat(mtdAmountInput) || 0;
@@ -50,7 +50,7 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
         trade["BB Ticker"] = trade["Issue"];
         delete trade["Issue"];
       }
-
+      //We only check for cds because original face is already factored in ib/vcons.
       let tradeBS = trade["B/S"] == "B" ? 1 : -1;
       let newNotional = parseFloat(trade["Notional Amount"]) * tradeBS;
       // console.log(averageCost, isin, documents[index]["Settle Date"], newNotional, accumualteNotional, trade["Price"], averageCost, "before");

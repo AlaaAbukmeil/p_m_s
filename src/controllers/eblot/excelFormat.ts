@@ -2,7 +2,7 @@ require("dotenv").config();
 
 import { getTradeDateYearTrades, formatDateUS, convertExcelDateToJSDate, convertExcelDateToJSDateTime, generateRandomString, generateSignedUrl } from "../common";
 import { getSettlementDateYear } from "../reports/tools";
-import { getSecurityInPortfolioWithoutLocationForVcon, parsePDF, parsePDFOnce } from "./graphApiConnect";
+import { getSecurityInPortfolioWithoutLocationForVcon } from "./graphApiConnect";
 import { uri } from "../common";
 import { readEmsxEBlot, readIBEblot, uploadToGCloudBucket } from "../operations/readExcel";
 import { client } from "../userManagement/auth";
@@ -578,33 +578,4 @@ export function formatConfirmation(confirmation: any, vconTrades: any) {
   }
 
   return [...formmated, ...vconNotFound, ...confirmationNotFound];
-}
-
-export async function handlePasswordPDF(password: string, pdfBufferInput: any) {
-  try {
-    const filePathInput = "./src/controllers/eblot/input.pdf";
-    const filePathOutput = "./src/controllers/eblot/output.pdf"; // Adjust the path as needed
-
-    await fs.writeFile(filePathInput, pdfBufferInput, (err: any) => {
-      if (err) console.log(err);
-    });
-    var command = "qpdf --decrypt --password=" + password + " " + filePathInput + " " + filePathOutput + "";
-    let test = await qpdf.decrypt(command);
-    if (test == "fail") {
-      console.log(password, "failed");
-      return false;
-    } else {
-      let buffer = await fs.promises.readFile(filePathOutput);
-
-      let text = await parsePDFOnce(buffer);
-      await fs.promises.unlink(filePathOutput);
-      console.log(password, "success");
-
-      return text;
-    }
-  } catch (err: any) {
-    // console.log(err);
-
-    return false;
-  }
 }
