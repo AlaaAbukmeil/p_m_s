@@ -174,6 +174,7 @@ export const verifyTokenRiskMember = (req: Request | any, res: Response, next: N
 };
 export const verifyTokenFactSheetMember = (req: Request | any, res: Response, next: NextFunction) => {
   try {
+
     req.cookies["triada.admin.cookie"] = req.cookies["triada.admin.cookie"] ? req.cookies["triada.admin.cookie"] : {};
     let token = req.cookies["triada.admin.cookie"].token;
     req.query = req.query ? req.query : {};
