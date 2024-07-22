@@ -1,5 +1,5 @@
 import { checkIfUserExists, registerUser, resetPassword, sendResetPasswordRequest } from "../controllers/userManagement/auth";
-import { formatCentralizedRawFiles, formatConfirmation, formatEmsxTrades, formatIbTrades, formatNomura } from "../controllers/eblot/excelFormat";
+import { formatCentralizedRawFiles, formatEmsxTrades, formatIbTrades, formatNomura } from "../controllers/eblot/excelFormat";
 import { CookieOptions, NextFunction, Router } from "express";
 import { Request, Response } from "express";
 import { readEmsxRawExcel, readIBRawExcel, uploadArrayAndReturnFilePath } from "../controllers/operations/readExcel";

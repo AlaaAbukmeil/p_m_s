@@ -6,8 +6,6 @@ import { getDateTimeInMongoDBCollectionFormat, mergeSort } from "../reports/comm
 import { renderVcon, renderFx } from "./excelFormat";
 import { Vcon } from "../../models/trades";
 import { insertEditLogs } from "../operations/logs";
-import { uploadToGCloudBucketPDF } from "../operations/readExcel";
-import { generateContent } from "../gcloudServices/vertex";
 const pdf = require("pdf-parse");
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
