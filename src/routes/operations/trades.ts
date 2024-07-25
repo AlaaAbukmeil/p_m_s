@@ -14,7 +14,6 @@ const { v4: uuidv4 } = require("uuid");
 
 const tradesRouter = Router();
 
-
 tradesRouter.get("/trades", verifyToken, async (req, res) => {
   try {
     const tradeType: any = req.query.tradeType;
@@ -51,8 +50,9 @@ tradesRouter.get("/rlzd-trades", verifyToken, async (req, res) => {
 tradesRouter.post("/edit-trade", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let logs = req.query.logs == "false" ? false : true;
+    let source = req.query.source ? req.query.source : "main";
 
-    let action = await editTrade(req.body, req.body.tradeType, logs);
+    let action = await editTrade(req.body, req.body.tradeType, logs, source);
 
     if (action.error) {
       res.send({ error: action.error });
@@ -69,7 +69,6 @@ tradesRouter.post("/delete-trade", verifyToken, uploadToBucket.any(), async (req
   try {
     let data = req.body;
     let tradeType = req.body.tradeType;
-    console.log(data, "test delete");
     let action: any = await deleteTrade(tradeType, data["_id"], data["BB Ticker"], data["Location"]);
     if (action.error) {
       res.send({ error: action.error, status: 404 });
@@ -81,6 +80,5 @@ tradesRouter.post("/delete-trade", verifyToken, uploadToBucket.any(), async (req
     res.send({ error: "Unexpected Error" });
   }
 });
-
 
 export default tradesRouter;

@@ -67,25 +67,66 @@ export async function getTrade(tradeType: string, tradeId: string) {
   }
 }
 
-export async function editTrade(editedTrade: any, tradeType: any, logs = false) {
+export async function editTrade(editedTrade: any, tradeType: any, logs = false, source = "main") {
   try {
     let tradeInfo = await getTrade(tradeType, editedTrade["_id"]);
+    let unEditableParams = ["_id", "Updated Notional", "B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Triada Trade Id", "Seq No", "ISIN", "Currency", "Yield", "Accrued Interest", "Trade Type", "App Check Test", "Trade App Status", "Nomura Upload Status", "Broker Email Status", "App Check Test", "Front Office Check", "Trade Type"];
 
     if (tradeInfo) {
       let beforeModify = JSON.parse(JSON.stringify(tradeInfo));
       beforeModify["_id"] = new ObjectId(beforeModify["_id"]);
 
-      let centralizedBlotKeys: any = ["B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Counter Party", "Triada Trade Id", "Seq No", "ISIN", "Cuisp", "Currency", "Yield", "Accrued Interest", "Original Face", "Comm/Fee", "Trade Type", "Nomura Upload Status", "Broker Full Name & Account", "Broker Email Status", "Broker Email", "Primary (True/False)", "Settlement Venue", "Edit Note"];
+      let centralizedBlotKeys: any = [
+        "B/S",
+        "BB Ticker",
+        "Location",
+        "Trade Date",
+        "Trade Time",
+        "Settle Date",
+        "Price",
+        "Notional Amount",
+        "Settlement Amount",
+        "Principal",
+        "Counter Party",
+        "Triada Trade Id",
+        "Seq No",
+        "ISIN",
+        "Cuisp",
+        "Currency",
+        "Yield",
+        "Accrued Interest",
+        "Original Face",
+        "Comm/Fee",
+        "Trade Type",
+        "Nomura Upload Status",
+        "Broker Full Name & Account",
+        "Broker Email Status",
+        "Broker Email",
+        "Primary (True/False)",
+        "Settlement Venue",
+        "Edit Note",
+        "Resolved",
+        "Front Office Check",
+      ];
+
       let changes = 0;
       let changesText = [];
       for (let index = 0; index < centralizedBlotKeys.length; index++) {
         let key: any = centralizedBlotKeys[index];
+        if (source == "main") {
+          if (editedTrade[key] != "" && editedTrade[key]) {
+            changesText.push(`${key} changed from ${tradeInfo[key]} to ${editedTrade[key]} `);
+            tradeInfo[key] = editedTrade[key];
 
-        if (editedTrade[key] != "" && editedTrade[key]) {
-          changesText.push(`${key} changed from ${tradeInfo[key]} to ${editedTrade[key]} `);
-          tradeInfo[key] = editedTrade[key];
+            changes++;
+          }
+        } else {
+          if (editedTrade[key] != "" && editedTrade[key] && !unEditableParams.includes(key)) {
+            changesText.push(`${key} changed from ${tradeInfo[key]} to ${editedTrade[key]} `);
+            tradeInfo[key] = editedTrade[key];
 
-          changes++;
+            changes++;
+          }
         }
       }
       if (!changes) {
@@ -347,7 +388,7 @@ export async function numberOfNewTrades(): Promise<any> {
     const reportCollection = database.collection("new_trades");
 
     // Define the query to count documents with 'Resolved' equal to an empty string
-    const query = { Resolved: "false" };
+    const query = { Resolved: "False" };
 
     // Count the documents that match the query
     const stats = await reportCollection.countDocuments(query);

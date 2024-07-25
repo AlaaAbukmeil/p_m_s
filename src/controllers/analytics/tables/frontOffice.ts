@@ -5,7 +5,7 @@ import { bbgRating, formatMarkDate, moodyRating } from "../tools";
 export function formatSummaryPosition(position: any, fundDetails: any, dates: any, sortBy: "pl" | null | "price move") {
   let titles = [
     "Category",
-    "Group",
+    // "Group",
     "Type",
     "L/S",
     "Strategy",

@@ -977,8 +977,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
       let newObject: any = {};
       if (portfolioViewType == "front office") {
         newObject = {
-          Group: totalTicker,
-          "BB Ticker": "",
+          // Group: totalTicker,
+          "BB Ticker": totalTicker,
           Color: "white",
           Location: locationCode,
           "USD Market Value": groupedByLocation[locationCode].groupUSDMarketValue,
