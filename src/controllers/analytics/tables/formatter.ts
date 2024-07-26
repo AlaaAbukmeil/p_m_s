@@ -210,7 +210,6 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
 
     position["CR01"] = isFinite(position["CR01"]) ? position["CR01"] || 0 : 0;
 
-    position["CR01"] = (position["CR01"] / 1000000) * position["Notional Amount"] * usdRatio;
     position["CR01"] = Math.round(position["CR01"] * 100) / 100 || 0;
 
     position["CR01"] = (position["CR01"] / 1000000) * position["Notional Amount"] * usdRatio;
