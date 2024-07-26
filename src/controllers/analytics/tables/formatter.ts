@@ -138,8 +138,6 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
 
     position["Day P&L (BC)"] = Math.round(position["Day P&L"] * usdRatio * holdBackRatio + position["Day P&L FX"]);
 
-    position["ISIN"] = position["ISIN"];
-
     position["Maturity"] = position["Maturity"] ? position["Maturity"] : parseBondIdentifier(position["BB Ticker"]).date || 0;
 
     position["Call Date"] = position["Call Date"] ? position["Call Date"] : "0";
@@ -151,7 +149,6 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     position["Issuer"] = position["Issuer"] == "0" ? "" : position["Issuer"];
 
     position["Base LTV"] = nomuraRuleMargin(position);
-    position["OAS"] = position["OAS"];
     position["OAS"] = Math.round(position["OAS"] * 100) / 100 || 0;
 
     position["OAS W Change"] = oasWithChange(position["OAS"])[0];
@@ -179,7 +176,6 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     position["Total Gain/ Loss (USD)"] = Math.round(position["Capital Gain/ Loss since Inception (Live Position)"] + position["Accrued Int. Since Inception (BC)"]) || 0;
     position["% of Total Gain/ Loss since Inception (Live Position)"] = (Math.round(((position["Total Gain/ Loss (USD)"] + position["Cost (BC)"]) / position["Cost (BC)"] - 1) * shortLongType * 10000) / 100 || 0) + " %";
 
-    position["Z Spread"] = position["Z Spread"];
     position["Z Spread"] = Math.round(position["Z Spread"] * 1000000) / 1000000 || 0;
     position["Entry Yield"] = position["Entry Yield"] ? Math.round(position["Entry Yield"] * 100) / 100 + " %" : "0 %";
     position["Coupon Rate"] = position["Coupon Rate"] + " %";
@@ -209,8 +205,6 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     position["Market Type"] = regionClassInfo.marketType;
 
     position["CR01"] = isFinite(position["CR01"]) ? position["CR01"] || 0 : 0;
-
-    position["CR01"] = Math.round(position["CR01"] * 100) / 100 || 0;
 
     position["CR01"] = (position["CR01"] / 1000000) * position["Notional Amount"] * usdRatio;
 

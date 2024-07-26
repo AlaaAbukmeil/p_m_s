@@ -285,6 +285,7 @@ export function getDayURlzdInt(portfolio: any, date: any) {
     let position = portfolio[index];
     portfolio[index]["Principal"] = 0;
     let quantityGeneratingInterest = position["Notional Amount"];
+
     let interestInfo = position["Interest"] || {};
     let yesterdayPrice;
     if (position["Previous Mark"]) {
@@ -326,6 +327,10 @@ export function getDayURlzdInt(portfolio: any, date: any) {
 
     if (!portfolio[index]["Day Int."]) {
       portfolio[index]["Day Int."] = 0;
+    }
+    if (position["Notional Amount"] == 0) {
+      //rlzd positions, the reason why we dont seperate prinicpal calculation, its too complicated to maintain and calculate, better off modify it at end of month.
+      position["Principal"] = 0;
     }
   }
   return { portfolio: portfolio, lastUpdatePricesDate: lastUpdatePricesDate, lastUploadTradesDate: lastUploadTradesDate };

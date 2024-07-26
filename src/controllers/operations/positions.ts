@@ -220,7 +220,6 @@ export async function updatePositionPortfolio(
             }
           }
 
-          object["Net"] = securityInPortfolio !== 404 ? securityInPortfolio["Net"] + currentNet : currentNet;
           object["Currency"] = currency;
           object["Average Cost"] = rlzdOperation == -1 ? (securityInPortfolio !== 404 ? getAverageCost(currentQuantity, previousQuantity, currentPrice, previousAverageCost) : currentPrice) : securityInPortfolio["Average Cost"];
 
@@ -302,7 +301,6 @@ export async function updatePositionPortfolio(
           if (rlzdOperation == -1) {
             object["Entry Yield"] = row["Yield"] || 0;
           }
-          object["Net"] = currentNet + updatingPosition["Net"];
           object["Average Cost"] = rlzdOperation == -1 ? getAverageCost(currentQuantity, updatingPosition["Notional Amount"], currentPrice, parseFloat(updatingPosition["Average Cost"])) : updatingPosition["Average Cost"];
           // this is reversed because the quantity is negated
 
@@ -585,7 +583,6 @@ export async function editPosition(editedPosition: any, date: string) {
             positionInPortfolio["Interest"][sinkFactorDate] = parseFloat(editedPosition[title]);
 
             changes.push(`Notional Amount Changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]} on ${sinkFactorDate} (sink factor)`);
-            positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
           } else if (editedPosition["Event Type"] == "Pay In Kind") {
             let payInKindFactorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
 
@@ -595,7 +592,6 @@ export async function editPosition(editedPosition: any, date: string) {
             changes.push(`Notional Amount Changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]} on ${payInKindFactorDate}`);
             positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
 
-            positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
           } else if (editedPosition["Event Type"] == "Settlement Edit") {
             let factorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
 
@@ -603,9 +599,7 @@ export async function editPosition(editedPosition: any, date: string) {
             positionInPortfolio["Interest"][factorDate] = parseFloat(editedPosition[title]);
 
             changes.push(`Notional Amount Changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]} on ${factorDate}`);
-            positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
 
-            positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
           } else if (editedPosition["Event Type"] == "Redeemped") {
             let factorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
             positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
@@ -614,13 +608,9 @@ export async function editPosition(editedPosition: any, date: string) {
             changes.push(`Notional Amount Redeemped at˝ ${positionInPortfolio["Notional Amount"]} on ${factorDate}`);
             positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
 
-            positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
           } else {
-            positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
-            positionInPortfolio["Interest"][todayDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Notional Amount"]);
             changes.push(`Notional Amount changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]}`);
             positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
-            positionInPortfolio["Net"] = parseFloat(editedPosition[title]);
           }
         } else if ((title == "Mid" || title == "Ask" || title == "Bid" || title == "Average Cost" || title == "Entry Price") && editedPosition[title] != "") {
           if (!positionInPortfolio["Type"]) {
@@ -894,7 +884,6 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           object["CUSIP"] = row["Cuisp"].trim() || "";
           object["Notional Amount"] = currentQuantity;
 
-          object["Net"] = currentNet;
           object["Currency"] = currency;
           object["Average Cost"] = currentPrice;
 
@@ -955,7 +944,6 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           object["Currency"] = currency;
           object["Notional Amount"] = currentQuantity + updatingPosition["Notional Amount"];
 
-          object["Net"] = currentNet + updatingPosition["Net"];
           object["Average Cost"] = rlzdOperation == -1 ? getAverageCost(currentQuantity, updatingPosition["Notional Amount"], currentPrice, parseFloat(updatingPosition["Average Cost"])) : updatingPosition["Average Cost"];
           // this is reversed because the quantity is negated
 
