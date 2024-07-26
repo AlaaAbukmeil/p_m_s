@@ -12,10 +12,7 @@ const { Storage } = require("@google-cloud/storage");
 const { PassThrough } = require("stream");
 
 export const storage = new Storage({ keyFilename: process.env.KEYPATHFILE });
-export const bucketPublicBucket = storage.bucket(process.env.BUCKET_PUBLIC)
-
-
-
+export const bucketPublicBucket = storage.bucket(process.env.BUCKET_PUBLIC);
 
 export async function generateSignedUrl(fileName: string): Promise<string> {
   const options = {
@@ -174,7 +171,6 @@ export const verifyTokenRiskMember = (req: Request | any, res: Response, next: N
 };
 export const verifyTokenFactSheetMember = (req: Request | any, res: Response, next: NextFunction) => {
   try {
-
     req.cookies["triada.admin.cookie"] = req.cookies["triada.admin.cookie"] ? req.cookies["triada.admin.cookie"] : {};
     let token = req.cookies["triada.admin.cookie"].token;
     req.query = req.query ? req.query : {};
@@ -195,17 +191,19 @@ export const verifyTokenFactSheetMember = (req: Request | any, res: Response, ne
     req.email = decoded.email;
     req.link = decoded.link;
     req.token = token;
-    // console.log(decoded.accessRole != "member (risk report)" && decoded.accessRole != "admin" && decoded.accessRole != "member (factsheet report)", "test 2");
     if (decoded.accessRole != "member (risk report)" && decoded.accessRole != "admin" && decoded.accessRole != "member (factsheet report)") {
       return res.sendStatus(401);
     }
     if (linkToken) {
       let cookie: CookieOptions = {
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        maxAge: 3 * 24 * 60 * 60 * 1000,
         httpOnly: process.env.PRODUCTION === "production",
         secure: process.env.PRODUCTION === "production", // Set to true if using HTTPS
         sameSite: "lax",
+        path: "/",
+        domain: ".triadacapital.com",
       };
+
       res.cookie("triada.admin.cookie", { token: token }, cookie);
     }
     next();

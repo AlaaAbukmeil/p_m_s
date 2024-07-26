@@ -37,7 +37,9 @@ export async function reconcileMUFG(MUFGData: MufgReconcile[], portfolio: any) {
         "Price (mufg)": mufgPrice || 0,
         "Difference Price": portfolioPrice - mufgPrice || 0,
       };
-      formattedData.push(formattedRow);
+      if (!(portfolioPositionQuantity == 0 && mufgPositionQuantity == 0)) {
+        formattedData.push(formattedRow);
+      }
     }
     return formattedData;
   } catch (error) {

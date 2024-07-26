@@ -172,16 +172,17 @@ const verifyTokenFactSheetMember = (req, res, next) => {
         req.email = decoded.email;
         req.link = decoded.link;
         req.token = token;
-        // console.log(decoded.accessRole != "member (risk report)" && decoded.accessRole != "admin" && decoded.accessRole != "member (factsheet report)", "test 2");
         if (decoded.accessRole != "member (risk report)" && decoded.accessRole != "admin" && decoded.accessRole != "member (factsheet report)") {
             return res.sendStatus(401);
         }
         if (linkToken) {
             let cookie = {
-                maxAge: 7 * 24 * 60 * 60 * 1000,
+                maxAge: 3 * 24 * 60 * 60 * 1000,
                 httpOnly: process.env.PRODUCTION === "production",
                 secure: process.env.PRODUCTION === "production",
                 sameSite: "lax",
+                path: "/",
+                domain: ".triadacapital.com",
             };
             res.cookie("triada.admin.cookie", { token: token }, cookie);
         }

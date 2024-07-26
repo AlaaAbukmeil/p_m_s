@@ -86,7 +86,7 @@ export async function readCentralizedEBlot(path: string): Promise<
         }
         ibTrades[ibTradesIndex]["Notional Amount"] = Math.round(parseFloat(ibTrades[ibTradesIndex]["Notional Amount"]));
 
-        ibTrades[ibTradesIndex]["timestamp"] = new Date(ibTrades[ibTradesIndex]["Trade Date"]).getTime();
+        ibTrades[ibTradesIndex]["timestamp"] = new Date().getTime();
         ibTrades[ibTradesIndex]["Trade App Status"] = "uploaded_to_app";
       }
       for (let emsxTradesIndex = 0; emsxTradesIndex < emsxTrades.length; emsxTradesIndex++) {
@@ -98,7 +98,7 @@ export async function readCentralizedEBlot(path: string): Promise<
         if (!emsxTrades[emsxTradesIndex]["Settle Date"].includes("/")) {
           emsxTrades[emsxTradesIndex]["Settle Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(emsxTrades[emsxTradesIndex]["Settle Date"]));
         }
-        emsxTrades[emsxTradesIndex]["timestamp"] = new Date(emsxTrades[emsxTradesIndex]["Trade Date"]).getTime();
+        emsxTrades[emsxTradesIndex]["timestamp"] = new Date().getTime();
         emsxTrades[emsxTradesIndex]["Trade App Status"] = "uploaded_to_app";
       }
 
@@ -111,7 +111,7 @@ export async function readCentralizedEBlot(path: string): Promise<
         if (!gsTrades[gsTradesIndex]["Settle Date"].includes("/")) {
           gsTrades[gsTradesIndex]["Settle Date"] = getTradeDateYearTrades(convertExcelDateToJSDate(gsTrades[gsTradesIndex]["Settle Date"]));
         }
-        gsTrades[gsTradesIndex]["timestamp"] = new Date(gsTrades[gsTradesIndex]["Trade Date"]).getTime();
+        gsTrades[gsTradesIndex]["timestamp"] = new Date().getTime();
         gsTrades[gsTradesIndex]["Trade App Status"] = "uploaded_to_app";
       }
 

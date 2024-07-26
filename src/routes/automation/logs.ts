@@ -8,12 +8,12 @@ import { insertEditLogs } from "../../controllers/operations/logs";
 
 const logRouter = Router();
 
-logRouter.post("/automation-log", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+logRouter.post("/automation-logs", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let data = req.body;
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
 
-    await insertEditLogs([data.errorMessage], "Errors", dateTime, data.functionName, data.functionPositions);
+    await insertEditLogs([data.errorMessage], "Errors", dateTime, data.functionName, data.functionPosition);
 
     res.sendStatus(200);
   } catch (error) {
