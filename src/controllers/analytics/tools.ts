@@ -334,9 +334,6 @@ export function yearsUntil(dateString: any, dateInput: any, bbTicker: string) {
     let years = diff / (1000 * 60 * 60 * 24 * 365.25);
 
     // If the difference is negative (i.e., the date is in the future), take the absolute value
-    if (years < 0) {
-      years = 0;
-    }
 
     // Round to two decimal places and return
     return Math.round(years * 100) / 100;

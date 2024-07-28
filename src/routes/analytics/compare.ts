@@ -27,6 +27,7 @@ analyticsRouter.get("/compare", uploadToBucket.any(), verifyToken, async (req: R
     let analytics = await getAnalytics(start, end);
 
     analytics = extractAnalytics(analytics, conditions, notOperation, type);
+    // let update = await insertPositionsInfo(analytics.isinInformation);
     res.send(analytics);
   } catch (error: any) {
     console.log(error);

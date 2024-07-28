@@ -334,7 +334,7 @@ export function formatIbTrades(data: any, ibTrades: any, portfolio: any) {
         object["Currency"] = trade["Currency"];
         object["Symbol"] = trade["Symbol"];
         // ib file has as quantity
-        object["Notional Amount"] = trade["Quantity"];
+        object["Notional Amount"] = Math.round(parseFloat(trade["Quantity"]));
         object["T Price"] = trade["T. Price"];
         object["C Price"] = data[index]["C. Price"];
         object["Notional Value"] = trade["Notional Value"];
@@ -495,4 +495,3 @@ export function formatNomura(tradesInput: any, start: string, end: string) {
   }
   return tradesOutput;
 }
-

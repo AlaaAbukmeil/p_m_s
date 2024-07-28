@@ -127,7 +127,6 @@ export async function updatePositionPortfolio(
       let operation = tradeType == "B" ? 1 : -1;
       let currentPrice: any = parseFloat(row["Price"]) / (type == "vcons" ? 100 : 1);
       let currentQuantity: any = parseFloat(row["Notional Amount"].toString().replace(/,/g, "")) * operation;
-      let currentNet = parseFloat(row["Settlement Amount"].toString().replace(/,/g, "")) * operation;
 
       let currentPrincipal: any = parseFloat(row["Principal"].toString().replace(/,/g, ""));
 
@@ -591,7 +590,6 @@ export async function editPosition(editedPosition: any, date: string) {
 
             changes.push(`Notional Amount Changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]} on ${payInKindFactorDate}`);
             positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
-
           } else if (editedPosition["Event Type"] == "Settlement Edit") {
             let factorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
 
@@ -599,7 +597,6 @@ export async function editPosition(editedPosition: any, date: string) {
             positionInPortfolio["Interest"][factorDate] = parseFloat(editedPosition[title]);
 
             changes.push(`Notional Amount Changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]} on ${factorDate}`);
-
           } else if (editedPosition["Event Type"] == "Redeemped") {
             let factorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
             positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
@@ -607,7 +604,6 @@ export async function editPosition(editedPosition: any, date: string) {
 
             changes.push(`Notional Amount Redeemped at˝ ${positionInPortfolio["Notional Amount"]} on ${factorDate}`);
             positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
-
           } else {
             changes.push(`Notional Amount changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]}`);
             positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
@@ -662,7 +658,7 @@ export async function pinPosition(position: PinnedPosition) {
         const query = { ISIN: element, Location: position.Location };
         const newInsert = { ISIN: element, Location: position.Location, Pin: position.Pin };
 
-        console.log(query, position.Pin );
+        console.log(query, position.Pin);
 
         // Find the document
         const existingPosition = await reportCollection.findOne(query);

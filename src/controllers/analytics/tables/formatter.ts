@@ -487,7 +487,6 @@ export function assignColorAndSortParamsBasedOnAssetClass({
         let couponRate: any = groupedByLocation[locationCode].data[index]["Coupon Rate"];
         let notional = groupedByLocation[locationCode].data[index]["Notional Amount"];
         let issue: any = groupedByLocation[locationCode].data[index]["BB Ticker"];
-        //  console.log(issue, couponRate, "table")
         if (notional < 0) {
           sumTable({ table: ustTableByCoupon, data: groupedByLocation[locationCode].data[index], view: view, param: couponRate, subtotal: false, subtotalParam: "" });
           sumTable({ table: ustTable, data: groupedByLocation[locationCode].data[index], view: view, param: duration, subtotal: true, subtotalParam: issue });
@@ -962,6 +961,10 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
 
         if (groupedByLocation[locationCode].data[groupPositionIndex]["Pin"] == "not pinned") {
           groupedByLocation[locationCode]["Pin"] = "not pinned";
+        }
+        if (groupedByLocation[locationCode].data[groupPositionIndex]["Duration"] < 0) {
+          groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = "red";
+          groupedByLocation[locationCode].data[groupPositionIndex]["Duration"] = 0;
         }
       }
 
