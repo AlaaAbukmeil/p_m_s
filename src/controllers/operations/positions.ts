@@ -227,10 +227,6 @@ export async function updatePositionPortfolio(
           object["Interest"] = securityInPortfolio !== 404 ? (securityInPortfolio["Interest"] ? securityInPortfolio["Interest"] : {}) : {};
           object["Interest"][settlementDate] = object["Interest"][settlementDate] ? object["Interest"][settlementDate] + currentQuantity : currentQuantity;
 
-          object["MTD Rlzd"] = securityInPortfolio !== 404 ? (securityInPortfolio["MTD Rlzd"] ? securityInPortfolio["MTD Rlzd"] : {}) : {};
-
-          object["MTD Rlzd"][thisMonth] = securityInPortfolio !== 404 ? (securityInPortfolio["MTD Rlzd"] ? (securityInPortfolio["MTD Rlzd"][thisMonth] ? securityInPortfolio["MTD Rlzd"][thisMonth] : []) : []) : [];
-
           object["Day Rlzd"] = securityInPortfolio !== 404 ? (securityInPortfolio["Day Rlzd"] ? securityInPortfolio["Day Rlzd"] : {}) : {};
 
           object["Day Rlzd"][thisDay] = securityInPortfolio !== 404 ? (securityInPortfolio["Day Rlzd"] ? (securityInPortfolio["Day Rlzd"][thisDay] ? securityInPortfolio["Day Rlzd"][thisDay] : []) : []) : [];
@@ -314,14 +310,6 @@ export async function updatePositionPortfolio(
 
           object["Coupon Duration"] = object["Coupon Rate"] ? couponDaysYear : "";
           object["Entry Price"] = updatingPosition["Entry Price"];
-
-          object["MTD Rlzd"] = updatingPosition["MTD Rlzd"];
-
-          let MTDRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
-          if (rlzdOperation == 1) {
-            object["MTD Rlzd"][thisMonth] = object["MTD Rlzd"][thisMonth] ? object["MTD Rlzd"][thisMonth] : [];
-            object["MTD Rlzd"][thisMonth].push(MTDRlzdForThisTrade);
-          }
 
           if (rlzdOperation == -1) {
             object["Entry Price"][thisMonth] = currentPrice;
@@ -603,7 +591,7 @@ export async function editPosition(editedPosition: any, date: string) {
             positionInPortfolio["Interest"][factorDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Notional Amount"]);
 
             changes.push(`Notional Amount Redeemped at˝ ${positionInPortfolio["Notional Amount"]} on ${factorDate}`);
-            positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
+            positionInPortfolio["Notional Amount"] = 0;
           } else {
             changes.push(`Notional Amount changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]}`);
             positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
@@ -888,14 +876,6 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           object["Interest"] = {};
           object["Interest"][settlementDate] = object["Interest"][settlementDate] ? object["Interest"][settlementDate] + currentQuantity : currentQuantity;
 
-          object["MTD Rlzd"] = {};
-
-          object["MTD Rlzd"][thisMonth] = [];
-
-          let MTDRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
-          if (rlzdOperation == 1) {
-            object["MTD Rlzd"][thisMonth].push(MTDRlzdForThisTrade);
-          }
 
           object["Day Rlzd"] = {};
 
@@ -961,13 +941,8 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
             object["Entry Price"][thisMonth] = currentPrice;
           }
 
-          object["MTD Rlzd"] = updatingPosition["MTD Rlzd"];
 
-          let MTDRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
-          if (rlzdOperation == 1) {
-            object["MTD Rlzd"][thisMonth] = object["MTD Rlzd"][thisMonth] ? object["MTD Rlzd"][thisMonth] : [];
-            object["MTD Rlzd"][thisMonth].push(MTDRlzdForThisTrade);
-          }
+        
           object["Day Rlzd"] = updatingPosition["Day Rlzd"];
 
           let dayRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };

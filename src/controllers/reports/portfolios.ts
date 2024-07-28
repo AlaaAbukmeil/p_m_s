@@ -88,7 +88,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
 
   documents = documents.filter((position: Position) => {
     if (position["Notional Amount"] == 0) {
-      let monthsTrades = Object.keys(position["MTD Rlzd"] || {});
+      let monthsTrades = Object.keys(position["Interest"] || {});
       for (let index = 0; index < monthsTrades.length; index++) {
         monthsTrades[index] = monthlyRlzdDate(monthsTrades[index]);
       }
@@ -374,8 +374,6 @@ export async function getMTDURlzdInt(portfolio: any, date: any) {
     } else if (typeCheck.includes("FX")) {
       tradeType = "fx";
     }
-
-    portfolio[index]["MTD Rlzd DC"] = portfolio[index]["MTD Rlzd"];
 
     let multiplier = tradeType == "vcons" ? 100 : 1;
 
