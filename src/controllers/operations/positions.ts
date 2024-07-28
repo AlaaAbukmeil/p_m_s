@@ -10,6 +10,7 @@ import { modifyTradesDueToRecalculate } from "./trades";
 import { insertEditLogs } from "./logs";
 import { getSecurityInPortfolioById } from "./tools";
 import { swapMonthDay } from "../common";
+import { PositionBeforeFormatting } from "../../models/portfolio";
 const ObjectId = require("mongodb").ObjectId;
 
 export async function getPortfolio(date = null): Promise<Position[]> {
@@ -36,7 +37,7 @@ export async function getPortfolio(date = null): Promise<Position[]> {
   }
 }
 
-export async function getHistoricalPortfolio(date: string) {
+export async function getHistoricalPortfolio(date: string): Promise<PositionBeforeFormatting[]> {
   const database = client.db("portfolios");
   const reportCollection = database.collection(`portfolio-${date}`);
   let documents = await reportCollection.find().toArray();
@@ -876,7 +877,6 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           object["Interest"] = {};
           object["Interest"][settlementDate] = object["Interest"][settlementDate] ? object["Interest"][settlementDate] + currentQuantity : currentQuantity;
 
-
           object["Day Rlzd"] = {};
 
           object["Day Rlzd"][thisDay] = [];
@@ -941,8 +941,6 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
             object["Entry Price"][thisMonth] = currentPrice;
           }
 
-
-        
           object["Day Rlzd"] = updatingPosition["Day Rlzd"];
 
           let dayRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };

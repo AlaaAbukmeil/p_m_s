@@ -1,4 +1,4 @@
-import { FundMTD, PositionBeforeFormatting, PositionGeneralFormat } from "../../../models/portfolio";
+import { Analysis, FundMTD, PositionBeforeFormatting, PositionGeneralFormat } from "../../../models/portfolio";
 import { formatDateUS, parsePercentage } from "../../common";
 import { calculateAccruedSinceInception } from "../../reports/portfolios";
 import { parseBondIdentifier } from "../../reports/tools";
@@ -299,12 +299,8 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     mtdFXGross: mtdFXGross,
 
     ytdNet: padInteger(ytdNet),
-    ytdrlzd: "x",
-    ytdurlzd: "x",
     ytdint: Math.round(ytdinterest * 1000) / 1000,
-    ytdfx: "x",
     ytdintPercentage: Math.round((ytdinterest / parseFloat(fund.nav)) * 100000) / 1000,
-    ytdFXGross: "x",
 
     dayplPercentage: padInteger(dayplPercentage),
     dayFXGross: dayFXGross,
@@ -1231,21 +1227,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
   }
 }
 
-export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, nav, sort, sign, view, currencies, format, sortBy, fundDetails, date }: { formattedPortfolio: PositionGeneralFormat[]; nav: number; sort: any; sign: number; view: "front office" | "exposure" | "back office"; currencies: any; format: "risk" | "summary"; sortBy: "pl" | null | "price move"; fundDetails: any; date: "string" }) {
-  // Group objects by location
-  let pairHedgeNotional = 0,
-    pairIGNotional = 0,
-    pairHedgeDV01Sum = 0,
-    pairIGDV01Sum = 0,
-    globalHedgeNotional = 0,
-    singleIGNotional = 0,
-    globalHedgeDV01Sum = 0,
-    singleIGDV01Sum = 0,
-    hedgeCurrencyNotional = 0,
-    HYNotional = 0,
-    HYDV01Sum = 0,
-    cdsNotional = 0;
-
+export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, nav, sort, sign, view, currencies, format, sortBy, fundDetails, date }: { formattedPortfolio: PositionGeneralFormat[]; nav: number; sort: any; sign: number; view: "front office" | "exposure" | "back office"; currencies: any; format: "risk" | "summary"; sortBy: "pl" | null | "price move"; fundDetails: any; date: "string" }): Analysis {
   let issuerInformation: any = {};
 
   let countryNAVPercentage: any = {};
@@ -1423,24 +1405,6 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
 
   let topWorstPerformaners = getTopWorst(groupedByLocation, sortBy);
 
-  let riskAssessment = {
-    pairHedgeNotional: pairHedgeNotional,
-    pairIGNotional: pairIGNotional,
-    pairTradeNotionalSum: pairHedgeNotional + pairIGNotional,
-    pairHedgeDV01Sum: pairHedgeDV01Sum,
-    pairIGDV01Sum: pairIGDV01Sum,
-    pairTradeDV01Sum: pairHedgeDV01Sum + pairIGDV01Sum,
-    globalHedgeNotional: globalHedgeNotional,
-    singleIGNotional: singleIGNotional,
-    globalHedgeSingleIGNotionalSum: globalHedgeNotional + singleIGNotional,
-    globalHedgeDV01Sum: globalHedgeDV01Sum,
-    singleIGDV01Sum: singleIGDV01Sum,
-    globalHedgeSingleIGDV01Sum: globalHedgeDV01Sum + singleIGDV01Sum,
-    hedgeCurrencyNotional: hedgeCurrencyNotional,
-    HYNotional: HYNotional,
-    HYDV01Sum: HYDV01Sum,
-    cdsNotional: -1 * cdsNotional,
-  };
   getCountrySectorStrategySum(countryNAVPercentage, sectorNAVPercentage, strategyNAVPercentage, issuerNAVPercentage, ratingNAVPercentage, regionNAVPercentage, marketTypeNAVPercentage, assetClassNAVPercentage, fundDetails.nav);
 
   getCountrySectorStrategySum(countryGMVPercentage, sectorGMVPercentage, strategyGMVPercentage, issuerGMVPercentage, ratingGMVPercentage, regionGMVPercentage, marketTypeGMVPercentage, assetClassGMVPercentage, fundDetails.nav);
@@ -1485,7 +1449,6 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
     marketTypeLMVPercentage: sortObjectBasedOnKey(marketTypeLMVPercentage),
     assetClassLMVPercentage: sortObjectBasedOnKey(assetClassLMVPercentage),
 
-    riskAssessment: riskAssessment,
     topWorstPerformaners: topWorstPerformaners,
     longShort: longShort,
     ustTable: ustTable,
@@ -1500,7 +1463,7 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
   };
 }
 
-export function getCountrySectorMacroStatistics({ formattedPortfolio, nav, sort, sign, view, currencies, format, sortBy, fundDetails, date }: { formattedPortfolio: PositionGeneralFormat[]; nav: number; sort: any; sign: number; view: "front office" | "exposure" | "back office"; currencies: any; format: "risk" | "summary"; sortBy: "pl" | null | "price move"; fundDetails: any; date: "string" }) {
+export function getCountrySectorMacroStatistics({ formattedPortfolio, nav, sort, sign, view, currencies, format, sortBy, fundDetails, date }: { formattedPortfolio: PositionGeneralFormat[]; nav: any; sort: any; sign: number; view: "front office" | "exposure" | "back office"; currencies: any; format: "risk" | "summary"; sortBy: "pl" | null | "price move"; fundDetails: any; date: "string" }) {
   // Group objects by location
 
   let countryNAVPercentage: any = {};

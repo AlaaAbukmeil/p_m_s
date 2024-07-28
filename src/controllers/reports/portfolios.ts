@@ -3,18 +3,18 @@ import { client } from "../userManagement/auth";
 import { formatDateRlzdDaily, getAllDatesSinceLastMonthLastDay, getAllDatesSinceLastYearLastDay, getDateTimeInMongoDBCollectionFormat, getDaysBetween, getEarliestDateKeyAndValue, getLastDayOfMonth, monthlyRlzdDate } from "./common";
 import { getFundDetails } from "../operations/fund";
 
-import { formatDateUS, getDate, parsePercentage } from "../common";
+import { formatDateUS } from "../common";
 import { getEarliestCollectionName, parseBondIdentifier, remainingDaysInYear } from "./tools";
 import { getHistoricalPortfolio, getPinnedPositions } from "../operations/positions";
-import { RlzdTrades } from "../../models/portfolio";
+import { FinalPositionBackOffice, FundExposureOnlyMTD, FundMTD, PositionBeforeFormatting, RlzdTrades } from "../../models/portfolio";
 import { Position } from "../../models/position";
 import { formatFrontOfficeTable } from "../analytics/tables/frontOffice";
 import { formatBackOfficeTable, formatFactSheetStatsTable } from "../analytics/tables/backOffice";
-import { isRatingHigherThanBBBMinus } from "../analytics/tools";
 import { getRlzdTrades } from "./trades";
 import { insertEditLogs } from "../operations/logs";
 import { getMonthInFundDetailsFormat } from "../operations/tools";
-export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions: any = null, view: "front office" | "back office" | "exposure" | "fact sheet", sortBy: "pl" | "price move" | null) {
+
+export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions: any = null, view: "front office" | "back office" | "exposure" | "fact sheet", sortBy: "pl" | "price move" | null): Promise<{ portfolio: FinalPositionBackOffice[]; fundDetails: FundMTD; analysis: any; uploadTradesDate: any; updatePriceDate: number; collectionName: string; error: null } | { fundDetails: FundExposureOnlyMTD; analysis: any; error: null } | { error: string }> {
   const database = client.db("portfolios");
   let earliestPortfolioName = await getEarliestCollectionName(date);
 
@@ -32,7 +32,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
 
   const reportCollection = database.collection(`portfolio-${earliestPortfolioName.predecessorDate}`);
 
-  let documents = await reportCollection
+  let documents: PositionBeforeFormatting[] = await reportCollection
     .aggregate([
       {
         $sort: {
@@ -44,6 +44,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   const lastDayOfLastYear = new Date(new Date().getFullYear(), 0, 0);
 
   for (let index = 0; index < documents.length; index++) {
+    //we used to use quantity before jan 2024
     documents[index]["Notional Amount"] = documents[index]["Notional Amount"] || parseFloat(documents[index]["Notional Amount"]) == 0 ? documents[index]["Notional Amount"] : documents[index]["Quantity"];
     documents[index]["Notes"] = "";
     let latestDateKey;
@@ -59,7 +60,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
 
     const latestDate = latestDateKey ? new Date(latestDateKey) : null;
 
-    if (latestDate && latestDate <= lastDayOfLastYear && documents[index]["Notional Amount"] == 0) {
+    if (latestDate && latestDate <= lastDayOfLastYear && parseFloat(documents[index]["Notional Amount"]) == 0) {
       // If not, remove the document from the array
       documents.splice(index, 1);
     }
@@ -86,8 +87,8 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   documents = ytdDocuments.portfolio;
   let ytdinterest = ytdDocuments.ytdinterest;
 
-  documents = documents.filter((position: Position) => {
-    if (position["Notional Amount"] == 0) {
+  documents = documents.filter((position: PositionBeforeFormatting) => {
+    if (parseFloat(position["Notional Amount"]) == 0) {
       let monthsTrades = Object.keys(position["Interest"] || {});
       for (let index = 0; index < monthsTrades.length; index++) {
         monthsTrades[index] = monthlyRlzdDate(monthsTrades[index]);
@@ -121,7 +122,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   let fundDetailsYTD: any = await getFundDetails(lastYear);
 
   if (fundDetailsMTD.length == 0) {
-    return { error: "Does not exist" };
+    return { error: "fundDetailsMTD Does not exist" };
   }
 
   if (!fundDetailsYTD.length) {
@@ -133,7 +134,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   if (view == "fact sheet") {
     portfolioFormattedSorted = formatFactSheetStatsTable({ portfolio: documents, date: date, fund: fund, dates: dates, sort: sort, sign: sign, conditions: conditions, fundDetailsYTD: fundDetailsYTD, sortBy: sortBy, ytdinterest: ytdinterest });
     let fundDetails = portfolioFormattedSorted.fundDetails;
-    return { fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis };
+    return { fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, error: null };
   } else {
     if (view == "front office" || view == "exposure") {
       portfolioFormattedSorted = formatFrontOfficeTable({ portfolio: documents, date: date, fund: fund, dates: dates, sort: sort, sign: sign, conditions: conditions, fundDetailsYTD: fundDetailsYTD, sortBy: sortBy, view: view, ytdinterest: ytdinterest });
@@ -141,12 +142,12 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
       portfolioFormattedSorted = formatBackOfficeTable({ portfolio: documents, date: date, fund: fund, dates: dates, sort: sort, sign: sign, conditions: conditions, fundDetailsYTD: fundDetailsYTD, sortBy: sortBy, ytdinterest: ytdinterest });
     }
     let fundDetails = portfolioFormattedSorted.fundDetails;
-    documents = portfolioFormattedSorted.portfolio;
-    return { portfolio: documents, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: dayParamsWithLatestUpdates.lastUploadTradesDate, updatePriceDate: dayParamsWithLatestUpdates.lastUpdatePricesDate, collectionName: earliestPortfolioName.predecessorDate };
+    let finalDocuments = portfolioFormattedSorted.portfolio;
+    return { portfolio: finalDocuments, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: dayParamsWithLatestUpdates.lastUploadTradesDate, updatePriceDate: dayParamsWithLatestUpdates.lastUpdatePricesDate, collectionName: earliestPortfolioName.predecessorDate, error: null };
   }
 }
 
-export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInput: any, threeDayAnalytics = false) {
+export function getDayParams(portfolio: PositionBeforeFormatting[], previousDayPortfolio: any, dateInput: any, threeDayAnalytics = false) {
   // try {
 
   for (let index = 0; index < portfolio.length; index++) {
@@ -165,7 +166,6 @@ export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInpu
 
         portfolio[index]["Previous FX"] = previousFxRate;
         portfolio[index]["Previous Mark"] = previousMark;
-        portfolio[index]["Previous Z Spread"] = previousDayPosition["Z Spread"] || 0;
       }
 
       if (!portfolio[index]["Type"]) {
@@ -181,7 +181,7 @@ export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInpu
       }
       portfolio[index]["Asset Class"] = portfolio[index]["Asset Class"] ? portfolio[index]["Asset Class"] : portfolio[index]["Rating Class"] ? portfolio[index]["Rating Class"] : "";
 
-      if (portfolio[index]["Notional Amount"] < 0) {
+      if (parseFloat(portfolio[index]["Notional Amount"]) < 0) {
         portfolio[index]["Asset Class"] = "Hedge";
       }
 
@@ -191,7 +191,7 @@ export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInpu
         portfolio[index]["Notes"] += " Previous Mark X ";
       }
 
-      let type = portfolio[index]["Type"] == "CDS" ? -1 : portfolio[index]["Notional Amount"] < 0 ? -1 : 1;
+      let type = portfolio[index]["Type"] == "CDS" ? -1 : parseFloat(portfolio[index]["Notional Amount"]) < 0 ? -1 : 1;
       let todayPrice: any = parseFloat(position["Mid"]);
       let yesterdayPrice: any = parseFloat(position["Previous Mark"]);
 
@@ -201,7 +201,7 @@ export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInpu
         portfolio[index]["Day Price Move"] = 0;
       }
     } else if (threeDayAnalytics) {
-      let type = portfolio[index]["Type"] == "CDS" ? -1 : portfolio[index]["Notional Amount"] < 0 ? -1 : 1;
+      let type = portfolio[index]["Type"] == "CDS" ? -1 : parseFloat(portfolio[index]["Notional Amount"]) < 0 ? -1 : 1;
       let todayPrice: any = parseFloat(position["Mid"]);
       let previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue: any) => previousDayIssue["ISIN"] == position["ISIN"] && previousDayIssue["ISIN"] && position["ISIN"]) : null;
 
@@ -220,7 +220,7 @@ export function getDayParams(portfolio: any, previousDayPortfolio: any, dateInpu
   return portfolio;
 }
 
-export function assignPinnedPositions(portfolio: Position[], pinnedPositions: any) {
+export function assignPinnedPositions(portfolio: PositionBeforeFormatting[], pinnedPositions: any): PositionBeforeFormatting[] {
   // try {
 
   for (let index = 0; index < portfolio.length; index++) {
@@ -509,8 +509,8 @@ export function calculateRlzd(trades: RlzdTrades[], mark: number, issue: string,
 
   for (let index = 0; index < trades.length; index++) {
     let trade = trades[index];
-    let price = trade.price;
-    let quantity = trade.quantity;
+    let price = parseFloat(trade.price);
+    let quantity = parseFloat(trade.quantity);
     if (assetClass.toString().includes("CDS")) {
       quantity = quantity / 10000000;
     }

@@ -1,4 +1,4 @@
-import { PositionBeforeFormatting } from "../../../models/portfolio";
+import { FundExposureOnlyMTD, PositionBeforeFormatting } from "../../../models/portfolio";
 import { formatGeneralTable, getCountrySectorMacroStatistics, groupAndSortByLocationAndTypeDefineTables } from "./formatter";
 
 export function formatBackOfficeTable({ portfolio, date, fund, dates, sort, sign, conditions, fundDetailsYTD, sortBy, ytdinterest }: { portfolio: PositionBeforeFormatting[]; date: any; fund: any; dates: any; sort: any; sign: number; conditions: any; fundDetailsYTD: any; sortBy: "pl" | null | "price move"; ytdinterest: any }) {
@@ -8,7 +8,7 @@ export function formatBackOfficeTable({ portfolio, date, fund, dates, sort, sign
   return { portfolio: analyzedPortfolio.portfolio, fundDetails: formattedPortfolio.fundDetails, analysis: analyzedPortfolio };
 }
 
-export function formatFactSheetStatsTable({ portfolio, date, fund, dates, sort, sign, conditions, fundDetailsYTD, sortBy, ytdinterest }: { portfolio: PositionBeforeFormatting[]; date: any; fund: any; dates: any; sort: any; sign: number; conditions: any; fundDetailsYTD: any; sortBy: "pl" | null | "price move"; ytdinterest: any }) {
+export function formatFactSheetStatsTable({ portfolio, date, fund, dates, sort, sign, conditions, fundDetailsYTD, sortBy, ytdinterest }: { portfolio: PositionBeforeFormatting[]; date: any; fund: any; dates: any; sort: any; sign: number; conditions: any; fundDetailsYTD: FundExposureOnlyMTD; sortBy: "pl" | null | "price move"; ytdinterest: any }) {
   let formattedPortfolio = formatGeneralTable({ portfolio: portfolio, date: date, fund: fund, dates: dates, conditions: conditions, fundDetailsYTD: fundDetailsYTD, ytdinterest });
   let fundDetails = formattedPortfolio.fundDetails;
   let formattedFundDetails = {

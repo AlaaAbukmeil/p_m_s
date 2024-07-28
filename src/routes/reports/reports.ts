@@ -21,7 +21,7 @@ router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: 
     let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | any = req.query.sort || "order";
     let sign: any = req.query.sign || 1;
     let conditions: any = req.query || {};
-    let report: any = await getPortfolioWithAnalytics(date, sort, sign, conditions, "back office", null);
+    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, "back office", null);
     if (report.error) {
       res.send({ error: report.error });
     } else {

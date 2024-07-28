@@ -1,4 +1,4 @@
-import { PositionGeneralFormat } from "../../../models/portfolio";
+import { Capacity, FinalPositionBackOffice, PositionGeneralFormat } from "../../../models/portfolio";
 import { Position } from "../../../models/position";
 import { parsePercentage } from "../../common";
 import { parseStringWithNoSpecialCharacters, toTitleCase } from "../tools";
@@ -7,7 +7,7 @@ export function nomuraRuleMargin(position: PositionGeneralFormat) {
   try {
     let sector = parseStringWithNoSpecialCharacters(position["Sector"]);
     let country = parseStringWithNoSpecialCharacters(position["Country"]);
-    let spread = position["OAS"];
+    let spread = parseFloat(position["OAS"]);
     let type = position["Type"];
     let maturity = parseFloat(position["Duration"]);
     let assetClass = position["Asset Class"];
@@ -160,13 +160,14 @@ export function nomuraRuleMargin(position: PositionGeneralFormat) {
   }
 }
 
-export function adjustMarginMultiplier(portfolio: PositionGeneralFormat[], sectorGMVPercentage: any, issuerGMVPercentage: any) {
+export function adjustMarginMultiplier(portfolio: PositionGeneralFormat[], sectorGMVPercentage: any, issuerGMVPercentage: any): { portfolio: FinalPositionBackOffice[]; capacity: Capacity } {
   let capacity = {
     amount: 0,
     amountHY: 0,
     amountIG: 0,
     amountHedge: 0,
   };
+  let finalPorfolio: any = [...portfolio];
 
   for (let index = 0; index < portfolio.length; index++) {
     try {
@@ -232,5 +233,5 @@ export function adjustMarginMultiplier(portfolio: PositionGeneralFormat[], secto
     } catch (error: any) {}
   }
 
-  return { portfolio: portfolio, capacity: capacity };
+  return { portfolio: finalPorfolio, capacity: capacity };
 }
