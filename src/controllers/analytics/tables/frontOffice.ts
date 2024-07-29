@@ -17,6 +17,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
 
     "USD Market Value",
     "% of NAV",
+    "Currency",
     "Bid",
     "Ask",
     "YTW",
@@ -56,7 +57,6 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Country",
     "Issuer",
     "Last Day Since Realizd",
-    "Currency",
     "Security Description",
 
     "BBG Composite Rating",

@@ -72,7 +72,6 @@ function customEditMonthlyReturn(variables: any, monthlyReturns: any) {
 export function calculateMonthlyReturn(data: any, variables: any, fundData = false, inception = false, rfr: any = {}, map: any = {}, mkt = false, name = "", compare: any = {}) {
   //assue months are sorted in ascending order
 
-
   let monthlyReturns: any = {};
   let monthsIndex = data.length - 1;
 
@@ -170,7 +169,6 @@ export function calculateMonthlyReturn(data: any, variables: any, fundData = fal
   let years = Object.keys(yearlyData);
   let yearsIndex = years.length - 1;
   let yearlyReturns: any = {};
-
 
   while (yearsIndex >= 0) {
     let year = years[yearsIndex];
@@ -936,9 +934,10 @@ export async function getFactSheet({ from, to, type, inception, mkt }: { from: a
       resultFinal.result_FIDITBD = result_FIDITBD;
       for (let param in compare) {
         for (let year in compare[param]) {
-          compare[param][year] = sortObjectByValues(compare[param][year], param)
+          compare[param][year] = sortObjectByValues(compare[param][year], param);
         }
       }
+
       resultFinal.compare = compare;
     }
     return resultFinal;

@@ -620,9 +620,11 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       if (usdMarketValue > 0) {
         longShort["Long"].dv01Sum += Math.round(parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0);
         longShort["Long"].intSum += Math.round(parseFloat(groupedByLocation[locationCode].data[index]["Day Int. (BC)"]) || 0);
+        longShort["Long"].notionalSum += usdMarketValue;
       } else if (usdMarketValue < 0 || groupedByLocation[locationCode].data[index]["Type"] == "CDS") {
         longShort["Short"].dv01Sum += Math.round(parseFloat(groupedByLocation[locationCode].data[index]["DV01"]) || 0);
         longShort["Short"].intSum += Math.round(parseFloat(groupedByLocation[locationCode].data[index]["Day Int. (BC)"]) || 0);
+        longShort["Short"].notionalSum += usdMarketValue;
       }
 
       if (type == "BND" && notional > 0 && strategy == "RV") {
@@ -1257,7 +1259,7 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
   let marketTypeLMVPercentage: any = {};
   let assetClassLMVPercentage: any = {};
 
-  let longShort = { Long: { dv01Sum: 0, intSum: 0 }, Short: { dv01Sum: 0, intSum: 0 }, Total: { dv01Sum: 0, intSum: 0 } };
+  let longShort = { Long: { dv01Sum: 0, intSum: 0, notionalSum: 0 }, Short: { dv01Sum: 0, intSum: 0, notionalSum: 0 }, Total: { dv01Sum: 0, intSum: 0, notionalSum: 0 } };
 
   let durationSummary = {
     "0 To 2": { durationSum: 0, dv01Sum: 0 },
@@ -1413,9 +1415,10 @@ export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, 
 
   let capacity = adjustMarginMultiplier(portfolio, sectorGMVPercentage, issuerNAVPercentage);
 
-  durationSummary["Total"].dv01Sum = Math.round(durationSummary["0 To 2"].dv01Sum + durationSummary["2 To 5"].dv01Sum + durationSummary["5 To 10"].dv01Sum + durationSummary["10 To 30"].dv01Sum + durationSummary["> 30"].dv01Sum);
   longShort["Total"].dv01Sum = Math.round(longShort["Long"].dv01Sum + longShort["Short"].dv01Sum);
   longShort["Total"].intSum = Math.round(longShort["Long"].intSum + longShort["Short"].intSum);
+  longShort["Total"].notionalSum = Math.round(longShort["Long"].notionalSum + longShort["Short"].notionalSum);
+
   return {
     portfolio: capacity.portfolio,
     duration: durationSummary,
