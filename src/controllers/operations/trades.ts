@@ -70,7 +70,7 @@ export async function getTrade(tradeType: string, tradeId: string) {
 export async function editTrade(editedTrade: any, tradeType: any, logs = false, source = "main") {
   try {
     let tradeInfo = await getTrade(tradeType, editedTrade["_id"]);
-    let unEditableParams = ["_id", "Updated Notional", "B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Triada Trade Id", "Seq No", "ISIN", "Currency", "Yield", "Accrued Interest", "Trade Type", "App Check Test", "Trade App Status", "Nomura Upload Status", "Broker Email Status", "App Check Test", "Front Office Check", "Trade Type", ];
+    let unEditableParams = ["_id", "Updated Notional", "B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Triada Trade Id", "Seq No", "ISIN", "Currency", "Yield", "Accrued Interest", "Trade Type", "App Check Test", "Trade App Status", "Nomura Upload Status", "Broker Email Status", "App Check Test", "Front Office Check", "Trade Type"];
 
     if (tradeInfo) {
       let beforeModify = JSON.parse(JSON.stringify(tradeInfo));
@@ -107,7 +107,6 @@ export async function editTrade(editedTrade: any, tradeType: any, logs = false, 
         "Edit Note",
         "Resolved",
         "Front Office Check",
-        
       ];
 
       let changes = 0;
@@ -363,6 +362,38 @@ export async function getTriadaTrades(tradeType: any, fromTimestamp: number | nu
     delete trade["timestamp"];
   }
   return reportCollection;
+}
+export async function addNomuraGeneratedDateToTrades(tradeType: any, fromTimestamp: number | null = 0, toTimestamp: number | null = 0) {
+  const database = client.db("trades_v_2");
+
+  let options: any = [];
+
+  // If both timestamps are provided, use them to filter the results
+  if (fromTimestamp !== null && toTimestamp !== null) {
+    options.push({ timestamp: { $gte: fromTimestamp, $lte: toTimestamp } });
+    // If only fromTimestamp is provided
+  } else if (fromTimestamp !== null) {
+    options.push({ timestamp: { $gte: fromTimestamp } });
+    // If only toTimestamp is provided
+  } else if (toTimestamp !== null) {
+    options.push({ timestamp: { $lte: toTimestamp } });
+  }
+
+  let query: any = {};
+
+  // If there are any timestamp options, use them in the query
+  if (options.length > 0) {
+    query.$and = options;
+  }
+
+  const update = {
+    $set: {
+      "Last Nomura Generated": getDateTimeInMongoDBCollectionFormat(new Date()),
+    },
+  };
+
+  let action = await database.collection(tradeType).updateMany(query, update);
+  console.log({ action, query });
 }
 export async function addNewTrade(data: any): Promise<any> {
   try {

@@ -136,7 +136,14 @@ export async function updatePricesPortfolio(path: string, link: string, collecti
 
       let callDate: any = {};
       let maturityType = "day/month";
-      let portfolio = await getPortfolio();
+      let portfolio;
+      if (collectionDate) {
+        let action = await getPortfolioOnSpecificDate(collectionDate);
+        portfolio = action.portfolio;
+        collectionDate = action.date;
+      } else {
+        portfolio = await getPortfolio();
+      }
 
       let currencyInUSD: any = {};
       let errors: { [key: string]: { notional: number; location: string; message: string } } = {};

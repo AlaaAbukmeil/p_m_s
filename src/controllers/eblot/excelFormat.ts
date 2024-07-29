@@ -463,33 +463,34 @@ export function formatNomura(tradesInput: any, start: string, end: string) {
   for (let index = 0; index < tradesInput.length; index++) {
     let trade = tradesInput[index];
     let obj: any = {};
-    let pset = trade["BB Ticker"].split(" ")[0] == "T" ? "default" : "EUROCLEAR";
-    obj["Transaction-Type-Indicator"] = "BS";
-    obj["Client-Ref"] = trade["Triada Trade Id"];
-    obj["Shaped-Trade-Ref"] = trade["Triada Trade Id"];
-    obj["Account-Number"] = "CPB10728";
-    obj["Trade-Version"] = "NEW";
-    obj["Trade-Date"] = formatDateNomura(trade["Trade Date"]);
-    obj["Settlement-Date"] = formatDateNomura(trade["Settle Date"]);
-    obj["BS-Indicator"] = trade["B/S"];
-    obj["Security-Indicator-Type"] = "ISIN";
-    obj["Security-Val"] = trade["ISIN"];
-    obj["Security-Description"] = trade["BB Ticker"];
-    obj["Issue-Currency"] = trade["Currency"];
-    obj["Broker"] = trade["Counter Party"];
-    obj["Quantity"] = trade["Notional Amount"];
-    obj["Price"] = trade["Price"];
-    obj["Commission-Type"] = "";
-    obj["Commission-Value"] = "";
-    obj["Tax"] = "";
-    obj["Proceeds"] = trade["Settlement Amount"];
-    obj["Proceeds-Currency"] = trade["Currency"];
-    obj["Interest"] = trade["Accrued Interest"];
-    obj["Prefigured-Indicator"] = "YES";
-    obj["PSET"] = pset;
-    obj["Repo Option"] = "";
-
     if (trade["Nomura Upload Status"] != "uploaded") {
+      let pset = trade["BB Ticker"].split(" ")[0] == "T" ? "default" : "EUROCLEAR";
+      obj["Transaction-Type-Indicator"] = "BS";
+      obj["Client-Ref"] = trade["Triada Trade Id"];
+      obj["Shaped-Trade-Ref"] = trade["Triada Trade Id"];
+      obj["Account-Number"] = "CPB10728";
+      obj["Trade-Version"] = "NEW";
+      obj["Trade-Date"] = formatDateNomura(trade["Trade Date"]);
+      obj["Settlement-Date"] = formatDateNomura(trade["Settle Date"]);
+      obj["BS-Indicator"] = trade["B/S"];
+      obj["Security-Indicator-Type"] = "ISIN";
+      obj["Security-Val"] = trade["ISIN"];
+      obj["Security-Description"] = trade["BB Ticker"];
+      obj["Issue-Currency"] = trade["Currency"];
+      obj["Broker"] = trade["Counter Party"];
+      obj["Quantity"] = trade["Notional Amount"];
+      obj["Price"] = trade["Price"];
+      obj["Commission-Type"] = "";
+      obj["Commission-Value"] = "";
+      obj["Tax"] = "";
+      obj["Proceeds"] = trade["Settlement Amount"];
+      obj["Proceeds-Currency"] = trade["Currency"];
+      obj["Interest"] = trade["Accrued Interest"];
+      obj["Prefigured-Indicator"] = "YES";
+      obj["PSET"] = pset;
+      obj["Repo Option"] = "";
+      obj["Last Nomura Generated"] = trade["Last Nomura Generated"];
+
       tradesOutput.push(obj);
     }
   }

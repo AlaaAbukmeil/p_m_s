@@ -7,7 +7,7 @@ import { getPortfolio } from "../controllers/operations/positions";
 import { formatFxMufg, formatMufg, formatMufgCDS } from "../controllers/operations/mufgOperations";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/eblot/graphApiConnect";
 import { MufgTrade } from "../models/mufg";
-import { allTrades, allTradesCDS, getTriadaTrades } from "../controllers/operations/trades";
+import { addNomuraGeneratedDateToTrades, allTrades, allTradesCDS, getTriadaTrades } from "../controllers/operations/trades";
 import { bucket, formatDateFile, generateSignedUrl, verifyToken } from "../controllers/common";
 import { uploadToBucket } from "../controllers/userManagement/tools";
 const { exec } = require("child_process");
@@ -115,8 +115,6 @@ formatterRouter.post("/centralized-blotter", verifyToken, uploadToBucket.any(), 
   }
 });
 
-
-
 formatterRouter.post("/emsx-excel", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let files = req.files;
@@ -166,6 +164,7 @@ formatterRouter.post("/nomura-excel", verifyToken, uploadToBucket.any(), async (
   let pathName = "nomura" + formatDateFile(data.timestamp_start) + "_" + formatDateFile(data.timestamp_end) + "_";
   let start = new Date(data.timestamp_start).getTime() - 5 * 24 * 60 * 60 * 1000;
   let end = new Date(data.timestamp_end).getTime() + 5 * 24 * 60 * 60 * 1000;
+  await addNomuraGeneratedDateToTrades("vcons", start, end);
   let vconTrades = await getTriadaTrades("vcons", start, end);
   let array = formatNomura(vconTrades, data.timestamp_start, data.timestamp_end);
   if (array.length == 0) {
