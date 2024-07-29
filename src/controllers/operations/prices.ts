@@ -216,6 +216,9 @@ export async function updatePricesPortfolio(path: string, link: string, collecti
             object["CR01"] = row["CR01"].toString().includes("N/A") ? "" : row["CR01"];
 
             object["Coupon Frequency"] = row["Coupon Frequency"].toString().includes("N/A") ? "" : row["Coupon Frequency"];
+            if (isInteger(row["Bloomberg Mid BGN"])) {
+              object["Bloomberg Mid BGN"] = row["Bloomberg Mid BGN"];
+            }
 
             if (!row["Call Date"].includes("N/A") && !row["Call Date"].includes("#")) {
               callDate[row["ISIN"]] = row["Call Date"];

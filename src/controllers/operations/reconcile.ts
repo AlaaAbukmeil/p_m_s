@@ -19,6 +19,8 @@ export async function reconcileMUFG(MUFGData: MufgReconcile[], portfolio: any) {
       let mufgAverageCost = positionInMufg ? parseFloat(positionInMufg["LocalCost"]) / mufgPositionQuantity : 0;
       let portfolioPrice = Math.round(positionInPortfolio["Mid"] * 10000 * bondDivider) / 10000;
       portfolioPrice = portfolioPrice ? portfolioPrice : 0;
+      let bgnPrice = Math.round(positionInPortfolio["Bloomberg Mid BGN"] * 10000 * bondDivider) / 10000;
+      bgnPrice = bgnPrice ? bgnPrice : 0;
       let mufgPrice = positionInMufg ? parseFloat(positionInMufg["Price"]) : 0;
 
       let formattedRow = {
@@ -26,16 +28,21 @@ export async function reconcileMUFG(MUFGData: MufgReconcile[], portfolio: any) {
         ISIN: positionInPortfolio["ISIN"],
 
         "Principal (app)": portfolioPositionQuantity || 0,
-        "Principal (mufg)": mufgPositionQuantity || 0,
+        "Principal (MUFG)": mufgPositionQuantity || 0,
         "Difference Principal": Math.round(portfolioPositionQuantity - mufgPositionQuantity) || 0,
 
         "Average Cost (app)": portfolioAverageCost || 0,
-        "Average Cost (mufg)": mufgAverageCost || 0,
+        "Average Cost (MUFG)": mufgAverageCost || 0,
         "Difference Average Cost": Math.round(portfolioAverageCost - mufgAverageCost) || 0,
 
-        "Price (app)": portfolioPrice || 0,
-        "Price (mufg)": mufgPrice || 0,
-        "Difference Price": portfolioPrice - mufgPrice || 0,
+        "Price (Broker)": portfolioPrice || 0,
+        "Price (MUFG)": mufgPrice || 0,
+        "Difference Price (Broker - MUFG)": portfolioPrice - mufgPrice || 0,
+        "P&L Difference (Broker - MUFG)": ((portfolioPrice - mufgPrice) / (positionInPortfolio["Type"] == "BND" ? 100 : 1)) * portfolioPositionQuantity,
+
+        "Price (BGN)": bgnPrice || 0,
+        "Difference Price (Broker - BGN)": portfolioPrice - bgnPrice || 0,
+        "P&L Difference (Broker - BGN)": ((portfolioPrice - bgnPrice) / (positionInPortfolio["Type"] == "BND" ? 100 : 1)) * portfolioPositionQuantity,
       };
       if (!(portfolioPositionQuantity == 0 && mufgPositionQuantity == 0)) {
         formattedData.push(formattedRow);

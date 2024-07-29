@@ -33,7 +33,7 @@ export interface PositionInDB {
   "Coupon Rate": string;
   Currency: string;
   DV01: string;
-  "Day Rlzd": string;
+  "Day Rlzd": any;
   "Entry Price": any;
   "Entry Yield": any;
   "FX Rate": any;
@@ -98,6 +98,7 @@ export interface PositionInDB {
   "Coupon Frequency": string;
   "Previous Settle Date": string;
   "Next Settle Date": string;
+  "Bloomberg Mid BGN": number;
 }
 
 export interface PositionBeforeFormatting extends PositionInDB {

@@ -203,11 +203,11 @@ positionsRouter.post("/update-previous-prices", verifyToken, uploadToBucket.any(
     const fileName = req.files[0].filename;
     const path = await generateSignedUrl(fileName);
 
-    let data: any = collectionType == "MUFG" ? await readMUFGPrices(path) : await readPricingSheet(path);
+    let data: any = collectionType == "MUFG" ? await readMUFGPrices(path) : {};
     let link = bucket + "/" + fileName + "?authuser=2";
 
     if (!data.error) {
-      let action = collectionType == "MUFG" ? await updatePreviousPricesPortfolioMUFG(data, collectionDate, link) : await updatePricesPortfolio(data, link, collectionDate);
+      let action = collectionType == "MUFG" ? await updatePreviousPricesPortfolioMUFG(data, collectionDate, link) : await updatePricesPortfolio(path, link, collectionDate);
       if (action?.error && Object.keys(action.error).length) {
         res.send({ error: action.error, status: 404 });
       } else {
