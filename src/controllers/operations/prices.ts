@@ -468,10 +468,15 @@ export async function checkLivePositions() {
 
     for (let index = 0; index < portfolio.length; index++) {
       let position = portfolio[index];
-      let notional = position["Notional Amount"];
+      let notional = parseFloat(position["Notional Amount"]);
       let bloombergId = position["Bloomberg ID"];
-      if (notional != 0) {
-        let object = { bloombergId: bloombergId, notional: notional };
+      let ticker = position["BB Ticker"];
+
+      if (notional != 0 && bloombergId) {
+        let object = { bloombergId: bloombergId, notional: notional, bbTicker: ticker };
+        if (bloombergId.toString().includes("Govt")) {
+          object.notional += -10000000;
+        }
         positions.push(object);
       }
     }
