@@ -1,15 +1,10 @@
 import { Router } from "express";
 import { bucket, formatDateFile, generateSignedUrl, verifyToken } from "../../controllers/common";
 import { Request, Response, NextFunction } from "express";
-import { addFund, deleteFund, editFund, getAllFundDetails } from "../../controllers/operations/fund";
 import { deletePosition, editPosition, editPositionBulkPortfolio, insertFXPosition, pinPosition, readCalculatePosition, updatePositionPortfolio } from "../../controllers/operations/positions";
 import { readCentralizedEBlot, readMUFGPrices, readPricingSheet, uploadArrayAndReturnFilePath } from "../../controllers/operations/readExcel";
-import { checkLivePositions, updatePreviousPricesPortfolioBloomberg, updatePreviousPricesPortfolioMUFG, updatePricesPortfolio } from "../../controllers/operations/prices";
-import { monthlyRlzdDate } from "../../controllers/reports/common";
-import { FundDetails } from "../../models/portfolio";
-import { CentralizedTrade } from "../../models/trades";
+import { checkLivePositions, updatePreviousPricesPortfolioMUFG, updatePricesPortfolio } from "../../controllers/operations/prices";
 import { getAllTradesForSpecificPosition } from "../../controllers/operations/trades";
-import { consumers } from "stream";
 import { getEditLogs, updateEditLogs } from "../../controllers/operations/logs";
 import { getCollectionDays } from "../../controllers/operations/tools";
 import { uploadToBucket } from "../../controllers/userManagement/tools";
@@ -212,7 +207,7 @@ positionsRouter.post("/update-previous-prices", verifyToken, uploadToBucket.any(
     let link = bucket + "/" + fileName + "?authuser=2";
 
     if (!data.error) {
-      let action = collectionType == "MUFG" ? await updatePreviousPricesPortfolioMUFG(data, collectionDate, link) : await updatePreviousPricesPortfolioBloomberg(data, collectionDate, link);
+      let action = collectionType == "MUFG" ? await updatePreviousPricesPortfolioMUFG(data, collectionDate, link) : await updatePricesPortfolio(data, link, collectionDate);
       if (action?.error && Object.keys(action.error).length) {
         res.send({ error: action.error, status: 404 });
       } else {

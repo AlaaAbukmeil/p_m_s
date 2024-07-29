@@ -334,9 +334,6 @@ export async function readPricingSheet(path: string) {
     "Override Ask",
     "Override Mid",
 
-    "Errors Detected Bid (First Broker)",
-    "Errors Detected Ask (First Broker)",
-
     "Today's Bid",
     "Today's Ask",
     "Today's Mid",
@@ -380,12 +377,11 @@ export async function readPricingSheet(path: string) {
   } else {
     const data = xlsx.utils.sheet_to_json(worksheet, {
       defval: "",
-      range: "A1:AM500",
+      range: "A1:AV500",
     });
     let keys = Object.keys(data[0]);
     let reformedData: any = [];
     for (let index = 0; index < data.length; index++) {
-      let prices = data[index];
       let object: any = {};
       for (let keyIndex = 0; keyIndex < keys.length; keyIndex++) {
         let key = keys[keyIndex].trim();

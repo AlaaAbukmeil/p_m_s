@@ -8,6 +8,8 @@ import { getPortfolio } from "./positions";
 import { getSecurityInPortfolioWithoutLocation } from "./tools";
 import { getPortfolioOnSpecificDate } from "../reports/portfolios";
 import { insertEditLogs } from "./logs";
+import { isInteger, isNotInteger } from "../analytics/tools";
+import { PositionBeforeFormatting, PositionInDB } from "../../models/portfolio";
 const ObjectId = require("mongodb").ObjectId;
 export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDate: string, link: string) {
   try {
@@ -119,193 +121,25 @@ export async function insertPreviousPricesUpdatesInPortfolio(updatedPortfolio: a
   }
 }
 
-export async function updatePreviousPricesPortfolioBloomberg(data: any, collectionDate: string, link: string) {
-  try {
-    if (data.error) {
-      return data;
-    } else {
-      let updatedPricePortfolio = [];
-      let action = await getPortfolioOnSpecificDate(collectionDate);
-      if (action.date) {
-        let portfolio = action.portfolio;
-
-        collectionDate = action.date;
-        let currencyInUSD: any = {};
-        let maturity: any = {};
-        let callDate: any = {};
-        let maturityType = "day/month";
-        currencyInUSD["USD"] = 1;
-        let divider = 1;
-        let currencyStart = true;
-        currencyInUSD["USD"] = 1;
-
-        for (let index = 0; index < data.length; index++) {
-          let row = data[index];
-          if (row["BB Ticker"] == "Bonds") {
-            currencyStart = false;
-            divider = 100;
-          } else if (row["BB Ticker"] == "CDS") {
-            divider = 1;
-          } else if (row["BB Ticker"] == "Futures") {
-            divider = 1;
-          } else if (row["BB Ticker"] == "Equity") {
-            divider = 1;
-          }
-
-          if (!currencyStart) {
-            let positions: any = getSecurityInPortfolioWithoutLocation(portfolio, row["Bloomberg ID"]);
-
-            if (positions == 404) {
-              positions = getSecurityInPortfolioWithoutLocation(portfolio, row["ISIN"]);
-            }
-            if (positions == 404) {
-              positions = getSecurityInPortfolioWithoutLocation(portfolio, row["BB Ticker"]);
-            }
-
-            if (positions == 404) {
-              continue;
-            }
-
-            for (let index = 0; index < positions.length; index++) {
-              let object = positions[index];
-
-              if (isNaN(row["Today's Mid"]) || row["Today's Mid"].toString().includes("N/A")) {
-                return { error: `${object["BB Ticker"]}' price has error, please review prices` };
-              }
-              if (isNaN(row["Today's Ask"]) || row["Today's Ask"].toString().includes("N/A")) {
-                return { error: `${object["BB Ticker"]}' price has error, please review prices` };
-              }
-              if (isNaN(row["Today's Bid"]) || row["Today's Bid"].toString().includes("N/A")) {
-                return { error: `${object["BB Ticker"]}' price has error, please review prices` };
-              }
-              object["Mid"] = parseFloat(row["Today's Mid"]) / divider;
-              object["Ask"] = parseFloat(row["Today's Ask"]) / divider;
-              object["Bid"] = parseFloat(row["Today's Bid"]) / divider;
-              object["YTM"] = row["Mid Yield call"].toString().includes("N/A") ? 0 : row["Mid Yield call"];
-              object["Broker"] = row["Broker"].toString().includes("N/A") ? "" : row["Broker"];
-
-              object["DV01"] = row["DV01"].toString().includes("N/A") ? 0 : row["DV01"];
-              object["YTW"] = row["Mid Yield Worst"].toString().includes("N/A") ? 0 : row["Mid Yield Worst"];
-              object["OAS"] = row["OAS Spread"].toString().includes("N/A") ? 0 : row["OAS Spread"];
-              object["Z Spread"] = row["Z Spread"].toString().includes("N/A") ? 0 : row["Z Spread"];
-              object["S&P Bond Rating"] = row["S&P Bond Rating"].toString().includes("N/A") ? "" : row["S&P Bond Rating"];
-              object["S&P Outlook"] = row["S&P Outlook"].toString().includes("N/A") ? "" : row["S&P Outlook"];
-              object["Moody's Bond Rating"] = row["Moody's Bond Rating"].toString().includes("N/A") ? "" : row["Moody's Bond Rating"];
-              object["Moody's Outlook"] = row["Moody's Outlook"].toString().includes("N/A") ? "" : row["Moody's Outlook"];
-              object["Fitch Bond Rating"] = row["Fitch Bond Rating"].toString().includes("N/A") ? "" : row["Fitch Bond Rating"];
-              object["Fitch Outlook"] = row["Fitch Outlook"].toString().includes("N/A") ? "" : row["Fitch Outlook"];
-              object["BBG Composite Rating"] = row["BBG Composite Rating"].toString().includes("N/A") ? "" : row["BBG Composite Rating"];
-              object["BB Ticker"] = row["BB Ticker"].toString().includes("N/A") ? "" : row["BB Ticker"];
-              object["Issuer"] = row["Issuer Name"].toString().includes("N/A") ? "" : row["Issuer Name"];
-              object["Bloomberg ID"] = row["Bloomberg ID"];
-              object["CUSIP"] = row["CUSIP"].toString().includes("N/A") ? "" : row["CUSIP"];
-              object["CR01"] = row["CR01"].toString().includes("N/A") ? "" : row["CR01"];
-
-              if (!row["Call Date"].includes("N/A") && !row["Call Date"].includes("#")) {
-                callDate[row["ISIN"]] = row["Call Date"];
-                if (parseFloat(row["Call Date"].split("/")[1]) > 12) {
-                  maturityType = "month/day";
-                }
-              }
-              if (!row["Maturity"].includes("N/A") && !row["Maturity"].includes("#")) {
-                maturity[row["ISIN"]] = row["Maturity"];
-                if (parseFloat(row["Maturity"].split("/")[1]) > 12) {
-                  maturityType = "month/day";
-                }
-              }
-              if (currencyInUSD[object["Currency"]]) {
-                object["FX Rate"] = currencyInUSD[object["Currency"]];
-              } else {
-                object["FX Rate"] = 1;
-              }
-
-              if (row["Instrument's Country Full Name"] && !row["Instrument's Country Full Name"].includes("N/A")) {
-                object["Country"] = row["Instrument's Country Full Name"];
-              }
-              if (row["Issuer's Country"] && !row["Issuer's Country"].includes("N/A")) {
-                object["Issuer's Country"] = row["Issuer's Country"];
-              }
-              if (row["Sector"] && !row["Sector"].includes("N/A")) {
-                object["Sector"] = row["Sector"];
-              }
-
-              updatedPricePortfolio.push(object);
-            }
-          } else if (row["BB Ticker"].includes("Curncy") && currencyStart) {
-            let rate = row["Today's Mid"];
-            let currency = row["BB Ticker"].split(" ")[0];
-            if (currency == "USD") {
-              rate = 1 / rate;
-              currency = row["BB Ticker"].split(" ")[1];
-            }
-            currencyInUSD[currency] = rate;
-          }
-        }
-        let currencies = Object.keys(currencyInUSD);
-        for (let index = 0; index < currencies.length; index++) {
-          let currency = currencies[index];
-          let positions: any = getSecurityInPortfolioWithoutLocation(portfolio, currency);
-          for (let indexPosition = 0; indexPosition < positions.length; indexPosition++) {
-            let position = positions[indexPosition];
-            position["Mid"] = currencyInUSD[currency];
-            updatedPricePortfolio.push(position);
-          }
-        }
-        for (let index = 0; index < updatedPricePortfolio.length; index++) {
-          let position: Position = updatedPricePortfolio[index];
-          let positionMaturity = maturity[position["ISIN"]];
-          let positionCallDate = callDate[position["ISIN"]];
-
-          if (maturityType == "month/day" && positionMaturity) {
-            updatedPricePortfolio[index]["Maturity"] = formatDateWorld(positionMaturity);
-          } else {
-            updatedPricePortfolio[index]["Maturity"] = positionMaturity;
-          }
-          if (maturityType == "month/day" && positionCallDate) {
-            updatedPricePortfolio[index]["Call Date"] = formatDateWorld(positionCallDate);
-          } else {
-            updatedPricePortfolio[index]["Call Date"] = positionCallDate;
-          }
-        }
-        console.log(currencyInUSD, "currency prices");
-        try {
-          let updatedPortfolio = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
-          let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-          await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "Update Previous Prices based on bloomberg", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExists).length, "Link: " + link);
-          let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio, collectionDate);
-          console.log(updatedPricePortfolio.length, "number of positions prices updated");
-
-          if (Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length) {
-            return { error: updatedPortfolio.positionsThatDoNotExistsNames };
-          } else {
-            return { error: null };
-          }
-        } catch (error) {
-          console.log(error);
-          return { error: "Template does not match" };
-        }
-      }
-    }
-  } catch (error) {
-    console.log(error);
-    return { error: "error" };
-  }
-}
-
-export async function updatePricesPortfolio(path: string, link: string) {
+export async function updatePricesPortfolio(path: string, link: string, collectionDate: null | string = null) {
   try {
     let data: any = await readPricingSheet(path);
 
     if (data.error) {
       return data;
     } else {
-      let updatedPricePortfolio = [];
+      let updatedPricePortfolio: PositionInDB[] = [];
       let maturity: any = {};
+
+      let previousSettleDate: any = {};
+      let nextSettleDate: any = {};
+
       let callDate: any = {};
       let maturityType = "day/month";
       let portfolio = await getPortfolio();
 
       let currencyInUSD: any = {};
+      let errors: { [key: string]: { notional: number; location: string; message: string } } = {};
       let currencyStart = true;
       currencyInUSD["USD"] = 1;
       let divider = 1;
@@ -323,7 +157,7 @@ export async function updatePricesPortfolio(path: string, link: string) {
         }
 
         if (!currencyStart) {
-          let positions: any = getSecurityInPortfolioWithoutLocation(portfolio, row["Bloomberg ID"]);
+          let positions: PositionInDB[] | 404 = getSecurityInPortfolioWithoutLocation(portfolio, row["Bloomberg ID"]);
 
           if (positions == 404) {
             positions = getSecurityInPortfolioWithoutLocation(portfolio, row["ISIN"]);
@@ -347,9 +181,13 @@ export async function updatePricesPortfolio(path: string, link: string) {
             if (isNaN(row["Today's Bid"]) || row["Today's Bid"].toString().includes("N/A")) {
               return { error: `${object["BB Ticker"]}' price has error, please review prices` };
             }
-            object["Mid"] = parseFloat(row["Today's Mid"]) / divider;
-            object["Ask"] = parseFloat(row["Today's Ask"]) / divider;
-            object["Bid"] = parseFloat(row["Today's Bid"]) / divider;
+
+            object["Bid"] = divider == 1 ? row["Today's Bid"] : determineBestPrice({ brokerOnePrice: row["Today's Bid"], brokerTwoPrice: row["Broker 2 Bid"], brokerThreePrice: row["Broker 2 Bid"], bgnPrice: row["Bloomberg Bid Test"], param: "Bid", ticker: row["BB Ticker"], errors }).finalPrice / divider;
+
+            object["Ask"] = divider == 1 ? row["Today's Ask"] : determineBestPrice({ brokerOnePrice: row["Today's Ask"], brokerTwoPrice: row["Broker 2 Ask"], brokerThreePrice: row["Broker 2 Ask"], bgnPrice: row["Bloomberg Ask Test"], param: "Ask", ticker: row["BB Ticker"], errors }).finalPrice / divider;
+
+            object["Mid"] = divider == 1 ? parseFloat(row["Today's Mid"]).toString() : ((parseFloat(object["Bid"]) + parseFloat(object["Ask"])) / 2).toString();
+
             object["YTM"] = row["Mid Yield call"].toString().includes("N/A") ? 0 : row["Mid Yield call"];
             object["Broker"] = row["Broker"].toString().includes("N/A") ? "" : row["Broker"];
 
@@ -370,18 +208,28 @@ export async function updatePricesPortfolio(path: string, link: string) {
             object["CUSIP"] = row["CUSIP"].toString().includes("N/A") ? "" : row["CUSIP"];
             object["CR01"] = row["CR01"].toString().includes("N/A") ? "" : row["CR01"];
 
+            object["Coupon Frequency"] = row["Coupon Frequency"].toString().includes("N/A") ? "" : row["Coupon Frequency"];
+
             if (!row["Call Date"].includes("N/A") && !row["Call Date"].includes("#")) {
               callDate[row["ISIN"]] = row["Call Date"];
               if (parseFloat(row["Call Date"].split("/")[1]) > 12) {
                 maturityType = "month/day";
               }
             }
+
             if (!row["Maturity"].includes("N/A") && !row["Maturity"].includes("#")) {
               maturity[row["ISIN"]] = row["Maturity"];
               if (parseFloat(row["Maturity"].split("/")[1]) > 12) {
                 maturityType = "month/day";
               }
             }
+            if (!row["Previous Settle Date"].includes("N/A") && !row["Previous Settle Date"].includes("#")) {
+              previousSettleDate[row["ISIN"]] = row["Previous Settle Date"];
+            }
+            if (!row["Next Settle Date"].includes("N/A") && !row["Next Settle Date"].includes("#")) {
+              nextSettleDate[row["ISIN"]] = row["Next Settle Date"];
+            }
+
             if (currencyInUSD[object["Currency"]]) {
               object["FX Rate"] = currencyInUSD[object["Currency"]];
             } else {
@@ -423,9 +271,12 @@ export async function updatePricesPortfolio(path: string, link: string) {
       }
 
       for (let index = 0; index < updatedPricePortfolio.length; index++) {
-        let position: Position = updatedPricePortfolio[index];
+        let position: PositionInDB = updatedPricePortfolio[index];
         let positionMaturity = maturity[position["ISIN"]];
         let positionCallDate = callDate[position["ISIN"]];
+        let positionPreviousSettleDate = previousSettleDate[position["ISIN"]];
+        let positionNextSettleDate = nextSettleDate[position["ISIN"]];
+
         if (maturityType == "month/day" && positionMaturity) {
           updatedPricePortfolio[index]["Maturity"] = formatDateWorld(positionMaturity);
         } else {
@@ -436,15 +287,29 @@ export async function updatePricesPortfolio(path: string, link: string) {
         } else {
           updatedPricePortfolio[index]["Call Date"] = positionCallDate;
         }
+        if (maturityType == "month/day" && positionPreviousSettleDate) {
+          updatedPricePortfolio[index]["Previous Settle Date"] = formatDateWorld(positionPreviousSettleDate);
+        } else {
+          updatedPricePortfolio[index]["Previous Settle Date"] = positionPreviousSettleDate;
+        }
+        if (maturityType == "month/day" && positionNextSettleDate) {
+          updatedPricePortfolio[index]["Next Settle Date"] = formatDateWorld(positionNextSettleDate);
+        } else {
+          updatedPricePortfolio[index]["Next Settle Date"] = positionNextSettleDate;
+        }
       }
       try {
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
         let updatedPortfolio = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
-        let insertion = await insertPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio);
-        await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "Update Prices", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length, "Link: " + link);
-
-        if (Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length) {
-          return { error: updatedPortfolio.positionsThatDoNotExistsNames };
+        if (collectionDate) {
+          await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "Update Previous Prices based on bloomberg", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExists).length, "Link: " + link);
+          let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio, collectionDate);
+        } else {
+          let insertion = await insertPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio);
+          await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "Update Prices", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length, "Link: " + link);
+        }
+        if (Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length || Object.keys(errors).length) {
+          return { error: { ...updatedPortfolio.positionsThatDoNotExistsNames, ...errors } };
         } else {
           return { error: null };
         }
@@ -549,5 +414,30 @@ export async function insertPricesUpdatesInPortfolio(updatedPortfolio: any) {
 
     await insertEditLogs([errorMessage], "Errors", dateTime, "insertPricesUpdatesInPortfolio", "controllers/operations/positions.ts");
     return "update prices error";
+  }
+}
+
+function determineBestPrice({ brokerOnePrice, brokerTwoPrice, brokerThreePrice, bgnPrice, param, ticker, errors }: { brokerOnePrice: string; brokerTwoPrice: string; brokerThreePrice: string; bgnPrice: number; param: string; ticker: string; errors: { [key: string]: { notional: number; location: string; message: string } } }): { finalPrice: number; broker: string } {
+  let finalPrice = parseFloat(brokerOnePrice);
+  if (finalPrice == bgnPrice) {
+    if (isInteger(brokerTwoPrice)) {
+      finalPrice = parseFloat(brokerTwoPrice);
+    }
+  } else {
+    return { finalPrice, broker: "1" };
+  }
+
+  if (finalPrice == bgnPrice) {
+    if (isInteger(brokerThreePrice)) {
+      finalPrice = parseFloat(brokerThreePrice);
+    }
+  } else {
+    return { finalPrice, broker: "2" };
+  }
+  if (finalPrice == bgnPrice) {
+    errors[ticker + " " + param] = { notional: 0, location: "", message: `${ticker}'s ${param} price is the same as BGN` };
+    return { finalPrice, broker: "bgn" };
+  } else {
+    return { finalPrice, broker: "3" };
   }
 }

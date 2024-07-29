@@ -70,7 +70,7 @@ export async function getTrade(tradeType: string, tradeId: string) {
 export async function editTrade(editedTrade: any, tradeType: any, logs = false, source = "main") {
   try {
     let tradeInfo = await getTrade(tradeType, editedTrade["_id"]);
-    let unEditableParams = ["_id", "Updated Notional", "B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Triada Trade Id", "Seq No", "ISIN", "Currency", "Yield", "Accrued Interest", "Trade Type", "App Check Test", "Trade App Status", "Nomura Upload Status", "Broker Email Status", "App Check Test", "Front Office Check", "Trade Type"];
+    let unEditableParams = ["_id", "Updated Notional", "B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Triada Trade Id", "Seq No", "ISIN", "Currency", "Yield", "Accrued Interest", "Trade Type", "App Check Test", "Trade App Status", "Nomura Upload Status", "Broker Email Status", "App Check Test", "Front Office Check", "Trade Type", ];
 
     if (tradeInfo) {
       let beforeModify = JSON.parse(JSON.stringify(tradeInfo));
@@ -107,6 +107,7 @@ export async function editTrade(editedTrade: any, tradeType: any, logs = false, 
         "Edit Note",
         "Resolved",
         "Front Office Check",
+        
       ];
 
       let changes = 0;

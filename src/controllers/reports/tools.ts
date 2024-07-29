@@ -143,11 +143,11 @@ export function findTradeRecord(trades: CentralizedTrade[], rowId: any): number 
   return index !== -1 ? index : null;
 }
 
-export function formatUpdatedPositions(positions: any, portfolio: any, lastUpdatedDescription: string): { updatedPortfolio: any[]; positionsThatDoNotExistsNames: any[]; positionsThatGotUpdated: any[]; positionsThatDoNotExists: any[] } {
+export function formatUpdatedPositions(positions: any, portfolio: any, lastUpdatedDescription: string): { updatedPortfolio: any[]; positionsThatDoNotExistsNames: { [key: string]: { notional: number; location: string;} }; positionsThatGotUpdated: any[]; positionsThatDoNotExists: any[] } {
   let positionsIndexThatExists = [];
   let positionsThatGotUpdated = [];
   let positionsThatDoNotExists = [];
-  let positionsThatDoNotExistsNames: any = {};
+  let positionsThatDoNotExistsNames: { [key: string]: { notional: number; location: string; } } = {};
   for (let indexPositions = 0; indexPositions < positions.length; indexPositions++) {
     const position = positions[indexPositions];
     for (let indexPortfolio = 0; indexPortfolio < portfolio.length; indexPortfolio++) {

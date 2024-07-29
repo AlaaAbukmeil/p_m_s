@@ -6,6 +6,7 @@ import { insertEditLogs } from "./logs";
 import { chromium } from "@playwright/test";
 import { uploadToGCloudBucketPDF } from "./readExcel";
 import { parseBondIdentifier } from "../reports/tools";
+import { PositionInDB } from "../../models/portfolio";
 
 export function formatDateNomura(dateString: any) {
   // Split the input date string by '/'
@@ -45,7 +46,7 @@ export async function getCollectionDays(): Promise<string[]> {
     return [];
   }
 }
-export function getSecurityInPortfolioWithoutLocation(portfolio: any, identifier: string): Position | 404 {
+export function getSecurityInPortfolioWithoutLocation(portfolio: any, identifier: string): PositionInDB[] | 404 {
   let document: any = [];
   if (identifier == "" || !identifier) {
     return document;

@@ -687,3 +687,6 @@ export function classifyCountry(country: any) {
 export function isNotInteger(value: any) {
   return isNaN(parseInt(value, 10));
 }
+export function isInteger(value: any) {
+  return !isNaN(parseInt(value, 10));
+}

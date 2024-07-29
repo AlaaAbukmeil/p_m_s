@@ -10,10 +10,10 @@ import { modifyTradesDueToRecalculate } from "./trades";
 import { insertEditLogs } from "./logs";
 import { getSecurityInPortfolioById } from "./tools";
 import { swapMonthDay } from "../common";
-import { PositionBeforeFormatting } from "../../models/portfolio";
+import { PositionBeforeFormatting, PositionInDB } from "../../models/portfolio";
 const ObjectId = require("mongodb").ObjectId;
 
-export async function getPortfolio(date = null): Promise<Position[]> {
+export async function getPortfolio(date = null): Promise<PositionInDB[]> {
   try {
     let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date(date ? date : new Date()).getTime() - 0 * 24 * 60 * 60 * 1000));
     const database = client.db("portfolios");
@@ -531,6 +531,8 @@ export async function editPosition(editedPosition: any, date: string) {
       "Event Type",
       "Edit Note",
       "Factor Date (if any)",
+      "Previous Settle Date",
+      "Next Settle Date",
     ];
     // these keys are made up by the function frontend table, it reverts keys to original keys
 
