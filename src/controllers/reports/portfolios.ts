@@ -6,7 +6,7 @@ import { getFundDetails } from "../operations/fund";
 import { formatDateUS } from "../common";
 import { getEarliestCollectionName, parseBondIdentifier, remainingDaysInYear } from "./tools";
 import { getHistoricalPortfolio, getPinnedPositions } from "../operations/positions";
-import { FinalPositionBackOffice, FundExposureOnlyMTD, FundMTD, PositionBeforeFormatting, RlzdTrades } from "../../models/portfolio";
+import { FinalPositionBackOffice, FundExposureOnlyMTD, FundMTD, PositionBeforeFormatting, PositionInDB, RlzdTrades } from "../../models/portfolio";
 import { Position } from "../../models/position";
 import { formatFrontOfficeTable } from "../analytics/tables/frontOffice";
 import { formatBackOfficeTable, formatFactSheetStatsTable } from "../analytics/tables/backOffice";
@@ -527,7 +527,9 @@ export function calculateAccruedSinceInception(interestInfo: any, couponRate: an
   if (!interestInfo) {
     interestInfo = {};
   }
-  let quantityDates = Object.keys(interestInfo).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  let quantityDates = Object.keys(interestInfo)
+    .filter((date: string, index: number) => !date.includes("Total"))
+    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
   quantityDates.push(formatDateUS(new Date(date)));
   couponRate = couponRate ? couponRate : 0;
   let quantity = interestInfo[quantityDates[0]];
@@ -545,7 +547,7 @@ export function calculateAccruedSinceInception(interestInfo: any, couponRate: an
   return interest;
 }
 
-export async function getPortfolioOnSpecificDate(collectionDate: string): Promise<{ portfolio: Position[] | null; date: string | null }> {
+export async function getPortfolioOnSpecificDate(collectionDate: string): Promise<{ portfolio: PositionInDB[] | []; date: string }> {
   try {
     const database = client.db("portfolios");
     let date = getDateTimeInMongoDBCollectionFormat(new Date(collectionDate)).split(" ")[0] + " 23:59";
@@ -565,7 +567,7 @@ export async function getPortfolioOnSpecificDate(collectionDate: string): Promis
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
     await insertEditLogs([errorMessage], "Errors", dateTime, "getPortfolioOnSpecificDate", "controllers/operations/operations.ts");
-    return { portfolio: null, date: null };
+    return { portfolio: [], date: "" };
   }
 }
 

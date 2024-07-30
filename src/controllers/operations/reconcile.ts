@@ -1,4 +1,9 @@
-import { MufgReconcile, NomuraReconcile } from "../../models/reconcile";
+import { PositionInDB } from "../../models/portfolio";
+import { MufgReconcile, NomuraCashReconcile, NomuraReconcile } from "../../models/reconcile";
+import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
+import { getPortfolioOnSpecificDate } from "../reports/portfolios";
+import { insertEditLogs } from "./logs";
+import { readNomuraCashReport } from "./readExcel";
 
 export async function reconcileMUFG(MUFGData: MufgReconcile[], portfolio: any) {
   try {
@@ -139,6 +144,7 @@ function getPositionInNomura(data: NomuraReconcile[], isin: string) {
   }
   return null;
 }
+
 export function updatePortfolioBasedOnIsin(portfolio: any) {
   let updatedPortfolio: any = {};
   let aggregatedPortfolio: any = [];
@@ -180,4 +186,84 @@ export function updatePortfolioBasedOnIsin(portfolio: any) {
   }
 
   return aggregatedPortfolio;
+}
+
+export async function reconcileNomuraCash({ path, link, collectionDate }: { path: string; link: string; collectionDate: string }) {
+  try {
+    let data = await readNomuraCashReport(path);
+
+    if (data.error) {
+      return data;
+    } else {
+      let records = data.records;
+      let portfolio: PositionInDB[] = [];
+      let action = await getPortfolioOnSpecificDate(collectionDate);
+      portfolio = action.portfolio;
+
+      let interestRecords: NomuraCashReconcile[] = [];
+      let couponPaymentRecords: NomuraCashReconcile[] = [];
+      let redeemptionRecords: NomuraCashReconcile[] = [];
+      let BuySellRecords: NomuraCashReconcile[] = [];
+      for (let index = 0; index < records.length; index++) {
+        const record = records[index];
+        let type = record["Trade Status"];
+        if (type == "Interest") {
+          interestRecords.push(record);
+        } else if (type == "REC") {
+          couponPaymentRecords.push(record);
+        } else if (type == "DEL") {
+          redeemptionRecords.push(record);
+        } else if (type == "BUY" || type == "SELL") {
+          BuySellRecords.push(record);
+        }
+      }
+
+      let fxInterest = getFXInterest(interestRecords);
+      let redeemped = checkIfPositionsGotRedeemped(redeemptionRecords, portfolio);
+
+      console.log({ fxInterest, redeemped });
+
+      // let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+      // await insertEditLogs([], "Cash Reconcile", dateTime, "", "Link: " + link);
+    }
+  } catch (error) {
+    console.log({error});
+    return { error: "Template does not match" };
+  }
+}
+
+export function getFXInterest(fxInterestRcords: NomuraCashReconcile[]) {
+  let sum = 0;
+
+  for (let index = 0; index < fxInterestRcords.length; index++) {
+    const element = fxInterestRcords[index];
+    let fxRate = parseFloat(element["Fx Rate"]);
+    let proceeds = parseFloat(element["Proceeds"]);
+    sum += proceeds * fxRate;
+  }
+  return sum;
+}
+
+export function checkIfPositionsGotRedeemped(redeemptionRecords: NomuraCashReconcile[], portfolio: PositionInDB[]) {
+  let result = [];
+  for (let index = 0; index < redeemptionRecords.length; index++) {
+    let isin = redeemptionRecords[index]["Isin"];
+    let ticker = redeemptionRecords[index]["Security Name"];
+
+    let position = portfolio.find((position: PositionInDB, index: number) => position["ISIN"] == isin);
+    if (position) {
+      if (parseFloat(position["Notional Amount"]) == 0) {
+        let object = { "BB Ticker": ticker, "Record Type": "Redeemption", Result: "Successful" };
+
+        result.push(object);
+      } else {
+        let object = { "BB Ticker": ticker, "Record Type": "Redeemption", Result: "Position is not redeemped in the app" };
+        result.push(object);
+      }
+    } else {
+      let object = { "BB Ticker": ticker, "Record Type": "Redeemption", Result: "Position can't be found in the app" };
+      result.push(object);
+    }
+  }
+  return result;
 }

@@ -1,8 +1,8 @@
 import { bucket, generateSignedUrl, verifyToken } from "../../controllers/common";
 import { NextFunction, Router } from "express";
 import { Request, Response } from "express";
-import { readMUFGReconcileFile, readNomuraReconcileFile, uploadArrayAndReturnFilePath } from "../../controllers/operations/readExcel";
-import { reconcileMUFG, reconcileNomura } from "../../controllers/operations/reconcile";
+import { readMUFGReconcileFile, readNomuraCashReport, readNomuraReconcileFile, uploadArrayAndReturnFilePath } from "../../controllers/operations/readExcel";
+import { reconcileMUFG, reconcileNomura, reconcileNomuraCash } from "../../controllers/operations/reconcile";
 import { getPortfolioOnSpecificDate, getPrincipal } from "../../controllers/reports/portfolios";
 import { monthlyRlzdDate } from "../../controllers/reports/common";
 import { uploadToBucket } from "../../controllers/userManagement/tools";
@@ -89,6 +89,24 @@ reconcileRouter.post("/check-nomura", verifyToken, uploadToBucket.any(), async (
   } catch (error: any) {
     console.log(error);
     res.send({ error: error.toString() });
+  }
+});
+reconcileRouter.post("/reconcile-cash", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    const fileName = req.files[0].filename;
+    const path = await generateSignedUrl(fileName);
+    let collectionDate = req.body.collectionDate;
+    let link = bucket + "/" + fileName + "?authuser=2";
+    let action: any = await reconcileNomuraCash({ path, collectionDate, link });
+    console.log(req.body, action[0]);
+
+    // if (action?.error) {
+    //   res.send({ error: action.error });
+    // } else {
+    res.send({ error: null });
+    // }
+  } catch (error) {
+    res.send({ error: "File Template is not correct" });
   }
 });
 export default reconcileRouter;

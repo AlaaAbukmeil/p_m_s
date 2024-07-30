@@ -107,6 +107,7 @@ export async function editTrade(editedTrade: any, tradeType: any, logs = false, 
         "Edit Note",
         "Resolved",
         "Front Office Check",
+        "Front Office Note",
       ];
 
       let changes = 0;

@@ -75,4 +75,12 @@ export interface CentralizedTrade {
   "Trade App Status": string;
   "Updated Notional": string;
   Timestamp: number;
+  "Nomura Upload Status": string;
+  "Last Nomura Generated": string;
+  "Broker Full Name & Account": string;
+  "Broker Email": string;
+  "Settlement Venue": string;
+  "Primary (True/False)": string;
+  "Broker Email Status": string;
+  "App Check Test": string;
 }
