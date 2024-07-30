@@ -188,10 +188,12 @@ export async function updatePricesPortfolio(path: string, link: string, collecti
             if (isNaN(row["Today's Bid"]) || row["Today's Bid"].toString().includes("N/A")) {
               return { error: `${object["BB Ticker"]}' price has error, please review prices` };
             }
-
-            object["Bid"] = divider == 1 ? row["Today's Bid"] : determineBestPrice({ brokerOnePrice: row["Today's Bid"], brokerTwoPrice: row["Broker 2 Bid"], brokerThreePrice: row["Broker 2 Bid"], bgnPrice: row["Bloomberg Bid Test"], param: "Bid", ticker: row["BB Ticker"], errors }).finalPrice / divider;
-
-            object["Ask"] = divider == 1 ? row["Today's Ask"] : determineBestPrice({ brokerOnePrice: row["Today's Ask"], brokerTwoPrice: row["Broker 2 Ask"], brokerThreePrice: row["Broker 2 Ask"], bgnPrice: row["Bloomberg Ask Test"], param: "Ask", ticker: row["BB Ticker"], errors }).finalPrice / divider;
+            if (divider == 1) {
+              object["Bid"] = row["Today's Bid"];
+              object["Ask"] = row["Today's Ask"];
+            } else if (divider == 100) {
+              determineBestPrice({ brokerBidOnePrice: row["Today's Bid"], brokerBidTwoPrice: row["Broker 2 Bid"], brokerBidThreePrice: row["Broker 2 Bid"], bgnBidPrice: row["Bloomberg Bid Test"], ticker: row["BB Ticker"], brokerAskOnePrice: row["Today's Ask"], brokerAskTwoPrice: row["Broker 2 Ask"], brokerAskThreePrice: row["Broker 2 Ask"], bgnAskPrice: row["Bloomberg Ask Test"], errors, object });
+            }
 
             object["Mid"] = divider == 1 ? parseFloat(row["Today's Mid"]).toString() : ((parseFloat(object["Bid"]) + parseFloat(object["Ask"])) / 2).toString();
 
@@ -312,11 +314,11 @@ export async function updatePricesPortfolio(path: string, link: string, collecti
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
         let updatedPortfolio = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
         if (collectionDate) {
-          await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "Update Previous Prices based on bloomberg", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExists).length, "Link: " + link);
+          await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames, errors], "Update Previous Prices based on bloomberg", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExists).length, "Link: " + link);
           let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio, collectionDate);
         } else {
           let insertion = await insertPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio);
-          await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "Update Prices", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length, "Link: " + link);
+          await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames, errors], "Update Prices", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length, "Link: " + link);
         }
         if (Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length || Object.keys(errors).length) {
           return { error: { ...updatedPortfolio.positionsThatDoNotExistsNames, ...errors } };
@@ -427,27 +429,55 @@ export async function insertPricesUpdatesInPortfolio(updatedPortfolio: any) {
   }
 }
 
-function determineBestPrice({ brokerOnePrice, brokerTwoPrice, brokerThreePrice, bgnPrice, param, ticker, errors }: { brokerOnePrice: string; brokerTwoPrice: string; brokerThreePrice: string; bgnPrice: number; param: string; ticker: string; errors: { [key: string]: { notional: number; location: string; message: string } } }): { finalPrice: number; broker: string } {
-  let finalPrice = parseFloat(brokerOnePrice);
-  if (finalPrice == bgnPrice) {
-    if (isInteger(brokerTwoPrice)) {
-      finalPrice = parseFloat(brokerTwoPrice);
-    }
-  } else {
-    return { finalPrice, broker: "1" };
-  }
+function determineBestPrice({
+  brokerBidOnePrice,
+  brokerBidTwoPrice,
+  brokerBidThreePrice,
+  bgnBidPrice,
+  brokerAskOnePrice,
+  brokerAskTwoPrice,
+  brokerAskThreePrice,
+  bgnAskPrice,
+  ticker,
+  object,
 
-  if (finalPrice == bgnPrice) {
-    if (isInteger(brokerThreePrice)) {
-      finalPrice = parseFloat(brokerThreePrice);
+  errors,
+}: {
+  brokerBidOnePrice: string;
+  brokerBidTwoPrice: string;
+  brokerBidThreePrice: string;
+  brokerAskOnePrice: string;
+  brokerAskTwoPrice: string;
+  brokerAskThreePrice: string;
+  bgnBidPrice: number;
+  bgnAskPrice: number;
+  ticker: string;
+  object: any;
+  errors: { [key: string]: { notional: number; location: string; message: string } };
+}) {
+  if (isInteger(brokerBidOnePrice) && isInteger(brokerAskOnePrice)) {
+    if (parseFloat(brokerBidOnePrice) != bgnBidPrice && parseFloat(brokerAskOnePrice) != bgnAskPrice) {
+      object["Bid"] = parseFloat(brokerBidOnePrice) / 100;
+      object["Ask"] = parseFloat(brokerAskOnePrice) / 100;
+      return;
     }
-  } else {
-    return { finalPrice, broker: "2" };
   }
-  if (finalPrice == bgnPrice) {
-    errors[ticker + " " + param] = { notional: 0, location: "", message: `${ticker}'s ${param} price is the same as BGN` };
-    return { finalPrice, broker: "bgn" };
-  } else {
-    return { finalPrice, broker: "3" };
+  if (isInteger(brokerBidTwoPrice) && isInteger(brokerAskTwoPrice)) {
+    if (parseFloat(brokerBidTwoPrice) != bgnBidPrice && parseFloat(brokerAskTwoPrice) != bgnAskPrice) {
+      object["Bid"] = parseFloat(brokerBidTwoPrice) / 100;
+      object["Ask"] = parseFloat(brokerAskTwoPrice) / 100;
+      return;
+    }
   }
+  if (isInteger(brokerBidThreePrice) && isInteger(brokerAskThreePrice)) {
+    if (parseFloat(brokerBidThreePrice) != bgnBidPrice && parseFloat(brokerAskThreePrice) != bgnAskPrice) {
+      object["Bid"] = parseFloat(brokerBidThreePrice) / 100;
+      object["Ask"] = parseFloat(brokerAskThreePrice) / 100;
+      return;
+    }
+  }
+  object["Bid"] = bgnBidPrice / 100;
+  object["Ask"] = bgnAskPrice / 100;
+  errors[ticker + " Bid/Ask "] = { notional: 0, location: "", message: `${ticker}'s price is the same as BGN` };
+  return;
 }
