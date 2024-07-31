@@ -26,6 +26,17 @@ reconcileRouter.post("/check-mufg", verifyToken, uploadToBucket.any(), async (re
         }
         if (monthsTrades.includes(thisMonth)) {
           return position;
+        } else {
+          if (typeof position["Cost MTD"] != "object") {
+            position["Cost MTD"] = {};
+          }
+          let monthsCostTrades = Object.keys(position["Cost MTD"] || {});
+          for (let index = 0; index < monthsCostTrades.length; index++) {
+            monthsCostTrades[index] = monthlyRlzdDate(monthsCostTrades[index]);
+          }
+          if (monthsCostTrades.includes(thisMonth)) {
+            return position;
+          }
         }
       } else {
         return position;
@@ -63,8 +74,34 @@ reconcileRouter.post("/check-nomura", verifyToken, uploadToBucket.any(), async (
   try {
     let collectionDate: string = req.body.collectionDate;
     let files = req.files[0];
+    let thisMonth = monthlyRlzdDate(collectionDate);
 
     let portfolio = await getPortfolioOnSpecificDate(collectionDate);
+    portfolio.portfolio = portfolio.portfolio.filter((position: any) => {
+      if (position["Notional Amount"] == 0) {
+        let monthsTrades = Object.keys(position["MTD Rlzd"] || {});
+        for (let index = 0; index < monthsTrades.length; index++) {
+          monthsTrades[index] = monthlyRlzdDate(monthsTrades[index]);
+        }
+        if (monthsTrades.includes(thisMonth)) {
+          return position;
+        } else {
+          if (typeof position["Cost MTD"] != "object") {
+            position["Cost MTD"] = {};
+          }
+          let monthsCostTrades = Object.keys(position["Cost MTD"] || {});
+          for (let index = 0; index < monthsCostTrades.length; index++) {
+            monthsCostTrades[index] = monthlyRlzdDate(monthsCostTrades[index]);
+          }
+          if (monthsCostTrades.includes(thisMonth)) {
+            return position;
+          }
+        }
+      } else {
+        return position;
+      }
+    });
+    
     let data: any = [];
     if (files) {
       const fileName = req.files[0].filename;
