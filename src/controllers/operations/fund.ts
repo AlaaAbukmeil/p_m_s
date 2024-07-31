@@ -12,7 +12,6 @@ export async function getFundDetails(date: string): Promise<FundDetails | {}> {
     const database = client.db("fund");
     const reportCollection = database.collection("details");
     let test = await getEarliestCollectionNameFund(date);
-    // console.log(test, date);
     let documents = await reportCollection.find({ month: test }).toArray();
     return documents;
   } catch (error: any) {

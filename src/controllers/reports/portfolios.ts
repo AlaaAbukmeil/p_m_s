@@ -7,7 +7,6 @@ import { formatDateUS, getTradeDateYearTrades } from "../common";
 import { getEarliestCollectionName, parseBondIdentifier, remainingDaysInYear } from "./tools";
 import { getHistoricalPortfolio, getPinnedPositions } from "../operations/positions";
 import { FinalPositionBackOffice, FundExposureOnlyMTD, FundMTD, PositionBeforeFormatting, PositionInDB, RlzdTrades } from "../../models/portfolio";
-import { Position } from "../../models/position";
 import { formatFrontOfficeTable } from "../analytics/tables/frontOffice";
 import { formatBackOfficeTable, formatFactSheetStatsTable } from "../analytics/tables/backOffice";
 import { getRlzdTrades } from "./trades";
@@ -71,7 +70,6 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   }
 
   let thisMonth = monthlyRlzdDate(date);
-  let nextMonth = nextMonthlyRlzdDate(date); //sometimes positions get traded at end of the month and settled next month
 
   let currentDayDate: Date = new Date(date);
   let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate);
@@ -91,13 +89,24 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   documents = documents.filter((position: PositionBeforeFormatting) => {
     if (parseFloat(position["Notional Amount"]) == 0) {
       let monthsTrades = Object.keys(position["Interest"] || {});
+
       for (let index = 0; index < monthsTrades.length; index++) {
         monthsTrades[index] = monthlyRlzdDate(monthsTrades[index]);
       }
 
-      if (monthsTrades.includes(thisMonth) || monthsTrades.includes(nextMonth)) {
+      if (monthsTrades.includes(thisMonth)) {
         return position;
       } else {
+        if (typeof position["Cost MTD"] != "object") {
+          position["Cost MTD"] = {};
+        }
+        let monthsCostTrades = Object.keys(position["Cost MTD"] || {});
+        for (let index = 0; index < monthsCostTrades.length; index++) {
+          monthsCostTrades[index] = monthlyRlzdDate(monthsCostTrades[index]);
+        }
+        if (monthsCostTrades.includes(thisMonth)) {
+          return position;
+        }
       }
     } else {
       return position;
@@ -362,7 +371,6 @@ export async function getMTDURlzdInt(portfolio: any, date: any) {
   for (let index = 0; index < portfolio.length; index++) {
     let position = portfolio[index];
     let todayPrice = parseFloat(portfolio[index]["Mid"]);
-    let type = portfolio[index]["Type"] == "CDS" ? -1 : portfolio[index]["Notional Amount"] < 0 ? -1 : 1;
 
     let tradeType = "vcons";
     let identifier = portfolio[index]["ISIN"];
@@ -547,7 +555,7 @@ export function calculateAccruedSinceInception(interestInfo: any, couponRate: an
   return interest;
 }
 
-export async function getPortfolioOnSpecificDate(collectionDate: string): Promise<{ portfolio: PositionInDB[] | []; date: string }> {
+export async function getPortfolioOnSpecificDate(collectionDate: string, onlyThisMonth: null | string = null): Promise<{ portfolio: PositionInDB[] | []; date: string }> {
   try {
     const database = client.db("portfolios");
     let date = getDateTimeInMongoDBCollectionFormat(new Date(collectionDate)).split(" ")[0] + " 23:59";
@@ -558,6 +566,33 @@ export async function getPortfolioOnSpecificDate(collectionDate: string): Promis
     for (let index = 0; index < documents.length; index++) {
       documents[index]["BB Ticker"] = documents[index]["BB Ticker"] ? documents[index]["BB Ticker"] : documents[index]["Issue"];
       documents[index]["Notional Amount"] = documents[index]["Notional Amount"] || parseFloat(documents[index]["Notional Amount"]) == 0 ? documents[index]["Notional Amount"] : documents[index]["Quantity"];
+    }
+    if (onlyThisMonth) {
+      let thisMonth = monthlyRlzdDate(collectionDate);
+      documents.filter((position: any) => {
+        if (position["Notional Amount"] == 0) {
+          let monthsTrades = Object.keys(position["MTD Rlzd"] || {});
+          for (let index = 0; index < monthsTrades.length; index++) {
+            monthsTrades[index] = monthlyRlzdDate(monthsTrades[index]);
+          }
+          if (monthsTrades.includes(thisMonth)) {
+            return position;
+          } else {
+            if (typeof position["Cost MTD"] != "object") {
+              position["Cost MTD"] = {};
+            }
+            let monthsCostTrades = Object.keys(position["Cost MTD"] || {});
+            for (let index = 0; index < monthsCostTrades.length; index++) {
+              monthsCostTrades[index] = monthlyRlzdDate(monthsCostTrades[index]);
+            }
+            if (monthsCostTrades.includes(thisMonth)) {
+              return position;
+            }
+          }
+        } else {
+          return position;
+        }
+      });
     }
 
     return { portfolio: documents, date: earliestCollectionName.predecessorDate };

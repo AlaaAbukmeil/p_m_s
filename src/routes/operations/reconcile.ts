@@ -14,34 +14,10 @@ reconcileRouter.post("/check-mufg", verifyToken, uploadToBucket.any(), async (re
     let collectionDate: string = req.body.collectionDate || new Date().toString();
     let files = req.files[0];
 
-    let portfolio: any = await getPortfolioOnSpecificDate(collectionDate);
+    let portfolio: any = await getPortfolioOnSpecificDate(collectionDate, "true");
     let thisMonth = monthlyRlzdDate(collectionDate);
     console.log(collectionDate, thisMonth, "collectionDate");
 
-    portfolio.portfolio = portfolio.portfolio.filter((position: any) => {
-      if (position["Notional Amount"] == 0) {
-        let monthsTrades = Object.keys(position["MTD Rlzd"] || {});
-        for (let index = 0; index < monthsTrades.length; index++) {
-          monthsTrades[index] = monthlyRlzdDate(monthsTrades[index]);
-        }
-        if (monthsTrades.includes(thisMonth)) {
-          return position;
-        } else {
-          if (typeof position["Cost MTD"] != "object") {
-            position["Cost MTD"] = {};
-          }
-          let monthsCostTrades = Object.keys(position["Cost MTD"] || {});
-          for (let index = 0; index < monthsCostTrades.length; index++) {
-            monthsCostTrades[index] = monthlyRlzdDate(monthsCostTrades[index]);
-          }
-          if (monthsCostTrades.includes(thisMonth)) {
-            return position;
-          }
-        }
-      } else {
-        return position;
-      }
-    });
     let portfolioWithPrincipal: any = getPrincipal(portfolio.portfolio).portfolio;
 
     let data: any = [];
@@ -74,34 +50,9 @@ reconcileRouter.post("/check-nomura", verifyToken, uploadToBucket.any(), async (
   try {
     let collectionDate: string = req.body.collectionDate;
     let files = req.files[0];
-    let thisMonth = monthlyRlzdDate(collectionDate);
 
-    let portfolio = await getPortfolioOnSpecificDate(collectionDate);
-    portfolio.portfolio = portfolio.portfolio.filter((position: any) => {
-      if (position["Notional Amount"] == 0) {
-        let monthsTrades = Object.keys(position["MTD Rlzd"] || {});
-        for (let index = 0; index < monthsTrades.length; index++) {
-          monthsTrades[index] = monthlyRlzdDate(monthsTrades[index]);
-        }
-        if (monthsTrades.includes(thisMonth)) {
-          return position;
-        } else {
-          if (typeof position["Cost MTD"] != "object") {
-            position["Cost MTD"] = {};
-          }
-          let monthsCostTrades = Object.keys(position["Cost MTD"] || {});
-          for (let index = 0; index < monthsCostTrades.length; index++) {
-            monthsCostTrades[index] = monthlyRlzdDate(monthsCostTrades[index]);
-          }
-          if (monthsCostTrades.includes(thisMonth)) {
-            return position;
-          }
-        }
-      } else {
-        return position;
-      }
-    });
-    
+    let portfolio = await getPortfolioOnSpecificDate(collectionDate, "true");
+
     let data: any = [];
     if (files) {
       const fileName = req.files[0].filename;
@@ -134,14 +85,18 @@ reconcileRouter.post("/reconcile-cash", verifyToken, uploadToBucket.any(), async
     const path = await generateSignedUrl(fileName);
     let collectionDate = req.body.collectionDate;
     let link = bucket + "/" + fileName + "?authuser=2";
-    let action: any = await reconcileNomuraCash({ path, collectionDate, link });
-    console.log(req.body, action[0]);
+    let start = new Date(req.body.timestamp_start).getTime();
+    let end = new Date(req.body.timestamp_end).getTime();
 
-    // if (action?.error) {
-    //   res.send({ error: action.error });
-    // } else {
-    res.send({ error: null });
-    // }
+    let action: any = await reconcileNomuraCash({ path, collectionDate, link, start, end });
+
+    if (action.error) {
+      res.send({ error: action.error });
+    } else {
+      let link = await uploadArrayAndReturnFilePath(action, `nomura_check_${collectionDate}`, "nomura_check");
+      let downloadEBlotName = bucket + link + "?authuser=2";
+      res.send(downloadEBlotName);
+    }
   } catch (error) {
     res.send({ error: "File Template is not correct" });
   }

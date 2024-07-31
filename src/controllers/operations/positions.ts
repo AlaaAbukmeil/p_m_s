@@ -510,8 +510,6 @@ export async function editPosition(editedPosition: any, date: string) {
       "Event Type",
       "Edit Note",
       "Factor Date (if any)",
-      "Previous Settle Date",
-      "Next Settle Date",
     ];
     // these keys are made up by the function frontend table, it reverts keys to original keys
 

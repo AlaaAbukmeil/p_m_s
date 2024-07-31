@@ -20,6 +20,18 @@ export function formatDateNomura(dateString: any) {
   // Return the formatted string in 'yyyymmdd' format
   return `${year}${month}${day}`;
 }
+export function formatDateToIso(dateString: any) {
+  // Split the input date string by '/'
+  const parts = dateString.split("/");
+
+  // Extract month, day, and year from the parts
+  const day = parts[0];
+  const month = parts[1];
+  const year = parts[2];
+
+  // Return the formatted string in 'yyyymmdd' format
+  return new Date(`${year}-${month}-${day}`);
+}
 
 export async function getCollectionDays(): Promise<string[]> {
   try {

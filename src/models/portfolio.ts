@@ -28,7 +28,6 @@ export interface PositionInDB {
   Broker: string;
   CUSIP: string;
   "Call Date": string;
-  "Cost MTD Ptf": Record<string, string>;
   Country: string;
   "Coupon Rate": string;
   Currency: string;
@@ -39,7 +38,7 @@ export interface PositionInDB {
   "Fitch Bond Rating": string;
   "Fitch Outlook": string;
   Group: string;
-  Interest: Record<string, string>;
+  Interest: { [key: string]: string };
   Issue: string;
   Issuer: string;
   "Last Individual Upload Trade": Date;
@@ -84,7 +83,7 @@ export interface PositionInDB {
   "YTD Int.": string;
   "YTD Rlzd": string;
   "MTD Rlzd DC": Record<string, Array<any>>;
-  "Cost MTD": string;
+  "Cost MTD": any;
   "Day P&L": string;
   "MTD P&L": string;
   "YTD P&L": string;
@@ -97,6 +96,7 @@ export interface PositionInDB {
   "Coupon Frequency": string;
   "Previous Settle Date": string;
   "Next Settle Date": string;
+  "Security Description": string;
   "Bloomberg Mid BGN": number;
 }
 
@@ -113,7 +113,6 @@ export interface PositionBeforeFormatting extends PositionInDB {
   Broker: string;
   CUSIP: string;
   "Call Date": string;
-  "Cost MTD Ptf": Record<string, string>;
   Country: string;
   "Coupon Rate": string;
   Currency: string;
@@ -175,7 +174,7 @@ export interface PositionBeforeFormatting extends PositionInDB {
   "YTD Int.": string;
   "YTD Rlzd": string;
   "MTD Rlzd DC": Record<string, Array<any>>;
-  "Cost MTD": string;
+  "Cost MTD": any;
   "Day P&L": string;
   "MTD P&L": string;
   "YTD P&L": string;

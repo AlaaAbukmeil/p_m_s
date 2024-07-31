@@ -132,3 +132,12 @@ export interface NomuraCashReconcile {
   "Expiration Date": string;
   "Result Of Option": string;
 }
+
+export interface NomuraReconcileCash {
+  ticker: string;
+  appSum: number;
+  nomuraSum: number;
+  difference: number;
+  message: string;
+  note: string;
+}
