@@ -1,6 +1,6 @@
 import { client } from "../userManagement/auth";
 
-import { formatDateRlzdDaily, getAllDatesSinceLastMonthLastDay, getAllDatesSinceLastYearLastDay, getDateTimeInMongoDBCollectionFormat, getDaysBetween, getEarliestDateKeyAndValue, getLastDayOfMonth, monthlyRlzdDate } from "./common";
+import { formatDateRlzdDaily, getAllDatesSinceLastMonthLastDay, getAllDatesSinceLastYearLastDay, getDateTimeInMongoDBCollectionFormat, getDaysBetween, getEarliestDateKeyAndValue, getLastDayOfMonth, monthlyRlzdDate, nextMonthlyRlzdDate } from "./common";
 import { getFundDetails } from "../operations/fund";
 
 import { formatDateUS } from "../common";
@@ -71,6 +71,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   }
 
   let thisMonth = monthlyRlzdDate(date);
+  let nextMonth = nextMonthlyRlzdDate(date); //sometimes positions get traded at end of the month and settled next month
 
   let currentDayDate: Date = new Date(date);
   let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate);
@@ -93,7 +94,8 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
       for (let index = 0; index < monthsTrades.length; index++) {
         monthsTrades[index] = monthlyRlzdDate(monthsTrades[index]);
       }
-      if (monthsTrades.includes(thisMonth)) {
+
+      if (monthsTrades.includes(thisMonth) || monthsTrades.includes(nextMonth)) {
         return position;
       } else {
       }
