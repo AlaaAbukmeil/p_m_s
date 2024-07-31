@@ -5,6 +5,13 @@ export function monthlyRlzdDate(dateInput: string) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   return `${year}/${month}`;
 }
+export function nextMonthlyRlzdDate(dateInput: string) {
+  let date = new Date(dateInput);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 2).padStart(2, "0");
+  return `${year}/${month}`;
+}
+
 
 export function formatDateRlzdDaily(date: any) {
   date = new Date(date);

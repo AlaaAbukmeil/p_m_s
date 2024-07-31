@@ -33,7 +33,6 @@ export interface PositionInDB {
   "Coupon Rate": string;
   Currency: string;
   DV01: string;
-  "Day Rlzd": any;
   "Entry Price": any;
   "Entry Yield": any;
   "FX Rate": any;

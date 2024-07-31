@@ -172,8 +172,6 @@ export async function updatePositionPortfolio(
       if (!tradeExistsAlready && identifier !== "") {
         triadaIds.push(row["Triada Trade Id"]);
         if (!updatingPosition) {
-          let shortLongType = securityInPortfolio !== 404 ? (securityInPortfolio["Notional Amount"] >= 0 ? 1 : -1) : currentQuantity >= 0 ? 1 : -1;
-
           let settlementDate = row["Settle Date"];
 
           object["Location"] = row["Location"].trim();
@@ -228,15 +226,6 @@ export async function updatePositionPortfolio(
           object["Interest"] = securityInPortfolio !== 404 ? (securityInPortfolio["Interest"] ? securityInPortfolio["Interest"] : {}) : {};
           object["Interest"][settlementDate] = object["Interest"][settlementDate] ? object["Interest"][settlementDate] + currentQuantity : currentQuantity;
 
-          object["Day Rlzd"] = securityInPortfolio !== 404 ? (securityInPortfolio["Day Rlzd"] ? securityInPortfolio["Day Rlzd"] : {}) : {};
-
-          object["Day Rlzd"][thisDay] = securityInPortfolio !== 404 ? (securityInPortfolio["Day Rlzd"] ? (securityInPortfolio["Day Rlzd"][thisDay] ? securityInPortfolio["Day Rlzd"][thisDay] : []) : []) : [];
-
-          let dayRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
-          if (rlzdOperation == 1) {
-            object["Day Rlzd"][thisDay].push(dayRlzdForThisTrade);
-          }
-
           if (securityInPortfolio !== 404) {
             securityInPortfolio["Cost MTD"] = {};
           }
@@ -257,8 +246,6 @@ export async function updatePositionPortfolio(
 
           positions.push(object);
         } else if (returnPositionProgress(positions, identifier, location)) {
-          let shortLongType = securityInPortfolio !== 404 ? (securityInPortfolio["Notional Amount"] + updatingPosition["Notional Amount"] >= 0 ? 1 : -1) : updatingPosition["Notional Amount"] >= 0 ? 1 : -1;
-
           let settlementDate = row["Settle Date"];
           object["Location"] = row["Location"].trim();
           object["Last Modified Date"] = new Date();
@@ -316,14 +303,6 @@ export async function updatePositionPortfolio(
             object["Entry Price"][thisMonth] = currentPrice;
           }
 
-          object["Day Rlzd"] = updatingPosition["Day Rlzd"];
-
-          let dayRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
-
-          if (rlzdOperation == 1) {
-            object["Day Rlzd"][thisDay] = object["Day Rlzd"][thisDay] ? object["Day Rlzd"][thisDay] : [];
-            object["Day Rlzd"][thisDay].push(dayRlzdForThisTrade);
-          }
           object["Last Individual Upload Trade"] = new Date();
           positions = updateExisitingPosition(positions, identifier, location, object);
         }
@@ -562,8 +541,6 @@ export async function editPosition(editedPosition: any, date: string) {
     }
     for (let indexTitle = 0; indexTitle < editedPositionTitles.length; indexTitle++) {
       let title = editedPositionTitles[indexTitle];
-      let todayDate = formatDateUS(new Date(date).toString());
-      let monthDate = monthlyRlzdDate(new Date(date).toString());
       if (!unEditableParams.includes(title) && editedPosition[title] != "") {
         if (title == "Notional Amount") {
           if (editedPosition["Event Type"] == "Sink Factor") {
@@ -856,8 +833,6 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
       if (!tradeExistsAlready && identifier !== "") {
         triadaIds.push(row["Triada Trade Id"]);
         if (!updatingPosition) {
-          let shortLongType = currentQuantity >= 0 ? 1 : -1;
-
           let settlementDate = row["Settle Date"];
 
           object["Location"] = row["Location"].trim();
@@ -878,15 +853,6 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           object["Maturity"] = bondCouponMaturity.date || 0;
           object["Interest"] = {};
           object["Interest"][settlementDate] = object["Interest"][settlementDate] ? object["Interest"][settlementDate] + currentQuantity : currentQuantity;
-
-          object["Day Rlzd"] = {};
-
-          object["Day Rlzd"][thisDay] = [];
-
-          let dayRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
-          if (rlzdOperation == 1) {
-            object["Day Rlzd"][thisDay].push(dayRlzdForThisTrade);
-          }
 
           object["Cost MTD"] = {};
 
@@ -911,8 +877,6 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
 
           positions.push(object);
         } else if (returnPositionProgress(positions, identifier, location)) {
-          let shortLongType = updatingPosition["Notional Amount"] >= 0 ? 1 : -1;
-
           let settlementDate = row["Settle Date"];
           object["Location"] = row["Location"].trim();
           object["Last Modified Date"] = new Date();
@@ -941,15 +905,6 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           object["Coupon Duration"] = object["Coupon Rate"] ? couponDaysYear : "";
           if (rlzdOperation == -1) {
             object["Entry Price"][thisMonth] = currentPrice;
-          }
-
-          object["Day Rlzd"] = updatingPosition["Day Rlzd"];
-
-          let dayRlzdForThisTrade = { price: currentPrice, quantity: Math.abs(currentQuantity) * shortLongType };
-
-          if (rlzdOperation == 1) {
-            object["Day Rlzd"][thisDay] = object["Day Rlzd"][thisDay] ? object["Day Rlzd"][thisDay] : [];
-            object["Day Rlzd"][thisDay].push(dayRlzdForThisTrade);
           }
 
           object["Last Individual Upload Trade"] = new Date();

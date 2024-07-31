@@ -3,7 +3,7 @@ import { client } from "../userManagement/auth";
 import { formatDateRlzdDaily, getAllDatesSinceLastMonthLastDay, getAllDatesSinceLastYearLastDay, getDateTimeInMongoDBCollectionFormat, getDaysBetween, getEarliestDateKeyAndValue, getLastDayOfMonth, monthlyRlzdDate, nextMonthlyRlzdDate } from "./common";
 import { getFundDetails } from "../operations/fund";
 
-import { formatDateUS } from "../common";
+import { formatDateUS, getTradeDateYearTrades } from "../common";
 import { getEarliestCollectionName, parseBondIdentifier, remainingDaysInYear } from "./tools";
 import { getHistoricalPortfolio, getPinnedPositions } from "../operations/positions";
 import { FinalPositionBackOffice, FundExposureOnlyMTD, FundMTD, PositionBeforeFormatting, PositionInDB, RlzdTrades } from "../../models/portfolio";
@@ -357,7 +357,7 @@ export async function getMTDURlzdInt(portfolio: any, date: any) {
   let currentDayDate: string = new Date(date).toISOString().slice(0, 10);
   let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate);
   let monthlyInterest: any = {};
-  let thisDay = formatDateRlzdDaily(date);
+  let dateInTradeDateFormat = formatDateUS(date);
 
   for (let index = 0; index < portfolio.length; index++) {
     let position = portfolio[index];
@@ -380,8 +380,8 @@ export async function getMTDURlzdInt(portfolio: any, date: any) {
     let multiplier = tradeType == "vcons" ? 100 : 1;
 
     let trades = await getRlzdTrades(`${tradeType}`, identifier, portfolio[index]["Location"], date, portfolio[index]["MTD Mark"] * multiplier, portfolio[index]["MTD Notional"]);
-
     portfolio[index]["MTD Rlzd"] = trades.totalRow["Rlzd P&L Amount"];
+    portfolio[index]["Day Rlzd"] = trades.pnlDayRlzdHistory[dateInTradeDateFormat] || 0;
 
     portfolio[index]["Average Cost MTD"] = trades.averageCostMTD / multiplier;
 
@@ -449,7 +449,6 @@ export function getYTDInt(portfolio: any, lastYearDate: any, date: any) {
 
 export async function getPL(portfolio: any, latestPortfolioThisMonth: any, date: any) {
   let thisMonth = monthlyRlzdDate(date);
-  let thisDay = formatDateRlzdDaily(date);
   for (let index = 0; index < portfolio.length; index++) {
     let positionUpToDateThisMonth = latestPortfolioThisMonth.filter((position: any, count: number) => portfolio[index]["Location"] == position["Location"] && portfolio[index]["ISIN"] == position["ISIN"]);
     if (positionUpToDateThisMonth.length > 1) {
@@ -460,7 +459,6 @@ export async function getPL(portfolio: any, latestPortfolioThisMonth: any, date:
       console.log(portfolio[index]["BB Ticker"] || portfolio[index]["Issue"], "mtd rlzd wrong");
       positionUpToDateThisMonth = portfolio[index];
     }
-    portfolio[index]["Day Rlzd"] = positionUpToDateThisMonth["Day Rlzd"] ? (positionUpToDateThisMonth["Day Rlzd"][thisDay] ? calculateRlzd(positionUpToDateThisMonth["Day Rlzd"][thisDay], portfolio[index]["Average Cost MTD"], portfolio[index]["BB Ticker"], portfolio[index]["Asset Class"]) : 0) : 0;
 
     portfolio[index]["Cost MTD"] = portfolio[index]["Cost MTD"] ? portfolio[index]["Cost MTD"][thisMonth] || 0 : 0;
     portfolio[index]["Day P&L"] = parseFloat(portfolio[index]["Day Int."]) + parseFloat(portfolio[index]["Day Rlzd"]) + parseFloat(portfolio[index]["Day URlzd"]) ? parseFloat(portfolio[index]["Day Int."]) + parseFloat(portfolio[index]["Day Rlzd"]) + parseFloat(portfolio[index]["Day URlzd"]) : 0;
