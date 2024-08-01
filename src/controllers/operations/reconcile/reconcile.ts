@@ -1,11 +1,12 @@
-import { PositionInDB } from "../../models/portfolio";
-import { MufgReconcile, NomuraCashReconcile, NomuraReconcile, NomuraReconcileCash } from "../../models/reconcile";
-import { formatDateUS, formatDateWorld } from "../common";
-import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
-import { getPortfolioOnSpecificDate } from "../reports/portfolios";
-import { insertEditLogs } from "./logs";
-import { readNomuraCashReport } from "./readExcel";
-import { formatDateToIso } from "./tools";
+import { PositionBeforeFormatting, PositionInDB } from "../../../models/portfolio";
+import { MufgReconcile, NomuraCashReconcile, NomuraReconcile, NomuraReconcileCash } from "../../../models/reconcile";
+import { getAllDatesSinceLastMonthLastDay } from "../../reports/common";
+import { getMTDParams, getPortfolioOnSpecificDate } from "../../reports/portfolios";
+import { getEarliestCollectionName } from "../../reports/tools";
+import { getHistoricalPortfolio } from "../positions";
+import { readNomuraCashReport } from "../readExcel";
+import { formatDateToIso, parseYYYYMMDDAndReturnMonth } from "../tools";
+import { getMTDRlzd, getMtdMarkAndMtdNotional, getPositionAggregated, getProcceeds, getRlzdPNLNomuraProceeds, sumUpCouponPaymentRecords } from "./tools";
 
 export async function reconcileMUFG(MUFGData: MufgReconcile[], portfolio: any) {
   try {
@@ -26,7 +27,7 @@ export async function reconcileMUFG(MUFGData: MufgReconcile[], portfolio: any) {
       let mufgAverageCost = positionInMufg ? parseFloat(positionInMufg["LocalCost"]) / mufgPositionQuantity : 0;
       let portfolioPrice = Math.round(positionInPortfolio["Mid"] * 10000 * bondDivider) / 10000;
       portfolioPrice = portfolioPrice ? portfolioPrice : 0;
-      let bgnPrice = Math.round(positionInPortfolio["Bloomberg Mid BGN"] * 10000 * bondDivider) / 10000;
+      let bgnPrice = Math.round(parseFloat(positionInPortfolio["Bloomberg Mid BGN"]) * 10000) / 10000;
       bgnPrice = bgnPrice ? bgnPrice : 0;
       let mufgPrice = positionInMufg ? parseFloat(positionInMufg["Price"]) : 0;
 
@@ -49,7 +50,7 @@ export async function reconcileMUFG(MUFGData: MufgReconcile[], portfolio: any) {
 
         "Price (BGN)": bgnPrice || 0,
         "Difference Price (Broker - BGN)": portfolioPrice - bgnPrice || 0,
-        "P&L Difference (Broker - BGN)": ((portfolioPrice - bgnPrice) / (positionInPortfolio["Type"] == "BND" ? 100 : 1)) * portfolioPositionQuantity,
+        "P&L Difference (Broker - BGN)": Math.round(((portfolioPrice - bgnPrice) / (positionInPortfolio["Type"] == "BND" ? 100 : 1)) * portfolioPositionQuantity),
       };
       if (!(portfolioPositionQuantity == 0 && mufgPositionQuantity == 0)) {
         formattedData.push(formattedRow);
@@ -147,7 +148,16 @@ function getPositionInNomura(data: NomuraReconcile[], isin: string) {
   return null;
 }
 
-export function updatePortfolioBasedOnIsin(portfolio: any) {
+export function updatePortfolioBasedOnIsin(portfolio: PositionInDB[]): {
+  Principal: number;
+  "Average Cost": number;
+  "Notional Amount": number;
+  "Original Face": number;
+  Mid: number;
+  ISIN: string;
+  "BB Ticker": string;
+  "Bloomberg Mid BGN": number;
+}[] {
   let updatedPortfolio: any = {};
   let aggregatedPortfolio: any = [];
 
@@ -173,6 +183,7 @@ export function updatePortfolioBasedOnIsin(portfolio: any) {
       Mid: positions[0]["Mid"],
       ISIN: isin,
       "BB Ticker": positions[0]["BB Ticker"],
+      "Bloomberg Mid BGN": positions[0]["Bloomberg Mid BGN"],
     };
 
     for (let positionIndex = 0; positionIndex < positions.length; positionIndex++) {
@@ -200,12 +211,22 @@ export async function reconcileNomuraCash({ path, link, collectionDate, start, e
       let records = data.records;
       let portfolio: PositionInDB[] = [];
       let action = await getPortfolioOnSpecificDate(collectionDate, "true");
+
+      let previousMonthDates = getAllDatesSinceLastMonthLastDay(new Date(collectionDate));
+      let lastMonthLastCollectionName = await getEarliestCollectionName(previousMonthDates[0] + " 23:59");
+      let lastMonthPortfolio = await getHistoricalPortfolio(lastMonthLastCollectionName.predecessorDate);
+
       portfolio = action.portfolio;
+      portfolio = getMTDParams(portfolio, lastMonthPortfolio, collectionDate);
+
+      await getMTDRlzd(portfolio, collectionDate);
+
+      let collectionMonth = new Date(collectionDate).getMonth() + 1;
 
       let interestRecords: NomuraCashReconcile[] = [];
       let couponPaymentRecords: NomuraCashReconcile[] = [];
       let redeemptionRecords: NomuraCashReconcile[] = [];
-      let BuySellRecords: NomuraCashReconcile[] = [];
+      let buySellRecords: NomuraCashReconcile[] = [];
       for (let index = 0; index < records.length; index++) {
         const record = records[index];
         let type = record["Trade Status"];
@@ -216,17 +237,21 @@ export async function reconcileNomuraCash({ path, link, collectionDate, start, e
         } else if (type == "DEL") {
           redeemptionRecords.push(record);
         } else if (type == "BUY" || type == "SELL") {
-          BuySellRecords.push(record);
+          buySellRecords.push(record);
         }
       }
 
       let fxInterest = getFXInterest(interestRecords);
       let redeemped = checkIfPositionsGotRedeemped(redeemptionRecords, portfolio);
-      let finalPortfolioWithPositionsThatWillPay = positionsThatWillPayCoupon({ start, end, portfolio });
-      let couponPaymentsNomura = checkIfCouponPaymentsAreSettleted(couponPaymentRecords, finalPortfolioWithPositionsThatWillPay, collectionDate);
-      let couponPaymentsApp = checkPositionsThatShouldPayButDoNotExistInNomura(finalPortfolioWithPositionsThatWillPay, couponPaymentsNomura.isinsFound, collectionDate);
 
-      let finalResult = [...fxInterest, ...redeemped, ...couponPaymentsApp, ...couponPaymentsNomura.result];
+      let finalPortfolioWithPositionsThatWillPay = positionsThatWillPayCoupon({ start, end, portfolio });
+
+      let couponPaymentsNomura = checkIfCouponPaymentsAreSettleted(couponPaymentRecords, finalPortfolioWithPositionsThatWillPay, collectionDate);
+
+      let couponPaymentsApp = checkPositionsThatShouldPayButDoNotExistInNomura(finalPortfolioWithPositionsThatWillPay, couponPaymentsNomura.isinsFound, collectionDate);
+      let buySellProceeds = calculateNomuraMTDRlzdPNL(portfolio, buySellRecords, collectionMonth);
+
+      let finalResult = [...fxInterest, ...redeemped, ...couponPaymentsApp, ...couponPaymentsNomura.result, ...buySellProceeds];
       return finalResult;
       // let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
       // await insertEditLogs([], "Cash Reconcile", dateTime, "", "Link: " + link);
@@ -275,21 +300,20 @@ export function checkIfPositionsGotRedeemped(redeemptionRecords: NomuraCashRecon
   return result;
 }
 
-export function sumUpCouponPaymentRecords(couponPaymentRecords: NomuraCashReconcile[]) {
-  let result: { [key: string]: { sum: number; ticker: string; message: string; settleDate: string } } = {};
-  for (let index = 0; index < couponPaymentRecords.length; index++) {
-    let isin = couponPaymentRecords[index]["Isin"];
-    let ticker = couponPaymentRecords[index]["Security Name"];
-    let proceeds = parseFloat(couponPaymentRecords[index]["Proceeds"]);
-    let payInKindAlert = couponPaymentRecords[index]["Activity Description"];
-    let settleDate = couponPaymentRecords[index]["Trade Date"];
-    if (!result[isin]) {
-      result[isin] = { sum: 0, ticker: ticker, message: payInKindAlert.toString().toLocaleLowerCase().includes("in kind") ? "Payment In Kind" : "", settleDate: settleDate };
+export function positionsThatWillPayCoupon({ start, end, portfolio }: { start: number; end: number; portfolio: PositionInDB[] }): PositionInDB[] {
+  let finalPortfolioWithPositionsThatWillPay: PositionInDB[] = [];
+  for (let index = 0; index < portfolio.length; index++) {
+    const position = portfolio[index];
+    let previousSettleDate = position["Previous Settle Date"];
+    if (previousSettleDate) {
+      let timestamp = formatDateToIso(previousSettleDate).getTime();
+
+      if (timestamp > start && timestamp < end) {
+        finalPortfolioWithPositionsThatWillPay.push(position);
+      }
     }
-    result[isin].sum += proceeds;
-    result[isin].ticker = ticker;
   }
-  return result;
+  return finalPortfolioWithPositionsThatWillPay;
 }
 
 export function checkIfCouponPaymentsAreSettleted(couponPaymentRecords: NomuraCashReconcile[], portfolio: PositionInDB[], collectionDate: string): { result: NomuraReconcileCash[]; isinsFound: string[] } {
@@ -323,58 +347,6 @@ export function checkIfCouponPaymentsAreSettleted(couponPaymentRecords: NomuraCa
   return { result, isinsFound };
 }
 
-export function getPositionAggregated(isin: string, portfolio: PositionInDB[], dateInput: string) {
-  let totalSettled = 0;
-  let ticker = "";
-  let coupon = 0;
-  let frequency = 2;
-  let previousSettleDate = "";
-  let found = false;
-  let note = "";
-  let inputTimestamp = new Date(dateInput).getTime() + 24 * 60 * 60 * 1000;
-  for (let index = 0; index < portfolio.length; index++) {
-    let position = portfolio[index];
-    if (position["ISIN"] == isin) {
-      found = true;
-      ticker = position["BB Ticker"];
-      if (position["Security Description"]) {
-        note = position["Security Description"];
-      }
-      coupon = parseFloat(position["Coupon Rate"]) / 100;
-      if (position["Coupon Frequency"]) {
-        frequency = parseFloat(position["Coupon Frequency"]);
-      }
-      if (position["Previous Settle Date"]) {
-        previousSettleDate = position["Previous Settle Date"];
-      }
-      for (let date in position["Interest"]) {
-        let timestamp = new Date(date).getTime();
-        if (timestamp < inputTimestamp) {
-          totalSettled += parseFloat(position["Interest"][date]);
-        }
-      }
-    }
-  }
-  let couponPayment = totalSettled * coupon * (1 / frequency);
-  return { totalSettled, ticker, found, coupon, frequency, previousSettleDate, couponPayment, note };
-}
-
-export function positionsThatWillPayCoupon({ start, end, portfolio }: { start: number; end: number; portfolio: PositionInDB[] }): PositionInDB[] {
-  let finalPortfolioWithPositionsThatWillPay: PositionInDB[] = [];
-  for (let index = 0; index < portfolio.length; index++) {
-    const position = portfolio[index];
-    let previousSettleDate = position["Previous Settle Date"];
-    if (previousSettleDate) {
-      let timestamp = formatDateToIso(previousSettleDate).getTime();
-
-      if (timestamp > start && timestamp < end) {
-        finalPortfolioWithPositionsThatWillPay.push(position);
-      }
-    }
-  }
-  return finalPortfolioWithPositionsThatWillPay;
-}
-
 export function checkPositionsThatShouldPayButDoNotExistInNomura(portfolio: PositionInDB[], isinFound: string[], collectionDate: string): NomuraReconcileCash[] {
   let result = [];
 
@@ -383,15 +355,37 @@ export function checkPositionsThatShouldPayButDoNotExistInNomura(portfolio: Posi
     if (isinFound.includes(position["ISIN"])) {
     } else {
       let aggregates = getPositionAggregated(position["ISIN"], portfolio, collectionDate);
-      let appSum = aggregates.couponPayment;
-      let nomuraSum = 0;
-      let difference = appSum - nomuraSum;
-      let message = `App Expected ${aggregates.ticker} to pay ${aggregates.couponPayment} on ${aggregates.previousSettleDate} but could not find it in nomura`;
-      let note = aggregates.note;
-      let ticker = aggregates.ticker;
-      let object = { ticker, appSum, nomuraSum, difference, message, note };
-      result.push(object);
+
+      if (aggregates.couponPayment) {
+        let appSum = aggregates.couponPayment;
+        let nomuraSum = 0;
+        let difference = appSum - nomuraSum;
+        let message = `App Expected ${aggregates.ticker} to pay ${aggregates.couponPayment} on ${aggregates.previousSettleDate} but could not find it in nomura`;
+        let note = aggregates.note;
+        let ticker = aggregates.ticker;
+        let object = { ticker, appSum, nomuraSum, difference, message, note };
+        result.push(object);
+      }
     }
+  }
+  return result;
+}
+
+export function calculateNomuraMTDRlzdPNL(portfolio: PositionBeforeFormatting[] | PositionInDB[], buySellProceeds: NomuraCashReconcile[], collectionMonth: number): NomuraReconcileCash[] {
+  let result = [];
+  let positionsWithMTDInfo = getMtdMarkAndMtdNotional(portfolio);
+  let trades = getProcceeds(buySellProceeds, collectionMonth);
+
+  for (let isin in trades) {
+    let position = positionsWithMTDInfo[isin];
+    let pnl = getRlzdPNLNomuraProceeds(trades[isin], position.mtdMark, position.mtdNotional);
+    let appSum = position.mtdRlzd;
+    let nomuraSum = pnl.totalRow["Rlzd P&L Amount"]; //opposite because nomura looks at from cash in/out pov
+    let difference = Math.round(appSum - nomuraSum);
+    let message = `This position's currency is ${pnl.currency}, proceeds are calculated at Base Currency. Nomura's FX Rate is ${trades[isin][0]["Security Issue CCY"]} ${trades[isin][0]["Fx Rate"]}`;
+    let note = pnl.currency;
+    let object = { ticker: position.ticker, appSum: appSum, nomuraSum: nomuraSum, difference, message, note };
+    result.push(object);
   }
   return result;
 }

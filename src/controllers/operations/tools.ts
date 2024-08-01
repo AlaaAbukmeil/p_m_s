@@ -32,6 +32,16 @@ export function formatDateToIso(dateString: any) {
   // Return the formatted string in 'yyyymmdd' format
   return new Date(`${year}-${month}-${day}`);
 }
+export function parseYYYYMMDDAndReturnMonth(dateString: string) {
+  // Ensure the input is a string and has exactly 8 characters
+  // Extract year, month, and day from the input string
+  const year = parseInt(dateString.slice(0, 4), 10);
+  const month = parseInt(dateString.slice(4, 6), 10) - 1; // Month is zero-based (0 = January)
+  const day = parseInt(dateString.slice(6, 8), 10);
+
+  // Create and return a new Date object
+  return month + 1;
+}
 
 export async function getCollectionDays(): Promise<string[]> {
   try {

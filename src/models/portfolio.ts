@@ -186,6 +186,7 @@ export interface PositionBeforeFormatting extends PositionInDB {
   "MTD Price Move": string;
   Pin: string;
   "3-Day Price Move": number;
+  "MTD Notional": number;
 }
 
 export interface PositionGeneralFormat extends PositionBeforeFormatting {

@@ -61,6 +61,7 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
         pnlDayRlzdHistory[trade["Trade Date"]] = (pnlDayRlzdHistory[trade["Trade Date"]] || 0) + parseFloat(trade["Rlzd P&L Amount"]);
 
         total += trade["Rlzd P&L Amount"];
+
         accumualteNotional += newNotional;
 
         trade["Updated Notional"] = accumualteNotional;
@@ -71,6 +72,7 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
         pnlDayRlzdHistory[trade["Trade Date"]] = (pnlDayRlzdHistory[trade["Trade Date"]] || 0) + parseFloat(trade["Rlzd P&L Amount"]);
 
         total += trade["Rlzd P&L Amount"];
+
         accumualteNotional += newNotional;
 
         trade["Updated Notional"] = accumualteNotional;

@@ -36,7 +36,6 @@ tradesRouter.get("/rlzd-trades", verifyToken, async (req, res) => {
 
     let mtdMark: any = req.query["mtdMark"];
     let mtdNotional: any = req.query["mtdNotional"] || 0;
-    let type: any = req.query["type"] || 0;
 
     mtdNotional = parseFloat(mtdNotional.toString().replace(/,/g, ""));
     let trades = await getRlzdTrades(`${tradeType}`, isin, location, date, mtdMark, mtdNotional);
