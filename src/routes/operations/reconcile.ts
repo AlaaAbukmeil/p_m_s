@@ -98,8 +98,8 @@ reconcileRouter.post("/reconcile-cash", verifyToken, uploadToBucket.any(), async
       let downloadEBlotName = bucket + link + "?authuser=2";
       res.send(downloadEBlotName);
     }
-  } catch (error) {
-    res.send({ error: "File Template is not correct" });
+  } catch (error: any) {
+    res.send({ error: error.toString() });
   }
 });
 export default reconcileRouter;

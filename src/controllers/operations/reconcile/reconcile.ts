@@ -435,7 +435,51 @@ async function checkNomuraTradesWithVcon(nomuraTrades: NomuraCashReconcileFileUp
         result += `App Price is ${priceApp}, Nomura Price is ${priceNomura}`;
       }
 
-      let object = { Ticker: ticker, "Trade Date App": tradeDateApp, "Settle Date App": settleDateApp, "Notional Amount App": notionalAmountApp, "Notional Amount Nomura": notionalAmountNomura, "App Price": priceApp, "Nomura Price": priceNomura, Result: result };
+      let settlementApp = parseFloat(tradeApp["Settlement Amount"]);
+      let settlementNomura = Math.abs(parseFloat(trade["Proceeds"]));
+
+      if (settlementApp != settlementNomura) {
+        result += `App Settlement Amount is ${settlementApp}, Nomura Settlement Amount is ${settlementNomura}`;
+      }
+
+      let principalApp = parseFloat(tradeApp["Principal"]);
+      let principalNomura = Math.abs(parseFloat(trade["Principle Amount"]));
+
+      if (principalApp != principalNomura) {
+        result += `App Principal Amount is ${principalApp}, Nomura Principal Amount is ${principalNomura}`;
+      }
+
+      let accruedApp = parseFloat(tradeApp["Accrued Interest"].toString().replace(/,/g, "")) || 0;
+      let accruedNomura = Math.abs(parseFloat(trade["Interest"]));
+
+      if (accruedApp != accruedNomura) {
+        result += `App Accrued Interest is ${accruedApp}, Nomura Accrued Interest is ${accruedNomura}`;
+      }
+
+      let object = {
+        "Triada Trade Id": triadaId,
+        Ticker: ticker,
+        Location: tradeApp["Location"],
+
+        "Trade Date App": tradeDateApp,
+        "Settle Date App": settleDateApp,
+
+        "Notional Amount App": notionalAmountApp,
+        "Notional Amount Nomura": notionalAmountNomura,
+
+        "App Price": priceApp,
+        "Nomura Price": priceNomura,
+
+        "App Settlement": settlementApp,
+        "Nomura Settlement": settlementNomura,
+
+        "App Principal": accruedApp,
+        "Nomura Principal": accruedNomura,
+
+        "App Accrued Interest": tradeApp["Accrued Interest"],
+
+        Result: result,
+      };
       results.push(object);
     }
   }

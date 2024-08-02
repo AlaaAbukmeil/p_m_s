@@ -202,7 +202,6 @@ export function convertNomuraDateToAppTradeDate(nomuraDate: string): string {
 
   // Convert the JavaScript Date to the application's trade date format using the assumed function
   const tradeDate = `${month}/${day}/${year}`;
-  console.log({ tradeDate });
 
   return tradeDate;
 }
