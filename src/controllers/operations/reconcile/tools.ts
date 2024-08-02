@@ -187,6 +187,7 @@ export async function findTrade(tradeType: string, tradeTriadaId: string): Promi
 }
 
 export function convertNomuraDateToAppTradeDate(nomuraDate: string): string {
+  nomuraDate = nomuraDate.toString();
   const year = parseInt(nomuraDate.slice(0, 4), 10);
   let month: any = parseInt(nomuraDate.slice(4, 6), 10); // Month is zero-based (0 = January)
   let day: any = parseInt(nomuraDate.slice(6, 8), 10);

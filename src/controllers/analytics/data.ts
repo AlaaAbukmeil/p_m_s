@@ -8,13 +8,12 @@ export async function insertPositionsInfo(positions: any[]): Promise<void> {
     const collection = database.collection("positions");
 
     for (const position of positions) {
-      const existingPosition = await collection.findOne({ ISIN: position.ISIN });
+      const result = await collection.updateOne({ ISIN: position.ISIN }, { $set: position }, { upsert: true });
 
-      if (!existingPosition) {
-        await collection.insertOne(position);
-        console.log(`Inserted position with ISIN: ${position.ISIN}`);
+      if (result.matchedCount > 0) {
+        console.log(`Updated position with ISIN: ${position.ISIN}`);
       } else {
-        console.log(`Position with ISIN: ${position.ISIN} already exists`);
+        console.log(`Inserted new position with ISIN: ${position.ISIN}`);
       }
     }
   } catch (error) {

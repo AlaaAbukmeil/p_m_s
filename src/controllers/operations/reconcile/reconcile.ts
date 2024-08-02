@@ -259,8 +259,7 @@ export async function reconcileNomuraCash({ path, link, collectionDate, start, e
 
       let tradesCheck = await checkNomuraTradesWithVcon(buySellRecords);
 
-      let finalResult = [...fxInterest, ...redeemped, ...couponPaymentsApp, ...couponPaymentsNomura.result, ...buySellProceeds];
-      return { finalResult, tradesCheck, error: null };
+      return { fxInterest, redeemped, couponPayments: [...couponPaymentsApp, ...couponPaymentsNomura.result], buySellProceeds, tradesCheck, error: null };
     }
   } catch (error: any) {
     console.log({ error });
@@ -343,7 +342,7 @@ export function checkIfCouponPaymentsAreSettleted(couponPaymentRecords: NomuraCa
       let appSum = 0;
       let nomuraSum = payments[isin].sum;
       let difference = appSum - nomuraSum;
-      let message = `Nomura Expected ${payments[isin].ticker} to pay ${payments[isin].sum} on ${payments[isin].settleDate}, App does not see this action`;
+      let message = `Nomura Expected ${payments[isin].ticker} to pay ${payments[isin].sum} on ${convertNomuraDateToAppTradeDate(payments[isin].settleDate.toString())}, App does not see this action`;
       let note = `${payments.payInKindAlert ? "This Position is Pay in Kind" : ""}`;
 
       let object = { Ticker: payments[isin].ticker, "App Sum": appSum, "Nomura Sum": nomuraSum, Difference: difference, Message: message, Note: note };
@@ -411,49 +410,49 @@ async function checkNomuraTradesWithVcon(nomuraTrades: NomuraCashReconcileFileUp
       let tradeDateNomura = convertNomuraDateToAppTradeDate(trade["Trade Date"].toString());
 
       if (tradeDateApp != tradeDateNomura) {
-        result += `App Trade Date is ${tradeDateApp}, Nomura Trade Date is ${tradeDateNomura}`;
+        result += `App Trade Date is ${tradeDateApp}, Nomura Trade Date is ${tradeDateNomura}/ `;
       }
 
       let settleDateApp = tradeApp["Settle Date"];
       let settleDateNomura = convertNomuraDateToAppTradeDate(trade["Settlement Date"].toString());
 
       if (settleDateApp != settleDateNomura) {
-        result += `App Settle Date is ${settleDateApp}, Nomura Settle Date is ${settleDateNomura}`;
+        result += `App Settle Date is ${settleDateApp}, Nomura Settle Date is ${settleDateNomura}/ `;
       }
 
       let notionalAmountApp = parseFloat(tradeApp["Notional Amount"]);
       let notionalAmountNomura = Math.abs(parseFloat(trade["Quantity"]));
 
       if (notionalAmountApp != notionalAmountNomura) {
-        result += `App Notional Amount is ${notionalAmountApp}, Nomura Notional Amount is ${notionalAmountNomura}`;
+        result += `App Notional Amount is ${notionalAmountApp}, Nomura Notional Amount is ${notionalAmountNomura}/ `;
       }
 
       let priceApp = parseFloat(tradeApp["Price"]);
       let priceNomura = parseFloat(trade["Price"]);
 
       if (priceApp != priceNomura) {
-        result += `App Price is ${priceApp}, Nomura Price is ${priceNomura}`;
+        result += `App Price is ${priceApp}, Nomura Price is ${priceNomura}/ `;
       }
 
       let settlementApp = parseFloat(tradeApp["Settlement Amount"]);
       let settlementNomura = Math.abs(parseFloat(trade["Proceeds"]));
 
       if (settlementApp != settlementNomura) {
-        result += `App Settlement Amount is ${settlementApp}, Nomura Settlement Amount is ${settlementNomura}`;
+        result += `App Settlement Amount is ${settlementApp}, Nomura Settlement Amount is ${settlementNomura}/ `;
       }
 
       let principalApp = parseFloat(tradeApp["Principal"]);
       let principalNomura = Math.abs(parseFloat(trade["Principle Amount"]));
 
       if (principalApp != principalNomura) {
-        result += `App Principal Amount is ${principalApp}, Nomura Principal Amount is ${principalNomura}`;
+        result += `App Principal Amount is ${principalApp}, Nomura Principal Amount is ${principalNomura}/ `;
       }
 
       let accruedApp = parseFloat(tradeApp["Accrued Interest"].toString().replace(/,/g, "")) || 0;
       let accruedNomura = Math.abs(parseFloat(trade["Interest"]));
 
       if (accruedApp != accruedNomura) {
-        result += `App Accrued Interest is ${accruedApp}, Nomura Accrued Interest is ${accruedNomura}`;
+        result += `App Accrued Interest is ${accruedApp}, Nomura Accrued Interest is ${accruedNomura}/ `;
       }
 
       let object = {
@@ -473,10 +472,11 @@ async function checkNomuraTradesWithVcon(nomuraTrades: NomuraCashReconcileFileUp
         "App Settlement": settlementApp,
         "Nomura Settlement": settlementNomura,
 
-        "App Principal": accruedApp,
-        "Nomura Principal": accruedNomura,
+        "App Principal": principalApp,
+        "Nomura Principal": principalNomura,
 
-        "App Accrued Interest": tradeApp["Accrued Interest"],
+        "App Accrued Interest": accruedApp,
+        "Nomura Accrued Interest": accruedNomura,
 
         Result: result,
       };

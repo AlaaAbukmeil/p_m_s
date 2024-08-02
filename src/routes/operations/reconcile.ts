@@ -93,8 +93,7 @@ reconcileRouter.post("/reconcile-cash", verifyToken, uploadToBucket.any(), async
     if (action.error) {
       res.send({ error: action.error });
     } else {
-      let link = await uploadArrayAndReturnFilePathTwoDifferentWorkbooks({ data1: action.finalResult, data2: action.tradesCheck, pathName: `nomura_cash_reconcile_${collectionDate}`, folderName: "reconcile_cash", type: "xlsx" });
-
+      let link = await uploadArrayAndReturnFilePathTwoDifferentWorkbooks({ fxInterest: action.fxInterest, redeemped: action.redeemped, couponPayments: action.couponPayments, buySellProceeds: action.buySellProceeds, tradesCheck: action.tradesCheck, pathName: `nomura_cash_reconcile_${collectionDate}`, folderName: "reconcile_cash", type: "xlsx" });
       let downloadEBlotName = bucket + link + "?authuser=2";
       res.send(downloadEBlotName);
     }

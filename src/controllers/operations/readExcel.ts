@@ -1,4 +1,4 @@
-import { NomuraCashReconcileFileUpload } from "../../models/reconcile";
+import { NomuraCashReconcileFileUpload, NomuraReconcileCashOutput } from "../../models/reconcile";
 import { CentralizedTrade } from "../../models/trades";
 import { insertPositionsInfo } from "../analytics/data";
 import { convertExcelDateToJSDate, generateRandomString, generateSignedUrl, getTradeDateYearTrades, storage } from "../common";
@@ -588,31 +588,41 @@ export async function uploadArrayAndReturnFilePath(data: any, pathName: string, 
 
   return "/" + fileName;
 }
-export async function uploadArrayAndReturnFilePathTwoDifferentWorkbooks({ data1, data2, pathName, folderName, type = "xlsx" }: { data1: any; data2: any; pathName: string; folderName: string; type: "xlsx" }) {
+export async function uploadArrayAndReturnFilePathTwoDifferentWorkbooks({ fxInterest, redeemped, couponPayments, buySellProceeds, tradesCheck, pathName, folderName, type = "xlsx" }: { fxInterest: NomuraReconcileCashOutput[]; redeemped: NomuraReconcileCashOutput[]; couponPayments: NomuraReconcileCashOutput[]; buySellProceeds: NomuraReconcileCashOutput[]; tradesCheck: NomuraReconcileCashOutput[]; pathName: string; folderName: string; type: "xlsx" }) {
   // Create a new Workbook
-  var wb = xlsx.utils.book_new();
-
-  // Create sheets from data1 and data2
-  let sheet1 = xlsx.utils.json_to_sheet(data1);
-  let sheet2 = xlsx.utils.json_to_sheet(data2);
-
-  // Name your sheets and append them to the workbook
-  xlsx.utils.book_append_sheet(wb, sheet1, "Sheet1");
-  xlsx.utils.book_append_sheet(wb, sheet2, "Sheet2");
-
-  // Export your excel
-  const buffer = xlsx.write(wb, { type: "buffer", bookType: type });
-  let randomString = generateRandomString(6);
-  let fileName = `${folderName}/${pathName.replace(/[!@#$%^&*(),.?":{}|<>\/\[\]\\;'\-=+`~]/g, "_")}_${randomString}.${type}`;
-
   try {
-    await uploadToGCloudBucket(buffer, process.env.BUCKET, fileName);
-  } catch (error) {
-    console.error(error);
-    throw new Error("Failed to upload the file to GCloud bucket");
-  }
+    var wb = xlsx.utils.book_new();
 
-  return "/" + fileName;
+    // Create sheets from data1 and data2
+    let sheet1 = xlsx.utils.json_to_sheet([...fxInterest]);
+    let sheet2 = xlsx.utils.json_to_sheet([...redeemped]);
+    let sheet3 = xlsx.utils.json_to_sheet([...couponPayments]);
+    let sheet4 = xlsx.utils.json_to_sheet([...buySellProceeds]);
+    let sheet5 = xlsx.utils.json_to_sheet([...tradesCheck]);
+
+    // Name your sheets and append them to the workbook
+    xlsx.utils.book_append_sheet(wb, sheet3, "Coupon Payments");
+    xlsx.utils.book_append_sheet(wb, sheet5, "Trades Nomura Comparison Vcon");
+    xlsx.utils.book_append_sheet(wb, sheet2, "Redeemption");
+    xlsx.utils.book_append_sheet(wb, sheet4, "Buy & Sell P&L");
+    xlsx.utils.book_append_sheet(wb, sheet1, "FX Interest");
+
+    // Export your excel
+    const buffer = xlsx.write(wb, { type: "buffer", bookType: type });
+    let randomString = generateRandomString(6);
+    let fileName = `${folderName}/${pathName.replace(/[!@#$%^&*(),.?":{}|<>\/\[\]\\;'\-=+`~]/g, "_")}_${randomString}.${type}`;
+
+    try {
+      await uploadToGCloudBucket(buffer, process.env.BUCKET, fileName);
+    } catch (error) {
+      console.error(error);
+      throw new Error("Failed to upload the file to GCloud bucket");
+    }
+
+    return "/" + fileName;
+  } catch (error: any) {
+    console.log({ errorExcel: error });
+  }
 }
 export async function uploadToGCloudBucketPDF(data: any, fileName: any) {
   const bucket = storage.bucket(process.env.BUCKET_PUBLIC);
