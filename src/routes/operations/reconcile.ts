@@ -1,7 +1,7 @@
 import { bucket, generateSignedUrl, verifyToken } from "../../controllers/common";
 import { NextFunction, Router } from "express";
 import { Request, Response } from "express";
-import { readMUFGReconcileFile, readNomuraCashReport, readNomuraReconcileFile, uploadArrayAndReturnFilePath } from "../../controllers/operations/readExcel";
+import { readMUFGReconcileFile, readNomuraCashReport, readNomuraReconcileFile, uploadArrayAndReturnFilePath, uploadArrayAndReturnFilePathTwoDifferentWorkbooks } from "../../controllers/operations/readExcel";
 import { reconcileMUFG, reconcileNomura, reconcileNomuraCash } from "../../controllers/operations/reconcile/reconcile";
 import { getPortfolioOnSpecificDate, getPrincipal } from "../../controllers/reports/portfolios";
 import { monthlyRlzdDate } from "../../controllers/reports/common";
@@ -79,6 +79,7 @@ reconcileRouter.post("/check-nomura", verifyToken, uploadToBucket.any(), async (
     res.send({ error: error.toString() });
   }
 });
+
 reconcileRouter.post("/reconcile-cash", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     const fileName = req.files[0].filename;
@@ -92,7 +93,8 @@ reconcileRouter.post("/reconcile-cash", verifyToken, uploadToBucket.any(), async
     if (action.error) {
       res.send({ error: action.error });
     } else {
-      let link = await uploadArrayAndReturnFilePath(action, `nomura_check_${collectionDate}`, "nomura_check");
+      let link = await uploadArrayAndReturnFilePathTwoDifferentWorkbooks({ data1: action.finalResult, data2: action.tradesCheck, pathName: `nomura_cash_reconcile_${collectionDate}`, folderName: "reconcile_cash", type: "xlsx" });
+
       let downloadEBlotName = bucket + link + "?authuser=2";
       res.send(downloadEBlotName);
     }

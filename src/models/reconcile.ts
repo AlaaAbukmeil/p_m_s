@@ -1,4 +1,4 @@
-export interface MufgReconcile {
+export interface MufgReconcileUpload {
   Sort1: string;
   Sort2: string;
   Sort3: string;
@@ -17,7 +17,7 @@ export interface MufgReconcile {
   TotalUnrealizedGainLoss: string;
 }
 
-export interface NomuraReconcile {
+export interface NomuraPositonReconcileUpload {
   "Account ID": string;
   "Account Name": string;
   "Long/Short Indicator": string;
@@ -60,7 +60,7 @@ export interface NomuraReconcile {
   "Stock Loan Financed Positions (USD)": string;
 }
 
-export interface NomuraCashReconcile {
+export interface NomuraCashReconcileFileUpload {
   "Account ID": string;
   "Account Name": string;
   "Balance Type": string;
@@ -133,11 +133,11 @@ export interface NomuraCashReconcile {
   "Result Of Option": string;
 }
 
-export interface NomuraReconcileCash {
-  ticker: string;
-  appSum: number;
-  nomuraSum: number;
-  difference: number;
-  message: string;
-  note: string;
+export interface NomuraReconcileCashOutput {
+  Ticker: string;
+  "App Sum": number;
+  "Nomura Sum": number;
+  Difference: number;
+  Message: string;
+  Note: string;
 }

@@ -1,8 +1,10 @@
 import { PositionBeforeFormatting, PositionInDB } from "../../../models/portfolio";
-import { NomuraCashReconcile } from "../../../models/reconcile";
-import { formatDateUS, swapMonthDay } from "../../common";
+import { NomuraCashReconcileFileUpload } from "../../../models/reconcile";
+import { CentralizedTrade } from "../../../models/trades";
+import { convertExcelDateToJSDate, formatDateUS, getTradeDateYearTrades, swapMonthDay } from "../../common";
 import { getAverageCost } from "../../reports/tools";
 import { getRlzdTrades } from "../../reports/trades";
+import { client } from "../../userManagement/auth";
 import { parseYYYYMMDDAndReturnMonth } from "../tools";
 
 export function getMtdMarkAndMtdNotional(portfolio: PositionBeforeFormatting[] | any[]) {
@@ -38,7 +40,7 @@ export function convertCurrencyToUSD(currency: string, rate: number) {
   }
 }
 
-export function getRlzdPNLNomuraProceeds(trades: NomuraCashReconcile[], mtdMark: any, mtdAmountInput: any): { documents: any[]; totalRow: { Rlzd: number; "Rlzd P&L Amount": number }; averageCostMTD: any; pnlDayRlzdHistory: { [key: string]: number }; fxRate: number; currency: string } {
+export function getRlzdPNLNomuraProceeds(trades: NomuraCashReconcileFileUpload[], mtdMark: any, mtdAmountInput: any): { documents: any[]; totalRow: { Rlzd: number; "Rlzd P&L Amount": number }; averageCostMTD: any; pnlDayRlzdHistory: { [key: string]: number }; fxRate: number; currency: string } {
   try {
     let documents = trades;
 
@@ -52,9 +54,7 @@ export function getRlzdPNLNomuraProceeds(trades: NomuraCashReconcile[], mtdMark:
     let fxRate = parseFloat(trades[0]["Fx Rate"]);
     let currency = trades[0]["Security Issue CCY"];
     fxRate = convertCurrencyToUSD(currency, fxRate);
-    if (documents[0]["Isin"] == "DE0001102531") {
-      console.log(documents[0]["Security Name"], documents[0]["Isin"], "start\n\n");
-    }
+
     for (let index = 0; index < documents.length; index++) {
       let trade = documents[index];
 
@@ -62,9 +62,7 @@ export function getRlzdPNLNomuraProceeds(trades: NomuraCashReconcile[], mtdMark:
       let tradeBS = trade["Trade Status"] == "BUY" ? 1 : -1;
       trade["Quantity"] = Math.abs(parseFloat(trade["Quantity"])).toString();
       let newNotional = parseFloat(trade["Quantity"]) * tradeBS;
-      if (documents[0]["Isin"] == "DE0001102531") {
-        console.log({ Quantity: trade["Quantity"], Price: trade["Price"], mtdMark, averageCost: averageCost, mtdAmount, multiplier, total, accumualteNotional, long: accumualteNotional + newNotional < accumualteNotional && accumualteNotional > 0 });
-      }
+
       if (accumualteNotional + newNotional < accumualteNotional && accumualteNotional > 0) {
         let rlzd = parseFloat(trade["Quantity"]) * (parseFloat(trade["Price"]) / multiplier - averageCost / multiplier);
 
@@ -81,11 +79,6 @@ export function getRlzdPNLNomuraProceeds(trades: NomuraCashReconcile[], mtdMark:
         accumualteNotional += newNotional;
       }
     }
-    if (documents[0]["Isin"] == "DE0001102531") {
-      console.log({ trades: trades.length, mtdMark, mtdAmountInput, total, averageCost, accumualteNotional });
-
-      console.log(documents[0]["Security Name"], "end\n\n");
-    }
 
     let totalRow: any = {
       Rlzd: "Total",
@@ -98,8 +91,8 @@ export function getRlzdPNLNomuraProceeds(trades: NomuraCashReconcile[], mtdMark:
     return { documents: [], totalRow: { Rlzd: 0, "Rlzd P&L Amount": 0 }, averageCostMTD: 0, pnlDayRlzdHistory: {}, fxRate: 1, currency: "" };
   }
 }
-export function getProcceeds(buySellRecords: NomuraCashReconcile[], collectionMonth: number) {
-  let result: { [key: string]: NomuraCashReconcile[] } = {};
+export function getProcceeds(buySellRecords: NomuraCashReconcileFileUpload[], collectionMonth: number) {
+  let result: { [key: string]: NomuraCashReconcileFileUpload[] } = {};
   for (let index = 0; index < buySellRecords.length; index++) {
     let month = parseYYYYMMDDAndReturnMonth(buySellRecords[index]["Trade Date"].toString());
     if (month == collectionMonth) {
@@ -151,7 +144,7 @@ export function getPositionAggregated(isin: string, portfolio: PositionInDB[], d
   let couponPayment = totalSettled * coupon * (1 / frequency);
   return { totalSettled, ticker, found, coupon, frequency, previousSettleDate, couponPayment, note };
 }
-export function sumUpCouponPaymentRecords(couponPaymentRecords: NomuraCashReconcile[]): { [key: string]: { sum: number; ticker: string; message: string; settleDate: string } } {
+export function sumUpCouponPaymentRecords(couponPaymentRecords: NomuraCashReconcileFileUpload[]): { [key: string]: { sum: number; ticker: string; message: string; settleDate: string } } {
   let result: { [key: string]: { sum: number; ticker: string; message: string; settleDate: string } } = {};
   for (let index = 0; index < couponPaymentRecords.length; index++) {
     let isin = couponPaymentRecords[index]["Isin"];
@@ -176,4 +169,40 @@ export async function getMTDRlzd(portfolio: PositionBeforeFormatting[] | any, da
     let trades = await getRlzdTrades(`vcons`, identifier, position["Location"], date, parseFloat(position["MTD Mark"]) * 100, portfolio[index]["MTD Notional"]);
     position["MTD Rlzd"] = trades.totalRow["Rlzd P&L Amount"].toString();
   }
+}
+export async function findTrade(tradeType: string, tradeTriadaId: string): Promise<CentralizedTrade[]> {
+  try {
+    const database = client.db("trades_v_2");
+    const reportCollection = database.collection(tradeType);
+    const query = { "Triada Trade Id": { $regex: tradeTriadaId, $options: "i" } };
+
+    const documents = await reportCollection.find(query).toArray();
+
+    return documents;
+  } catch (error: any) {
+    console.log(error);
+
+    return [];
+  }
+}
+
+export function convertNomuraDateToAppTradeDate(nomuraDate: string): string {
+  const year = parseInt(nomuraDate.slice(0, 4), 10);
+  let month: any = parseInt(nomuraDate.slice(4, 6), 10); // Month is zero-based (0 = January)
+  let day: any = parseInt(nomuraDate.slice(6, 8), 10);
+
+  if (month < 10) {
+    month = "0" + month;
+  }
+  if (day < 10) {
+    day = "0" + day;
+  }
+
+  // Create a JavaScript Date object
+
+  // Convert the JavaScript Date to the application's trade date format using the assumed function
+  const tradeDate = `${month}/${day}/${year}`;
+  console.log({ tradeDate });
+
+  return tradeDate;
 }

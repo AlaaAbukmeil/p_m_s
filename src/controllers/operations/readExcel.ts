@@ -1,4 +1,4 @@
-import { NomuraCashReconcile } from "../../models/reconcile";
+import { NomuraCashReconcileFileUpload } from "../../models/reconcile";
 import { CentralizedTrade } from "../../models/trades";
 import { insertPositionsInfo } from "../analytics/data";
 import { convertExcelDateToJSDate, generateRandomString, generateSignedUrl, getTradeDateYearTrades, storage } from "../common";
@@ -393,7 +393,7 @@ export async function readPricingSheet(path: string) {
     return reformedData;
   }
 }
-export async function readNomuraCashReport(path: string): Promise<{ error: string; records: [] } | { error: null; records: NomuraCashReconcile[] }> {
+export async function readNomuraCashReport(path: string): Promise<{ error: string; records: [] } | { error: null; records: NomuraCashReconcileFileUpload[] }> {
   try {
     const response = await axios.get(path, { responseType: "arraybuffer" });
 
@@ -500,10 +500,10 @@ export async function readNomuraCashReport(path: string): Promise<{ error: strin
         header: headers, // Use the second row as headers
       });
 
-      return { records: data as NomuraCashReconcile[], error: null };
+      return { records: data as NomuraCashReconcileFileUpload[], error: null };
     }
-  } catch (error:any) {
-    console.log({error})
+  } catch (error: any) {
+    console.log({ error });
     return {
       error: error.message,
       records: [],
@@ -585,6 +585,32 @@ export async function uploadArrayAndReturnFilePath(data: any, pathName: string, 
   let fileName = `${folderName}/${pathName.replace(/[!@#$%^&*(),.?":{}|<>\/\[\]\\;'\-=+`~]/g, "_")}_${randomString}.${type}`;
 
   uploadToGCloudBucket(buffer, process.env.BUCKET, fileName).then().catch(console.error);
+
+  return "/" + fileName;
+}
+export async function uploadArrayAndReturnFilePathTwoDifferentWorkbooks({ data1, data2, pathName, folderName, type = "xlsx" }: { data1: any; data2: any; pathName: string; folderName: string; type: "xlsx" }) {
+  // Create a new Workbook
+  var wb = xlsx.utils.book_new();
+
+  // Create sheets from data1 and data2
+  let sheet1 = xlsx.utils.json_to_sheet(data1);
+  let sheet2 = xlsx.utils.json_to_sheet(data2);
+
+  // Name your sheets and append them to the workbook
+  xlsx.utils.book_append_sheet(wb, sheet1, "Sheet1");
+  xlsx.utils.book_append_sheet(wb, sheet2, "Sheet2");
+
+  // Export your excel
+  const buffer = xlsx.write(wb, { type: "buffer", bookType: type });
+  let randomString = generateRandomString(6);
+  let fileName = `${folderName}/${pathName.replace(/[!@#$%^&*(),.?":{}|<>\/\[\]\\;'\-=+`~]/g, "_")}_${randomString}.${type}`;
+
+  try {
+    await uploadToGCloudBucket(buffer, process.env.BUCKET, fileName);
+  } catch (error) {
+    console.error(error);
+    throw new Error("Failed to upload the file to GCloud bucket");
+  }
 
   return "/" + fileName;
 }

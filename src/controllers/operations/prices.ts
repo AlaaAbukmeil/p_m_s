@@ -34,6 +34,9 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
 
           for (let index = 0; index < object.length; index++) {
             let position = object[index];
+            if (position["Type"] == "FX") {
+              continue;
+            }
             let divider;
             try {
               divider = position["ISIN"].includes("IB") || position["Type"].includes("CDS") || position["Type"].includes("EQT") ? 1 : 100;
