@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb";
 import { client } from "../userManagement/auth";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
-import { CentralizedTrade } from "../../models/trades";
+import { CentralizedTrade, NewIssue } from "../../models/trades";
 import { insertEditLogs } from "./logs";
 
 export async function getAllTradesForSpecificPosition(tradeType: string, isin: string, location: string, date: string) {
@@ -429,5 +429,83 @@ export async function numberOfNewTrades(): Promise<any> {
     // The insertOne operation returns an InsertOneResult object
   } catch (error: any) {
     return { error: error.message }; // Return the error message
+  }
+}
+
+async function getNewTrades(): Promise<CentralizedTrade[]> {
+  try {
+    // Connect to the MongoDB client
+
+    // Access the 'structure' database
+    const database = client.db("trades_v_2");
+
+    // Access the collection named by the 'customerId' parameter
+    const collection = database.collection("new_trades");
+
+    // Perform your operations, such as find documents in the collection
+    // This is an example operation that fetches all documents in the collection
+    // Empty query object means "match all documents"
+    let results = await collection.find({ Resolved: "False" }).sort({ timestamp: -1 }).toArray();
+    for (let index = 0; index < results.length; index++) {
+      results[index]["App Check Test"] = "This was inputted by front office and it did not match any new vcon";
+    }
+
+    // The 'results' variable now contains an array of documents from the collection
+    return results;
+  } catch (error) {
+    // Handle any errors that occurred during the operation
+    console.error("An error occurred while retrieving data from MongoDB:", error);
+    return [];
+  }
+}
+
+export function matchVconToNewTrade(newVcons: CentralizedTrade[], newTrades: CentralizedTrade[]) {
+  let newTradeIdsThatMatch = [];
+  for (let i = 0; i < newVcons.length; i++) {
+    let newVconTrade = newVcons[i];
+    for (let j = 0; j < newTrades.length; j++) {
+      let newTrade = newTrades[j];
+      let notionalCondition = parseFloat(newVconTrade["Notional Amount"].toString().replace(/,/g, "")) == parseFloat(newTrade["Notional Amount"].toString().replace(/,/g, ""));
+      let buySell = newVconTrade["B/S"] == newTrade["B/S"];
+      let tradeDate = newVconTrade["Trade Date"] == newTrade["Trade Date"];
+      let settleDate = newVconTrade["Settle Date"] == newTrade["Settle Date"];
+      let currency = newVconTrade["Currency"] == newTrade["Currency"];
+      let isin = newVconTrade["ISIN"] == newTrade["ISIN"];
+      let price = parseFloat(newVconTrade["Price"]) == parseFloat(newTrade["Price"]);
+
+      if (notionalCondition && buySell && tradeDate && settleDate && currency && isin && price) {
+        let object = { vconTriadaId: newVconTrade["Triada Trade Id"], newTradeTriadaId: newTrade["Triada Trade Id"] };
+        newTradeIdsThatMatch.push(object);
+        break;
+      }
+    }
+  }
+  return newTradeIdsThatMatch;
+}
+
+export async function updateMatchedVcons(newVcons: CentralizedTrade[]) {
+  try {
+    let newTrades = await getNewTrades();
+    let matchedIds = matchVconToNewTrade(newVcons, newTrades);
+
+    // Access the 'structure' database
+    const database = client.db("trades_v_2");
+
+    // Access the collection named by the 'customerId' parameter
+    const collection = database.collection("new_trades");
+
+    // Iterate over the issues array and update each document
+    for (const newTrade of matchedIds) {
+      await collection.updateOne(
+        { "Triada Trade Id": newTrade["newTradeTriadaId"] }, // filter by "triada id"
+        { $set: { Resolved: "True" } } // update operation
+      );
+    }
+
+    console.log("Documents updated successfully.");
+  } catch (error: any) {
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    await insertEditLogs([errorMessage], "Errors", dateTime, "updateMatchedVcons", "controllers/operations/trades.ts");
   }
 }

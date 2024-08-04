@@ -6,7 +6,7 @@ import { readCentralizedEBlot, readEditInput, readPricingSheet } from "./readExc
 import { findTradeRecord, formatUpdatedPositions, getAverageCost, getCollectionName, getEarliestCollectionName, parseBondIdentifier } from "../reports/tools";
 import { PinnedPosition, Position } from "../../models/position";
 import { CentralizedTrade } from "../../models/trades";
-import { modifyTradesDueToRecalculate } from "./trades";
+import { modifyTradesDueToRecalculate, updateMatchedVcons } from "./trades";
 import { insertEditLogs } from "./logs";
 import { getSecurityInPortfolioById } from "./tools";
 import { swapMonthDay } from "../common";
@@ -313,6 +313,11 @@ export async function updatePositionPortfolio(
       let updatedPortfolio = formatUpdatedPositions(positions, portfolio, "Last Upload Trade");
       let insertion = await insertTradesInPortfolio(updatedPortfolio.updatedPortfolio);
       let action1 = await insertTrade(trades.vconTrades, "vcons");
+      try {
+        await updateMatchedVcons(trades.vconTrades);
+      } catch (error) {
+        console.log({ UploadTrade: error });
+      }
       let action2 = await insertTrade(trades.ibTrades, "ib");
       let action3 = await insertTrade(trades.emsxTrades, "emsx");
 
@@ -593,7 +598,6 @@ export async function editPosition(editedPosition: any, date: string) {
     }
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     portfolio[positionIndex] = positionInPortfolio;
-    // console.log(positionInPortfolio, `portfolio-${earliestPortfolioName.predecessorDate}`, "portfolio edited name");
     await insertEditLogs(changes, editedPosition["Event Type"], dateTime, editedPosition["Edit Note"], positionInPortfolio["BB Ticker"] + " " + positionInPortfolio["Location"]);
 
     let action = await insertTradesInPortfolioAtASpecificDateBasedOnID(portfolio, `portfolio-${earliestPortfolioName.predecessorDate}`);

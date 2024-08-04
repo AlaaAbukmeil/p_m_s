@@ -84,3 +84,14 @@ export interface CentralizedTrade {
   "Broker Email Status": string;
   "App Check Test": string;
 }
+export interface NewIssue {
+  "BB Ticker": string;
+  "Issue Price": string;
+  "Settle Date": string;
+  ISIN: string;
+  Currency: string;
+  emailId: string;
+  "Reoffer Price": string | null;
+  "Treasury & Spread": string;
+  "App Check Test": string;
+}
