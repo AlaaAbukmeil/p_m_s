@@ -1,8 +1,8 @@
 import { PositionBeforeFormatting, PositionInDB } from "../../../models/portfolio";
-import { MufgReconcileUpload, NomuraCashReconcileFileUpload, NomuraPositonReconcileUpload, NomuraReconcileCashOutput } from "../../../models/reconcile";
+import { MufgReconcileUpload, NomuraCashReconcileFileUpload, NomuraPositonReconcileUpload, NomuraReconcileCashOutput, NomuraReconcileCashOutputCoupon, NomuraReconcileCashOutputRedeemption } from "../../../models/reconcile";
 import { getAllDatesSinceLastMonthLastDay, getDateTimeInMongoDBCollectionFormat } from "../../reports/common";
 import { getMTDParams, getPortfolioOnSpecificDate } from "../../reports/portfolios";
-import { getEarliestCollectionName } from "../../reports/tools";
+import { getEarliestCollectionName, parseBondIdentifierNomura } from "../../reports/tools";
 import { getHistoricalPortfolio } from "../positions";
 import { readNomuraCashReport } from "../readExcel";
 import { formatDateToIso, parseYYYYMMDDAndReturnMonth } from "../tools";
@@ -218,16 +218,7 @@ export async function reconcileNomuraCash({ path, link, collectionDate, start, e
       let portfolio: PositionInDB[] = [];
       let action = await getPortfolioOnSpecificDate(collectionDate, "true");
 
-      let previousMonthDates = getAllDatesSinceLastMonthLastDay(new Date(collectionDate));
-      let lastMonthLastCollectionName = await getEarliestCollectionName(previousMonthDates[0] + " 23:59");
-      let lastMonthPortfolio = await getHistoricalPortfolio(lastMonthLastCollectionName.predecessorDate);
-
       portfolio = action.portfolio;
-      portfolio = getMTDParams(portfolio, lastMonthPortfolio, collectionDate);
-
-      await getMTDRlzd(portfolio, collectionDate);
-
-      let collectionMonth = new Date(collectionDate).getMonth() + 1;
 
       let interestRecords: NomuraCashReconcileFileUpload[] = [];
       let couponPaymentRecords: NomuraCashReconcileFileUpload[] = [];
@@ -255,11 +246,10 @@ export async function reconcileNomuraCash({ path, link, collectionDate, start, e
       let couponPaymentsNomura = checkIfCouponPaymentsAreSettleted(couponPaymentRecords, finalPortfolioWithPositionsThatWillPay, collectionDate);
 
       let couponPaymentsApp = checkPositionsThatShouldPayButDoNotExistInNomura(finalPortfolioWithPositionsThatWillPay, couponPaymentsNomura.isinsFound, collectionDate);
-      let buySellProceeds = calculateNomuraMTDRlzdPNL(portfolio, buySellRecords, collectionMonth);
 
       let tradesCheck = await checkNomuraTradesWithVcon(buySellRecords);
 
-      return { fxInterest, redeemped, couponPayments: [...couponPaymentsApp, ...couponPaymentsNomura.result], buySellProceeds, tradesCheck, error: null };
+      return { fxInterest, redeemped, couponPayments: [...couponPaymentsApp, ...couponPaymentsNomura.result], tradesCheck, error: null };
     }
   } catch (error: any) {
     console.log({ error });
@@ -281,7 +271,7 @@ export function getFXInterest(fxInterestRcords: NomuraCashReconcileFileUpload[])
   return [object];
 }
 
-export function checkIfPositionsGotRedeemped(redeemptionRecords: NomuraCashReconcileFileUpload[], portfolio: PositionInDB[]): NomuraReconcileCashOutput[] {
+export function checkIfPositionsGotRedeemped(redeemptionRecords: NomuraCashReconcileFileUpload[], portfolio: PositionInDB[]): NomuraReconcileCashOutputRedeemption[] {
   let result = [];
   for (let index = 0; index < redeemptionRecords.length; index++) {
     let isin = redeemptionRecords[index]["Isin"];
@@ -290,15 +280,38 @@ export function checkIfPositionsGotRedeemped(redeemptionRecords: NomuraCashRecon
     let position = portfolio.find((position: PositionInDB, index: number) => position["ISIN"] == isin);
     if (position) {
       if (parseFloat(position["Notional Amount"]) == 0) {
-        let object = { Ticker: ticker, "App Sum": parseFloat(position["Notional Amount"]), Difference: 0, "Nomura Sum": 0, Note: "Redeemption", Message: "Successful" };
-
+        let object = {
+          Ticker: ticker,
+          ISIN: position["ISIN"],
+          Location: position["Location"],
+          Currency: position["Currency"],
+          "Notional Amount Triada": parseFloat(position["Notional Amount"]),
+          Difference: 0,
+          Result: "Successful",
+        };
         result.push(object);
       } else {
-        let object = { Ticker: ticker, "App Sum": parseFloat(position["Notional Amount"]), Difference: 0, "Nomura Sum": 0, Note: "Redeemption", Message: "Position is not redeemped in the app" };
+        let object = {
+          Ticker: ticker,
+          ISIN: position["ISIN"],
+          Location: position["Location"],
+          Currency: position["Currency"],
+          "Notional Amount Triada": parseFloat(position["Notional Amount"]),
+          Difference: 0,
+          Result: "Position is not redeemped in the app",
+        };
         result.push(object);
       }
     } else {
-      let object = { Ticker: ticker, "App Sum": 0, "Nomura Sum": 0, Difference: 0, Note: "Redeemption", Message: "Position can't be found in the app" };
+      let object = {
+        Ticker: ticker,
+        ISIN: redeemptionRecords[index]["Isin"],
+        Location: "",
+        Currency: redeemptionRecords[index]["Security Issue CCY"],
+        "Notional Amount Triada": 0,
+        Difference: 0,
+        Result: "Position can't be found in the app",
+      };
       result.push(object);
     }
   }
@@ -321,9 +334,9 @@ export function positionsThatWillPayCoupon({ start, end, portfolio }: { start: n
   return finalPortfolioWithPositionsThatWillPay;
 }
 
-export function checkIfCouponPaymentsAreSettleted(couponPaymentRecords: NomuraCashReconcileFileUpload[], portfolio: PositionInDB[], collectionDate: string): { result: NomuraReconcileCashOutput[]; isinsFound: string[] } {
+export function checkIfCouponPaymentsAreSettleted(couponPaymentRecords: NomuraCashReconcileFileUpload[], portfolio: PositionInDB[], collectionDate: string): { result: NomuraReconcileCashOutputCoupon[]; isinsFound: string[] } {
   let result = [];
-  let isinsFound = [];
+  let isinsFound: any = new Set();
   let payments = sumUpCouponPaymentRecords(couponPaymentRecords);
 
   for (let isin in payments) {
@@ -335,8 +348,25 @@ export function checkIfCouponPaymentsAreSettleted(couponPaymentRecords: NomuraCa
       let message = `Nomura Expected ${position.ticker} to pay ${payments[isin].sum} on ${position.previousSettleDate}, App Expected ${position.ticker} to pay ${position.couponPayment} on ${position.previousSettleDate}`;
       let note = `${payments.payInKindAlert ? "This Position is Pay in Kind" : ""} ${position.note}`;
       let ticker = position.ticker;
-      let object = { Ticker: ticker, "App Sum": appSum, "Nomura Sum": nomuraSum, Difference: difference, Message: message, Note: note };
-      isinsFound.push(isin);
+
+      let object = {
+        Ticker: ticker,
+        ISIN: position.isin,
+        Location: position.locations,
+        Currency: position.currency,
+        "Coupon Frequency": position.couponFrequency,
+        "Settle Date BBG": position.previousSettleDate,
+        "Coupon Rate": position.coupon,
+        "Notional Amount Triada": position.notional,
+        "Nomura Cash Coupon Settlement Amount “REC”": nomuraSum,
+        "Nomura Cash Coupon Trade Date": payments[isin].tradeDate,
+        "Nomura Cash Coupon Settlement Date": payments[isin].settleDate,
+        "Triada Expected Cash Payment Amount": appSum,
+        Difference: difference,
+        Result: difference == 0 ? "SUCCESS" : message + " && " + note,
+      };
+
+      isinsFound.add(isin);
       result.push(object);
     } else {
       let appSum = 0;
@@ -345,21 +375,38 @@ export function checkIfCouponPaymentsAreSettleted(couponPaymentRecords: NomuraCa
       let message = `Nomura Expected ${payments[isin].ticker} to pay ${payments[isin].sum} on ${convertNomuraDateToAppTradeDate(payments[isin].settleDate.toString())}, App does not see this action`;
       let note = `${payments.payInKindAlert ? "This Position is Pay in Kind" : ""}`;
 
-      let object = { Ticker: payments[isin].ticker, "App Sum": appSum, "Nomura Sum": nomuraSum, Difference: difference, Message: message, Note: note };
+      let object = {
+        Ticker: payments[isin].ticker,
+        ISIN: isin,
+        Location: "",
+        Currency: payments[isin].currency,
+
+        "Coupon Frequency": "",
+        "Settle Date BBG": "",
+        "Coupon Rate": parseBondIdentifierNomura(payments[isin].ticker),
+        "Notional Amount Triada": 0,
+        "Nomura Cash Coupon Settlement Amount “REC”": nomuraSum,
+        "Nomura Cash Coupon Trade Date": payments[isin].tradeDate,
+        "Nomura Cash Coupon Settlement Date": payments[isin].settleDate,
+        "Triada Expected Cash Payment Amount": appSum,
+        Difference: difference,
+        Result: difference == 0 ? "SUCCESS" : message + " && " + note,
+      };
+
       result.push(object);
     }
   }
-  return { result, isinsFound };
+  return { result, isinsFound: [...isinsFound] };
 }
 
-export function checkPositionsThatShouldPayButDoNotExistInNomura(portfolio: PositionInDB[], isinFound: string[], collectionDate: string): NomuraReconcileCashOutput[] {
+export function checkPositionsThatShouldPayButDoNotExistInNomura(portfolio: PositionInDB[], isinFound: string[], collectionDate: string): NomuraReconcileCashOutputCoupon[] {
   let result = [];
-
+  let isinMapped: string[] = [];
   for (let index = 0; index < portfolio.length; index++) {
     const position = portfolio[index];
-    if (isinFound.includes(position["ISIN"])) {
+    if (isinFound.includes(position["ISIN"]) || isinMapped.includes(position["ISIN"])) {
     } else {
-      let aggregates = getPositionAggregated(position["ISIN"], portfolio, collectionDate);
+      let aggregates = getPositionAggregated(position["ISIN"].trim(), portfolio, collectionDate);
 
       if (aggregates.couponPayment) {
         let appSum = aggregates.couponPayment;
@@ -368,8 +415,25 @@ export function checkPositionsThatShouldPayButDoNotExistInNomura(portfolio: Posi
         let message = `App Expected ${aggregates.ticker} to pay ${aggregates.couponPayment} on ${aggregates.previousSettleDate} but could not find it in nomura`;
         let note = aggregates.note;
         let ticker = aggregates.ticker;
-        let object = { Ticker: ticker, "App Sum": appSum, "Nomura Sum": nomuraSum, Difference: difference, Message: message, Note: note };
+        let object = {
+          Ticker: ticker,
+          ISIN: aggregates.isin,
+          Location: aggregates.locations,
+          Currency: aggregates.currency,
+          "Coupon Frequency": aggregates.couponFrequency,
+          "Settle Date BBG": aggregates.previousSettleDate,
+          "Coupon Rate": aggregates.coupon,
+          "Notional Amount Triada": aggregates.notional,
+          "Nomura Cash Coupon Settlement Amount “REC”": nomuraSum,
+          "Nomura Cash Coupon Trade Date": "",
+          "Nomura Cash Coupon Settlement Date": "",
+          "Triada Expected Cash Payment Amount": appSum,
+          Difference: difference,
+          Result: difference == 0 ? "SUCCESS" : message + " && " + note,
+        };
+
         result.push(object);
+        isinMapped.push(position["ISIN"]);
       }
     }
   }
@@ -478,7 +542,7 @@ async function checkNomuraTradesWithVcon(nomuraTrades: NomuraCashReconcileFileUp
         "App Accrued Interest": accruedApp,
         "Nomura Accrued Interest": accruedNomura,
 
-        Result: result,
+        Result: settlementApp != settlementNomura ? result : "",
       };
       results.push(object);
     }

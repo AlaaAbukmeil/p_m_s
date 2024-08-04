@@ -588,23 +588,21 @@ export async function uploadArrayAndReturnFilePath(data: any, pathName: string, 
 
   return "/" + fileName;
 }
-export async function uploadArrayAndReturnFilePathTwoDifferentWorkbooks({ fxInterest, redeemped, couponPayments, buySellProceeds, tradesCheck, pathName, folderName, type = "xlsx" }: { fxInterest: NomuraReconcileCashOutput[]; redeemped: NomuraReconcileCashOutput[]; couponPayments: NomuraReconcileCashOutput[]; buySellProceeds: NomuraReconcileCashOutput[]; tradesCheck: NomuraReconcileCashOutput[]; pathName: string; folderName: string; type: "xlsx" }) {
+export async function uploadArrayAndReturnFilePathTwoDifferentWorkbooks({ fxInterest, redeemped, couponPayments, tradesCheck, pathName, folderName, type = "xlsx" }: { fxInterest: NomuraReconcileCashOutput[]; redeemped: NomuraReconcileCashOutput[]; couponPayments: NomuraReconcileCashOutput[]; tradesCheck: NomuraReconcileCashOutput[]; pathName: string; folderName: string; type: "xlsx" }) {
   // Create a new Workbook
   try {
     var wb = xlsx.utils.book_new();
-
+    console.log(typeof fxInterest, typeof redeemped, typeof couponPayments, typeof tradesCheck);
     // Create sheets from data1 and data2
     let sheet1 = xlsx.utils.json_to_sheet([...fxInterest]);
     let sheet2 = xlsx.utils.json_to_sheet([...redeemped]);
     let sheet3 = xlsx.utils.json_to_sheet([...couponPayments]);
-    let sheet4 = xlsx.utils.json_to_sheet([...buySellProceeds]);
     let sheet5 = xlsx.utils.json_to_sheet([...tradesCheck]);
 
     // Name your sheets and append them to the workbook
     xlsx.utils.book_append_sheet(wb, sheet3, "Coupon Payments");
     xlsx.utils.book_append_sheet(wb, sheet5, "Trades Nomura Comparison Vcon");
     xlsx.utils.book_append_sheet(wb, sheet2, "Redeemption");
-    xlsx.utils.book_append_sheet(wb, sheet4, "Buy & Sell P&L");
     xlsx.utils.book_append_sheet(wb, sheet1, "FX Interest");
 
     // Export your excel

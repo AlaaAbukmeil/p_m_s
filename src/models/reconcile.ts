@@ -141,3 +141,31 @@ export interface NomuraReconcileCashOutput {
   Message: string;
   Note: string;
 }
+
+export interface NomuraReconcileCashOutputCoupon {
+  Ticker: string;
+  ISIN: string;
+  Location: string;
+  Currency: string;
+  "Coupon Frequency": string;
+  "Settle Date BBG": string;
+  "Coupon Rate": number;
+  "Notional Amount Triada": number;
+  "Nomura Cash Coupon Settlement Amount “REC”": number;
+  "Nomura Cash Coupon Trade Date": string;
+  "Nomura Cash Coupon Settlement Date": string;
+  "Triada Expected Cash Payment Amount": number;
+  Difference: number;
+
+  Result: string;
+}
+export interface NomuraReconcileCashOutputRedeemption {
+  Ticker: string;
+  ISIN: string;
+  Location: string;
+  Currency: string;
+  "Notional Amount Triada": number;
+  Difference: number;
+
+  Result: string;
+}

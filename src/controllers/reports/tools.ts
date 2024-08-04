@@ -117,6 +117,54 @@ export function parseBondIdentifier(identifier: any): any {
     return { rate: 0, date: 0 };
   }
 }
+export function parseBondIdentifierNomura(identifier: any): any {
+  // Split the identifier into components
+  try {
+    if (identifier) {
+      const components: any = identifier.split(" ");
+      let dateIndex = 2;
+      const fractionMap: any = {
+        "1/8": 0.125,
+        "1/4": 0.25,
+        "1/3": 0.3333333333333333,
+        "3/8": 0.375,
+        "1/2": 0.5,
+        "5/8": 0.625,
+        "2/3": 0.6666666666666666,
+        "3/4": 0.75,
+        "7/8": 0.875,
+      };
+      try {
+        let rate;
+        if (components.length > 2) {
+          rate = parseFloat(components[1].replace("V", "").trim()) ? parseFloat(components[1].replace("V", "").trim()) : "";
+          // console.log(rate, "reate before");
+          if (rate) {
+            let fractions = Object.keys(fractionMap);
+            for (let index = 0; index < fractions.length; index++) {
+              let fraction = fractions[index];
+              if (components.includes(fraction)) {
+                rate += fractionMap[fraction];
+                dateIndex += 1;
+              }
+            }
+          }
+
+          return { rate: rate };
+        } else {
+          return { rate: 0 };
+        }
+      } catch (error: any) {
+        console.log(error);
+        return { rate: 0 };
+      }
+    } else {
+      return { rate: 0 };
+    }
+  } catch (error) {
+    return { rate: 0 };
+  }
+}
 
 export function getSettlementDateYear(date1: string, date2: string) {
   // Parse the month and year from the first date
@@ -143,11 +191,11 @@ export function findTradeRecord(trades: CentralizedTrade[], rowId: any): number 
   return index !== -1 ? index : null;
 }
 
-export function formatUpdatedPositions(positions: any, portfolio: any, lastUpdatedDescription: string): { updatedPortfolio: any[]; positionsThatDoNotExistsNames: { [key: string]: { notional: number; location: string;} }; positionsThatGotUpdated: any[]; positionsThatDoNotExists: any[] } {
+export function formatUpdatedPositions(positions: any, portfolio: any, lastUpdatedDescription: string): { updatedPortfolio: any[]; positionsThatDoNotExistsNames: { [key: string]: { notional: number; location: string } }; positionsThatGotUpdated: any[]; positionsThatDoNotExists: any[] } {
   let positionsIndexThatExists = [];
   let positionsThatGotUpdated = [];
   let positionsThatDoNotExists = [];
-  let positionsThatDoNotExistsNames: { [key: string]: { notional: number; location: string; } } = {};
+  let positionsThatDoNotExistsNames: { [key: string]: { notional: number; location: string } } = {};
   for (let indexPositions = 0; indexPositions < positions.length; indexPositions++) {
     const position = positions[indexPositions];
     for (let indexPortfolio = 0; indexPortfolio < portfolio.length; indexPortfolio++) {
