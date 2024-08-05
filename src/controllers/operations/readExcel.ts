@@ -366,7 +366,7 @@ export async function readPricingSheet(path: string) {
     "Mid Price +1 Spread",
     "CR01",
   ];
-  const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : (wrongHeaders = `app expected ${headers[0][index]} and got ${value}`))); //headersFormat.length === headers[2].length && headersFormat.every((value, index) => value === headers[2][index]);
+  const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : (wrongHeaders = `app expected ${value} and got ${headers[0][index]}`))); //headersFormat.length === headers[2].length && headersFormat.every((value, index) => value === headers[2][index]);
   if (!arraysAreEqual) {
     return {
       error: "Incompatible format, please upload pricing sheet xlsx/csv file",
@@ -480,7 +480,7 @@ export async function readNomuraCashReport(path: string): Promise<{ error: strin
     ];
 
     let wrongHeaders = null;
-    const arraysAreEqual = headersFormat.every((value, index) => (value === headers[index] ? true : (wrongHeaders = `app expected ${headers[index]} and got ${value}`)));
+    const arraysAreEqual = headersFormat.every((value, index) => (value === headers[index] ? true : (wrongHeaders = `app expected ${value} and got ${headers[index]}`)));
 
     if (!arraysAreEqual) {
       return {
@@ -528,7 +528,7 @@ export async function readUsersSheet(path: string) {
   let wrongHeaders = null;
   const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
   const headersFormat = ["Name", "Email", "Share Class"];
-  const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : (wrongHeaders = `app expected ${headers[0][index]} and got ${value}`))); //headersFormat.length === headers[2].length && headersFormat.every((value, index) => value === headers[2][index]);
+  const arraysAreEqual = headersFormat.every((value, index) => (value === headers[0][index] ? true : (wrongHeaders = `app expected ${value} and got ${headers[0][index]}`))); //headersFormat.length === headers[2].length && headersFormat.every((value, index) => value === headers[2][index]);
   if (!arraysAreEqual) {
     return {
       error: "Incompatible format, please upload users sheet xlsx/csv file",

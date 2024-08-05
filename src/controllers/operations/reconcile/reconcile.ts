@@ -6,7 +6,7 @@ import { getEarliestCollectionName, parseBondIdentifierNomura } from "../../repo
 import { getHistoricalPortfolio } from "../positions";
 import { readNomuraCashReport } from "../readExcel";
 import { formatDateToIso, parseYYYYMMDDAndReturnMonth } from "../tools";
-import { convertNomuraDateToAppTradeDate, findTrade, getMTDRlzd, getMtdMarkAndMtdNotional, getPositionAggregated, getProcceeds, getRlzdPNLNomuraProceeds, sumUpCouponPaymentRecords } from "./tools";
+import { convertNomuraDateToAppTradeDate, findTrade, getMTDRlzd, getMtdMarkAndMtdNotional, getPositionAggregated, getProcceeds, getRlzdPNLNomuraProceeds, sumUpCouponPaymentRecords, switchCorrectedTrades } from "./tools";
 
 export async function reconcileMUFG(MUFGData: MufgReconcileUpload[], portfolioInput: PositionInDB[]) {
   try {
@@ -224,6 +224,8 @@ export async function reconcileNomuraCash({ path, link, collectionDate, start, e
       let couponPaymentRecords: NomuraCashReconcileFileUpload[] = [];
       let redeemptionRecords: NomuraCashReconcileFileUpload[] = [];
       let buySellRecords: NomuraCashReconcileFileUpload[] = [];
+      let buySellCorrectRecords: NomuraCashReconcileFileUpload[] = [];
+
       for (let index = 0; index < records.length; index++) {
         const record = records[index];
         let type = record["Trade Status"];
@@ -235,9 +237,11 @@ export async function reconcileNomuraCash({ path, link, collectionDate, start, e
           redeemptionRecords.push(record);
         } else if (type == "BUY" || type == "SELL") {
           buySellRecords.push(record);
+        } else if (type == "BUY / Correct" || type == "SELL / Correct") {
+          buySellCorrectRecords.push(record);
         }
       }
-
+      switchCorrectedTrades(buySellRecords, buySellCorrectRecords);
       let fxInterest = getFXInterest(interestRecords);
       let redeemped = checkIfPositionsGotRedeemped(redeemptionRecords, portfolio);
 
@@ -345,7 +349,7 @@ export function checkIfCouponPaymentsAreSettleted(couponPaymentRecords: NomuraCa
       let appSum = position.couponPayment;
       let nomuraSum = payments[isin].sum;
       let difference = appSum - nomuraSum;
-      let message = `Nomura Expected ${position.ticker} to pay ${payments[isin].sum} on ${position.previousSettleDate}, App Expected ${position.ticker} to pay ${position.couponPayment} on ${position.previousSettleDate}`;
+      let message = `Nomura Expected ${position.ticker} to pay ${payments[isin].sum} on ${payments[isin].settleDate}, App Expected ${position.ticker} to pay ${position.couponPayment} on ${position.previousSettleDate}`;
       let note = `${payments.payInKindAlert ? "This Position is Pay in Kind" : ""} ${position.note}`;
       let ticker = position.ticker;
 
@@ -358,9 +362,9 @@ export function checkIfCouponPaymentsAreSettleted(couponPaymentRecords: NomuraCa
         "Settle Date BBG": position.previousSettleDate,
         "Coupon Rate": position.coupon,
         "Notional Amount Triada": position.notional,
-        "Nomura Cash Coupon Settlement Amount “REC”": nomuraSum,
         "Nomura Cash Coupon Trade Date": payments[isin].tradeDate,
         "Nomura Cash Coupon Settlement Date": payments[isin].settleDate,
+        "Nomura Cash Coupon Settlement Amount “REC”": nomuraSum,
         "Triada Expected Cash Payment Amount": appSum,
         Difference: difference,
         Result: difference == 0 ? "SUCCESS" : message + " && " + note,
@@ -372,7 +376,7 @@ export function checkIfCouponPaymentsAreSettleted(couponPaymentRecords: NomuraCa
       let appSum = 0;
       let nomuraSum = payments[isin].sum;
       let difference = appSum - nomuraSum;
-      let message = `Nomura Expected ${payments[isin].ticker} to pay ${payments[isin].sum} on ${convertNomuraDateToAppTradeDate(payments[isin].settleDate.toString())}, App does not see this action`;
+      let message = `Nomura Expected ${payments[isin].ticker} to pay ${payments[isin].sum} on ${payments[isin].settleDate}, App does not see this action`;
       let note = `${payments.payInKindAlert ? "This Position is Pay in Kind" : ""}`;
 
       let object = {
@@ -385,9 +389,9 @@ export function checkIfCouponPaymentsAreSettleted(couponPaymentRecords: NomuraCa
         "Settle Date BBG": "",
         "Coupon Rate": parseBondIdentifierNomura(payments[isin].ticker),
         "Notional Amount Triada": 0,
-        "Nomura Cash Coupon Settlement Amount “REC”": nomuraSum,
         "Nomura Cash Coupon Trade Date": payments[isin].tradeDate,
         "Nomura Cash Coupon Settlement Date": payments[isin].settleDate,
+        "Nomura Cash Coupon Settlement Amount “REC”": nomuraSum,
         "Triada Expected Cash Payment Amount": appSum,
         Difference: difference,
         Result: difference == 0 ? "SUCCESS" : message + " && " + note,
@@ -424,9 +428,9 @@ export function checkPositionsThatShouldPayButDoNotExistInNomura(portfolio: Posi
           "Settle Date BBG": aggregates.previousSettleDate,
           "Coupon Rate": aggregates.coupon,
           "Notional Amount Triada": aggregates.notional,
-          "Nomura Cash Coupon Settlement Amount “REC”": nomuraSum,
           "Nomura Cash Coupon Trade Date": "",
           "Nomura Cash Coupon Settlement Date": "",
+          "Nomura Cash Coupon Settlement Amount “REC”": nomuraSum,
           "Triada Expected Cash Payment Amount": appSum,
           Difference: difference,
           Result: difference == 0 ? "SUCCESS" : message + " && " + note,

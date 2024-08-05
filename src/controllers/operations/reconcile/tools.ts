@@ -222,3 +222,13 @@ export function convertNomuraDateToAppTradeDate(nomuraDate: string): string {
 
   return tradeDate;
 }
+
+export function switchCorrectedTrades(original: NomuraCashReconcileFileUpload[], corrected: NomuraCashReconcileFileUpload[]) {
+  for (let index = 0; index < original.length; index++) {
+    let trade = original[index];
+    let correctedTrade = corrected.find((correctedTradeInArray, index) => correctedTradeInArray["Client Trade Ref"] == trade["Client Trade Ref"]);
+    if (correctedTrade) {
+      original[index] = correctedTrade;
+    }
+  }
+}
