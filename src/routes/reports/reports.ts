@@ -196,4 +196,36 @@ router.get("/fact-sheet-mkt", uploadToBucket.any(), verifyTokenFactSheetMember, 
   }
 });
 
+router.get("/fact-sheet-mkt", uploadToBucket.any(), verifyTokenFactSheetMember, async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let type = req.query.type;
+    let shareClass = req.shareClass;
+    let accessRole = req.accessRole;
+    let disabled = await getFactSheetDisplay("view");
+
+    if ((accessRole == "member (factsheet report)" && !shareClass.includes(type)) || (accessRole == "member (factsheet report)" && !shareClass.includes("mkt"))) {
+      res.sendStatus(401);
+    } else {
+      if (accessRole != "member (factsheet report)") {
+        type = shareClasses.includes(type) ? type : "a2";
+        disabled = false;
+      }
+
+      const now = new Date();
+      const from2015: any = new Date("2015-04-01").getTime();
+
+      let inception = await getFactSheet({ from: from2015, to: now, type, inception: true, mkt: true });
+
+      res.send({ inception: inception, disabled: disabled });
+    }
+  } catch (error: any) {
+    console.log(error);
+    res.send({ error: error.toString(), disabled: true });
+  }
+});
+// router.post("/test", async (req: Request, res: Response, next: NextFunction) => {
+//   uploadFSData(monthlyData, lg30truu, beuctruu, emustruu, legatruu);
+//   res.send(200);
+// });
+
 export default router;

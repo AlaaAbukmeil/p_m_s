@@ -296,7 +296,7 @@ export function calculateMonthlyReturn(data: any, variables: any, fundData = fal
   return { monthlyReturns: formmatedReturns, maxDrawdown: maxDrawdown, annulizedReturn: annulizedReturn, volitality: volitality, variance: variance, ratios: ratios, normal: normal, fundReturns: fundReturns, returns: returns, negativeAnnualVolitality: negativeAnnualVolitality, cumulativeReturnsHashTable: cumulativeReturnsHashTable, cumulativeReturnsHashTableSince2020: cumulativeReturnsHashTableSince2020 };
 }
 
-export async function getFactSheetData(collectionName: any, from: any, to: any, variable: any,) {
+export async function getFactSheetData(collectionName: any, from: any, to: any, variable: any) {
   // Connect to MongoDB
   const client = await factsheetPool.connect();
   let psqlFactSheetDBNames: any = {
@@ -328,6 +328,8 @@ export async function getFactSheetData(collectionName: any, from: any, to: any, 
     return report;
   } catch (error) {
     console.error("Failed in bulk operation:", error, collectionName);
+  } finally {
+    client.release();
   }
 }
 
