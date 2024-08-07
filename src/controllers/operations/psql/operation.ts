@@ -136,6 +136,7 @@ export function formatPositions(data: any): InformationInDB[] {
       reoffer_price: null,
 
       treasury_and_spread: null,
+      timestamp: null,
     };
     result.push(object);
   }
@@ -189,6 +190,7 @@ export function formatNewIssues(data: any): InformationInDB[] {
       reoffer_price: element["Reoffer Price"],
 
       treasury_and_spread: element["Treasury & Spread"],
+      timestamp: parseFloat(element["timestamp"]),
     };
     result.push(object);
   }
@@ -202,9 +204,9 @@ export async function insertNewIssuesData(dataInput: InformationInDB[]) {
 
     const insertQuery = `
       INSERT INTO public.positions_information_new_issues (
-        bb_ticker, isin, cusip, currency, "type", issue_price, trade_date, settle_date, email_id, reoffer_price, treasury_and_spread
+        bb_ticker, isin, cusip, currency, "type", issue_price, trade_date, settle_date, email_id, reoffer_price, treasury_and_spread, timestamp
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       ON CONFLICT (isin, email_id)
       DO UPDATE SET
         bb_ticker = EXCLUDED.bb_ticker,
@@ -216,11 +218,13 @@ export async function insertNewIssuesData(dataInput: InformationInDB[]) {
         trade_date = EXCLUDED.trade_date,
         settle_date = EXCLUDED.settle_date,
         reoffer_price = EXCLUDED.reoffer_price,
-        treasury_and_spread = EXCLUDED.treasury_and_spread;
+        treasury_and_spread = EXCLUDED.treasury_and_spread,
+        timestamp = EXCLUDED.timestamp;
+
     `;
 
     for (const ticker of dataInput) {
-      await client.query(insertQuery, [ticker.bb_ticker, ticker.isin, ticker.cusip, ticker.currency, ticker.type, ticker.issue_price, ticker.trade_date, ticker.settle_date, ticker.email_id, ticker.reoffer_price, ticker.treasury_and_spread]);
+      await client.query(insertQuery, [ticker.bb_ticker, ticker.isin, ticker.cusip, ticker.currency, ticker.type, ticker.issue_price, ticker.trade_date, ticker.settle_date, ticker.email_id, ticker.reoffer_price, ticker.treasury_and_spread, ticker.timestamp]);
     }
 
     await client.query("COMMIT");

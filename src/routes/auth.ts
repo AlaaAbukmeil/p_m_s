@@ -57,7 +57,7 @@ authRouter.post("/login", uploadToBucket.any(), async (req: Request, res: Respon
   let user: any = await checkIfUserExists(email, password);
 
   let cookie: CookieOptions = {
-    maxAge: 3 * 24 * 60 * 60 * 1000,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: process.env.PRODUCTION === "production",
     secure: process.env.PRODUCTION === "production", // Set to true if using HTTPS
     sameSite: "lax",
@@ -71,7 +71,7 @@ authRouter.post("/login", uploadToBucket.any(), async (req: Request, res: Respon
 
 authRouter.post("/logout", uploadToBucket.any(), async (req: Request, res: Response, next: NextFunction) => {
   res.clearCookie("triada.admin.cookie", {
-    maxAge: 3 * 24 * 60 * 60 * 1000,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: process.env.PRODUCTION === "production",
     secure: process.env.PRODUCTION === "production", // Set to true if using HTTPS
     sameSite: "lax",

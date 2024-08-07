@@ -121,10 +121,22 @@ export async function readCentralizedEBlot(path: string): Promise<
       for (let index = 0; index < allTrades.length; index++) {
         let newTrade = allTrades[index];
         let object = {
-          "BB Ticker": newTrade["BB Ticker"],
-          Currency: newTrade["Currency"],
-          ISIN: newTrade["ISIN"],
-          CUSIP: newTrade["Cusip"],
+          bb_ticker: newTrade["BB Ticker"],
+          isin: newTrade["ISIN"],
+          cusip: newTrade["CUSIP"],
+          currency: newTrade["Currency"],
+          type: "Position",
+          issue_price: null,
+
+          trade_date: null,
+          settle_date: null,
+          email_id: null,
+
+          reoffer_price: null,
+
+          treasury_and_spread: null,
+          timestamp: null,
+
         };
         newPositions.push(object);
       }

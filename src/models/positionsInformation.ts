@@ -13,4 +13,5 @@ export interface InformationInDB {
   reoffer_price: string | null;
 
   treasury_and_spread: string | null;
+  timestamp: number | null;
 }
