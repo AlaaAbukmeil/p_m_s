@@ -655,3 +655,17 @@ export function sortObjectByValues(obj: any, param = "") {
     return sortedObj;
   }
 }
+export function getLatestDateMMYYYY(dates: string[]): string {
+  if (dates.length === 0) return "";
+
+  return dates.reduce((latest, current) => {
+    const [currentMonth, currentYear] = current.split("/").map(Number);
+    const [latestMonth, latestYear] = latest.split("/").map(Number);
+
+    if (currentYear > latestYear || (currentYear === latestYear && currentMonth > latestMonth)) {
+      return current;
+    }
+
+    return latest;
+  });
+}

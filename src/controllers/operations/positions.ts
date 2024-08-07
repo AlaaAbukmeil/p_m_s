@@ -960,25 +960,91 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
 export async function insertFXPosition(position: any, date: any) {
   console.log(date, new Date(date), position);
   let today = swapMonthDay(date);
-  let fxPositions: any = {
+  let fxPositions: PositionInDB = {
     Type: "FX",
-    "Notional Amount": parseInt(position["Notional Amount"]),
+    "Notional Amount": position["Notional Amount"],
     "BB Ticker": position["Code"],
     ISIN: position["Code"],
     Strategy: parseInt(position["Notional Amount"]) < 0 ? "Hedge" : "VI",
     "Asset Class": "Cash",
     Location: position["Location"],
     Interest: {},
-
+    "Entry Price": {},
     Currency: "",
+    Ask: "",
+    "Average Cost": "",
+    "BBG Composite Rating": "",
+    Bid: "",
+    "Bloomberg ID": "",
+    Broker: "",
+    CUSIP: "",
+    "Call Date": "",
+    Country: "",
+    "Coupon Rate": "",
+    DV01: "",
+    "Entry Yield": "",
+    "FX Rate": "",
+    "Fitch Bond Rating": "",
+    "Fitch Outlook": "",
+    Group: "",
+    Issue: "",
+    Issuer: "",
+    "Last Individual Upload Trade": new Date(),
+    "Last Modified Date": new Date(),
+    "Last Price Update": new Date(),
+    "Last Upload Trade": new Date(),
+    "Last edit operation": new Date(),
+    "Last recalculate trades": new Date(),
+    "MTD Rlzd": "",
+    Maturity: "",
+    Mid: "",
+    "Moddy's Outlook": "",
+    "Modified Duration": "",
+    "Moody's Bond Rating": "",
+    "Moody's Outlook": "",
+    Net: "",
+    OAS: "",
+    "Original Face": "",
+    Quantity: "",
+    "S&P Bond Rating": "",
+    "S&P Outlook": "",
+    Sector: "",
+    YTM: "",
+    YTW: "",
+    "Z Spread": "",
+    "Previous FX": "",
+    "Previous Mark": "",
+    Notes: "",
+    "MTD Mark": "",
+    "MTD FX": "",
+    "YTD FX": "",
+    "MTD URlzd": "",
+    "MTD Int.": "",
+    "Day URlzd": "",
+    "Day Int.": "",
+    "YTD URlzd": "",
+    "Coupon Duration": "",
+    "YTD Int.": "",
+    "YTD Rlzd": "",
+    "Cost MTD": {},
+    "Day P&L": "",
+    "MTD P&L": "",
+    "YTD P&L": "",
+    Pin: "",
+    CR01: "",
+    "Issuer's Country": "",
+    "Coupon Frequency": "",
+    "Previous Settle Date": "",
+    "Next Settle Date": "",
+    "Security Description": "",
+    "Bloomberg Mid BGN": 0,
   };
-  fxPositions.Interest[today] = parseInt(position["Notional Amount"]);
+  fxPositions.Interest[today.toString()] = position["Notional Amount"];
 
   const database = client.db("portfolios");
   let day = getDateTimeInMongoDBCollectionFormat(new Date(today));
 
   let checkCollectionDay = await getEarliestCollectionName(day);
-  console.log(checkCollectionDay, "chec");
   if (checkCollectionDay) {
     day = checkCollectionDay.predecessorDate;
   }

@@ -16,7 +16,6 @@ export interface FundDetails {
 }
 
 export interface PositionInDB {
-  _id: ObjectId;
   Location: string;
   ISIN: string;
   Ask: string;
@@ -52,7 +51,6 @@ export interface PositionInDB {
   Mid: string;
   "Moddy's Outlook": string | null;
   "Modified Duration": string;
-  "Monthly Capital Gains Rlzd": Record<string, string>;
   "Moody's Bond Rating": string;
   "Moody's Outlook": string;
   Net: string;
@@ -82,13 +80,10 @@ export interface PositionInDB {
   "Coupon Duration": string;
   "YTD Int.": string;
   "YTD Rlzd": string;
-  "MTD Rlzd DC": Record<string, Array<any>>;
   "Cost MTD": any;
   "Day P&L": string;
   "MTD P&L": string;
   "YTD P&L": string;
-  holdPortfXrate: string;
-  "Rating Class": string;
   "Asset Class": string;
   Pin: string;
   CR01: string;
@@ -141,7 +136,6 @@ export interface PositionBeforeFormatting extends PositionInDB {
   Mid: string;
   "Moddy's Outlook": string | null;
   "Modified Duration": string;
-  "Monthly Capital Gains Rlzd": Record<string, string>;
   "Moody's Bond Rating": string;
   "Moody's Outlook": string;
   Net: string;
