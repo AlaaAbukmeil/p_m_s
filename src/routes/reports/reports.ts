@@ -195,9 +195,5 @@ router.get("/fact-sheet-mkt", uploadToBucket.any(), verifyTokenFactSheetMember, 
     res.send({ error: error.toString(), disabled: true });
   }
 });
-// router.post("/test", async (req: Request, res: Response, next: NextFunction) => {
-//   uploadFSData(monthlyData, lg30truu, beuctruu, emustruu, legatruu);
-//   res.send(200);
-// });
 
 export default router;

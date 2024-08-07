@@ -40,6 +40,7 @@ factSheetRouter.get("/fact-sheet-data", uploadToBucket.any(), verifyToken, async
       "FIDITBD LX Equity": fiditbd,
     };
 
+    console.log({ others });
     let formmated = trimFactSheetData(data, dataMaster, others);
     res.send({ formmated, display });
   } catch (error: any) {

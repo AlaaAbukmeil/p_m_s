@@ -8,6 +8,7 @@ import { getAllTradesForSpecificPosition } from "../../controllers/operations/tr
 import { getEditLogs, updateEditLogs } from "../../controllers/operations/logs";
 import { getCollectionDays } from "../../controllers/operations/tools";
 import { uploadToBucket } from "../../controllers/userManagement/tools";
+import { factsheetPool } from "../../controllers/operations/psql/operation";
 
 const positionsRouter = Router();
 

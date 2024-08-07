@@ -6,6 +6,7 @@ import { getPortfolioWithAnalytics } from "./portfolios";
 import { calculateAnnualizedReturn, deleteUnnecessaryValues, getMonthName, getSampleStandardDeviation, getStatistics, sortObjectByValues, transformData, updateStats } from "./tools";
 import { fiditbd, pimglba, test } from "./data";
 import { dateWithMonthOnly } from "../common";
+import { factsheetPool } from "../operations/psql/operation";
 export let beforeSwitchRatios: any = {
   a4: 1000 / 1477.16,
   a5: 1000 / 1154.61,
@@ -295,25 +296,38 @@ export function calculateMonthlyReturn(data: any, variables: any, fundData = fal
   return { monthlyReturns: formmatedReturns, maxDrawdown: maxDrawdown, annulizedReturn: annulizedReturn, volitality: volitality, variance: variance, ratios: ratios, normal: normal, fundReturns: fundReturns, returns: returns, negativeAnnualVolitality: negativeAnnualVolitality, cumulativeReturnsHashTable: cumulativeReturnsHashTable, cumulativeReturnsHashTableSince2020: cumulativeReturnsHashTableSince2020 };
 }
 
-export async function getFactSheetData(collectionName: any, from: any, to: any, variable: any) {
+export async function getFactSheetData(collectionName: any, from: any, to: any, variable: any,) {
+  // Connect to MongoDB
+  const client = await factsheetPool.connect();
+  let psqlFactSheetDBNames: any = {
+    "LEGATRUU Index": "bbg_global_aggregate",
+    "EMUSTRUU Index": "bbg_em_aggregate",
+    "BEUCTRUU Index": "bbg_em_asia",
+    "BEUYTRUU Index": "bbg_em_asia_hy",
+    "LG30TRUU Index": "bbg_global_hy",
+    "FIDITBD LX Equity": "fidelity_global_bond",
+    "PIMGLBA ID Equity": "pimco_global_bond",
+    "3 Month Treasury": "3_month_treasury",
+    Triada: "triada_main",
+    "Triada Master": "triada_master",
+    "BEBGTRUU Index": "bbg_em_global_hy",
+  };
   try {
-    // Connect to MongoDB
-    const database = client.db("factsheet");
-    const collection = database.collection(collectionName);
-
     const startDate = new Date(from).getTime();
     const endDate = new Date(to).getTime();
 
-    const query = {
-      timestamp: { $gte: startDate, $lte: endDate },
-    };
+    const query = `
+      SELECT *
+      FROM public.factsheet_${psqlFactSheetDBNames[collectionName]}
+      WHERE timestamp >= $1 AND timestamp <= $2
+      ORDER BY timestamp ASC;
+    `;
 
-    // Modify the find query to include a filter for timestamps after May 2015
-    let report = await collection.find(query).sort({ timestamp: 1 }).toArray();
-    report = report.filter((data: any) => data.data[variable] != null);
+    const result = await client.query(query, [startDate, endDate]);
+    const report = result.rows.filter((data: any) => data.data[variable] != null);
     return report;
   } catch (error) {
-    console.error("Failed in bulk operation:", error);
+    console.error("Failed in bulk operation:", error, collectionName);
   }
 }
 
