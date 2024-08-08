@@ -4,6 +4,7 @@ require("dotenv").config();
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../reports/common";
 import { client } from "../userManagement/auth";
 import { insertEditLogs } from "./logs";
+import { authPool } from "./psql/operation";
 import { compareMonths } from "./tools";
 const jwt = require("jsonwebtoken");
 const jwtSecret = process.env.SECRET;
@@ -13,11 +14,14 @@ SibApiV3Sdk.ApiClient.instance.authentications["api-key"].apiKey = process.env.S
 
 export async function getLinks(): Promise<any> {
   try {
-    const database = client.db("auth");
-    const reportCollection = database.collection("links");
-    // console.log(test, date);
-    let documents = await reportCollection.find().toArray();
-    return documents;
+    const client = await authPool.connect();
+
+    try {
+      const res = await client.query("SELECT * FROM public.auth_links");
+      return res.rows;
+    } finally {
+      client.release();
+    }
   } catch (error: any) {
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     console.log(error);

@@ -1,5 +1,7 @@
+import { UserAuth } from "../../../models/auth";
 import { FactSheetBenchMarkDataInDB } from "../../../models/factSheet";
 import { InformationInDB } from "../../../models/positionsInformation";
+import { getDateTimeInMongoDBCollectionFormat } from "../../reports/common";
 import { getFactSheetData } from "../../reports/factSheet";
 import { client } from "../../userManagement/auth";
 
@@ -24,6 +26,7 @@ function createPool(databaseName: string) {
 
 export const factsheetPool = createPool("factsheet");
 export const positionsInfomrationPool = createPool("positions_information");
+export const authPool = createPool("auth");
 
 export async function migrateFactSheetData(name: string, className: string) {
   const from2010: any = new Date("2010-01-01").getTime();
@@ -108,9 +111,9 @@ export async function testPsqlTime() {
   }
 }
 
-export async function migrateInformationDB() {
-  const database = client.db("Information");
-  const collection = database.collection("New Issues");
+export async function migrateInformationDB(db: string, collectionName: string) {
+  const database = client.db(db);
+  const collection = database.collection(collectionName);
 
   const existingPosition = await collection.find().toArray();
 
@@ -121,7 +124,7 @@ export function formatPositions(data: any): InformationInDB[] {
   let result: InformationInDB[] = [];
   for (let index = 0; index < data.length; index++) {
     const element = data[index];
-    let object = {
+    let object: InformationInDB = {
       bb_ticker: element["BB Ticker"],
       isin: element["ISIN"],
       cusip: element["CUSIP"],
@@ -175,7 +178,7 @@ export function formatNewIssues(data: any): InformationInDB[] {
   let result: InformationInDB[] = [];
   for (let index = 0; index < data.length; index++) {
     const element = data[index];
-    let object = {
+    let object: InformationInDB = {
       bb_ticker: element["BB Ticker"],
       isin: element["ISIN"],
       cusip: null,
@@ -225,6 +228,104 @@ export async function insertNewIssuesData(dataInput: InformationInDB[]) {
 
     for (const ticker of dataInput) {
       await client.query(insertQuery, [ticker.bb_ticker, ticker.isin, ticker.cusip, ticker.currency, ticker.type, ticker.issue_price, ticker.trade_date, ticker.settle_date, ticker.email_id, ticker.reoffer_price, ticker.treasury_and_spread, ticker.timestamp]);
+    }
+
+    await client.query("COMMIT");
+  } catch (err: any) {
+    await client.query("ROLLBACK");
+    console.error("Error inserting data", err.stack);
+  } finally {
+    client.release();
+  }
+}
+
+export function formatUsers(data: any): UserAuth[] {
+  let result: UserAuth[] = [];
+  for (let index = 0; index < data.length; index++) {
+    const element = data[index];
+    let object: UserAuth = {
+      email: element["email"],
+      password: element["password"],
+      access_role_factsheet: element["accessRole"],
+      access_role_portfolio: "portfolio-main",
+      share_class: element["shareClass"],
+      last_time_accessed: element["lastTimeAccessed"] || getDateTimeInMongoDBCollectionFormat(new Date()),
+      reset_password: element["resetPassword"] == "true" ? true : false,
+      created_on: element["createdOn"] || getDateTimeInMongoDBCollectionFormat(new Date()),
+      type: "user",
+      name: null,
+      link: null,
+      expiration: null,
+    };
+    result.push(object);
+  }
+  return result;
+}
+export async function insertUsersData(dataInput: UserAuth[]) {
+  const client = await authPool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const insertQuery = `
+      INSERT INTO public.auth_users (
+        email, password, access_role_factsheet, access_role_portfolio, share_class, last_time_accessed, reset_password, created_on, type, name, link, expiration
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      ON CONFLICT (email)
+      DO NOTHING
+    `;
+
+    for (const ticker of dataInput) {
+      await client.query(insertQuery, [ticker.email, ticker.password, ticker.access_role_factsheet, ticker.access_role_portfolio, ticker.share_class, ticker.last_time_accessed, ticker.reset_password, ticker.created_on, ticker.type, null, null, null]);
+    }
+
+    await client.query("COMMIT");
+  } catch (err: any) {
+    await client.query("ROLLBACK");
+    console.error("Error inserting data", err.stack);
+  } finally {
+    client.release();
+  }
+}
+
+export function formatLinks(data: any): UserAuth[] {
+  let result: UserAuth[] = [];
+  for (let index = 0; index < data.length; index++) {
+    const element = data[index];
+    let object: UserAuth = {
+      email: element["email"],
+      password: null,
+      access_role_factsheet: element["accessRole"],
+      access_role_portfolio: null,
+      share_class: element["accessRight"],
+      last_time_accessed: element["lastTimeAccessed"] || getDateTimeInMongoDBCollectionFormat(new Date()),
+      reset_password: null,
+      created_on: element["createdOn"] || getDateTimeInMongoDBCollectionFormat(new Date()),
+      type: "link",
+      name: element["name"],
+      link: element["link"],
+      expiration: element["expiration"],
+    };
+    if (element["email"]) {
+      result.push(object);
+    }
+  }
+  return result;
+}
+export async function insertLinksData(dataInput: UserAuth[]) {
+  const client = await authPool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const insertQuery = `
+      INSERT INTO public.auth_links (
+        email, password, access_role_factsheet, access_role_portfolio, share_class, last_time_accessed, reset_password, created_on, type, name, link, expiration
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
+    `;
+
+    for (const entry of dataInput) {
+      await client.query(insertQuery, [entry.email, entry.password, entry.access_role_factsheet, entry.access_role_portfolio, entry.share_class, entry.last_time_accessed, entry.reset_password, entry.created_on, entry.type, entry.name, entry.link, entry.expiration]);
     }
 
     await client.query("COMMIT");

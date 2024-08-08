@@ -3,7 +3,7 @@ export interface InformationInDB {
   isin: string;
   cusip: string | null;
   currency: string;
-  type: string | null;
+  type: "New Issues" | "Position";
   issue_price: string | null;
 
   trade_date: string | null;
