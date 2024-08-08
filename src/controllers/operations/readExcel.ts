@@ -654,21 +654,12 @@ export async function readEditInput(path: string) {
 
   // Read data
 
-  const headers = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+  let data = xlsx.utils.sheet_to_json(worksheet, {
+    defval: "",
+    range: "A1:BZ300",
+  });
 
-  const arraysAreEqual = true;
-  if (!arraysAreEqual) {
-    return {
-      error: "Incompatible format, please upload edit e-blot xlsx/csv file",
-    };
-  } else {
-    let data = xlsx.utils.sheet_to_json(worksheet, {
-      defval: "",
-      range: "A1:BZ300",
-    });
-
-    return data;
-  }
+  return data;
 }
 
 export async function readMUFGPrices(path: string) {

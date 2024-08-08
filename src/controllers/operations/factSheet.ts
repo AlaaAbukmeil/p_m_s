@@ -90,3 +90,17 @@ export async function deleteFactSheet(data: any, name: any): Promise<any> {
     return { error: error.message }; // Return the error message
   }
 }
+
+export function formatUpdateFactSheetEmail(emailTemplate: string, users: any) {
+  let emails = [];
+  for (let index = 0; index < users.length; index++) {
+    let user = users[index];
+    let object: any = {};
+    object["email"] = user["email"];
+    object["text"] = emailTemplate
+      .replace(/\$name/g, user["name"])
+      .replace(/\$shareClass/g, user["shareClass"].replace("mkt", ""));
+    emails.push(object);
+  }
+  return emails;
+}

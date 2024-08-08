@@ -1,3 +1,6 @@
+import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
+import { insertEditLogs } from "./logs";
+
 const axios = require("axios");
 const xlsx = require("xlsx");
 
@@ -36,5 +39,36 @@ export async function errorEmailALert({ errorMessage, functionName, location, da
     return { statusCode: 200 };
   } catch (error) {
     return error;
+  }
+}
+export async function errorEmailFactSheetUser({ email, content, subject }: { email: any; content: any; subject: any }) {
+  try {
+    let emailAction = new SibApiV3Sdk.TransactionalEmailsApi().sendTransacEmail({
+      sender: { email: "jm@triadacapital.com", name: "Jean-Marie Barreau" },
+      subject: subject,
+      htmlContent: "<!DOCTYPE html><html><body><p>Error .</p></body></html>",
+      params: {
+        greeting: "Please review error logs",
+      },
+      messageVersions: [
+        //Definition for Message Version 1
+        {
+          to: [
+            {
+              email: email,
+            },
+          ],
+          htmlContent: content,
+          subject: subject,
+        },
+      ],
+    });
+    return { statusCode: 200 };
+  } catch (error) {
+    console.error("Error connecting to MongoDB or inserting documents:", error);
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    await insertEditLogs([errorMessage], "Errors", dateTime, "errorEmailFactSheetUser", "controllers/operation/emails.ts");
+ 
   }
 }

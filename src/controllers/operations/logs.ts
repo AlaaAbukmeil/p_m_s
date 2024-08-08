@@ -1,6 +1,6 @@
 import { client } from "../userManagement/auth";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
-import { errorEmailALert } from "./errorEmail";
+import { errorEmailALert } from "./emails";
 import { ObjectId } from "mongodb";
 
 export async function insertEditLogs(changes: any[], type: string, dateTime: string, editNote: string, identifier: string) {

@@ -1,12 +1,14 @@
 import { NextFunction, Router } from "express";
 import { bucket, dateWithMonthOnly, generateSignedUrl, verifyToken } from "../../controllers/common";
 import { getFactSheetData, trimFactSheetData } from "../../controllers/reports/factSheet";
-import { addFactSheet, deleteFactSheet, editFactSheet } from "../../controllers/operations/factSheet";
+import { addFactSheet, deleteFactSheet, editFactSheet, formatUpdateFactSheetEmail } from "../../controllers/operations/factSheet";
 import { readFactSheet } from "../../controllers/operations/readExcel";
 import { formatExcelDate } from "../../controllers/reports/common";
 import { dateWithNoDay } from "../../controllers/common";
 import { editFactSheetDisplay, getFactSheetDisplay } from "../../controllers/operations/commands";
 import { uploadToBucket } from "../../controllers/userManagement/tools";
+import { getAllUsers } from "../../controllers/userManagement/auth";
+import { errorEmailFactSheetUser } from "../../controllers/operations/emails";
 const factSheetRouter = Router();
 
 factSheetRouter.get("/fact-sheet-data", uploadToBucket.any(), verifyToken, async (req: Request | any, res: Response | any, next: NextFunction) => {
@@ -149,6 +151,34 @@ factSheetRouter.post("/edit-fact-sheet-view", uploadToBucket.any(), verifyToken,
   try {
     let data = req.body;
     let edit = await editFactSheetDisplay(data);
+    res.sendStatus(200);
+  } catch (error: any) {
+    console.log(error);
+    res.send({ error: error.toString() });
+  }
+});
+
+factSheetRouter.post("/fact-sheet-update", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response | any, next: NextFunction) => {
+  try {
+    let allUser;
+    if (req.body.target == "investor") {
+      allUser = await getAllUsers();
+    } else {
+      allUser = [
+        {
+          name: "Alaa",
+          email: "developer@triadacapital.com",
+          shareClass: "a2 a3 mkt",
+        },
+      ];
+    }
+    let formatted = formatUpdateFactSheetEmail(req.body.email, allUser);
+
+    for (let index = 0; index < formatted.length; index++) {
+      const emailAction = formatted[index];
+      let status = await errorEmailFactSheetUser({ email: emailAction.email, content: emailAction.text, subject: req.body.subject });
+      console.log(emailAction.email, index, status);
+    }
     res.sendStatus(200);
   } catch (error: any) {
     console.log(error);
