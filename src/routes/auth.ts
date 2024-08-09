@@ -62,7 +62,7 @@ authRouter.post("/login", uploadToBucket.any(), async (req: Request, res: Respon
     secure: process.env.PRODUCTION === "production", // Set to true if using HTTPS
     sameSite: "lax",
     path: "/",
-    // domain: ".triadacapital.com",
+    domain: ".triadacapital.com",
   };
   res.cookie("triada.admin.cookie", user, cookie);
 
@@ -142,60 +142,22 @@ authRouter.post("/delete-user", verifyToken, uploadToBucket.any(), async (req: R
 authRouter.post("/add-user", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let data = req.body;
-    if (data.email && data.name && data.shareClass && data.accessRole) {
-      req.body.welcome = true;
+    console.log({ req: req.body });
+    if (data.email && data.share_class && data.access_role_instance) {
+      req.body.welcome = false;
       let action = await addUser(req.body);
       if (action.error) {
         res.send({ error: action.error });
       } else {
         res.sendStatus(200);
       }
+      res.send(200);
     } else {
       res.send({ error: "Something is not correct, check error log records" });
     }
   } catch (error) {
     console.log(error);
     res.send({ error: "Something is not correct, check error log records" });
-  }
-});
-
-authRouter.post("/add-users", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  try {
-    const fileName = req.files[0].filename;
-    const path = await generateSignedUrl(fileName);
-    let users = await readUsersSheet(path);
-    if (users.error == null) {
-      let map: any = {};
-      for (let index = 0; index < users.length; index++) {
-        let user = users[index];
-        let email = user["Email"].toLowerCase();
-        let name = user["Name"];
-        let shareClass = user["Share Class"];
-        if (map[email]) {
-          if (!map[email].shareClass.includes(shareClass)) {
-            map[email].shareClass += " " + shareClass;
-          }
-        } else {
-          map[email] = {
-            name: name,
-            shareClass: shareClass,
-            email: email,
-            accessRole: "member (factsheet report)",
-            welcome: true,
-          };
-        }
-      }
-      for (let user in map) {
-        let userInfo = map[user];
-        // let action = await addUser(userInfo);
-        // console.log(action, userInfo.email);
-      }
-    } else {
-      res.send({ error: users.error });
-    }
-  } catch (error) {
-    console.log(error);
-    res.send({ error: "fatal error" });
   }
 });
 

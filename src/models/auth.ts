@@ -1,7 +1,7 @@
 export interface UserAuth {
   email: string;
   password: string | null;
-  access_role_factsheet: string;
+  access_role_instance: string;
   access_role_portfolio: string | null;
   share_class: string;
   last_time_accessed: string;
@@ -12,4 +12,14 @@ export interface UserAuth {
   name: string | null;
   link: string | null;
   expiration: string | null;
+  token: string | null;
+  id: string;
+  files:
+    | {
+        name: string;
+        link: string;
+        purpose: string;
+        createdOn: string;
+      }[]
+    | null;
 }

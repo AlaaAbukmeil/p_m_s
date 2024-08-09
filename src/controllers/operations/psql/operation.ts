@@ -8,6 +8,7 @@ import { client } from "../../userManagement/auth";
 require("dotenv").config();
 
 const { Pool } = require("pg");
+const { v4: uuidv4 } = require("uuid");
 
 function createPool(databaseName: string) {
   if (!databaseName) {
@@ -243,19 +244,24 @@ export function formatUsers(data: any): UserAuth[] {
   let result: UserAuth[] = [];
   for (let index = 0; index < data.length; index++) {
     const element = data[index];
+    let id = uuidv4();
+
     let object: UserAuth = {
       email: element["email"],
       password: element["password"],
-      access_role_factsheet: element["accessRole"],
+      access_role_instance: element["accessRole"],
       access_role_portfolio: "portfolio-main",
       share_class: element["shareClass"],
       last_time_accessed: element["lastTimeAccessed"] || getDateTimeInMongoDBCollectionFormat(new Date()),
       reset_password: element["resetPassword"] == "true" ? true : false,
       created_on: element["createdOn"] || getDateTimeInMongoDBCollectionFormat(new Date()),
       type: "user",
-      name: null,
+      name: element["name"],
       link: null,
       expiration: null,
+      token: null,
+      id: id,
+      files: [],
     };
     result.push(object);
   }
@@ -268,15 +274,15 @@ export async function insertUsersData(dataInput: UserAuth[]) {
 
     const insertQuery = `
       INSERT INTO public.auth_users (
-        email, password, access_role_factsheet, access_role_portfolio, share_class, last_time_accessed, reset_password, created_on, type, name, link, expiration
+        email, password, access_role_instance, access_role_portfolio, share_class, last_time_accessed, reset_password, created_on, type, name, link, expiration, id
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       ON CONFLICT (email)
       DO NOTHING
     `;
 
     for (const ticker of dataInput) {
-      await client.query(insertQuery, [ticker.email, ticker.password, ticker.access_role_factsheet, ticker.access_role_portfolio, ticker.share_class, ticker.last_time_accessed, ticker.reset_password, ticker.created_on, ticker.type, null, null, null]);
+      await client.query(insertQuery, [ticker.email, ticker.password, ticker.access_role_instance, ticker.access_role_portfolio, ticker.share_class, ticker.last_time_accessed, ticker.reset_password, ticker.created_on, ticker.type, ticker.name, null, null, ticker.id]);
     }
 
     await client.query("COMMIT");
@@ -292,10 +298,12 @@ export function formatLinks(data: any): UserAuth[] {
   let result: UserAuth[] = [];
   for (let index = 0; index < data.length; index++) {
     const element = data[index];
+    let id = uuidv4();
+
     let object: UserAuth = {
       email: element["email"],
       password: null,
-      access_role_factsheet: element["accessRole"],
+      access_role_instance: element["accessRole"],
       access_role_portfolio: null,
       share_class: element["accessRight"],
       last_time_accessed: element["lastTimeAccessed"] || getDateTimeInMongoDBCollectionFormat(new Date()),
@@ -305,6 +313,9 @@ export function formatLinks(data: any): UserAuth[] {
       name: element["name"],
       link: element["link"],
       expiration: element["expiration"],
+      token: element["token"],
+      id: id,
+      files: null,
     };
     if (element["email"]) {
       result.push(object);
@@ -312,6 +323,7 @@ export function formatLinks(data: any): UserAuth[] {
   }
   return result;
 }
+
 export async function insertLinksData(dataInput: UserAuth[]) {
   const client = await authPool.connect();
   try {
@@ -319,13 +331,13 @@ export async function insertLinksData(dataInput: UserAuth[]) {
 
     const insertQuery = `
       INSERT INTO public.auth_links (
-        email, password, access_role_factsheet, access_role_portfolio, share_class, last_time_accessed, reset_password, created_on, type, name, link, expiration
+        email, password, access_role_instance, access_role_portfolio, share_class, last_time_accessed, reset_password, created_on, type, name, link, expiration, token, id
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14);
     `;
 
     for (const entry of dataInput) {
-      await client.query(insertQuery, [entry.email, entry.password, entry.access_role_factsheet, entry.access_role_portfolio, entry.share_class, entry.last_time_accessed, entry.reset_password, entry.created_on, entry.type, entry.name, entry.link, entry.expiration]);
+      await client.query(insertQuery, [entry.email, entry.password, entry.access_role_instance, entry.access_role_portfolio, entry.share_class, entry.last_time_accessed, entry.reset_password, entry.created_on, entry.type, entry.name, entry.link, entry.expiration, entry.token, entry.id]);
     }
 
     await client.query("COMMIT");

@@ -2,12 +2,11 @@ const ObjectId = require("mongodb").ObjectId;
 require("dotenv").config();
 
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../reports/common";
-import { client } from "../userManagement/auth";
 import { insertEditLogs } from "./logs";
 import { authPool } from "./psql/operation";
-import { compareMonths } from "./tools";
 const jwt = require("jsonwebtoken");
 const jwtSecret = process.env.SECRET;
+const { v4: uuidv4 } = require("uuid");
 
 const SibApiV3Sdk = require("sib-api-v3-sdk");
 SibApiV3Sdk.ApiClient.instance.authentications["api-key"].apiKey = process.env.SEND_IN_BLUE_API_KEY;
@@ -33,101 +32,91 @@ export async function getLinks(): Promise<any> {
   }
 }
 
-export async function editLink(data: any): Promise<any> {
-  try {
-    const database = client.db("auth");
-    const reportCollection = database.collection("links");
-    const id = new ObjectId(data["_id"]);
-    const updates = {} as any;
-    const tableTitles = ["name"];
-
-    // Build the updates object based on `data` and `tableTitles`
-    for (const title of tableTitles) {
-      if (data[title] !== "" && data[title] != null) {
-        updates[title] = data[title];
-      }
-    }
-
-    if (Object.keys(updates).length === 0) {
-      throw new Error("No valid fields to update");
-    }
-    // Update the document with the built updates object
-    const updateResult = await reportCollection.updateOne({ _id: id }, { $set: updates });
-
-    if (updateResult.matchedCount === 0) {
-      return { error: "Document does not exist" };
-    } else if (updateResult.modifiedCount === 0) {
-      return { error: "Document not updated. It may already have the same values" };
-    }
-
-    return updateResult;
-  } catch (error: any) {
-    return { error: error.message }; // Return the error message
-  }
-}
 export async function deleteLink(data: any): Promise<any> {
   try {
-    const database = client.db("auth");
-    const reportCollection = database.collection("links");
-    const id = new ObjectId(data["_id"]);
+    const client = await authPool.connect();
 
-    // Update the document with the built updates object
-    const updateResult = await reportCollection.deleteOne({ _id: id });
+    try {
+      const deleteQuery = `
+        DELETE FROM public.auth_links
+        WHERE id = $1
+      `;
 
-    if (updateResult.matchedCount === 0) {
-      return { error: "Document does not exist" };
-    } else if (updateResult.modifiedCount === 0) {
-      return { error: "Document not updated. It may already have the same values" };
+      const result = await client.query(deleteQuery, [data["id"]]);
+
+      if (result.rowCount === 0) {
+        return { error: "Document does not exist" };
+      }
+
+      return { success: "Document deleted successfully" };
+    } finally {
+      client.release();
     }
-
-    return updateResult;
   } catch (error: any) {
     return { error: error.message }; // Return the error message
   }
 }
 
-export async function addLink(data: any): Promise<any> {
+export async function addLink(data: { name: string; email: string; share_class: string }): Promise<any> {
+  const client = await authPool.connect();
   try {
-    const database = client.db("auth");
-    const reportCollection = database.collection("links");
-    const newData = {} as any;
-    const tableTitles = ["name", "accessRight", "email"];
-    // Build the newData object based on `data` and `tableTitles`
-    for (const title of tableTitles) {
-      if (data[title] !== undefined && data[title] !== null) {
-        newData[title] = data[title];
-      }
-    }
-    const jwtObject = { name: data["name"], accessRole: "member (factsheet report)", shareClass: data["accessRight"], link: true };
+    const jwtObject = {
+      name: data["name"],
+      accessRole: "member (factsheet report)",
+      shareClass: data["share_class"],
+      link: true,
+    };
     const token = jwt.sign(jwtObject, jwtSecret, { expiresIn: "30d" });
-    let base = "https://admin.triadacapital.com/links-redirect?token=" + token;
-    newData["link"] = base;
-    newData["token"] = token;
-    newData["createdOn"] = getDateTimeInMongoDBCollectionFormat(new Date());
-    newData["expiration"] = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000));
-    newData["accessRole"] = "member (factsheet report)";
-    // You might want to check if all required fields are present
-    // if some fields are mandatory e.g.,
+    const base = "https://admin.triadacapital.com/links-redirect?token=" + token;
+    const id = uuidv4();
 
-    // Insert the new document into the collection
-    const insertResult = await reportCollection.insertOne(newData);
-    let email = newData["email"];
-    let name = newData["name"];
-    if (email != "") {
-      let result = await sendLinkEmail({ email, name, link: base });
-      console.log(result);
-    }
-    // The insertOne operation returns an InsertOneResult object
-    // You can check the result by inspecting `insertedCount` and `insertedId`
-    if (insertResult.insertedCount === 0) {
+    const newData = {
+      email: data["email"],
+      password: null,
+      share_class: data["share_class"],
+      access_role_portfolio: null,
+      access_role_instance: "member (factsheet report)",
+      last_time_accessed: getDateTimeInMongoDBCollectionFormat(new Date()),
+      reset_password: null,
+      created_on: getDateTimeInMongoDBCollectionFormat(new Date()),
+      type: "link",
+      name: data["name"],
+      link: base,
+      expiration: getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000)),
+      token: token,
+      id: id,
+    };
+
+    const insertQuery = `
+      INSERT INTO public.auth_links (
+        email, password, share_class, access_role_portfolio, access_role_instance,
+        last_time_accessed, reset_password, created_on, type, name, link, expiration, token, id
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      RETURNING id
+    `;
+
+    const values = [newData.email, newData.password, newData.share_class, newData.access_role_portfolio, newData.access_role_instance, newData.last_time_accessed, newData.reset_password, newData.created_on, newData.type, newData.name, newData.link, newData.expiration, newData.token, newData.id];
+
+    const result = await client.query(insertQuery, values);
+
+    if (result.rowCount === 0) {
       return { error: "Failed to insert document" };
     }
 
-    return { success: true, insertedId: insertResult.insertedId, error: null };
+    if (newData.email !== "") {
+      const emailResult = await sendLinkEmail({ email: newData.email, name: newData.name, link: base });
+      console.log(emailResult);
+    }
+
+    return { success: true, insertedId: result.rows[0].id, error: null };
   } catch (error: any) {
     return { error: error.message }; // Return the error message
+  } finally {
+    client.release();
   }
 }
+
 export async function sendLinkEmail({ email, name, link }: { email: any; name: any; link: any }) {
   try {
     let action = new SibApiV3Sdk.TransactionalEmailsApi().sendTransacEmail({

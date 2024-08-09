@@ -6,6 +6,7 @@ import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { insertEditLogs } from "../operations/logs";
 import { copyFileSync } from "fs";
 import { generateRandomIntegers, sendEmailToResetPassword, sendRegsiterationEmail, sendWelcomeEmail } from "./tools";
+import { authPool } from "../operations/psql/operation";
 
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
@@ -30,370 +31,433 @@ mongoose.connect(uri, {
 const SibApiV3Sdk = require("sib-api-v3-sdk");
 SibApiV3Sdk.ApiClient.instance.authentications["api-key"].apiKey = process.env.SEND_IN_BLUE_API_KEY;
 
-export async function registerUser(email: string, password: string, verificationCode: string) {
+export async function registerUser(email: string, password: string, verificationCode: string): Promise<any> {
   try {
-    const database = client.db("auth");
-    const usersCollection = database.collection("users");
-    const secretCollection = database.collection("secrets");
-    const verificationCodeDB = await secretCollection.findOne({
-      function: "verificationCode",
-    });
-    let salt = await bcrypt.genSalt(parseInt(saltRounds));
-    let cryptedPassword = await bcrypt.hash(password, salt);
-    const result = await bcrypt.compare(verificationCode, verificationCodeDB.code);
+    const client = await authPool.connect();
 
-    const user = await usersCollection.findOne({ email: email });
-    if (user == null && result) {
-      const updateDoc = {
-        email: email,
-        password: cryptedPassword,
-        accessRole: "admin",
-        createdOn: getDateTimeInMongoDBCollectionFormat(new Date()),
-        resetPassword: "false",
-        lastTimeAccessed: getDateTimeInMongoDBCollectionFormat(new Date()),
-      };
-      const action = await usersCollection.insertOne(updateDoc);
-      return { message: "registered", status: 200 };
-    } else if (user) {
-      return { message: "user already exist", status: 404 };
-    } else {
-      return { message: "unauthorized", status: 401 };
+    try {
+      const verificationCodeDB = process.env.VERIFICATIONCODEDB;
+      const salt = await bcrypt.genSalt(parseInt(saltRounds));
+      const cryptedPassword = await bcrypt.hash(password, salt);
+      const result = verificationCode === verificationCodeDB;
+
+      if (result) {
+        const id = uuidv4();
+
+        const insertQuery = `
+          INSERT INTO public.auth_users (
+            email, password, access_role_instance, access_role_portfolio, share_class,
+            last_time_accessed, reset_password, created_on, type, name, link, expiration, token, id
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+          ON CONFLICT (email) DO NOTHING
+        `;
+
+        const values = [email, cryptedPassword, "admin", "portfolio-main", "", getDateTimeInMongoDBCollectionFormat(new Date()), true, getDateTimeInMongoDBCollectionFormat(new Date()), "user", null, null, null, null, id];
+
+        const result = await client.query(insertQuery, values);
+
+        if (result.rowCount > 0) {
+          return { message: "registered", status: 200 };
+        } else {
+          return { message: "User already exists", status: 404 };
+        }
+      } else {
+        return { message: "Unauthorized", status: 401 };
+      }
+    } finally {
+      client.release();
     }
-  } catch (error) {
-    return error;
+  } catch (error: any) {
+    return { error: error.message };
   }
 }
-export async function checkIfUserExists(email: string, password: string): Promise<{ status: 200 | 401; message: null | string; token: string | null; email: string | null; accessRole: string | null; shareClass: string | null }> {
+export async function checkIfUserExists(
+  email: string,
+  password: string
+): Promise<{
+  status: 200 | 401;
+  message: null | string;
+  token: string | null;
+  email: string | null;
+  accessRole: string | null;
+  shareClass: string | null;
+}> {
   try {
-    const database = client.db("auth");
-    const usersCollection = database.collection("users");
+    const client = await authPool.connect();
 
-    const user: any = await usersCollection.findOne({ email: email });
-    if (user) {
-      try {
+    try {
+      const userQuery = `SELECT * FROM public.auth_users WHERE email = $1`;
+      const userResult = await client.query(userQuery, [email]);
+
+      if (userResult.rows.length > 0) {
+        const user = userResult.rows[0];
         const result = await bcrypt.compare(password, user.password);
+
         if (result) {
-          const jwtObject = { email: email, accessRole: user["accessRole"], shareClass: user["shareClass"] };
-          const token = jwt.sign(jwtObject, jwtSecret, { expiresIn: "24h" });
-          const updateDoc = {
-            $set: {
-              lastTimeAccessed: getDateTimeInMongoDBCollectionFormat(new Date()),
-            },
+          const jwtObject = {
+            email: email,
+            accessRole: user.access_role_instance,
+            shareClass: user.share_class,
           };
-          let action = await usersCollection.updateOne(
-            { _id: user["_id"] },
-            updateDoc // Filter to match the document
-          );
+          const token = jwt.sign(jwtObject, jwtSecret, { expiresIn: "24h" });
+
+          const updateQuery = `
+            UPDATE public.auth_users
+            SET last_time_accessed = $1
+            WHERE email = $2
+          `;
+          await client.query(updateQuery, [getDateTimeInMongoDBCollectionFormat(new Date()), email]);
+
           return {
             message: "authenticated",
             status: 200,
             token: token,
             email: email,
-            accessRole: user["accessRole"],
-            shareClass: user["shareClass"],
+            accessRole: user.access_role_instance,
+            shareClass: user.share_class,
           };
         } else {
-          return { message: "Wrong Password", status: 401, token: null, email: null, accessRole: null, shareClass: null };
+          return {
+            message: "Wrong Password",
+            status: 401,
+            token: null,
+            email: null,
+            accessRole: null,
+            shareClass: null,
+          };
         }
-      } catch (error) {
-        return { message: "unexpected error", status: 401, token: null, email: null, accessRole: null, shareClass: null };
-
-        // handle error appropriately
+      } else {
+        return {
+          message: "user does not exist",
+          status: 401,
+          token: null,
+          email: null,
+          accessRole: null,
+          shareClass: null,
+        };
       }
-    } else {
-      return { message: "user does not exist", status: 401, token: null, email: null, accessRole: null, shareClass: null };
+    } finally {
+      client.release();
     }
-  } catch (error) {
-    return { message: "unexpected error", status: 401, token: null, email: null, accessRole: null, shareClass: null };
+  } catch (error: any) {
+    return {
+      message: "unexpected error",
+      status: 401,
+      token: null,
+      email: null,
+      accessRole: null,
+      shareClass: null,
+    };
   }
 }
 
 export async function sendResetPasswordRequest(userEmail: string) {
-  const database = client.db("auth");
-  const usersCollection = database.collection("users");
-
-  const user = await usersCollection.findOne({ email: userEmail });
-  if (user) {
-    try {
-      let resetPasswordCode = generateRandomIntegers();
-      const filter = {
-        email: userEmail,
-      };
-      const updateDoc = {
-        $set: {
-          resetCode: resetPasswordCode,
-        },
-      };
-      let actionInsetResetCode = await usersCollection.updateOne(filter, updateDoc);
-      let actionEmail: any = await sendEmailToResetPassword(user.email, resetPasswordCode);
-      if (actionEmail.statusCode != 200) {
-        let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-
-        await insertEditLogs([`${userEmail} did not recieve email`], "Errors", dateTime, "sendResetPasswordRequest", "controllers/userManagement/auth.ts");
-      }
-      return { status: 200, message: "Reset code has been sent to your email!", email: user.email, actionEmail: actionEmail };
-    } catch (error) {
-      return error;
-      // handle error appropriately
-    }
-  } else {
-    return { message: "User does not exist, please sign up!", status: 401 };
-  }
-}
-
-export async function resetPassword(userEmail: string, resetCode: string, enteredPassword: string) {
-  const database = client.db("auth");
-  const usersCollection = database.collection("users");
-
-  const user = await usersCollection.findOne({ email: userEmail });
-  if (user) {
-    try {
-      let resetPasswordCode = user.resetCode;
-      if (resetPasswordCode == resetCode) {
-        let salt = await bcrypt.genSalt(parseInt(saltRounds));
-        let cryptedPassword = await bcrypt.hash(enteredPassword, salt);
-        const filter = {
-          email: user.email,
-        };
-        const updateDoc = {
-          $set: {
-            password: cryptedPassword,
-            resetCode: "",
-            resetPassword: "true",
-          },
-        };
-
-        const action = await usersCollection.updateOne(filter, updateDoc);
-        return {
-          message: "Password Reset!",
-          status: 200,
-          email: user.email,
-        };
-      } else {
-        return { message: "code does not match" };
-      }
-    } catch (error) {
-      return error;
-      // handle error appropriately
-    }
-  } else {
-    return { message: "User does not exist, please sign up!", status: 401 };
-  }
-}
-
-export async function getAllUsers() {
-  const database = client.db("auth");
-  const usersCollection = database.collection("users");
-  const users = await usersCollection.find().toArray();
-
-  return users;
-}
-
-export async function checkUserRight(email: string, accessRole: string, shareClass: string) {
-  const database = client.db("auth");
-  const usersCollection = database.collection("users");
-
-  // Find the user with the specified email, access role, and share class
-  const user = await usersCollection.findOne({
-    email: email,
-    accessRole: accessRole,
-    shareClass: shareClass,
-  });
-
-  // Return true if a matching user is found, otherwise false
-  return user !== null;
-}
-
-export async function checkLinkRight(token: string, accessRole: string, shareClass: string) {
-  const database = client.db("auth");
-  const linksCollection = database.collection("links");
-
-  // Find the user with the specified email, access role, and share class
-  const user = await linksCollection.findOne({
-    token: token,
-    accessRole: accessRole,
-    accessRight: shareClass,
-  });
-  if (user) {
-    // User exists, update lastAccessedTime
-    const currentTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    await linksCollection.updateOne({ _id: user._id }, { $set: { lastAccessedTime: currentTime } });
-    return true;
-  }
-  // Return true if a matching user is found, otherwise false
-  return user !== null;
-}
-export async function editUser(editedUser: any) {
   try {
-    let userInfo = await getUser(editedUser["_id"]);
-    editedUser["email"] = editedUser["email"].toLowerCase();
-    if (userInfo) {
-      let beforeModify = JSON.parse(JSON.stringify(userInfo));
-      beforeModify["_id"] = new ObjectId(beforeModify["_id"]);
+    const client = await authPool.connect();
 
-      let userKeys: any = ["name", "email", "accessRole", "resetPassword", "shareClass"];
+    const userQuery = `SELECT * FROM public.auth_users WHERE email = $1`;
+    const userResult = await client.query(userQuery, [userEmail]);
+
+    if (userResult.rows.length > 0) {
+      const user = userResult.rows[0];
+
+      try {
+        let resetPasswordCode = generateRandomIntegers();
+
+        const updateQuery = `
+      UPDATE public.auth_users
+      SET reset_password = $1
+      WHERE email = $2
+    `;
+        await client.query(updateQuery, [resetPasswordCode, userEmail]);
+        let actionEmail: any = await sendEmailToResetPassword(user.email, resetPasswordCode);
+        if (actionEmail.statusCode != 200) {
+          let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+
+          await insertEditLogs([`${userEmail} did not recieve email`], "Errors", dateTime, "sendResetPasswordRequest", "controllers/userManagement/auth.ts");
+        }
+        return { status: 200, message: "Reset code has been sent to your email!", email: user.email, actionEmail: actionEmail };
+      } catch (error) {
+        return error;
+        // handle error appropriately
+      }
+    } else {
+      return { message: "User does not exist, please sign up!", status: 401 };
+    }
+  } finally {
+    client.release();
+  }
+}
+
+export async function resetPassword(userEmail: string, resetCode: string, enteredPassword: string): Promise<any> {
+  try {
+    const client = await authPool.connect();
+    const userQuery = `SELECT * FROM public.auth_users WHERE email = $1`;
+    const userResult = await client.query(userQuery, [userEmail]);
+
+    if (userResult.rows.length > 0) {
+      const user = userResult.rows[0];
+
+      try {
+        const resetPasswordCode = user.reset_password;
+        if (resetPasswordCode === resetCode) {
+          const salt = await bcrypt.genSalt(parseInt(saltRounds));
+          const cryptedPassword = await bcrypt.hash(enteredPassword, salt);
+
+          const updateQuery = `
+            UPDATE public.auth_users
+            SET password = $1, reset_password = '', reset_password_status = 'true'
+            WHERE email = $2
+          `;
+          await client.query(updateQuery, [cryptedPassword, userEmail]);
+
+          return {
+            message: "Password Reset!",
+            status: 200,
+            email: user.email,
+          };
+        } else {
+          return { message: "Code does not match", status: 401 };
+        }
+      } catch (error) {
+        return { message: "An error occurred", status: 500 };
+      }
+    } else {
+      return { message: "User does not exist, please sign up!", status: 401 };
+    }
+  } finally {
+    client.release();
+  }
+}
+
+export async function getAllUsers(): Promise<any[]> {
+  try {
+    const client = await authPool.connect();
+
+    try {
+      const query = `SELECT * FROM public.auth_users`;
+      const result = await client.query(query);
+      return result.rows;
+    } finally {
+      client.release();
+    }
+  } catch (error: any) {
+    throw new Error(`Failed to fetch users: ${error.message}`);
+  }
+}
+
+export async function checkUserRight(email: string, accessRole: string, shareClass: string): Promise<boolean> {
+  const client = await authPool.connect();
+
+  try {
+    const userQuery = `
+      SELECT * FROM public.auth_users 
+      WHERE email = $1 AND access_role_instance = $2 AND share_class = $3
+    `;
+    const userResult = await client.query(userQuery, [email, accessRole, shareClass]);
+
+    // Return true if a matching user is found, otherwise false
+    return userResult.rows.length > 0;
+  } finally {
+    client.release();
+  }
+}
+
+export async function checkLinkRight(token: string, accessRole: string, shareClass: string): Promise<boolean> {
+  const client = await authPool.connect();
+
+  try {
+    const linkQuery = `
+      SELECT * FROM public.auth_links
+      WHERE token = $1 AND access_role = $2 AND access_right = $3
+    `;
+    const linkResult = await client.query(linkQuery, [token, accessRole, shareClass]);
+
+    if (linkResult.rows.length > 0) {
+      const user = linkResult.rows[0];
+      const currentTime = new Date().toISOString();
+
+      const updateQuery = `
+        UPDATE public.links
+        SET last_accessed_time = $1
+        WHERE id = $2
+      `;
+      await client.query(updateQuery, [currentTime, user.id]);
+
+      return true;
+    }
+    return false;
+  } finally {
+    client.release();
+  }
+}
+
+export async function editUser(editedUser: any): Promise<any> {
+  const client = await authPool.connect();
+
+  try {
+    let userInfo = await getUser(editedUser.id);
+
+    editedUser.email = editedUser.email.toLowerCase();
+    if (userInfo) {
+      let beforeModify = { ...userInfo };
+
+      let userKeys = ["name", "access_role_instance", "share_class"];
       let changes = 0;
       let changesText = [];
-      for (let index = 0; index < userKeys.length; index++) {
-        let key: any = userKeys[index];
-        if (editedUser[key] != "" && editedUser[key]) {
-          changesText.push(`${key} changed from ${userInfo[key]} to ${editedUser[key]} `);
-          userInfo[key] = editedUser[key];
 
+      for (let key of userKeys) {
+        if (editedUser[key] !== "" && editedUser[key] !== undefined) {
+          changesText.push(`${key} changed from ${userInfo[key]} to ${editedUser[key]}`);
+          userInfo[key] = editedUser[key];
           changes++;
         }
       }
-      if (!changes) {
+
+      if (changes === 0) {
         return { error: "The User is still the same." };
       }
 
-      // Access the 'structure' database
-      const database = client.db("auth");
+      const dateTime = new Date().toISOString();
+      await insertEditLogs(changesText, "Edit User", dateTime, userInfo["Edit Note"], `${userInfo.email} ${userInfo.name}`);
 
-      // Access the collection named by the 'customerId' parameter
-      const collection = database.collection("users");
+      const updateQuery = `
+        UPDATE public.auth_users
+        SET name = $1, access_role_instance = $2, share_class = $3
+        WHERE id = $4;
+      `;
+      const values = [userInfo.name, userInfo.access_role_instance, userInfo.share_class, userInfo.id];
 
-      let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-      await insertEditLogs(changesText, "Edit User", dateTime, userInfo["Edit Note"], userInfo["email"] + " " + userInfo["name"]);
+      const result = await client.query(updateQuery, values);
 
-      let action = await collection.updateOne(
-        { _id: userInfo["_id"] }, // Filter to match the document
-        { $set: userInfo } // Update operation
-      );
-
-      if (action) {
+      if (result.rowCount > 0) {
         return { error: null };
       } else {
-        return {
-          error: "unexpected error, please contact Triada team",
-        };
+        return { error: "unexpected error, please contact Triada team" };
       }
     } else {
-      return { error: "Trade does not exist, please referesh the page!" };
+      return { error: "User does not exist, please refresh the page!" };
     }
   } catch (error: any) {
-    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    console.log(error);
-    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    const dateTime = new Date().toISOString();
+    console.error(error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
     await insertEditLogs([errorMessage], "Errors", dateTime, "editUser", "src/controllers/auth.ts");
+  } finally {
+    client.release();
   }
 }
 
-export async function getUser(userId: string) {
+export async function getUser(userId: string): Promise<any> {
+  const client = await authPool.connect();
+
   try {
-    // Connect to the MongoDB client
+    const userQuery = `
+      SELECT * FROM public.auth_users
+      WHERE id = $1
+    `;
+    const result = await client.query(userQuery, [userId]);
 
-    // Access the 'structure' database
-    const database = client.db("auth");
-
-    // Access the collection named by the 'customerId' parameter
-    const collection = database.collection("users");
-
-    // Perform your operations, such as find documents in the collection
-    // This is an example operation that fetches all documents in the collection
-    // Empty query object means "match all documents"
-    const options = {}; // You can set options for the find operation if needed
-    const query = { _id: new ObjectId(userId) }; // Replace yourIdValue with the actual ID you're querying
-    const results = await collection.find(query, options).toArray();
-
-    // The 'results' variable now contains an array of documents from the collection
-    return results[0];
+    // Return the first result if available
+    return result.rows[0] || null;
   } catch (error) {
-    // Handle any errors that occurred during the operation
-    console.error("An error occurred while retrieving data from MongoDB:", error);
-    return {};
+    console.error("An error occurred while retrieving data from PostgreSQL:", error);
+    return null;
+  } finally {
+    client.release();
   }
 }
-export async function getUserByEmail(email: string) {
+
+export async function getUserByEmail(email: string): Promise<any> {
+  const client = await authPool.connect();
+
   try {
-    // Connect to the MongoDB client
+    const userQuery = `
+      SELECT * FROM public.auth_users
+      WHERE email = $1
+    `;
+    const result = await client.query(userQuery, [email]);
 
-    // Access the 'structure' database
-    const database = client.db("auth");
-
-    // Access the collection named by the 'customerId' parameter
-    const collection = database.collection("users");
-
-    // Perform your operations, such as find documents in the collection
-    // This is an example operation that fetches all documents in the collection
-    // Empty query object means "match all documents"
-    const options = {}; // You can set options for the find operation if needed
-    const query = { email: email }; // Replace yourIdValue with the actual ID you're querying
-    const results = await collection.find(query, options).toArray();
-
-    // The 'results' variable now contains an array of documents from the collection
-    return results[0];
+    // Return the first result if available
+    return result.rows[0] || null;
   } catch (error) {
-    // Handle any errors that occurred during the operation
-    console.error("An error occurred while retrieving data from MongoDB:", error);
-    return {};
+    console.error("An error occurred while retrieving data from PostgreSQL:", error);
+    return null;
+  } finally {
+    client.release();
   }
 }
 
-export async function deleteUser(userId: string, userName: string, userEmail: any) {
+export async function deleteUser(userId: string, userName: string, userEmail: string): Promise<any> {
+  const client = await authPool.connect();
+
   try {
-    // Connect to the MongoDB client
+    const deleteQuery = `
+      DELETE FROM public.auth_users
+      WHERE id = $1
+    `;
+    const result = await client.query(deleteQuery, [userId]);
 
-    // Get the database and the specific collection
-    const database = client.db("auth");
-    const collection = database.collection("users");
-
-    let query = { _id: new ObjectId(userId) };
-
-    // Delete the document with the specified _id
-    const result = await collection.deleteOne(query);
-
-    if (result.deletedCount === 0) {
-      return { error: `User does not exist!` };
+    if (result.rowCount === 0) {
+      return { error: "User does not exist!" };
     } else {
-      let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-      await insertEditLogs(["deleted"], "Delete User", dateTime, "deleted", userName + " " + userEmail);
+      const dateTime = new Date().toISOString();
+      await insertEditLogs(["deleted"], "Delete User", dateTime, "deleted", `${userName} ${userEmail}`);
       return { error: null };
     }
   } catch (error) {
-    console.error(`An error occurred while deleting the document: ${error}`);
+    console.error(`An error occurred while deleting the user: ${error}`);
     return { error: "Unexpected error 501" };
+  } finally {
+    client.release();
   }
 }
 
 export async function addUser({ email, name, accessRole, shareClass, welcome }: { email: string; name: string; accessRole: string; shareClass: string; welcome: boolean }): Promise<any> {
+  const client = await authPool.connect();
+
   try {
-    email = email.toLocaleLowerCase();
-    const database = client.db("auth");
-    const usersCollection = database.collection("users");
-    let password = uuidv4();
-    let salt = await bcrypt.genSalt(parseInt(saltRounds));
-    let cryptedPassword = await bcrypt.hash(password, salt);
+    email = email.toLowerCase();
+    const password = uuidv4();
+    const salt = await bcrypt.genSalt(parseInt(saltRounds));
+    const cryptedPassword = await bcrypt.hash(password, salt);
 
-    const user = await usersCollection.findOne({ email: email });
-    if (user == null) {
-      let resetPasswordCode = generateRandomIntegers();
+    const userQuery = `
+      SELECT * FROM public.auth_users
+      WHERE email = $1
+    `;
+    const userResult = await client.query(userQuery, [email]);
 
-      const updateDoc = {
-        name: name,
-        email: email,
-        password: cryptedPassword,
-        accessRole: accessRole,
-        shareClass: shareClass,
-        createdOn: getDateTimeInMongoDBCollectionFormat(new Date()),
-        resetPassword: "false",
-        resetCode: resetPasswordCode,
-      };
-      const action = await usersCollection.insertOne(updateDoc);
+    if (userResult.rows.length === 0) {
+      const resetPasswordCode = generateRandomIntegers();
+      const id = uuidv4();
+
+      const insertQuery = `
+        INSERT INTO public.auth_users (
+          email, password, access_role_instance, share_class, created_on,
+          reset_password, reset_code, name, id
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `;
+      const values = [email, cryptedPassword, accessRole, shareClass, new Date().toISOString(), false, resetPasswordCode, name, id];
+
+      await client.query(insertQuery, values);
+
       if (welcome) {
-        let emailRegisteration = await sendWelcomeEmail({ email: email, name: name, resetCode: resetPasswordCode });
+        await sendWelcomeEmail({ email, name, resetCode: resetPasswordCode });
       } else {
-        let emailRegisteration = await sendRegsiterationEmail({ email: email, name: name });
+        await sendRegsiterationEmail({ email, name });
       }
+
       return { message: "registered", status: 200, error: "" };
-    } else if (user) {
-      return { error: "user already exist", status: 404 };
     } else {
-      return { error: "unauthorized", status: 401 };
+      return { error: "user already exists", status: 404 };
     }
-  } catch (error) {
+  } catch (error: any) {
+    console.error("An error occurred:", error);
     return { error: "unauthorized", status: 401 };
+  } finally {
+    client.release();
   }
 }
 export function checkPasswordStrength(password: any) {
@@ -424,34 +488,34 @@ export function checkPasswordStrength(password: any) {
   return description;
 }
 
-export async function updateUser(userInfo: any, newFileNames: any) {
+export async function updateUser(userInfo: any, newFileNames: any): Promise<any> {
+  const client = await authPool.connect();
+
   try {
-    // Access the 'structure' database
-    const database = client.db("auth");
+    const dateTime = new Date().toISOString();
+    await insertEditLogs(newFileNames, "Upload User", dateTime, "User uploaded a new file", `${userInfo.email} ${userInfo.name}`);
 
-    // Access the collection named by the 'customerId' parameter
-    const collection = database.collection("users");
+    const updateQuery = `
+      UPDATE public.auth_users
+      SET files = $1
+      WHERE id = $2
+    `;
+    const values = [userInfo.files, userInfo.id];
 
-    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    await insertEditLogs(newFileNames, "Upload User", dateTime, "User uploaded a new file", userInfo["email"] + " " + userInfo["name"]);
+    const result = await client.query(updateQuery, values);
 
-    let action = await collection.updateOne(
-      { _id: userInfo["_id"] }, // Filter to match the document
-      { $set: userInfo } // Update operation
-    );
-
-    if (action) {
+    if (result.rowCount > 0) {
       return { error: null };
     } else {
-      return {
-        error: "unexpected error, please contact Triada team",
-      };
+      return { error: "unexpected error, please contact Triada team" };
     }
   } catch (error: any) {
-    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    console.log(error);
-    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    const dateTime = new Date().toISOString();
+    console.error(error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
     await insertEditLogs([errorMessage], "Errors", dateTime, "updateUser", "src/controllers/auth.ts");
+  } finally {
+    client.release();
   }
 }

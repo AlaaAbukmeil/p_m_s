@@ -1,5 +1,5 @@
 import { NextFunction, Router } from "express";
-import { addLink, deleteLink, editLink, getLinks } from "../../controllers/operations/links";
+import { addLink, deleteLink, getLinks } from "../../controllers/operations/links";
 import { verifyToken } from "../../controllers/common";
 import { uploadToBucket } from "../../controllers/userManagement/tools";
 const linksRouter = Router();
@@ -14,19 +14,9 @@ linksRouter.get("/links", uploadToBucket.any(), verifyToken, async (req: Request
   }
 });
 
-linksRouter.post("/edit-link", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response | any, next: NextFunction) => {
-  try {
-    let action = await editLink(req.body);
-    res.sendStatus(200);
-  } catch (error) {
-    console.log(error);
-    res.send({ error: "Something is not correct, check error log records" });
-  }
-});
-
 linksRouter.post("/delete-link", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response | any, next: NextFunction) => {
   try {
-      let action = await deleteLink(req.body);
+    let action = await deleteLink(req.body);
     res.sendStatus(200);
   } catch (error) {
     console.log(error);
@@ -36,6 +26,8 @@ linksRouter.post("/delete-link", verifyToken, uploadToBucket.any(), async (req: 
 
 linksRouter.post("/add-link", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response | any, next: NextFunction) => {
   try {
+    let input: { name: string; email: string; share_class: string } = req.body;
+    console.log({ input });
     let action = await addLink(req.body);
     if (action.error) {
       res.send({ error: action.error });

@@ -1,3 +1,4 @@
+import { InformationInDB } from "../../models/positionsInformation";
 import { NomuraCashReconcileFileUpload, NomuraReconcileCashOutput } from "../../models/reconcile";
 import { CentralizedTrade } from "../../models/trades";
 import { insertPositionsInfo } from "../analytics/data";
@@ -120,7 +121,7 @@ export async function readCentralizedEBlot(path: string): Promise<
       let newPositions = [];
       for (let index = 0; index < allTrades.length; index++) {
         let newTrade = allTrades[index];
-        let object = {
+        let object: InformationInDB = {
           bb_ticker: newTrade["BB Ticker"],
           isin: newTrade["ISIN"],
           cusip: newTrade["CUSIP"],
@@ -136,7 +137,6 @@ export async function readCentralizedEBlot(path: string): Promise<
 
           treasury_and_spread: null,
           timestamp: null,
-
         };
         newPositions.push(object);
       }
