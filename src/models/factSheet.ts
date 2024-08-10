@@ -20,10 +20,13 @@ export interface FactSheetBenchMarkDataInDB {
   date: string;
   data: { main: number };
   fund: string;
+  id: string;
+
 }
 export interface FactSheetFundDataInDB {
   timestamp: number;
   date: string;
   data: { [key: string]: number };
   fund: string;
+  id: string;
 }

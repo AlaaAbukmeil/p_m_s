@@ -7,6 +7,8 @@ import { formatExcelDate } from "../../controllers/reports/common";
 import { dateWithNoDay } from "../../controllers/common";
 import { editFactSheetDisplay, getFactSheetDisplay } from "../../controllers/operations/commands";
 import { uploadToBucket } from "../../controllers/userManagement/tools";
+import { FactSheetFundDataInDB } from "../../models/factSheet";
+const { v4: uuidv4 } = require("uuid");
 const factSheetRouter = Router();
 
 factSheetRouter.get("/fact-sheet-data", uploadToBucket.any(), verifyToken, async (req: Request | any, res: Response | any, next: NextFunction) => {
@@ -40,7 +42,6 @@ factSheetRouter.get("/fact-sheet-data", uploadToBucket.any(), verifyToken, async
       "FIDITBD LX Equity": fiditbd,
     };
 
-    console.log({ others });
     let formmated = trimFactSheetData(data, dataMaster, others);
     res.send({ formmated, display });
   } catch (error: any) {
@@ -55,20 +56,11 @@ factSheetRouter.post("/add-fact-sheet", uploadToBucket.any(), verifyToken, async
     let name = data.name;
     let fullDate = data.month.split("/");
     if (name == "a2" || name == "a3" || name == "a4" || name == "a5" || name == "a6") {
-      let newRow: any = { date: data.month, data: {}, timestamp: new Date(fullDate[0] + "/01/" + fullDate[1]).getTime() };
+      let id = uuidv4();
+
+      let newRow: FactSheetFundDataInDB = { date: data.month, data: {}, timestamp: new Date(fullDate[0] + "/01/" + fullDate[1]).getTime(), fund: "Triada Master", id: id };
       newRow.data[name] = parseFloat(data.price);
       let result = await addFactSheet(newRow, "Triada");
-      console.log(result);
-    } else if (name == "ma2" || name == "ma3" || name == "ma4" || name == "ma6") {
-      let newRow: any = { date: data.month, data: {}, timestamp: new Date(fullDate[0] + "/01/" + fullDate[1]).getTime() };
-      newRow.data[name] = parseFloat(data.price);
-      let result = await addFactSheet(newRow, "Triada Master");
-      console.log(result);
-    } else {
-      let newRow: any = { date: data.month, data: {}, timestamp: new Date(fullDate[0] + "/01/" + fullDate[1]).getTime() };
-      newRow.data["main"] = parseFloat(data.price);
-      let result = await addFactSheet(newRow, name);
-      console.log(result);
     }
     res.sendStatus(200);
   } catch (error: any) {
@@ -85,18 +77,17 @@ factSheetRouter.post("/edit-fact-sheet", uploadToBucket.any(), verifyToken, asyn
       let newRow: any = { data: {}, id: data.id };
 
       newRow.data[name] = parseFloat(data.price);
-      let result = await editFactSheet(newRow, "Triada", name);
+      let result = await editFactSheet(newRow, "Triada", name, data.id);
     } else if (name == "ma2" || name == "ma3" || name == "ma4" || name == "ma6") {
       let newRow: any = { data: {}, id: data.id, month: data.month, price: data.price };
 
       newRow.data[name] = parseFloat(data.price);
-      let result = await editFactSheet(newRow, "Triada Master", name);
-      console.log(result, newRow);
+      let result = await editFactSheet(newRow, "Triada Master", name, data.id);
     } else {
       let newRow: any = { data: {}, id: data.id, month: data.month, price: data.price };
 
       newRow.data["main"] = parseFloat(data.price);
-      let result = await editFactSheet(newRow, name, "main");
+      let result = await editFactSheet(newRow, name, "main", data.id);
     }
     res.sendStatus(200);
   } catch (error: any) {
@@ -111,6 +102,8 @@ factSheetRouter.post("/delete-fact-sheet-data", uploadToBucket.any(), verifyToke
     let name = data.name;
     if (name == "a2" || name == "a3" || name == "a4" || name == "a5" || name == "a6") {
       let result = await deleteFactSheet(data, "Triada");
+    } else if (name == "ma2" || name == "ma3" || name == "ma4" || name == "ma6") {
+      let result = await deleteFactSheet(data, "Triada Master");
     } else {
       let result = await deleteFactSheet(data, name);
     }

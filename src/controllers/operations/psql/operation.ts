@@ -1,5 +1,5 @@
 import { UserAuth } from "../../../models/auth";
-import { FactSheetBenchMarkDataInDB } from "../../../models/factSheet";
+import { FactSheetBenchMarkDataInDB, FactSheetFundDataInDB } from "../../../models/factSheet";
 import { InformationInDB } from "../../../models/positionsInformation";
 import { getDateTimeInMongoDBCollectionFormat } from "../../reports/common";
 import { getFactSheetData } from "../../reports/factSheet";
@@ -41,11 +41,14 @@ export function formatFactSheet(factSheetMongoDbData: any, name: any): FactSheet
   let result: FactSheetBenchMarkDataInDB[] = [];
   for (let index = 0; index < factSheetMongoDbData.length; index++) {
     const element = factSheetMongoDbData[index];
-    let object = {
+    let id = uuidv4();
+
+    let object: FactSheetBenchMarkDataInDB = {
       timestamp: element.timestamp,
       date: element.date,
       data: element.data,
       fund: name,
+      id: id,
     };
     result.push(object);
   }
@@ -62,19 +65,19 @@ export async function insertFactSheetData(dataInput: FactSheetBenchMarkDataInDB[
       `;
 
     const insertQuery = `
-        INSERT INTO public.factsheet (fund, date, timestamp, data)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO public.factsheet (fund, date, timestamp, data, id)
+        VALUES ($1, $2, $3, $4, $5)
         ON CONFLICT (fund, date)
         DO UPDATE SET
           timestamp = EXCLUDED.timestamp,
           data = EXCLUDED.data;
       `;
 
-    for (const { fund, date, timestamp, data } of dataInput) {
+    for (const { fund, date, timestamp, data, id } of dataInput) {
       // Ensure the partition exists
       await client.query(createPartitionQuery, [fund]);
       // Insert the data
-      await client.query(insertQuery, [fund, date, timestamp, data]);
+      await client.query(insertQuery, [fund, date, timestamp, data, id]);
     }
 
     await client.query("COMMIT");
@@ -112,11 +115,11 @@ export async function testPsqlTime() {
   }
 }
 
-export async function migrateInformationDB(db: string, collectionName: string) {
+export async function migrateInformationDB(db: string, collectionName: string, query: any) {
   const database = client.db(db);
   const collection = database.collection(collectionName);
 
-  const existingPosition = await collection.find().toArray();
+  const existingPosition = await collection.find(query).toArray();
 
   return existingPosition;
 }

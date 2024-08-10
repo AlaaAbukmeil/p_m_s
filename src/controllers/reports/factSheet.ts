@@ -28,6 +28,7 @@ export let beforeSwitchRatiosMasterTwo: any = {
 };
 
 function customEditMonthlyReturn(variables: any, monthlyReturns: any) {
+  //these are the months, where triada switched, so initial should be 0. but we show performance of previous class
   if (variables[0] == "a5" || variables[0] == "a6") {
     if (monthlyReturns["06/2016"]) {
       monthlyReturns["06/2016"][variables[0]] = 2.05 / 100;
@@ -324,7 +325,7 @@ export async function getFactSheetData(collectionName: any, from: any, to: any, 
     `;
 
     const result = await client.query(query, [startDate, endDate]);
-    const report = result.rows.filter((data: any) => data.data[variable] != null);
+    const report = result.rows
     return report;
   } catch (error) {
     console.error("Failed in bulk operation:", error, collectionName);
@@ -780,34 +781,34 @@ export function trimFactSheetData(triada: any, triadaMaster: any, others: any) {
   let formmated: any = { a2: {}, a3: {}, a4: {}, a5: {}, a6: {}, "3 Month Treasury": {}, "LEGATRUU Index": {}, "EMUSTRUU Index": {}, "BEUCTRUU Index": {}, "LG30TRUU Index": {}, "BEBGTRUU Index": {}, ma2: {}, ma3: {}, ma4: {}, ma6: {} };
   for (let index = 0; index < triada.length; index++) {
     let month = triada[index].date;
-    let id = triada[index]["_id"];
+    let id = triada[index]["id"];
     let price = triada[index]["data"];
     months.push(month);
-    formmated.a2[month] = { _id: id, price: price.a2, month: month, name: "a2" };
-    formmated.a3[month] = { _id: id, price: price.a3, month: month, name: "a3" };
-    formmated.a4[month] = { _id: id, price: price.a4, month: month, name: "a4" };
-    formmated.a5[month] = { _id: id, price: price.a5, month: month, name: "a5" };
-    formmated.a6[month] = { _id: id, price: price.a6, month: month, name: "a6" };
+    formmated.a2[month] = { id: id, price: price.a2, month: month, name: "a2" };
+    formmated.a3[month] = { id: id, price: price.a3, month: month, name: "a3" };
+    formmated.a4[month] = { id: id, price: price.a4, month: month, name: "a4" };
+    formmated.a5[month] = { id: id, price: price.a5, month: month, name: "a5" };
+    formmated.a6[month] = { id: id, price: price.a6, month: month, name: "a6" };
   }
 
   for (let index = 0; index < triadaMaster.length; index++) {
     let month = triadaMaster[index].date;
-    let id = triadaMaster[index]["_id"];
+    let id = triadaMaster[index]["id"];
     let price = triadaMaster[index].data;
 
-    formmated.ma2[month] = { _id: id, price: price.ma2, month: month, name: "ma2" };
-    formmated.ma3[month] = { _id: id, price: price.ma3, month: month, name: "ma3" };
-    formmated.ma4[month] = { _id: id, price: price.ma4, month: month, name: "ma4" };
-    formmated.ma6[month] = { _id: id, price: price.ma6, month: month, name: "ma6" };
+    formmated.ma2[month] = { id: id, price: price.ma2, month: month, name: "ma2" };
+    formmated.ma3[month] = { id: id, price: price.ma3, month: month, name: "ma3" };
+    formmated.ma4[month] = { id: id, price: price.ma4, month: month, name: "ma4" };
+    formmated.ma6[month] = { id: id, price: price.ma6, month: month, name: "ma6" };
   }
 
   for (let name in others) {
     for (let index = 0; index < others[name].length; index++) {
       let month = others[name][index].date;
-      let id = others[name][index]["_id"];
+      let id = others[name][index]["id"];
       let price = others[name][index]["data"];
       formmated[name] = formmated[name] ? formmated[name] : {};
-      formmated[name][month] = { _id: id, price: price.main, month: month, name: name };
+      formmated[name][month] = { id: id, price: price.main, month: month, name: name };
     }
   }
   return { formmated: formmated, months: months };
