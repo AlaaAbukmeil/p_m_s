@@ -14,6 +14,7 @@ export interface UserAuth {
   expiration: string | null;
   token: string | null;
   id: string;
+  reset_code: string | null;
   files:
     | {
         name: string;

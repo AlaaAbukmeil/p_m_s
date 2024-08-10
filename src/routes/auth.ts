@@ -127,7 +127,7 @@ authRouter.post("/edit-user", verifyToken, uploadToBucket.any(), async (req: Req
 authRouter.post("/delete-user", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let data = req.body;
-    let action: any = await deleteUser(data["_id"], data["name"], data["email"]);
+    let action: any = await deleteUser(data["id"], data["name"], data["email"]);
     if (action.error) {
       res.send({ error: action.error, status: 404 });
     } else {
@@ -142,16 +142,15 @@ authRouter.post("/delete-user", verifyToken, uploadToBucket.any(), async (req: R
 authRouter.post("/add-user", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let data = req.body;
-    console.log({ req: req.body });
     if (data.email && data.share_class && data.access_role_instance) {
       req.body.welcome = false;
+      console.log(req.body);
       let action = await addUser(req.body);
       if (action.error) {
         res.send({ error: action.error });
       } else {
         res.sendStatus(200);
       }
-      res.send(200);
     } else {
       res.send({ error: "Something is not correct, check error log records" });
     }

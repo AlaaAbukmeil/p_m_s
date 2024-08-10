@@ -7,9 +7,9 @@ import { factsheetPool, formatFactSheet, formatLinks, formatNewIssues, formatPos
 const migrateRouter = Router();
 
 migrateRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  let data = await migrateInformationDB("auth", "users");
-  let formatted = formatUsers(data);
-  await insertUsersData(formatted);
+  let data = await migrateInformationDB("auth", "links");
+  let formatted = formatLinks(data);
+  await insertLinksData(formatted);
   // console.log({ data });
   res.send({ formatted });
 });

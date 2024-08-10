@@ -52,7 +52,7 @@ export async function registerUser(email: string, password: string, verification
           ON CONFLICT (email) DO NOTHING
         `;
 
-        const values = [email, cryptedPassword, "admin", "portfolio-main", "", getDateTimeInMongoDBCollectionFormat(new Date()), true, getDateTimeInMongoDBCollectionFormat(new Date()), "user", null, null, null, null, id];
+        const values = [email, cryptedPassword, "admin", "portfolio-main", "", "", true, getDateTimeInMongoDBCollectionFormat(new Date()), "user", null, null, null, null, id];
 
         const result = await client.query(insertQuery, values);
 
@@ -152,9 +152,8 @@ export async function checkIfUserExists(
 }
 
 export async function sendResetPasswordRequest(userEmail: string) {
+  const client = await authPool.connect();
   try {
-    const client = await authPool.connect();
-
     const userQuery = `SELECT * FROM public.auth_users WHERE email = $1`;
     const userResult = await client.query(userQuery, [userEmail]);
 
@@ -190,8 +189,8 @@ export async function sendResetPasswordRequest(userEmail: string) {
 }
 
 export async function resetPassword(userEmail: string, resetCode: string, enteredPassword: string): Promise<any> {
+  const client = await authPool.connect();
   try {
-    const client = await authPool.connect();
     const userQuery = `SELECT * FROM public.auth_users WHERE email = $1`;
     const userResult = await client.query(userQuery, [userEmail]);
 
@@ -199,17 +198,17 @@ export async function resetPassword(userEmail: string, resetCode: string, entere
       const user = userResult.rows[0];
 
       try {
-        const resetPasswordCode = user.reset_password;
+        const resetPasswordCode = user.reset_code;
         if (resetPasswordCode === resetCode) {
           const salt = await bcrypt.genSalt(parseInt(saltRounds));
           const cryptedPassword = await bcrypt.hash(enteredPassword, salt);
 
           const updateQuery = `
-            UPDATE public.auth_users
-            SET password = $1, reset_password = '', reset_password_status = 'true'
-            WHERE email = $2
-          `;
-          await client.query(updateQuery, [cryptedPassword, userEmail]);
+          UPDATE public.auth_users
+          SET password = $1, reset_code = $3, reset_password = $4
+          WHERE email = $2
+        `;
+          await client.query(updateQuery, [cryptedPassword, userEmail, "", true]);
 
           return {
             message: "Password Reset!",
@@ -220,7 +219,8 @@ export async function resetPassword(userEmail: string, resetCode: string, entere
           return { message: "Code does not match", status: 401 };
         }
       } catch (error) {
-        return { message: "An error occurred", status: 500 };
+        console.log({ error });
+        return { message: error, status: 500 };
       }
     } else {
       return { message: "User does not exist, please sign up!", status: 401 };
@@ -235,7 +235,7 @@ export async function getAllUsers(): Promise<any[]> {
     const client = await authPool.connect();
 
     try {
-      const query = `SELECT * FROM public.auth_users`;
+      const query = `SELECT * FROM public.auth_users ORDER BY access_role_instance ASC, name ASC;`;
       const result = await client.query(query);
       return result.rows;
     } finally {
@@ -269,17 +269,17 @@ export async function checkLinkRight(token: string, accessRole: string, shareCla
   try {
     const linkQuery = `
       SELECT * FROM public.auth_links
-      WHERE token = $1 AND access_role = $2 AND access_right = $3
+      WHERE token = $1 AND access_role_instance = $2 AND share_class = $3
     `;
     const linkResult = await client.query(linkQuery, [token, accessRole, shareClass]);
 
     if (linkResult.rows.length > 0) {
       const user = linkResult.rows[0];
-      const currentTime = new Date().toISOString();
+      const currentTime = getDateTimeInMongoDBCollectionFormat(new Date());
 
       const updateQuery = `
-        UPDATE public.links
-        SET last_accessed_time = $1
+        UPDATE public.auth_links
+        SET last_time_accessed = $1
         WHERE id = $2
       `;
       await client.query(updateQuery, [currentTime, user.id]);
@@ -414,7 +414,7 @@ export async function deleteUser(userId: string, userName: string, userEmail: st
   }
 }
 
-export async function addUser({ email, name, accessRole, shareClass, welcome }: { email: string; name: string; accessRole: string; shareClass: string; welcome: boolean }): Promise<any> {
+export async function addUser({ email, name, access_role_instance, access_role_portfolio, share_class, welcome }: { email: string; name: string; access_role_instance: string; access_role_portfolio: string; share_class: string; welcome: boolean }): Promise<any> {
   const client = await authPool.connect();
 
   try {
@@ -436,17 +436,17 @@ export async function addUser({ email, name, accessRole, shareClass, welcome }: 
       const insertQuery = `
         INSERT INTO public.auth_users (
           email, password, access_role_instance, share_class, created_on,
-          reset_password, reset_code, name, id
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          reset_password, reset_code, name, id, access_role_portfolio, last_time_accessed, type
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       `;
-      const values = [email, cryptedPassword, accessRole, shareClass, new Date().toISOString(), false, resetPasswordCode, name, id];
+      const values = [email, cryptedPassword, access_role_instance, share_class, getDateTimeInMongoDBCollectionFormat(new Date()), false, resetPasswordCode, name, id, access_role_portfolio, "", "user"];
 
       await client.query(insertQuery, values);
 
       if (welcome) {
         await sendWelcomeEmail({ email, name, resetCode: resetPasswordCode });
       } else {
-        await sendRegsiterationEmail({ email, name });
+        await sendRegsiterationEmail({ email, name, resetCode: resetPasswordCode });
       }
 
       return { message: "registered", status: 200, error: "" };

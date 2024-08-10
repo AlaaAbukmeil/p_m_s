@@ -76,7 +76,7 @@ export async function addLink(data: { name: string; email: string; share_class: 
       share_class: data["share_class"],
       access_role_portfolio: null,
       access_role_instance: "member (factsheet report)",
-      last_time_accessed: getDateTimeInMongoDBCollectionFormat(new Date()),
+      last_time_accessed: "",
       reset_password: null,
       created_on: getDateTimeInMongoDBCollectionFormat(new Date()),
       type: "link",

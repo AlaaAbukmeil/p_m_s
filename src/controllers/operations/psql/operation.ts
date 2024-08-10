@@ -252,7 +252,7 @@ export function formatUsers(data: any): UserAuth[] {
       access_role_instance: element["accessRole"],
       access_role_portfolio: "portfolio-main",
       share_class: element["shareClass"],
-      last_time_accessed: element["lastTimeAccessed"] || getDateTimeInMongoDBCollectionFormat(new Date()),
+      last_time_accessed: element["lastTimeAccessed"] || "",
       reset_password: element["resetPassword"] == "true" ? true : false,
       created_on: element["createdOn"] || getDateTimeInMongoDBCollectionFormat(new Date()),
       type: "user",
@@ -261,7 +261,8 @@ export function formatUsers(data: any): UserAuth[] {
       expiration: null,
       token: null,
       id: id,
-      files: [],
+      files: element["files"],
+      reset_code: element["resetCode"],
     };
     result.push(object);
   }
@@ -274,15 +275,15 @@ export async function insertUsersData(dataInput: UserAuth[]) {
 
     const insertQuery = `
       INSERT INTO public.auth_users (
-        email, password, access_role_instance, access_role_portfolio, share_class, last_time_accessed, reset_password, created_on, type, name, link, expiration, id
+        email, password, access_role_instance, access_role_portfolio, share_class, last_time_accessed, reset_password, created_on, type, name, link, expiration, id, files, reset_code
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       ON CONFLICT (email)
       DO NOTHING
     `;
 
     for (const ticker of dataInput) {
-      await client.query(insertQuery, [ticker.email, ticker.password, ticker.access_role_instance, ticker.access_role_portfolio, ticker.share_class, ticker.last_time_accessed, ticker.reset_password, ticker.created_on, ticker.type, ticker.name, null, null, ticker.id]);
+      await client.query(insertQuery, [ticker.email, ticker.password, ticker.access_role_instance, ticker.access_role_portfolio, ticker.share_class, ticker.last_time_accessed, ticker.reset_password, ticker.created_on, ticker.type, ticker.name, null, null, ticker.id, ticker.files, ticker.reset_code]);
     }
 
     await client.query("COMMIT");
@@ -306,7 +307,7 @@ export function formatLinks(data: any): UserAuth[] {
       access_role_instance: element["accessRole"],
       access_role_portfolio: null,
       share_class: element["accessRight"],
-      last_time_accessed: element["lastTimeAccessed"] || getDateTimeInMongoDBCollectionFormat(new Date()),
+      last_time_accessed: element["lastAccessedTime"] || "",
       reset_password: null,
       created_on: element["createdOn"] || getDateTimeInMongoDBCollectionFormat(new Date()),
       type: "link",
@@ -316,6 +317,7 @@ export function formatLinks(data: any): UserAuth[] {
       token: element["token"],
       id: id,
       files: null,
+      reset_code: null,
     };
     if (element["email"]) {
       result.push(object);
