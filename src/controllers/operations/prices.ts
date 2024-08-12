@@ -458,21 +458,21 @@ function determineBestPrice({
   object: any;
   errors: { [key: string]: { notional: number; location: string; message: string } };
 }) {
-  if (isInteger(brokerBidOnePrice) && isInteger(brokerAskOnePrice)) {
+  if (isInteger(brokerBidOnePrice) && isInteger(brokerAskOnePrice) && brokerBidOnePrice && brokerAskOnePrice) {
     if (parseFloat(brokerBidOnePrice) != bgnBidPrice && parseFloat(brokerAskOnePrice) != bgnAskPrice) {
       object["Bid"] = parseFloat(brokerBidOnePrice) / 100;
       object["Ask"] = parseFloat(brokerAskOnePrice) / 100;
       return;
     }
   }
-  if (isInteger(brokerBidTwoPrice) && isInteger(brokerAskTwoPrice)) {
+  if (isInteger(brokerBidTwoPrice) && isInteger(brokerAskTwoPrice) && brokerBidTwoPrice && brokerAskTwoPrice) {
     if (parseFloat(brokerBidTwoPrice) != bgnBidPrice && parseFloat(brokerAskTwoPrice) != bgnAskPrice) {
       object["Bid"] = parseFloat(brokerBidTwoPrice) / 100;
       object["Ask"] = parseFloat(brokerAskTwoPrice) / 100;
       return;
     }
   }
-  if (isInteger(brokerBidThreePrice) && isInteger(brokerAskThreePrice)) {
+  if (isInteger(brokerBidThreePrice) && isInteger(brokerAskThreePrice) && brokerBidThreePrice && brokerAskThreePrice) {
     if (parseFloat(brokerBidThreePrice) != bgnBidPrice && parseFloat(brokerAskThreePrice) != bgnAskPrice) {
       object["Bid"] = parseFloat(brokerBidThreePrice) / 100;
       object["Ask"] = parseFloat(brokerAskThreePrice) / 100;

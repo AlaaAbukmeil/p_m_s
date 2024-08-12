@@ -41,12 +41,13 @@ export async function errorEmailALert({ errorMessage, functionName, location, da
     return error;
   }
 }
-export async function errorEmailFactSheetUser({ email, content, subject }: { email: any; content: any; subject: any }) {
+export async function sendUpdateEmail({ email, content, subject, attachment }: { email: any; content: any; subject: any; attachment: { url: string }[] }) {
   try {
     let emailAction = new SibApiV3Sdk.TransactionalEmailsApi().sendTransacEmail({
       sender: { email: "jm@triadacapital.com", name: "Jean-Marie Barreau" },
       subject: subject,
       htmlContent: "<!DOCTYPE html><html><body><p>Error .</p></body></html>",
+      attachment: attachment,
       params: {
         greeting: "Please review error logs",
       },
@@ -69,6 +70,5 @@ export async function errorEmailFactSheetUser({ email, content, subject }: { ema
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
     await insertEditLogs([errorMessage], "Errors", dateTime, "errorEmailFactSheetUser", "controllers/operation/emails.ts");
- 
   }
 }

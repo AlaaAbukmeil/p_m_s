@@ -1,14 +1,14 @@
 import { NextFunction, Router } from "express";
-import { bucket, dateWithMonthOnly, generateSignedUrl, verifyToken } from "../../controllers/common";
+import { bucket, bucketPublic, dateWithMonthOnly, generateSignedUrl, verifyToken } from "../../controllers/common";
 import { getFactSheetData, trimFactSheetData } from "../../controllers/reports/factSheet";
-import { addFactSheet, deleteFactSheet, editFactSheet, formatUpdateFactSheetEmail } from "../../controllers/operations/factSheet";
+import { addFactSheet, deleteFactSheet, editFactSheet, formatUpdateEmail } from "../../controllers/operations/factSheet";
 import { readFactSheet } from "../../controllers/operations/readExcel";
 import { formatExcelDate } from "../../controllers/reports/common";
 import { dateWithNoDay } from "../../controllers/common";
 import { editFactSheetDisplay, getFactSheetDisplay } from "../../controllers/operations/commands";
-import { uploadToBucket } from "../../controllers/userManagement/tools";
+import { bucketPublicTest, multerTest, uploadToBucket } from "../../controllers/userManagement/tools";
 import { getAllUsers } from "../../controllers/userManagement/auth";
-import { errorEmailFactSheetUser } from "../../controllers/operations/emails";
+import { sendUpdateEmail } from "../../controllers/operations/emails";
 const factSheetRouter = Router();
 
 factSheetRouter.get("/fact-sheet-data", uploadToBucket.any(), verifyToken, async (req: Request | any, res: Response | any, next: NextFunction) => {
@@ -158,9 +158,35 @@ factSheetRouter.post("/edit-fact-sheet-view", uploadToBucket.any(), verifyToken,
   }
 });
 
-factSheetRouter.post("/fact-sheet-update", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response | any, next: NextFunction) => {
+factSheetRouter.post("/email-update", verifyToken, multerTest.any(), async (req: Request | any, res: Response | any, next: NextFunction) => {
   try {
-    let allUser;
+    const files = req.files;
+    let newFileNames: any = [];
+    let newUrls: { url: string }[] = [];
+
+    const uploadFile = (file: any) => {
+      return new Promise((resolve, reject) => {
+        const blob = bucketPublicTest.file(file.originalname);
+        newFileNames.push(file.originalname);
+        const blobStream = blob.createWriteStream();
+
+        blobStream.on("error", (err: any) => {
+          reject(err);
+        });
+
+        blobStream.on("finish", () => {
+          const publicUrl = `${bucketPublic}/${blob.name}`;
+          newUrls.push({ url: publicUrl });
+          resolve(null);
+        });
+
+        blobStream.end(file.buffer);
+      });
+    };
+    // Await all file uploads
+    await Promise.all(files.map((file: any) => uploadFile(file)));
+
+    let allUser: any;
     if (req.body.target == "investor") {
       allUser = await getAllUsers();
     } else {
@@ -172,11 +198,11 @@ factSheetRouter.post("/fact-sheet-update", verifyToken, uploadToBucket.any(), as
         },
       ];
     }
-    let formatted = formatUpdateFactSheetEmail(req.body.email, allUser);
+    let formatted = formatUpdateEmail(req.body.email, allUser);
 
     for (let index = 0; index < formatted.length; index++) {
       const emailAction = formatted[index];
-      let status = await errorEmailFactSheetUser({ email: emailAction.email, content: emailAction.text, subject: req.body.subject });
+      let status = await sendUpdateEmail({ email: emailAction.email, content: emailAction.text, subject: req.body.subject, attachment: newUrls });
       console.log(emailAction.email, index, status);
     }
     res.sendStatus(200);

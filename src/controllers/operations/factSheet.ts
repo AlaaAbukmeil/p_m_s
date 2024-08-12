@@ -91,7 +91,7 @@ export async function deleteFactSheet(data: any, name: any): Promise<any> {
   }
 }
 
-export function formatUpdateFactSheetEmail(emailTemplate: string, users: any) {
+export function formatUpdateEmail(emailTemplate: string, users: any) {
   let emails = [];
   for (let index = 0; index < users.length; index++) {
     let user = users[index];
