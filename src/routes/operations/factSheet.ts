@@ -183,22 +183,32 @@ factSheetRouter.post("/email-update", verifyToken, multerTest.any(), async (req:
         blobStream.end(file.buffer);
       });
     };
-    // Await all file uploads
     await Promise.all(files.map((file: any) => uploadFile(file)));
+    let allUsers: any = [];
+    let shareClasses = req.body.shareClass.toString().split(" ");
 
-    let allUser: any;
-    if (req.body.target == "investor") {
-      allUser = await getAllUsers();
+    if (req.body.target === "investor") {
+      let allUsersInDB = await getAllUsers();
+
+      for (let index = 0; index < allUsersInDB.length; index++) {
+        const user = allUsersInDB[index];
+        let userShareClasses = user["shareClass"].split(" ");
+
+        for (let shareClass of shareClasses) {
+          if (userShareClasses.includes(shareClass)) {
+            allUsers.push(user);
+            break;
+          }
+        }
+      }
     } else {
-      allUser = [
-        {
-          name: "Alaa",
-          email: "developer@triadacapital.com",
-          shareClass: "a2 a3 mkt",
-        },
-      ];
+      allUsers.push({
+        name: "Alaa",
+        email: "developer@triadacapital.com",
+        shareClass: "a2 a3 mkt",
+      });
     }
-    let formatted = formatUpdateEmail(req.body.email, allUser);
+    let formatted = formatUpdateEmail(req.body.email, allUsers);
 
     for (let index = 0; index < formatted.length; index++) {
       const emailAction = formatted[index];
