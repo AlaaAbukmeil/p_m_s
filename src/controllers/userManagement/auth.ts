@@ -74,7 +74,7 @@ export async function checkIfUserExists(email: string, password: string): Promis
         const result = await bcrypt.compare(password, user.password);
         if (result) {
           const jwtObject = { email: email, accessRole: user["accessRole"], shareClass: user["shareClass"] };
-          const token = jwt.sign(jwtObject, jwtSecret, { expiresIn: "24h" });
+          const token = jwt.sign(jwtObject, jwtSecret, { expiresIn: "7d" });
           const updateDoc = {
             $set: {
               lastTimeAccessed: getDateTimeInMongoDBCollectionFormat(new Date()),
