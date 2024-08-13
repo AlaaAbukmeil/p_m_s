@@ -172,45 +172,6 @@ authRouter.post("/add-user", verifyToken, uploadToBucket.any(), async (req: Requ
   }
 });
 
-authRouter.post("/add-users", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  try {
-    const fileName = req.files[0].filename;
-    const path = await generateSignedUrl(fileName);
-    let users = await readUsersSheet(path);
-    if (users.error == null) {
-      let map: any = {};
-      for (let index = 0; index < users.length; index++) {
-        let user = users[index];
-        let email = user["Email"].toLowerCase();
-        let name = user["Name"];
-        let shareClass = user["Share Class"];
-        if (map[email]) {
-          if (!map[email].shareClass.includes(shareClass)) {
-            map[email].shareClass += " " + shareClass;
-          }
-        } else {
-          map[email] = {
-            name: name,
-            shareClass: shareClass,
-            email: email,
-            accessRole: "member (factsheet report)",
-            welcome: true,
-          };
-        }
-      }
-      for (let user in map) {
-        let userInfo = map[user];
-        // let action = await addUser(userInfo);
-        // console.log(action, userInfo.email);
-      }
-    } else {
-      res.send({ error: users.error });
-    }
-  } catch (error) {
-    console.log(error);
-    res.send({ error: "fatal error" });
-  }
-});
 
 authRouter.post("/send-fact-sheet-welcome", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
   try {

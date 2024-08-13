@@ -43,11 +43,10 @@ export async function errorEmailALert({ errorMessage, functionName, location, da
 }
 export async function sendUpdateEmail({ email, content, subject, attachment }: { email: any; content: any; subject: any; attachment: { url: string }[] }) {
   try {
-    let emailAction = new SibApiV3Sdk.TransactionalEmailsApi().sendTransacEmail({
+    let object: any = {
       sender: { email: "jm@triadacapital.com", name: "Jean-Marie Barreau" },
       subject: subject,
       htmlContent: "<!DOCTYPE html><html><body><p>Error .</p></body></html>",
-      attachment: attachment,
       params: {
         greeting: "Please review error logs",
       },
@@ -63,7 +62,11 @@ export async function sendUpdateEmail({ email, content, subject, attachment }: {
           subject: subject,
         },
       ],
-    });
+    };
+    if (attachment.length) {
+      object.attachment = attachment;
+    }
+    let emailAction = new SibApiV3Sdk.TransactionalEmailsApi().sendTransacEmail(object);
     return { statusCode: 200 };
   } catch (error) {
     console.error("Error connecting to MongoDB or inserting documents:", error);

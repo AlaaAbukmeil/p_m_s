@@ -175,7 +175,7 @@ router.get("/fact-sheet-mkt", uploadToBucket.any(), verifyTokenFactSheetMember, 
     let accessRole = req.accessRole;
     let disabled = await getFactSheetDisplay("view");
 
-    if ((accessRole == "member (factsheet report)" && !shareClass.includes(type)) || (accessRole == "member (factsheet report)" && !shareClass.includes("mkt"))) {
+    if (accessRole == "member (factsheet report)" && !shareClass.includes(type)) {
       res.sendStatus(401);
     } else {
       if (accessRole != "member (factsheet report)") {

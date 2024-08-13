@@ -186,19 +186,25 @@ factSheetRouter.post("/email-update", verifyToken, multerTest.any(), async (req:
     await Promise.all(files.map((file: any) => uploadFile(file)));
     let allUsers: any = [];
     let shareClasses = req.body.shareClass.toString().split(" ");
-
     if (req.body.target === "investor") {
       let allUsersInDB = await getAllUsers();
 
-      for (let index = 0; index < allUsersInDB.length; index++) {
-        const user = allUsersInDB[index];
-        let userShareClasses = user["shareClass"].split(" ");
+      if (shareClasses.length) {
+        for (let index = 0; index < allUsersInDB.length; index++) {
+          const user = allUsersInDB[index];
+          let userShareClasses = user["shareClass"].toString().split(" ");
 
-        for (let shareClass of shareClasses) {
-          if (userShareClasses.includes(shareClass)) {
-            allUsers.push(user);
-            break;
+          for (let shareClass of shareClasses) {
+            if (userShareClasses.includes(shareClass)) {
+              allUsers.push(user);
+              break;
+            }
           }
+        }
+      } else {
+        for (let index = 0; index < allUsersInDB.length; index++) {
+          const user = allUsersInDB[index];
+          allUsers.push(user);
         }
       }
     } else {
@@ -209,7 +215,6 @@ factSheetRouter.post("/email-update", verifyToken, multerTest.any(), async (req:
       });
     }
     let formatted = formatUpdateEmail(req.body.email, allUsers);
-
     for (let index = 0; index < formatted.length; index++) {
       const emailAction = formatted[index];
       let status = await sendUpdateEmail({ email: emailAction.email, content: emailAction.text, subject: req.body.subject, attachment: newUrls });
