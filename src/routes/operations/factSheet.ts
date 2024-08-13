@@ -189,7 +189,7 @@ factSheetRouter.post("/email-update", verifyToken, multerTest.any(), async (req:
     if (req.body.target === "investor") {
       let allUsersInDB = await getAllUsers();
 
-      if (shareClasses.length) {
+      if (req.body.shareClass != "") {
         for (let index = 0; index < allUsersInDB.length; index++) {
           const user = allUsersInDB[index];
           let userShareClasses = user["shareClass"].toString().split(" ");
