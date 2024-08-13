@@ -221,7 +221,7 @@ authRouter.post("/send-fact-sheet-welcome", verifyToken, async (req: Request, re
   }
 });
 
-authRouter.post("/user-upload-files", verifyToken, multerTest.any(), async (req: Request | any, res: Response, next: any) => {
+authRouter.post("/user-upload-files", verifyTokenFactSheetMember, multerTest.any(), async (req: Request | any, res: Response, next: any) => {
   try {
     const files = req.files;
     let userInfo = await getUserByEmail(req.email);
