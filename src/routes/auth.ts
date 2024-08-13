@@ -17,8 +17,21 @@ authRouter.get("/auth", uploadToBucket.any(), verifyTokenFactSheetMember, async 
     test = await checkLinkRight(req.token, req.accessRole, req.shareClass);
   }
   if (test) {
+    let investorReports: any = {
+      a2: "https://storage.googleapis.com/public_triada_admin/files_to_be_shared/Triada%20Investment%20Report%20-%20A2%20-%20July%202024.pdf",
+      a3: "https://storage.googleapis.com/public_triada_admin/files_to_be_shared/Triada%20Investment%20Report%20-%20A3%20-%20July%202024.pdf",
+      a4: "https://storage.googleapis.com/public_triada_admin/files_to_be_shared/Triada%20Investment%20Report%20-%20A4%20-%20July%202024.pdf",
+      a5: "https://storage.googleapis.com/public_triada_admin/files_to_be_shared/Triada%20Investment%20Report%20-%20A5%20-%20July%202024.pdf",
+      a6: "https://storage.googleapis.com/public_triada_admin/files_to_be_shared/Triada%20Investment%20Report%20-%20A6%20-%20July%202024.pdf",
+    };
+    let final: any = {};
+    for (let key in investorReports) {
+      if (req.shareClass.toString().includes(key) || req.accessRole == "admin") {
+        final[key] = investorReports[key];
+      }
+    }
     let newTrades = await numberOfNewTrades();
-    res.send({ status: 200, accessRole: req.accessRole, shareClass: req.shareClass, newTrades: newTrades });
+    res.send({ status: 200, accessRole: req.accessRole, shareClass: req.shareClass, newTrades: newTrades, investorReports: final });
   } else {
     res.sendStatus(401);
   }
