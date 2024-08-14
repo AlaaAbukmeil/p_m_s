@@ -177,16 +177,6 @@ export function sumUpCouponPaymentRecords(couponPaymentRecords: NomuraCashReconc
   return result;
 }
 
-export async function getMTDRlzd(portfolio: PositionBeforeFormatting[] | any, date: string) {
-  for (let index = 0; index < portfolio.length; index++) {
-    let position = portfolio[index];
-    let identifier = position["ISIN"];
-
-    let trades = await getRlzdTrades(`vcons`, identifier, position["Location"], date, parseFloat(position["MTD Mark"]) * 100, portfolio[index]["MTD Notional"]);
-    position["MTD Rlzd"] = trades.totalRow["Rlzd P&L Amount"].toString();
-  }
-}
-
 export function convertNomuraDateToAppTradeDate(nomuraDate: string): string {
   nomuraDate = nomuraDate.toString();
   const year = parseInt(nomuraDate.slice(0, 4), 10);

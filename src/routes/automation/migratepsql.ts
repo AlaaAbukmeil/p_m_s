@@ -8,11 +8,10 @@ import { findTrade } from "../../controllers/reports/trades";
 const migrateRouter = Router();
 
 migrateRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  // let data = await migrateInformationDB("trades_v_2", "ib", {});
-  // let formatted = formatTrades(data, "ib");
-  // await insertTradesData(formatted, "ib");
-  let test = await findTrade("vcons", "4457a9ec-48d7-46fb-8c06-a9da04d71467");
-  res.send({ done: test });
+  let data = await migrateInformationDB("trades_v_2", "ib", {});
+  let formatted = formatTrades(data, "ib");
+  await insertTradesData(formatted, "ib");
+  res.send({ done: formatted });
 });
 
 export default migrateRouter;

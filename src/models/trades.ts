@@ -87,6 +87,12 @@ export interface CentralizedTrade {
   Resolved: boolean;
   Id: string;
 }
+export interface CentralizedTradeMTDRlzd extends CentralizedTrade {
+  "Rlzd P&L Amount": number | undefined;
+  "Price Diff": number | undefined;
+  Rlzd: string | undefined;
+  "Average Cost MTD": number;
+}
 export interface CentralizedTradeInDB {
   b_s: string;
   bb_ticker: string;

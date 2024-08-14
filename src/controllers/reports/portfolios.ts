@@ -9,9 +9,10 @@ import { getHistoricalPortfolio, getPinnedPositions } from "../operations/positi
 import { FinalPositionBackOffice, FundExposureOnlyMTD, FundMTD, PositionBeforeFormatting, PositionInDB, RlzdTrades } from "../../models/portfolio";
 import { formatFrontOfficeTable } from "../analytics/tables/frontOffice";
 import { formatBackOfficeTable, formatFactSheetStatsTable } from "../analytics/tables/backOffice";
-import { getRlzdTrades } from "./trades";
+import { getRlzdTrades, getRlzdTradesWithTrades, getTradesMTD } from "./trades";
 import { insertEditLogs } from "../operations/logs";
 import { getMonthInFundDetailsFormat } from "../operations/tools";
+import { CentralizedTrade } from "../../models/trades";
 
 export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions: any = null, view: "front office" | "back office" | "exposure" | "fact sheet", sortBy: "pl" | "price move" | null): Promise<{ portfolio: FinalPositionBackOffice[]; fundDetails: FundMTD; analysis: any; uploadTradesDate: any; updatePriceDate: number; collectionName: string; error: null } | { fundDetails: FundExposureOnlyMTD; analysis: any; error: null } | { error: string }> {
   let timestamp = new Date().getTime();
@@ -120,8 +121,10 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   documents = getDayParams(documents, previousDayPortfolio, lastDayBeforeToday.predecessorDate, false);
   documents = getDayParams(documents, previousPreviousDayPortfolio, lastDayBeforeYesterday.predecessorDate, true);
   documents = getMTDParams(documents, lastMonthPortfolio, earliestPortfolioName.predecessorDate);
+
+  let mtdTrades: CentralizedTrade[] = await getTradesMTD(date);
   let timestamp_3 = new Date().getTime();
-  documents = await getMTDURlzdInt(documents, new Date(date));
+  documents = await getMTDURlzdInt(documents, new Date(date), mtdTrades);
   let timestamp_4 = new Date().getTime();
   console.log("To calculate rlzd: ", (timestamp_4 - timestamp_3) / 1000 + " seconds");
 
@@ -370,7 +373,7 @@ export function getPrincipal(portfolio: any) {
   return { portfolio: portfolio };
 }
 
-export async function getMTDURlzdInt(portfolio: any, date: any) {
+export async function getMTDURlzdInt(portfolio: any, date: any, mtdTrades: CentralizedTrade[]) {
   let currentDayDate: string = new Date(date).toISOString().slice(0, 10);
   let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate);
   let monthlyInterest: any = {};
@@ -380,7 +383,7 @@ export async function getMTDURlzdInt(portfolio: any, date: any) {
     let position = portfolio[index];
     let todayPrice = parseFloat(portfolio[index]["Mid"]);
 
-    let tradeType = "vcons";
+    let tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs" | "fx" = "vcons";
     let identifier = portfolio[index]["ISIN"];
     let typeCheck = portfolio[index]["Type"] || "";
     if (identifier.includes("IB")) {
@@ -395,7 +398,7 @@ export async function getMTDURlzdInt(portfolio: any, date: any) {
 
     let multiplier = tradeType == "vcons" ? 100 : 1;
     if (tradeType != "fx") {
-      let trades = await getRlzdTrades(`${tradeType}`, identifier, portfolio[index]["Location"], date, portfolio[index]["MTD Mark"] * multiplier, portfolio[index]["MTD Notional"]);
+      let trades = await getRlzdTradesWithTrades(`${tradeType}`, identifier, portfolio[index]["Location"], date, portfolio[index]["MTD Mark"] * multiplier, portfolio[index]["MTD Notional"], mtdTrades, portfolio[index]["BB Ticker"]);
       portfolio[index]["MTD Rlzd"] = trades.totalRow["Rlzd P&L Amount"];
       portfolio[index]["Day Rlzd"] = trades.pnlDayRlzdHistory[dateInTradeDateFormat] || 0;
 

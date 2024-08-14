@@ -1,4 +1,4 @@
-import { CentralizedTrade, CentralizedTradeInDB } from "../../models/trades";
+import { CentralizedTrade, CentralizedTradeInDB, CentralizedTradeMTDRlzd } from "../../models/trades";
 // import { client } from "../userManagement/auth";
 import { getDate } from "../common";
 import { insertEditLogs } from "../operations/logs";
@@ -25,10 +25,9 @@ export async function getTrades(tradeType: "vcons" | "ib" | "emsx" | "writter_bl
     console.error("An error occurred while retrieving data from MongoDB:", error);
   }
 }
-
-export async function getRlzdTrades(tradeType: any, isin: any, location: any, date: any, mtdMark: any, mtdAmountInput: any): Promise<{ documents: any[]; totalRow: { Rlzd: number; "Rlzd P&L Amount": number }; averageCostMTD: any; pnlDayRlzdHistory: { [key: string]: number } }> {
+export async function getRlzdTrades(tradeType: any, isin: any, location: any, date: any, mtdMark: any, mtdAmountInput: any, ticker: string): Promise<{ documents: any[]; totalRow: { Rlzd: number; "Rlzd P&L Amount": number }; averageCostMTD: any; pnlDayRlzdHistory: { [key: string]: number } }> {
   try {
-    let documents = await getTradesForAPosition(tradeType, isin, location, date);
+    let documents = await getTradesForAPositionInDB(tradeType, isin, location, date, ticker);
 
     let multiplier = tradeType == "vcons" ? 100 : tradeType == "gs" ? 1000000 : 1;
     let total = 0;
@@ -37,17 +36,12 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
     let accumualteNotional = mtdAmount;
     let averageCost = parseFloat(mtdMark);
     let pnlDayRlzdHistory: any = {};
-    // console.log(documents[0],);
     for (let index = 0; index < documents.length; index++) {
       let trade = documents[index];
-      if (!trade["BB Ticker"] && trade["Issue"]) {
-        trade["BB Ticker"] = trade["Issue"];
-        delete trade["Issue"];
-      }
+
       //We only check for cds because original face is already factored in ib/vcons.
       let tradeBS = trade["B/S"] == "B" ? 1 : -1;
       let newNotional = parseFloat(trade["Notional Amount"]) * tradeBS;
-      // console.log(averageCost, isin, documents[index]["Settle Date"], newNotional, accumualteNotional, trade["Price"], averageCost, "before");
       if (accumualteNotional + newNotional < accumualteNotional && accumualteNotional > 0) {
         trade["Rlzd"] = "True (Long)";
         trade["Price Diff"] = parseFloat(trade["Price"]) - averageCost;
@@ -98,7 +92,98 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
   }
 }
 
-async function getTradesForAPosition(tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs", isin: string, location: string, date: any) {
+export async function getRlzdTradesWithTrades(tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs", isin: any, location: any, date: any, mtdMark: any, mtdAmountInput: any, allMTDTrades: CentralizedTrade[], ticker: string): Promise<{ documents: any[]; totalRow: { Rlzd: number; "Rlzd P&L Amount": number }; averageCostMTD: any; pnlDayRlzdHistory: { [key: string]: number } }> {
+  try {
+    let shortLongGuess = tradeType == "ib" ? "S" : ticker.toString().split(" ")[0] == "T" ? "S" : "B";
+    let mtdTradesPosition = getTradesForAPosition(isin, location, allMTDTrades, shortLongGuess);
+
+    let multiplier = tradeType == "vcons" ? 100 : tradeType == "cds_gs" ? 1000000 : 1;
+    let total = 0;
+
+    let mtdAmount = parseFloat(mtdAmountInput) || 0;
+    let accumualteNotional = mtdAmount;
+    let averageCost = parseFloat(mtdMark);
+    let pnlDayRlzdHistory: any = {};
+    for (let index = 0; index < mtdTradesPosition.length; index++) {
+      let trade: CentralizedTradeMTDRlzd = mtdTradesPosition[index];
+
+      let tradeBS = trade["B/S"] == "B" ? 1 : -1;
+      let newNotional = trade["Notional Amount"] * tradeBS;
+      if (accumualteNotional + newNotional < accumualteNotional && accumualteNotional > 0) {
+        trade["Rlzd"] = "True (Long)";
+        trade["Price Diff"] = trade["Price"] - averageCost;
+        trade["Rlzd P&L Amount"] = trade["Notional Amount"] * (trade["Price"] / multiplier - averageCost / multiplier);
+        pnlDayRlzdHistory[trade["Trade Date"]] = (pnlDayRlzdHistory[trade["Trade Date"]] || 0) + trade["Rlzd P&L Amount"];
+
+        total += trade["Rlzd P&L Amount"];
+
+        accumualteNotional += newNotional;
+
+        trade["Updated Notional"] = accumualteNotional;
+      } else if (accumualteNotional + newNotional > accumualteNotional && accumualteNotional < 0) {
+        trade["Rlzd"] = "True (Short)";
+        trade["Price Diff"] = averageCost - trade["Price"];
+        trade["Rlzd P&L Amount"] = trade["Notional Amount"] * (averageCost / multiplier - trade["Price"] / multiplier);
+        pnlDayRlzdHistory[trade["Trade Date"]] = (pnlDayRlzdHistory[trade["Trade Date"]] || 0) + trade["Rlzd P&L Amount"];
+
+        total += trade["Rlzd P&L Amount"];
+
+        accumualteNotional += newNotional;
+
+        trade["Updated Notional"] = accumualteNotional;
+      } else {
+        trade["Rlzd P&L Amount"] = 0;
+        trade["Rlzd"] = "False";
+        averageCost = getAverageCost(newNotional, accumualteNotional, trade["Price"], averageCost);
+        trade["Average Cost MTD"] = averageCost;
+
+        accumualteNotional += newNotional;
+        trade["Updated Notional"] = accumualteNotional;
+      }
+    }
+
+    let totalRow: any = {
+      Rlzd: "Total",
+      "Rlzd P&L Amount": total,
+    };
+    mtdTradesPosition.push(totalRow);
+    return { documents: mtdTradesPosition, totalRow: totalRow, averageCostMTD: averageCost, pnlDayRlzdHistory: pnlDayRlzdHistory };
+  } catch (error) {
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    return { documents: [], totalRow: { Rlzd: 0, "Rlzd P&L Amount": 0 }, averageCostMTD: 0, pnlDayRlzdHistory: {} };
+  }
+}
+
+function getTradesForAPosition(isin: string, location: string, allMTDTrades: CentralizedTrade[], shortLongGuess: string) {
+  let mtdTrades: CentralizedTradeMTDRlzd[] = [];
+  for (let index = 0; index < allMTDTrades.length; index++) {
+    const trade = allMTDTrades[index];
+    if (trade["ISIN"] == isin && trade["Location"] == location) {
+      let newTrade: CentralizedTradeMTDRlzd = { ...trade, "Rlzd P&L Amount": 0, "Price Diff": 0, Rlzd: "", "Average Cost MTD": 0 };
+      mtdTrades.push(newTrade);
+    }
+  }
+
+  mtdTrades = mtdTrades.sort((tradeA, tradeB) => {
+    const dateA = new Date(tradeA["Trade Date"]).getTime();
+    const dateB = new Date(tradeB["Trade Date"]).getTime();
+
+    if (dateA !== dateB) {
+      return dateA - dateB;
+    }
+
+    if (tradeA["B/S"] == shortLongGuess && tradeB["B/S"] != shortLongGuess) {
+      return -1;
+    } else if (tradeA["B/S"] != shortLongGuess && tradeB["B/S"] == shortLongGuess) {
+      return 1;
+    }
+    return 0;
+  });
+  return mtdTrades;
+}
+async function getTradesForAPositionInDB(tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs", isin: string, location: string, date: any, ticker: string) {
   const client = await tradesPool.connect();
   try {
     const query = `
@@ -112,6 +197,52 @@ async function getTradesForAPosition(tradeType: "vcons" | "ib" | "emsx" | "writt
     const endOfMonth = inputDate.getTime();
     const { rows } = await client.query(query, [isin, location, startOfMonth, endOfMonth]);
     let trades: any = convertTradesSQLToCentralized(rows, "uploaded_to_app");
+
+    let shortLongGuess = tradeType == "ib" ? "S" : ticker.toString().split(" ")[0] == "T" ? "S" : "B";
+
+    trades = trades.sort((tradeA: any, tradeB: any) => {
+      const dateA = new Date(tradeA["Trade Date"]).getTime();
+      const dateB = new Date(tradeB["Trade Date"]).getTime();
+
+      if (dateA !== dateB) {
+        return dateA - dateB;
+      }
+
+      if (tradeA["B/S"] == shortLongGuess && tradeB["B/S"] != shortLongGuess) {
+        return -1;
+      } else if (tradeA["B/S"] != shortLongGuess && tradeB["B/S"] == shortLongGuess) {
+        return 1;
+      }
+      return 0;
+    });
+
+    return trades;
+  } catch (error) {
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.error(error);
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    await insertEditLogs([errorMessage], "Errors", dateTime, "getTradesForAPositionInDB", "controllers/operations/trades.ts");
+
+    console.error("An error occurred while retrieving data from MongoDB:", error);
+  } finally {
+    client.release();
+  }
+}
+export async function getTradesMTD(date: any) {
+  const client = await tradesPool.connect();
+  try {
+    const query = `
+      SELECT *
+      FROM public.trades
+      WHERE timestamp >= $1 AND timestamp <= $2
+      ORDER BY timestamp;
+    `;
+    const inputDate = new Date(date);
+    const startOfMonth = new Date(inputDate.getFullYear(), inputDate.getMonth(), 1).getTime();
+    const endOfMonth = inputDate.getTime();
+    const { rows } = await client.query(query, [startOfMonth, endOfMonth]);
+    let trades: CentralizedTrade[] = convertTradesSQLToCentralized(rows, "uploaded_to_app");
     return trades;
   } catch (error) {
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
@@ -121,6 +252,7 @@ async function getTradesForAPosition(tradeType: "vcons" | "ib" | "emsx" | "writt
     await insertEditLogs([errorMessage], "Errors", dateTime, "getTradesForAPosition", "controllers/operations/trades.ts");
 
     console.error("An error occurred while retrieving data from MongoDB:", error);
+    return [];
   } finally {
     client.release();
   }

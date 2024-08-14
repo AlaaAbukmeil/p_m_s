@@ -2,7 +2,7 @@ import { Router } from "express";
 import { verifyToken } from "../../controllers/common";
 import { getRlzdTrades, getTrades } from "../../controllers/reports/trades";
 import { Request, Response, NextFunction } from "express";
-import {  deleteTrade, editTrade } from "../../controllers/operations/trades";
+import { deleteTrade, editTrade } from "../../controllers/operations/trades";
 import { getDateTimeInMongoDBCollectionFormat } from "../../controllers/reports/common";
 import { uploadToBucket } from "../../controllers/userManagement/tools";
 
@@ -23,6 +23,7 @@ tradesRouter.get("/rlzd-trades", verifyToken, async (req, res) => {
   try {
     const tradeType: any = req.query.tradeType;
     const isin: any = req.query["isin"];
+    const ticker: any = req.query["ticker"];
 
     const location: any = req.query["location"];
     let date: any = req.query["date"];
@@ -32,7 +33,7 @@ tradesRouter.get("/rlzd-trades", verifyToken, async (req, res) => {
     let mtdNotional: any = req.query["mtdNotional"] || 0;
 
     mtdNotional = parseFloat(mtdNotional.toString().replace(/,/g, ""));
-    let trades = await getRlzdTrades(`${tradeType}`, isin, location, date, mtdMark, mtdNotional);
+    let trades = await getRlzdTrades(`${tradeType}`, isin, location, date, mtdMark, mtdNotional, ticker);
 
     res.send(trades.documents);
   } catch (error) {
