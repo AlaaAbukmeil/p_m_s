@@ -6,7 +6,8 @@ import { getEarliestCollectionName, parseBondIdentifierNomura } from "../../repo
 import { getHistoricalPortfolio } from "../positions";
 import { readNomuraCashReport } from "../readExcel";
 import { formatDateToIso, parseYYYYMMDDAndReturnMonth } from "../tools";
-import { convertNomuraDateToAppTradeDate, findTrade, getMTDRlzd, getMtdMarkAndMtdNotional, getPositionAggregated, getProcceeds, getRlzdPNLNomuraProceeds, sumUpCouponPaymentRecords } from "./tools";
+import { getTrade } from "../trades";
+import { convertNomuraDateToAppTradeDate, getMtdMarkAndMtdNotional, getPositionAggregated, getProcceeds, getRlzdPNLNomuraProceeds, sumUpCouponPaymentRecords } from "./tools";
 
 export async function reconcileMUFG(MUFGData: MufgReconcileUpload[], portfolioInput: PositionInDB[]) {
   try {
@@ -207,7 +208,7 @@ export function updatePortfolioBasedOnIsin(portfolio: PositionInDB[]): {
   return aggregatedPortfolio;
 }
 
-export async function reconcileNomuraCash({ path, link, collectionDate, start, end }: { path: string; link: string; collectionDate: string; start: number; end: number }) {
+export async function reconcileNomuraCash({ path, collectionDate, start, end, portfolioId }: { path: string; collectionDate: string; start: number; end: number; portfolioId: string }) {
   try {
     let data = await readNomuraCashReport(path);
 
@@ -247,7 +248,7 @@ export async function reconcileNomuraCash({ path, link, collectionDate, start, e
 
       let couponPaymentsApp = checkPositionsThatShouldPayButDoNotExistInNomura(finalPortfolioWithPositionsThatWillPay, couponPaymentsNomura.isinsFound, collectionDate);
 
-      let tradesCheck = await checkNomuraTradesWithVcon(buySellRecords);
+      let tradesCheck = await checkNomuraTradesWithVcon(buySellRecords, portfolioId);
 
       return { fxInterest, redeemped, couponPayments: [...couponPaymentsApp, ...couponPaymentsNomura.result], tradesCheck, error: null };
     }
@@ -459,12 +460,12 @@ export function calculateNomuraMTDRlzdPNL(portfolio: PositionBeforeFormatting[] 
   return result;
 }
 
-async function checkNomuraTradesWithVcon(nomuraTrades: NomuraCashReconcileFileUpload[]) {
+async function checkNomuraTradesWithVcon(nomuraTrades: NomuraCashReconcileFileUpload[], portfolioId: string) {
   let results: { Ticker: string; "Trade Date App": string; "Settle Date App": string; "Notional Amount App": number; "Notional Amount Nomura": number; "App Price": number; "Nomura Price": number; Result: string }[] = [];
   for (let index = 0; index < nomuraTrades.length; index++) {
     let trade = nomuraTrades[index];
     let triadaId = trade["Client Trade Ref"];
-    let tradesApp = await findTrade("vcons", triadaId);
+    let tradesApp = await getTrade("vcons", triadaId, portfolioId);
     if (tradesApp.length) {
       let tradeApp = tradesApp[0];
       let ticker = tradeApp["BB Ticker"];
@@ -484,28 +485,28 @@ async function checkNomuraTradesWithVcon(nomuraTrades: NomuraCashReconcileFileUp
         result += `App Settle Date is ${settleDateApp}, Nomura Settle Date is ${settleDateNomura}/ `;
       }
 
-      let notionalAmountApp = parseFloat(tradeApp["Notional Amount"]);
+      let notionalAmountApp = tradeApp["Notional Amount"];
       let notionalAmountNomura = Math.abs(parseFloat(trade["Quantity"]));
 
       if (notionalAmountApp != notionalAmountNomura) {
         result += `App Notional Amount is ${notionalAmountApp}, Nomura Notional Amount is ${notionalAmountNomura}/ `;
       }
 
-      let priceApp = parseFloat(tradeApp["Price"]);
+      let priceApp = tradeApp["Price"];
       let priceNomura = parseFloat(trade["Price"]);
 
       if (priceApp != priceNomura) {
         result += `App Price is ${priceApp}, Nomura Price is ${priceNomura}/ `;
       }
 
-      let settlementApp = parseFloat(tradeApp["Settlement Amount"]);
+      let settlementApp = tradeApp["Settlement Amount"];
       let settlementNomura = Math.abs(parseFloat(trade["Proceeds"]));
 
       if (settlementApp != settlementNomura) {
         result += `App Settlement Amount is ${settlementApp}, Nomura Settlement Amount is ${settlementNomura}/ `;
       }
 
-      let principalApp = parseFloat(tradeApp["Principal"]);
+      let principalApp = tradeApp["Principal"];
       let principalNomura = Math.abs(parseFloat(trade["Principle Amount"]));
 
       if (principalApp != principalNomura) {

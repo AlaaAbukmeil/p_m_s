@@ -88,8 +88,9 @@ reconcileRouter.post("/reconcile-cash", verifyToken, uploadToBucket.any(), async
     let link = bucket + "/" + fileName + "?authuser=2";
     let start = new Date(req.body.timestamp_start).getTime();
     let end = new Date(req.body.timestamp_end).getTime();
+    let portfolioId = "portfolio-main";
 
-    let action: any = await reconcileNomuraCash({ path, collectionDate, link, start, end });
+    let action: any = await reconcileNomuraCash({ path, collectionDate, start, end, portfolioId });
     if (action.error) {
       res.send({ error: action.error });
     } else {

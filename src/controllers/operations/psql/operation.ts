@@ -1,6 +1,7 @@
 import { UserAuth } from "../../../models/auth";
 import { FactSheetBenchMarkDataInDB, FactSheetFundDataInDB } from "../../../models/factSheet";
 import { InformationInDB } from "../../../models/positionsInformation";
+import { CentralizedTrade, CentralizedTradeInDB } from "../../../models/trades";
 import { getDateTimeInMongoDBCollectionFormat } from "../../reports/common";
 import { getFactSheetData } from "../../reports/factSheet";
 import { client } from "../../userManagement/auth";
@@ -21,13 +22,14 @@ function createPool(databaseName: string) {
     port: process.env.PSQL_PORT,
     database: databaseName,
     password: process.env.PSQL_PASSWORD,
-    max: 20,
+    max: 200,
   });
 }
 
 export const factsheetPool = createPool("factsheet");
 export const positionsInfomrationPool = createPool("positions_information");
 export const authPool = createPool("auth");
+export const tradesPool = createPool("trades");
 
 export async function migrateFactSheetData(name: string, className: string) {
   const from2010: any = new Date("2010-01-01").getTime();
@@ -254,7 +256,7 @@ export function formatUsers(data: any): UserAuth[] {
       password: element["password"],
       access_role_instance: element["accessRole"],
       access_role_portfolio: "portfolio-main",
-      share_class: element["shareClass"],
+      share_class: element["shareClass"].toString().replace("mkt", ""),
       last_time_accessed: element["lastTimeAccessed"] || "",
       reset_password: element["resetPassword"] == "true" ? true : false,
       created_on: element["createdOn"] || getDateTimeInMongoDBCollectionFormat(new Date()),
@@ -349,6 +351,111 @@ export async function insertLinksData(dataInput: UserAuth[]) {
   } catch (err: any) {
     await client.query("ROLLBACK");
     console.error("Error inserting data", err.stack);
+  } finally {
+    client.release();
+  }
+}
+
+export function formatTrades(data: any[], tradeType: string): CentralizedTradeInDB[] {
+  let result: CentralizedTradeInDB[] = [];
+  for (let index = 0; index < data.length; index++) {
+    const element = data[index];
+    let id = uuidv4();
+
+    let object: CentralizedTradeInDB = {
+      b_s: element["B/S"],
+      bb_ticker: element["BB Ticker"], //|| element["Issue"],
+      location: element["Location"],
+      trade_date: element["Trade Date"],
+      trade_time: element["Trade Time"],
+      settle_date: element["Settle Date"],
+      price: parseFloat(element["Price"]),
+      notional_amount: parseFloat(element["Notional Amount"]),
+      settlement_amount: parseFloat(element["Settlement Amount"]),
+      principal: parseFloat(element["Principal"]),
+      counter_party: element["Counter Party"],
+      triada_trade_id: element["Triada Trade Id"],
+      seq_no: element["Seq No"],
+      isin: element["ISIN"],
+      cuisp: element["Cuisp"],
+      currency: element["Currency"],
+      yield: element["Yield"],
+      accrued_interest: parseFloat(element["Accrued Interest"]) || 0,
+      original_face: element["Original Face"],
+      comm_fee: parseFloat(element["Comm/Fee"]) || 0,
+      trade_type: tradeType,
+      updated_notional: parseFloat(element["Updated Notional"] || "0") || 0,
+      timestamp: new Date(element["timestamp"] || element["Trade Date"]).getTime(),
+      nomura_upload_status: element["Nomura Upload Status"],
+      last_nomura_generated: element["Last Nomura Generated"],
+      broker_full_name_account: element["Broker Full Name & Account"],
+      broker_email: element["Broker Email"],
+      settlement_venue: element["Settlement Venue"],
+      primary_market: false,
+      broker_email_status: element["Broker Email Status"],
+      id: id,
+      portfolio_id: "portfolio-main",
+      front_office_check: true,
+      resolved: true,
+    };
+    result.push(object);
+  }
+  return result;
+}
+export async function insertTradesData(dataInput: CentralizedTradeInDB[], tableName: string) {
+  const client = await tradesPool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const insertQuery = `
+      INSERT INTO public.trades_${tableName} (
+        b_s, bb_ticker, location, trade_date, trade_time, settle_date, price, notional_amount, settlement_amount, principal, counter_party, triada_trade_id, seq_no, isin, cuisp, currency, yield, accrued_interest, original_face, comm_fee, trade_type, updated_notional, timestamp, nomura_upload_status, last_nomura_generated, broker_full_name_account, broker_email, settlement_venue, primary_market, broker_email_status, id, portfolio_id,front_office_check
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33);
+    `;
+
+    for (const trade of dataInput) {
+      await client.query(insertQuery, [
+        trade.b_s,
+        trade.bb_ticker,
+        trade.location,
+        trade.trade_date,
+        trade.trade_time,
+        trade.settle_date,
+        trade.price,
+        trade.notional_amount,
+        trade.settlement_amount,
+        trade.principal,
+        trade.counter_party,
+        trade.triada_trade_id,
+        trade.seq_no,
+        trade.isin,
+        trade.cuisp,
+        trade.currency,
+        trade.yield,
+        trade.accrued_interest,
+        trade.original_face,
+        trade.comm_fee,
+        trade.trade_type,
+        trade.updated_notional,
+        trade.timestamp,
+        trade.nomura_upload_status,
+        trade.last_nomura_generated,
+        trade.broker_full_name_account,
+        trade.broker_email,
+        trade.settlement_venue,
+        trade.primary_market,
+        trade.broker_email_status,
+        trade.id,
+        trade.portfolio_id,
+        trade.front_office_check,
+      ]);
+    }
+
+    await client.query("COMMIT");
+  } catch (err: any) {
+    await client.query("ROLLBACK");
+    console.error("Error inserting trades", err.stack);
   } finally {
     client.release();
   }

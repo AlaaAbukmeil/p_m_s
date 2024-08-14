@@ -14,6 +14,7 @@ import { insertEditLogs } from "../operations/logs";
 import { getMonthInFundDetailsFormat } from "../operations/tools";
 
 export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions: any = null, view: "front office" | "back office" | "exposure" | "fact sheet", sortBy: "pl" | "price move" | null): Promise<{ portfolio: FinalPositionBackOffice[]; fundDetails: FundMTD; analysis: any; uploadTradesDate: any; updatePriceDate: number; collectionName: string; error: null } | { fundDetails: FundExposureOnlyMTD; analysis: any; error: null } | { error: string }> {
+  let timestamp = new Date().getTime();
   const database = client.db("portfolios");
   let earliestPortfolioName = await getEarliestCollectionName(date);
 
@@ -82,6 +83,10 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   let lastMonthPortfolio = await getHistoricalPortfolio(lastMonthLastCollectionName.predecessorDate);
   let previousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeToday.predecessorDate);
   let previousPreviousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeYesterday.predecessorDate);
+  let timestamp_2 = new Date().getTime();
+
+  console.log("To get all portfolios: ", (timestamp_2 - timestamp) / 1000 + " seconds");
+
   let ytdDocuments = await getYTDInt(documents, lastYearLastCollectionName.predecessorDate, date);
   documents = ytdDocuments.portfolio;
   let ytdinterest = ytdDocuments.ytdinterest;
@@ -115,8 +120,11 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   documents = getDayParams(documents, previousDayPortfolio, lastDayBeforeToday.predecessorDate, false);
   documents = getDayParams(documents, previousPreviousDayPortfolio, lastDayBeforeYesterday.predecessorDate, true);
   documents = getMTDParams(documents, lastMonthPortfolio, earliestPortfolioName.predecessorDate);
-
+  let timestamp_3 = new Date().getTime();
   documents = await getMTDURlzdInt(documents, new Date(date));
+  let timestamp_4 = new Date().getTime();
+  console.log("To calculate rlzd: ", (timestamp_4 - timestamp_3) / 1000 + " seconds");
+
   let dayParamsWithLatestUpdates = await getDayURlzdInt(documents, new Date(date));
   documents = dayParamsWithLatestUpdates.portfolio;
 
@@ -380,18 +388,23 @@ export async function getMTDURlzdInt(portfolio: any, date: any) {
     } else if (identifier.includes("1393")) {
       tradeType = "emsx";
     } else if (typeCheck.includes("CDS")) {
-      tradeType = "gs";
+      tradeType = "cds_gs";
     } else if (typeCheck.includes("FX")) {
       tradeType = "fx";
     }
 
     let multiplier = tradeType == "vcons" ? 100 : 1;
+    if (tradeType != "fx") {
+      let trades = await getRlzdTrades(`${tradeType}`, identifier, portfolio[index]["Location"], date, portfolio[index]["MTD Mark"] * multiplier, portfolio[index]["MTD Notional"]);
+      portfolio[index]["MTD Rlzd"] = trades.totalRow["Rlzd P&L Amount"];
+      portfolio[index]["Day Rlzd"] = trades.pnlDayRlzdHistory[dateInTradeDateFormat] || 0;
 
-    let trades = await getRlzdTrades(`${tradeType}`, identifier, portfolio[index]["Location"], date, portfolio[index]["MTD Mark"] * multiplier, portfolio[index]["MTD Notional"]);
-    portfolio[index]["MTD Rlzd"] = trades.totalRow["Rlzd P&L Amount"];
-    portfolio[index]["Day Rlzd"] = trades.pnlDayRlzdHistory[dateInTradeDateFormat] || 0;
-
-    portfolio[index]["Average Cost MTD"] = trades.averageCostMTD / multiplier;
+      portfolio[index]["Average Cost MTD"] = trades.averageCostMTD / multiplier;
+    } else {
+      portfolio[index]["MTD Rlzd"] = 0;
+      portfolio[index]["Day Rlzd"] = 0;
+      portfolio[index]["Average Cost MTD"] = portfolio[index]["MTD Mark"];
+    }
 
     portfolio[index]["MTD URlzd"] = portfolio[index]["Type"] == "CDS" ? ((todayPrice - portfolio[index]["Average Cost MTD"]) * portfolio[index]["Notional Amount"]) / portfolio[index]["Original Face"] : (todayPrice - portfolio[index]["Average Cost MTD"]) * portfolio[index]["Notional Amount"];
 

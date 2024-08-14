@@ -186,21 +186,6 @@ export async function getMTDRlzd(portfolio: PositionBeforeFormatting[] | any, da
     position["MTD Rlzd"] = trades.totalRow["Rlzd P&L Amount"].toString();
   }
 }
-export async function findTrade(tradeType: string, tradeTriadaId: string): Promise<CentralizedTrade[]> {
-  try {
-    const database = client.db("trades_v_2");
-    const reportCollection = database.collection(tradeType);
-    const query = { "Triada Trade Id": { $regex: tradeTriadaId, $options: "i" } };
-
-    const documents = await reportCollection.find(query).toArray();
-
-    return documents;
-  } catch (error: any) {
-    console.log(error);
-
-    return [];
-  }
-}
 
 export function convertNomuraDateToAppTradeDate(nomuraDate: string): string {
   nomuraDate = nomuraDate.toString();

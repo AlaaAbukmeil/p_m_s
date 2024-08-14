@@ -456,31 +456,6 @@ export function trimDate(data: any, benchmark = false, triada = false, masterTri
   return final;
 }
 
-async function updateOrInsertDataWithBulk(entries: any, collectionName: any) {
-  try {
-    // Connect to MongoDB
-    await client.connect();
-    const database = client.db("factsheet");
-    const collection = database.collection(collectionName);
-    // await collection.deleteMany({});
-    // Create bulk operations array
-    const bulkOps = entries.map((entry: any) => {
-      return {
-        updateOne: {
-          filter: { date: entry.date }, // Filter to match documents based on the date
-          update: { $set: { timestamp: entry.timestamp, data: entry.data } },
-          upsert: true, // Insert a new document if no existing document matches
-        },
-      };
-    });
-
-    // Execute bulk operations
-    const result = await collection.bulkWrite(bulkOps);
-    console.log("Bulk operation result:", result);
-  } catch (error) {
-    console.error("Failed in bulk operation:", error);
-  }
-}
 
 export function calculateOutPerformance({ benchmarks, data }: { benchmarks: any; data: any }) {
   let years = Object.keys(data);

@@ -39,7 +39,7 @@ positionsRouter.post("/recalculate-position", verifyToken, uploadToBucket.any(),
     let isin = data["ISIN"];
     let location = data["Location"];
     let date = data.date;
-    let trades = await getAllTradesForSpecificPosition(tradeType, isin, location, date);
+    let trades = await getAllTradesForSpecificPosition(tradeType, isin, location, date, "portfolio-main");
     if (trades.length) {
       let action: any = await readCalculatePosition(trades, date, isin, location, tradeType);
       console.log(action);
@@ -47,6 +47,7 @@ positionsRouter.post("/recalculate-position", verifyToken, uploadToBucket.any(),
     } else {
       res.send({ error: "no trades" });
     }
+    res.send(200);
   } catch (error) {
     console.log(error);
     res.send({ error: error });

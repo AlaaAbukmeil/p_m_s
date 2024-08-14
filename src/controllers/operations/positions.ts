@@ -1,6 +1,6 @@
 import { client } from "../userManagement/auth";
 import { convertExcelDateToJSDate, formatDateUS, formatDateWorld, getDate, getTradeDateYearTrades } from "../common";
-import { findTrade, insertTrade } from "../reports/trades";
+import { findTrade, insertTradesData } from "../reports/trades";
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../reports/common";
 import { readCentralizedEBlot, readEditInput, readPricingSheet } from "./readExcel";
 import { findTradeRecord, formatUpdatedPositions, getAverageCost, getCollectionName, getEarliestCollectionName, parseBondIdentifier } from "../reports/tools";
@@ -11,6 +11,7 @@ import { insertEditLogs } from "./logs";
 import { getSecurityInPortfolioById } from "./tools";
 import { swapMonthDay } from "../common";
 import { PositionBeforeFormatting, PositionInDB } from "../../models/portfolio";
+import { convertCentralizedToTradesSQL } from "../eblot/eblot";
 const ObjectId = require("mongodb").ObjectId;
 
 export async function getPortfolio(date = null): Promise<PositionInDB[]> {
@@ -126,14 +127,14 @@ export async function updatePositionPortfolio(
       let previousAverageCost = securityInPortfolio["Average Cost"] ? securityInPortfolio["Average Cost"] : 0;
       let tradeType = row["B/S"];
       let operation = tradeType == "B" ? 1 : -1;
-      let currentPrice: any = parseFloat(row["Price"]) / (type == "vcons" ? 100 : 1);
+      let currentPrice: any = row["Price"] / (type == "vcons" ? 100 : 1);
       let currentQuantity: any = parseFloat(row["Notional Amount"].toString().replace(/,/g, "")) * operation;
 
       let currentPrincipal: any = parseFloat(row["Principal"].toString().replace(/,/g, ""));
 
       let currency = row["Currency"];
       let bondCouponMaturity: any = parseBondIdentifier(row["BB Ticker"]);
-      let tradeDB = await findTrade(type, row["Triada Trade Id"], row["Seq No"]);
+      let tradeDB = await findTrade(type, row["Triada Trade Id"]);
 
       let tradeExistsAlready = tradeDB || triadaIds.includes(row["Triada Trade Id"]);
 
@@ -312,16 +313,15 @@ export async function updatePositionPortfolio(
     try {
       let updatedPortfolio = formatUpdatedPositions(positions, portfolio, "Last Upload Trade");
       let insertion = await insertTradesInPortfolio(updatedPortfolio.updatedPortfolio);
-      let action1 = await insertTrade(trades.vconTrades, "vcons");
+      let action1 = await insertTradesData(convertCentralizedToTradesSQL(trades.vconTrades), "vcons");
       try {
         await updateMatchedVcons(trades.vconTrades);
       } catch (error) {
         console.log({ UploadTrade: error });
       }
-      let action2 = await insertTrade(trades.ibTrades, "ib");
-      let action3 = await insertTrade(trades.emsxTrades, "emsx");
-
-      let action4 = await insertTrade(trades.gsTrades, "gs");
+      let action2 = await insertTradesData(convertCentralizedToTradesSQL(trades.ibTrades), "ib");
+      let action3 = await insertTradesData(convertCentralizedToTradesSQL(trades.emsxTrades), "emsx");
+      let action4 = await insertTradesData(convertCentralizedToTradesSQL(trades.gsTrades), "cds_gs");
 
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
       await insertEditLogs([positions], "Upload Trades", dateTime, "Num of updated/created positions: " + Object.keys(positions).length, "Link: " + link);
@@ -767,7 +767,7 @@ export async function insertTradesInPortfolioAtASpecificDate(trades: any, date: 
   }
 }
 
-export async function readCalculatePosition(data: CentralizedTrade[], date: string, isin: any, location: any, tradeType: string) {
+export async function readCalculatePosition(data: CentralizedTrade[], date: string, isin: any, location: any, tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs") {
   try {
     let positions: any = [];
     const database = client.db("portfolios");
@@ -798,13 +798,11 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
 
       let couponDaysYear = row["BB Ticker"].split(" ")[0] == "T" || row["BB Ticker"].includes("U.S") ? 365.0 : 360.0;
       let previousQuantity = 0;
-      let tradeType = row["B/S"];
-      let operation = tradeType == "B" ? 1 : -1;
+      let operation = row["B/S"] == "B" ? 1 : -1;
       let divider = row["Trade Type"].includes("vcon") ? 100 : 1;
 
-      let currentPrice: any = parseFloat(row["Price"]) / divider;
+      let currentPrice: any = row["Price"] / divider;
       let currentQuantity: any = parseFloat(row["Notional Amount"].toString().replace(/,/g, "")) * operation;
-      let currentNet = parseFloat(row["Settlement Amount"].toString().replace(/,/g, "")) * operation;
 
       let currentPrincipal: any = parseFloat(row["Principal"].toString().replace(/,/g, ""));
 
@@ -816,7 +814,6 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
       let updatingPosition = returnPositionProgress(positions, identifier, location);
       let tradeDate: any = new Date(row["Trade Date"]);
       let thisMonth = monthlyRlzdDate(tradeDate);
-      let thisDay = getDate(tradeDate);
 
       let rlzdOperation = -1;
       if (updatingPosition) {
