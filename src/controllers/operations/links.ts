@@ -87,7 +87,7 @@ export async function addLink(data: any): Promise<any> {
     const database = client.db("auth");
     const reportCollection = database.collection("links");
     const newData = {} as any;
-    const tableTitles = ["name", "accessRight", "email"];
+    const tableTitles = ["name", "accessRight", "email", "accessRole"];
     // Build the newData object based on `data` and `tableTitles`
     for (const title of tableTitles) {
       if (data[title] !== undefined && data[title] !== null) {
