@@ -26,7 +26,7 @@ authRouter.get("/auth", uploadToBucket.any(), verifyTokenFactSheetMember, async 
     };
     let final: any = {};
     for (let key in investorReports) {
-      if (req.shareClass.toString().includes(key) || req.accessRole == "admin") {
+      if (req.shareClass.toString().includes(key) || req.accessRole == "admin" || req.accessRole == "member (risk report)") {
         final[key] = investorReports[key];
       }
     }
@@ -171,7 +171,6 @@ authRouter.post("/add-user", verifyToken, uploadToBucket.any(), async (req: Requ
     res.send({ error: "Something is not correct, check error log records" });
   }
 });
-
 
 authRouter.post("/send-fact-sheet-welcome", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
   try {

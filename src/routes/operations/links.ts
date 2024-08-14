@@ -26,7 +26,7 @@ linksRouter.post("/edit-link", verifyToken, uploadToBucket.any(), async (req: Re
 
 linksRouter.post("/delete-link", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response | any, next: NextFunction) => {
   try {
-      let action = await deleteLink(req.body);
+    let action = await deleteLink(req.body);
     res.sendStatus(200);
   } catch (error) {
     console.log(error);

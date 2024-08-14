@@ -94,14 +94,14 @@ export async function addLink(data: any): Promise<any> {
         newData[title] = data[title];
       }
     }
-    const jwtObject = { name: data["name"], accessRole: "member (factsheet report)", shareClass: data["accessRight"], link: true };
+    const jwtObject = { name: data["name"], accessRole: data["accessRole"], shareClass: data["accessRight"], link: true };
     const token = jwt.sign(jwtObject, jwtSecret, { expiresIn: "30d" });
     let base = "https://admin.triadacapital.com/links-redirect?token=" + token;
     newData["link"] = base;
     newData["token"] = token;
     newData["createdOn"] = getDateTimeInMongoDBCollectionFormat(new Date());
     newData["expiration"] = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000));
-    newData["accessRole"] = "member (factsheet report)";
+    newData["accessRole"] = data["accessRole"];
     // You might want to check if all required fields are present
     // if some fields are mandatory e.g.,
 

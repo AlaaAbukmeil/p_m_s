@@ -5,7 +5,7 @@ import { uri } from "../common";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { insertEditLogs } from "../operations/logs";
 import { copyFileSync } from "fs";
-import { generateRandomIntegers, sendEmailToResetPassword, sendRegsiterationEmail, sendWelcomeEmail } from "./tools";
+import { generateRandomIntegers, sendEmailToResetPassword, sendWelcomeEmail } from "./tools";
 
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
@@ -381,11 +381,7 @@ export async function addUser({ email, name, accessRole, shareClass, welcome }: 
         resetCode: resetPasswordCode,
       };
       const action = await usersCollection.insertOne(updateDoc);
-      if (welcome) {
-        let emailRegisteration = await sendWelcomeEmail({ email: email, name: name, resetCode: resetPasswordCode });
-      } else {
-        let emailRegisteration = await sendRegsiterationEmail({ email: email, name: name });
-      }
+      let emailRegisteration = await sendWelcomeEmail({ email: email, name: name, resetCode: resetPasswordCode });
       return { message: "registered", status: 200, error: "" };
     } else if (user) {
       return { error: "user already exist", status: 404 };
