@@ -513,6 +513,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       groupUSDMarketValue = 0,
       groupRating = -99,
       groupNotional = 0,
+      groupBBTicker = "",
       groupSpreadTZ,
       groupEntrySpreadTZ;
 
@@ -663,6 +664,8 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       groupMaturity = groupMaturity && groupMaturity < maturity ? groupMaturity : maturity;
 
       groupUSDMarketValue += usdMarketValue;
+      groupBBTicker += bbTicker;
+
       groupRating = groupRating < ratingScore ? ratingScore : groupRating;
       groupNotional += notional;
 
@@ -718,6 +721,8 @@ export function assignColorAndSortParamsBasedOnAssetClass({
     groupedByLocation[locationCode].groupMTDPriceMoveSum = groupMTDPriceMoveSum;
 
     groupedByLocation[locationCode].groupUSDMarketValue = groupUSDMarketValue;
+    groupedByLocation[locationCode].groupBBTicker = groupBBTicker;
+
     groupedByLocation[locationCode].groupMTDPl = groupMTDPl;
     groupedByLocation[locationCode].groupNotional = groupNotional;
 
@@ -845,7 +850,7 @@ export function getMacroStats({
   }
 }
 
-export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLocation, sort, sign, view }: { portfolio: any; groupedByLocation: any; sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupMTDPriceMoveSum" | "groupDayPriceMoveSum" | "groupCallDate" | "groupMaturity"; sign: any; view: "front office" | "back office" | "exposure" }) {
+export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLocation, sort, sign, view }: { portfolio: any; groupedByLocation: any; sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDayPriceMoveSum" | "groupMTDPriceMoveSum" | "groupBBTicker"; sign: any; view: "front office" | "back office" | "exposure" }) {
   try {
     sign = parseFloat(sign);
     if (sort == "order") {
@@ -898,9 +903,24 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         })
         .map((entry) => entry[0]);
     } else {
-      locationCodes = Object.entries(groupedByLocation)
-        .sort((a: any, b: any) => (sign == -1 ? a[1][`${sort}`] - b[1][`${sort}`] : b[1][`${sort}`] - a[1][`${sort}`]))
-        .map((entry) => entry[0]);
+      if (sort !== "groupBBTicker") {
+        locationCodes = Object.entries(groupedByLocation)
+          .sort((a: any, b: any) => {
+            if (a[1]["groupUSDMarketValue"] === 0) return 1;
+            if (b[1]["groupUSDMarketValue"] === 0) return -1;
+            return sign === -1 ? a[1][sort] - b[1][sort] : b[1][sort] - a[1][sort];
+          })
+          .map((entry) => entry[0]);
+      } else {
+        locationCodes = Object.entries(groupedByLocation)
+          .sort((a: any, b: any) => {
+            if (a[1]["groupUSDMarketValue"] === 0) return 1;
+            if (b[1]["groupUSDMarketValue"] === 0) return -1;
+
+            return sign === -1 ? b[1][sort].localeCompare(a[1][sort]) : a[1][sort].localeCompare(b[1][sort]);
+          })
+          .map((entry) => entry[0]);
+      }
     }
     let rowIndexAdditive = 0;
 
@@ -1225,7 +1245,29 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
   }
 }
 
-export function groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio, nav, sort, sign, view, currencies, format, sortBy, fundDetails, date }: { formattedPortfolio: PositionGeneralFormat[]; nav: number; sort: any; sign: number; view: "front office" | "exposure" | "back office"; currencies: any; format: "risk" | "summary"; sortBy: "pl" | null | "price move"; fundDetails: any; date: "string" }): Analysis {
+export function groupAndSortByLocationAndTypeDefineTables({
+  formattedPortfolio,
+  nav,
+  sort,
+  sign,
+  view,
+  currencies,
+  format,
+  sortBy,
+  fundDetails,
+  date,
+}: {
+  formattedPortfolio: PositionGeneralFormat[];
+  nav: number;
+  sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDayPriceMoveSum" | "groupMTDPriceMoveSum" | "groupBBTicker";
+  sign: number;
+  view: "front office" | "exposure" | "back office";
+  currencies: any;
+  format: "risk" | "summary";
+  sortBy: "pl" | null | "price move";
+  fundDetails: any;
+  date: "string";
+}): Analysis {
   let issuerInformation: any = {};
 
   let countryNAVPercentage: any = {};

@@ -36,7 +36,8 @@ router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: 
 router.get("/summary-portfolio", verifyToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
     let date: any = req.query.date;
-    let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDayPriceMoveSum" | "groupMTDPriceMoveSum" | any = req.query.sort || "order";
+    let input: any = req.query.sort || "order";
+    let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDayPriceMoveSum" | "groupMTDPriceMoveSum" | "groupBBTicker" = input;
     let sign: any = req.query.sign || 1;
     let conditions: any = req.query || {};
 
