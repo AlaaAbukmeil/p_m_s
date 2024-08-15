@@ -49,11 +49,11 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
         currencies[currency] = usdRatio;
       }
     }
-    ///////
     if (position["Type"] == "FX") {
       position["FX Rate"] = 1;
       position["Previous FX"] = 1;
       position["MTD FX"] = 1;
+      position["Currency"] = position["BB Ticker"];
     } else {
       position["FX Rate"] = usdRatio;
     }
@@ -90,7 +90,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
       position["Previous FX"] = position["FX Rate"];
     }
     position["DV01"] = (position["DV01"] / 1000000) * position["Notional Amount"] * usdRatio;
-    position["DV01"] = Math.round(position["DV01"] * 100) / 100 || 0;
+    position["DV01"] = position["DV01"] || 0;
 
     position["Day P&L FX"] = (position["FX Rate"] - position["Previous FX"]) * position["Value (BC)"];
 
@@ -680,24 +680,20 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       if (duration < 2) {
         durationSummary["0 To 2"].durationSum += duration;
         durationSummary["0 To 2"].dv01Sum += dv01;
-        durationSummary["0 To 2"].dv01Sum = Math.round(durationSummary["0 To 2"].dv01Sum * 1);
       } else if (duration >= 2 && duration < 5) {
         durationSummary["2 To 5"].durationSum += duration;
         durationSummary["2 To 5"].dv01Sum += dv01;
-        durationSummary["2 To 5"].dv01Sum = Math.round(durationSummary["2 To 5"].dv01Sum * 100) / 100;
       } else if (duration >= 5 && duration < 10) {
         durationSummary["5 To 10"].durationSum += duration;
         durationSummary["5 To 10"].dv01Sum += dv01;
-        durationSummary["5 To 10"].dv01Sum = Math.round(durationSummary["5 To 10"].dv01Sum * 100) / 100;
       } else if (duration >= 10 && duration < 30) {
         durationSummary["10 To 30"].durationSum += duration;
         durationSummary["10 To 30"].dv01Sum += dv01;
-        durationSummary["10 To 30"].dv01Sum = Math.round(durationSummary["10 To 30"].dv01Sum * 100) / 100;
       } else if (duration >= 30) {
         durationSummary["> 30"].durationSum += duration;
         durationSummary["> 30"].dv01Sum += dv01;
-        durationSummary["> 30"].dv01Sum = Math.round(durationSummary["> 30"].dv01Sum * 100) / 100;
       }
+      durationSummary["Total"].dv01Sum += dv01;
 
       let pinned = groupedByLocation[locationCode].data[index]["Pin"];
       if (pinned == "pinned") {
