@@ -7,9 +7,10 @@ import { getPortfolio } from "../controllers/operations/positions";
 import { formatFxMufg, formatMufg, formatMufgCDS } from "../controllers/operations/mufgOperations";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/eblot/graphApiConnect";
 import { MufgTrade } from "../models/mufg";
-import { addNomuraGeneratedDateToTrades, allTrades, allTradesCDS, getTriadaTrades } from "../controllers/operations/trades";
+import { addNomuraGeneratedDateToTrades, allTrades, allTradesCDS, getCancelVcons, getTriadaTrades } from "../controllers/operations/trades";
 import { bucket, formatDateFile, generateSignedUrl, verifyToken } from "../controllers/common";
 import { uploadToBucket } from "../controllers/userManagement/tools";
+import { CentralizedTrade } from "../models/trades";
 const { exec } = require("child_process");
 const formatterRouter = Router();
 
@@ -25,7 +26,6 @@ formatterRouter.post("/ib-excel", verifyToken, uploadToBucket.any(), async (req:
     let data = await readIBRawExcel(path);
     let portfolio = await getPortfolio();
     let action = formatIbTrades(data, trades, portfolio);
-    // console.log(action)
 
     if (!action) {
       res.send({ error: action });
@@ -90,7 +90,10 @@ formatterRouter.post("/centralized-blotter", verifyToken, uploadToBucket.any(), 
     let startLimit = new Date(data.timestamp_start).getTime() - 1 * 24 * 60 * 60 * 1000;
     let endLimit = new Date(data.timestamp_end).getTime() + 1 * 24 * 60 * 60 * 1000;
     let vconTrades = await getTriadaTrades("vcons", start, end);
+    let cdsTrades: [CentralizedTrade[], number] | any = await getTriadaTrades("gs", start, end);
+    let canceledTrades = await getCancelVcons(start, end);
 
+    vconTrades = [...vconTrades, ...cdsTrades, ...canceledTrades];
     let vcons: any = await getVcons(token, data.timestamp_start, data.timestamp_end, vconTrades);
     vcons = vcons.filter((trade: any, index: any) => trade["Trade App Status"] != "uploaded_to_app" && new Date(trade["Trade Date"]).getTime() > startLimit && new Date(trade["Trade Date"]).getTime() < endLimit);
     let ibTrades = await getTriadaTrades("ib", start, end);

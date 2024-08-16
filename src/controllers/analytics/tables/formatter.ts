@@ -143,7 +143,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     position["Call Date"] = position["Call Date"] ? position["Call Date"] : "0";
 
     position["L/S"] = position["Notional Amount"] > 0 && position["Type"] != "CDS" ? "Long" : position["Notional Amount"] == 0 && position["Type"] != "CDS" ? "Rlzd" : "Short";
-    position["Duration"] = yearsUntil(position["Call Date"] && position["Call Date"] != "0" && position["BB Ticker"].toLowerCase().includes("perps") ? position["Call Date"] : position["Maturity"], date, position["BB Ticker"]);
+    position["Duration"] = yearsUntil(position["Call Date"] && position["Call Date"] != "0" && position["BB Ticker"].toLowerCase().includes("perp") ? position["Call Date"] : position["Maturity"], date, position["BB Ticker"]);
 
     position["Duration Bucket"] = getDurationBucket(position["Duration"]);
     position["Issuer"] = position["Issuer"] == "0" ? "" : position["Issuer"];

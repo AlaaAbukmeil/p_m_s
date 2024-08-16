@@ -4,6 +4,8 @@ import { getDate } from "../common";
 import { insertEditLogs } from "../operations/logs";
 import { getDateTimeInMongoDBCollectionFormat } from "./common";
 import { getAverageCost } from "./tools";
+import { updatePositionsBasedOnTrade } from "../operations/positions";
+import { sortTradesOnTheSameDate } from "../operations/readExcel";
 
 export async function getTrades(tradeType: any) {
   try {
@@ -35,6 +37,22 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
     };
 
     let documents = await reportCollection.find(query).sort({ "Trade Date": 1 }).toArray();
+    if (documents.length) {
+      let buySellGuess = documents[0]["ISIN"].toString().toLowerCase().includes("ib") ? "S" : documents[0]["BB Ticker"].toString().split(" ")[0] == "T" ? "S" : "B";
+
+      documents = documents.sort((tradeA: CentralizedTrade, tradeB: CentralizedTrade) => {
+        let tradeDateA = new Date(tradeA["Trade Date"]).getTime();
+        let tradeDateB = new Date(tradeB["Trade Date"]).getTime();
+        if (tradeDateA == tradeDateB) {
+          if (tradeA["B/S"] == buySellGuess) {
+            return -1;
+          } else {
+            return 1;
+          }
+        }
+        return tradeDateA - tradeDateB;
+      });
+    }
 
     let multiplier = tradeType == "vcons" ? 100 : tradeType == "gs" ? 1000000 : 1;
     let total = 0;
@@ -95,6 +113,7 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
     return { documents: documents, totalRow: totalRow, averageCostMTD: averageCost, pnlDayRlzdHistory: pnlDayRlzdHistory };
   } catch (error) {
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.log({ error });
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
     if (!errorMessage.toString().includes("Batch cannot be empty")) {
       await insertEditLogs([errorMessage], "Errors", dateTime, "getRlzdTrades", "controllers/reports/trades.ts");

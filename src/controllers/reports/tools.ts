@@ -655,17 +655,17 @@ export function sortObjectByValues(obj: any, param = "") {
     return sortedObj;
   }
 }
-export function getLatestDateMMYYYY(dates: string[]): string {
+export function getLatestDateYYYYMM(dates: string[]): string {
   if (dates.length === 0) return "";
 
   return dates.reduce((latest, current) => {
-    const [currentMonth, currentYear] = current.split("/").map(Number);
-    const [latestMonth, latestYear] = latest.split("/").map(Number);
+    const [currentMonth, currentYear] = latest.split("/").map(Number);
+    const [latestMonth, latestYear] = current.split("/").map(Number);
 
-    if (currentYear > latestYear || (currentYear === latestYear && currentMonth > latestMonth)) {
-      return current;
+    if (currentYear > latestYear || (currentYear === latestYear && latestMonth > currentMonth)) {
+      return latest;
     }
 
-    return latest;
+    return current;
   });
 }

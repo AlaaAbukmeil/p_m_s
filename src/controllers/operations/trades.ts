@@ -20,7 +20,7 @@ export async function getAllTradesForSpecificPosition(tradeType: string, isin: s
     // Empty query object means "match all documents"
     const options = {}; // You can set options for the find operation if needed
     const query = { ISIN: isin, Location: location, timestamp: { $lt: timestamp } }; // Replace yourIdValue with the actual ID you're querying
-    const results = await collection.find(query, options).toArray();
+    let results = await collection.find(query, options).toArray();
     for (let index = 0; index < results.length; index++) {
       let trade = results[index];
       if (!trade["BB Ticker"] && trade["Issue"]) {
@@ -28,14 +28,60 @@ export async function getAllTradesForSpecificPosition(tradeType: string, isin: s
         delete trade["Issue"];
       }
     }
-    // The 'results' variable now contains an array of documents from the collection
-    return results;
+    if (results.length) {
+      let buySellGuess = results[0]["ISIN"].toString().toLowerCase().includes("ib") ? "S" : results[0]["BB Ticker"].toString().split(" ")[0] == "T" ? "S" : "B";
+
+      results = results.sort((tradeA: CentralizedTrade, tradeB: CentralizedTrade) => {
+        let tradeDateA = new Date(tradeA["Trade Date"]).getTime();
+        let tradeDateB = new Date(tradeB["Trade Date"]).getTime();
+        if (tradeDateA == tradeDateB) {
+          if (tradeA["B/S"] == buySellGuess) {
+            return -1;
+          } else {
+            return 1;
+          }
+        }
+        return tradeDateA - tradeDateB;
+      });
+      // The 'results' variable now contains an array of documents from the collection
+      return results;
+    } else {
+      return [];
+    }
   } catch (error) {
     // Handle any errors that occurred during the operation
     console.error("An error occurred while retrieving data from MongoDB:", error);
   }
 }
+export async function getCancelVcons(start: number, end: number) {
+  try {
+    // Connect to the MongoDB client
 
+    // Access the 'structure' database
+    const database = client.db("trades_v_2");
+
+    // Access the collection named by the 'customerId' parameter
+    const collection = database.collection("canceled_vcons");
+
+    // Perform your operations, such as find documents in the collection
+    // This is an example operation that fetches all documents in the collection
+    // Empty query object means "match all documents"
+    let results = await collection
+      .find({ timestamp: { $gte: start, $lte: end } })
+      .sort({ timestamp: -1 })
+      .toArray();
+    for (let index = 0; index < results.length; index++) {
+      results[index]["App Check Test"] = "Canceled Vcon";
+    }
+
+    // The 'results' variable now contains an array of documents from the collection
+    return results;
+  } catch (error) {
+    // Handle any errors that occurred during the operation
+    console.error("An error occurred while retrieving data from MongoDB:", error);
+    return [];
+  }
+}
 export async function getTrade(tradeType: string, tradeId: string) {
   try {
     // Connect to the MongoDB client

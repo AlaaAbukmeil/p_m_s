@@ -76,6 +76,9 @@ export async function readCentralizedEBlot(path: string): Promise<
         vconTrades[rowIndex]["timestamp"] = new Date(vconTrades[rowIndex]["Trade Date"]).getTime();
         vconTrades[rowIndex]["Trade App Status"] = "uploaded_to_app";
       }
+      if (vconTrades.length) {
+        sortTradesOnTheSameDate(vconTrades);
+      }
 
       for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
         ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["BB Ticker"];
@@ -90,6 +93,9 @@ export async function readCentralizedEBlot(path: string): Promise<
         ibTrades[ibTradesIndex]["timestamp"] = new Date().getTime();
         ibTrades[ibTradesIndex]["Trade App Status"] = "uploaded_to_app";
       }
+      if (ibTrades.length) {
+        sortTradesOnTheSameDate(ibTrades);
+      }
       for (let emsxTradesIndex = 0; emsxTradesIndex < emsxTrades.length; emsxTradesIndex++) {
         emsxTrades[emsxTradesIndex]["Notional Amount"] = emsxTrades[emsxTradesIndex]["Settlement Amount"];
         emsxTrades[emsxTradesIndex]["ISIN"] = emsxTrades[emsxTradesIndex]["BB Ticker"];
@@ -102,7 +108,9 @@ export async function readCentralizedEBlot(path: string): Promise<
         emsxTrades[emsxTradesIndex]["timestamp"] = new Date().getTime();
         emsxTrades[emsxTradesIndex]["Trade App Status"] = "uploaded_to_app";
       }
-
+      if (emsxTrades.length) {
+        sortTradesOnTheSameDate(emsxTrades);
+      }
       for (let gsTradesIndex = 0; gsTradesIndex < gsTrades.length; gsTradesIndex++) {
         gsTrades[gsTradesIndex]["ISIN"] = gsTrades[gsTradesIndex]["BB Ticker"];
 
@@ -133,6 +141,7 @@ export async function readCentralizedEBlot(path: string): Promise<
       } catch (error) {
         console.log(error);
       }
+
       return {
         vconTrades: vconTrades,
         ibTrades: ibTrades,
@@ -842,4 +851,20 @@ export async function readFactSheet(path: string) {
 
     return data;
   }
+}
+export function sortTradesOnTheSameDate(trades: CentralizedTrade[]) {
+  let buySellGuess = trades[0]["ISIN"].toString().toLowerCase().includes("ib") ? "S" : trades[0]["BB Ticker"].toString().split(" ")[0] == "T" ? "S" : "B";
+
+  trades = trades.sort((tradeA: CentralizedTrade, tradeB: CentralizedTrade) => {
+    let tradeDateA = new Date(tradeA["Trade Date"]).getTime();
+    let tradeDateB = new Date(tradeB["Trade Date"]).getTime();
+    if (tradeDateA == tradeDateB) {
+      if (tradeA["B/S"] == buySellGuess) {
+        return -1;
+      } else {
+        return 1;
+      }
+    }
+    return tradeDateA - tradeDateB;
+  });
 }

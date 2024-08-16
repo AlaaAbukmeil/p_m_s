@@ -1,10 +1,10 @@
 import { client } from "../userManagement/auth";
 
-import { formatDateRlzdDaily, getAllDatesSinceLastMonthLastDay, getAllDatesSinceLastYearLastDay, getDateTimeInMongoDBCollectionFormat, getDaysBetween, getEarliestDateKeyAndValue, getLastDayOfMonth, monthlyRlzdDate, nextMonthlyRlzdDate } from "./common";
+import { getAllDatesSinceLastMonthLastDay, getAllDatesSinceLastYearLastDay, getDateTimeInMongoDBCollectionFormat, getDaysBetween, getEarliestDateKeyAndValue, getLastDayOfMonth, monthlyRlzdDate, nextMonthlyRlzdDate } from "./common";
 import { getFundDetails } from "../operations/fund";
 
-import { formatDateUS, getTradeDateYearTrades } from "../common";
-import { getEarliestCollectionName, getLatestDateMMYYYY, parseBondIdentifier, remainingDaysInYear } from "./tools";
+import { formatDateUS } from "../common";
+import { getEarliestCollectionName, getLatestDateYYYYMM, parseBondIdentifier, remainingDaysInYear } from "./tools";
 import { getHistoricalPortfolio, getPinnedPositions } from "../operations/positions";
 import { FinalPositionBackOffice, FundExposureOnlyMTD, FundMTD, PositionBeforeFormatting, PositionInDB, RlzdTrades } from "../../models/portfolio";
 import { formatFrontOfficeTable } from "../analytics/tables/frontOffice";
@@ -473,7 +473,8 @@ export async function getPL(portfolio: any, latestPortfolioThisMonth: any, date:
     portfolio[index]["MTD P&L"] = parseFloat(portfolio[index]["MTD Rlzd"]) + (parseFloat(portfolio[index]["MTD URlzd"]) || 0) + parseFloat(portfolio[index]["MTD Int."]) || 0;
     portfolio[index]["YTD P&L"] = (parseFloat(portfolio[index]["YTD Rlzd"]) || 0) + (parseFloat(portfolio[index]["YTD URlzd"]) || 0) + parseFloat(portfolio[index]["YTD Int."]) || 0;
     portfolio[index]["Entry Price"] = portfolio[index]["Entry Price"] ? portfolio[index]["Entry Price"] : {};
-    let latestEntryPrices = getLatestDateMMYYYY(Object.keys(portfolio[index]["Entry Price"]));
+    let latestEntryPrices = getLatestDateYYYYMM(Object.keys(portfolio[index]["Entry Price"]));
+
     portfolio[index]["Entry Price"] = portfolio[index]["Entry Price"] ? (portfolio[index]["Entry Price"][latestEntryPrices] ? portfolio[index]["Entry Price"][latestEntryPrices] : portfolio[index]["MTD Mark"]) : portfolio[index]["MTD Mark"];
   }
   return portfolio;

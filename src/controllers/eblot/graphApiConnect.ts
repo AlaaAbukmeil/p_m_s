@@ -83,7 +83,8 @@ export async function getVcons(token: string, start_time: any, end_time: any, tr
       let location = securityInPortfolioLocation.trim();
       let trade_status = "new";
       let triadaId = trades.find(function (trade: any) {
-        return trade["Seq No"] == vcon["Seq No"] && trade["ISIN"] == vcon["ISIN"];
+        return trade["Seq No"] == vcon["Seq No"] && (trade["ISIN"] == vcon["ISIN"] || trade["BB Ticker"] == vcon["BB Ticker"]);
+
       });
 
       if (triadaId) {

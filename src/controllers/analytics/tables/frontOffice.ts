@@ -21,6 +21,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Bid",
     "Ask",
     "YTW",
+    "MTD Price",
     `Yesterday's Mid ${formatMarkDate(dates.yesterday)}`,
     `Mid ${formatMarkDate(dates.today)}`,
 
@@ -194,9 +195,10 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "CR01 Dollar Value Impact Utilization % of Nav": "CR01 Dollar Value Impact Utilization % of Nav",
     "CR01 Dollar Value Impact Test": "CR01 Dollar Value Impact Test",
     "CR01 Dollar Value Impact Test Color": "CR01 Dollar Value Impact Test Color",
+    "MTD Price": "MTD Mark",
   };
 
-  let twoDigits = [`${formatMarkDate(dates.lastMonth)}`, `${formatMarkDate(dates.yesterday)}`, `Mid ${formatMarkDate(dates.today)}`, `Yesterday's Mid ${formatMarkDate(dates.yesterday)}`, "Bid", "Ask", "Duration", "Average Cost", "Entry Price", "Previous Mark", "Day Price Move", "MTD Price Move", "3-Day Price Move"];
+  let twoDigits = [`${formatMarkDate(dates.lastMonth)}`, `${formatMarkDate(dates.yesterday)}`, `Mid ${formatMarkDate(dates.today)}`, `Yesterday's Mid ${formatMarkDate(dates.yesterday)}`, "Bid", "Ask", "Duration", "Average Cost", "Entry Price", "Previous Mark", "Day Price Move", "MTD Price Move", "3-Day Price Move", "MTD Price"];
 
   // titlesValues[formatMarkDate(dates.lastMonth)] = "MTD Mark";
   // titlesValues[formatMarkDate(dates.yesterday)] = "Previous Mark";
