@@ -8,11 +8,25 @@ export interface RlzdTrades {
 }
 
 export interface FundDetails {
-  _id: ObjectId;
   month: string;
-  nav: string;
-  holdBackRatio: string;
-  "3 month treasury rate": string;
+  nav: number;
+  expenses: number;
+  holdBackRatio: number;
+  "borrowing amount": number;
+  "share price": number;
+}
+
+export interface FundDetailsInDB {
+  id: string;
+  portfolio_id: string;
+  share_price: number;
+  borrowing_amount: number;
+  month: string;
+  nav: number;
+  expenses: number;
+
+  holdback_ratio: number;
+  timestamp: number;
 }
 
 export interface PositionInDB {
@@ -289,7 +303,6 @@ export interface FundMTD {
   smvOfNav: number;
   gmvOfNav: number;
   nmvOfNav: number;
-  "3 month treasury rate": string;
 }
 export interface FundExposureOnlyMTD {
   nav: number;

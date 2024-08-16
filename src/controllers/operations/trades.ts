@@ -149,8 +149,14 @@ export async function editTrade(editedTrade: any, tradeType: "vcons" | "ib" | "e
       yield = $16,
       accrued_interest = $17,
       original_face = $18,
-      comm_fee = $19
-    WHERE id = $20;
+      comm_fee = $19,
+      
+      broker_full_name_account = $20,
+      broker_email = $21,
+      broker_email_status = $22,
+      settlement_venue = $23,
+      primary_market = $24
+      WHERE id = $25;
   `;
 
       const values = [
@@ -173,12 +179,20 @@ export async function editTrade(editedTrade: any, tradeType: "vcons" | "ib" | "e
         newTradeInSQL.accrued_interest,
         newTradeInSQL.original_face,
         newTradeInSQL.comm_fee,
+
+        newTradeInSQL.broker_full_name_account,
+        newTradeInSQL.broker_email,
+        newTradeInSQL.broker_email_status,
+        newTradeInSQL.settlement_venue,
+        newTradeInSQL.primary_market,
+
         newTradeInSQL.id,
       ];
 
       const client = await tradesPool.connect();
       try {
         const res = await client.query(query, values);
+        console.log({ res });
 
         if (res.rowCount > 0) {
           return { error: null };
@@ -270,7 +284,7 @@ export async function modifyTradesDueToRecalculate(trades: any, tradeType: "vcon
   }
 }
 
-export async function getAllTrades(from: number, to: number, portfolioId: string, tradeType:"vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs"|"" = ""): Promise<CentralizedTrade[]> {
+export async function getAllTrades(from: number, to: number, portfolioId: string, tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs" | "" = ""): Promise<CentralizedTrade[]> {
   const client = await tradesPool.connect();
 
   try {

@@ -140,8 +140,8 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   let pinnedPositions = await getPinnedPositions();
   documents = assignPinnedPositions(documents, pinnedPositions);
   let previousMonthDate = monthlyRlzdDate(previousMonthDates[0]);
-  let fundDetailsMTD: any = await getFundDetails(previousMonthDate);
-  let fundDetailsYTD: any = await getFundDetails(lastYear);
+  let fundDetailsMTD: any = await getFundDetails(previousMonthDate, "portfolio-main");
+  let fundDetailsYTD: any = await getFundDetails(lastYear, "portfolio-main");
 
   if (fundDetailsMTD.length == 0) {
     return { error: "fundDetailsMTD Does not exist" };
@@ -622,30 +622,4 @@ export async function getPortfolioOnSpecificDate(collectionDate: string, onlyThi
   }
 }
 
-export async function getEarliestCollectionNameFund(originalDate: string) {
-  const database = client.db("fund");
-  let details = await database.collection("details").find().toArray();
 
-  let dates = [];
-  for (let index = 0; index < details.length; index++) {
-    let fund_detail = details[index];
-
-    if (originalDate.includes(fund_detail["month"])) {
-      return fund_detail["month"];
-    }
-    if (new Date(fund_detail["month"])) {
-      dates.push(new Date(fund_detail["month"]));
-    }
-  }
-
-  let inputDate = new Date(originalDate);
-
-  let predecessorDates: any = dates.filter((date) => date < inputDate);
-
-  let predecessorDate: any = new Date(Math.max.apply(null, predecessorDates));
-  //hong kong time difference with utc
-  if (predecessorDate) {
-    predecessorDate = getMonthInFundDetailsFormat(new Date(predecessorDate));
-  }
-  return predecessorDate;
-}

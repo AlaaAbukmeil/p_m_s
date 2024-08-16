@@ -1,5 +1,6 @@
 import { UserAuth } from "../../../models/auth";
 import { FactSheetBenchMarkDataInDB, FactSheetFundDataInDB } from "../../../models/factSheet";
+import { FundDetailsInDB } from "../../../models/portfolio";
 import { InformationInDB } from "../../../models/positionsInformation";
 import { CentralizedTrade, CentralizedTradeInDB } from "../../../models/trades";
 import { getDateTimeInMongoDBCollectionFormat } from "../../reports/common";
@@ -30,6 +31,7 @@ export const factsheetPool = createPool("factsheet");
 export const positionsInfomrationPool = createPool("positions_information");
 export const authPool = createPool("auth");
 export const tradesPool = createPool("trades");
+export const fundMTDPool = createPool("fund-info-mtd");
 
 export async function migrateFactSheetData(name: string, className: string) {
   const from2010: any = new Date("2010-01-01").getTime();
@@ -482,6 +484,54 @@ export async function insertTradesData(dataInput: CentralizedTradeInDB[], tableN
         trade.portfolio_id,
         trade.front_office_check,
       ]);
+    }
+
+    await client.query("COMMIT");
+  } catch (err: any) {
+    await client.query("ROLLBACK");
+    console.error("Error inserting trades", err.stack);
+  } finally {
+    client.release();
+  }
+}
+
+export function formatFundMTD(data: any[]): FundDetailsInDB[] {
+  let result: FundDetailsInDB[] = [];
+  for (let index = 0; index < data.length; index++) {
+    const element = data[index];
+    let id = uuidv4();
+    let date = element["month"].split("/");
+    date = new Date(date[0], date[1], 1).getTime();
+    console.log(new Date(date));
+    let object: FundDetailsInDB = {
+      id: id,
+      portfolio_id: "portfolio-main",
+      share_price: element["a2 price"],
+      borrowing_amount: element["borrowing amount"],
+      month: element["month"],
+      nav: element["nav"],
+      expenses: element["expenses"],
+      holdback_ratio: element["holdBackRatio"],
+      timestamp: date,
+    };
+    result.push(object);
+  }
+  return result;
+}
+export async function insertFundMTDData(dataInput: FundDetailsInDB[], tableName: string) {
+  const client = await fundMTDPool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const insertQuery = `
+  INSERT INTO public.fund_${tableName} (
+    portfolio_id, share_price,borrowing_amount, month, nav, expenses, holdback_ratio, timestamp, id
+  )
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+  ON CONFLICT (portfolio_id, month) DO NOTHING;`;
+
+    for (const element of dataInput) {
+      await client.query(insertQuery, [element.portfolio_id, element.share_price, element.borrowing_amount, element.month, element.nav, element.expenses, element.holdback_ratio, element.timestamp, element.id]);
     }
 
     await client.query("COMMIT");
