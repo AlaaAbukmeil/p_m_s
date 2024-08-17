@@ -5,7 +5,7 @@ import { deletePosition, editPosition, editPositionBulkPortfolio, insertFXPositi
 import { readCentralizedEBlot, readMUFGPrices, readPricingSheet, uploadArrayAndReturnFilePath } from "../../controllers/operations/readExcel";
 import { checkLivePositions, updatePreviousPricesPortfolioMUFG, updatePricesPortfolio } from "../../controllers/operations/prices";
 import { getAllTradesForSpecificPosition } from "../../controllers/operations/trades";
-import { getEditLogs, updateEditLogs } from "../../controllers/operations/logs";
+import { getEditLogs } from "../../controllers/operations/logs";
 import { getCollectionDays } from "../../controllers/operations/tools";
 import { uploadToBucket } from "../../controllers/userManagement/tools";
 import { factsheetPool } from "../../controllers/operations/psql/operation";
@@ -16,7 +16,7 @@ positionsRouter.get("/edit-logs", verifyToken, async (req, res) => {
   try {
     const editLogsType: any = req.query.logsType;
 
-    let editLogs = await getEditLogs(`${editLogsType}`);
+    let editLogs = await getEditLogs(`${editLogsType}`, "portfolio_main");
     res.send(editLogs);
   } catch (error) {
     res.status(500).send("An error occurred while reading the file.");

@@ -26,7 +26,7 @@ export async function getLinks(): Promise<any> {
     console.log(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getLinks", "controllers/operations/operations.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "getLinks", "controllers/operations/operations.ts");
 
     return {};
   }

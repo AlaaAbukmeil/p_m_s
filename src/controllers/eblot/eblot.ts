@@ -22,7 +22,7 @@ export async function getNewTrades(portfolioId: string): Promise<CentralizedTrad
     console.error(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getNewTrades", "controllers/eblot/eblot.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "getNewTrades", "controllers/eblot/eblot.ts");
 
     return [];
   } finally {

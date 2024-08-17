@@ -63,7 +63,7 @@ export async function getCollectionDays(): Promise<string[]> {
     console.log(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getCollectionDays", "controllers/operations/operations.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "getCollectionDays", "controllers/operations/operations.ts");
 
     return [];
   }

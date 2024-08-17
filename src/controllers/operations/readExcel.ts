@@ -158,7 +158,7 @@ export async function readCentralizedEBlot(path: string): Promise<
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "readCentralizedEBlot", "src/controllers/operations/readExcel.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "readCentralizedEBlot", "src/controllers/operations/readExcel.ts");
     return { error: errorMessage };
   }
 }
@@ -240,7 +240,7 @@ export async function readIBRawExcel(path: string) {
     console.log(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "readIBRawExcel", "controllers/operations/readExcel.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "readIBRawExcel", "controllers/operations/readExcel.ts");
 
     return [];
   }

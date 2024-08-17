@@ -32,7 +32,7 @@ export async function getFundDetails(date: string, portfolioId: string): Promise
     console.log(error);
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getFundDetails", "controllers/operations/fund.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "getFundDetails", "controllers/operations/fund.ts");
 
     return {};
   }
@@ -54,7 +54,7 @@ export async function getAllFundDetails(date: string, portfolioId: string): Prom
     const dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     console.log(error);
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getAllFundDetails", "controllers/operations/fund.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "getAllFundDetails", "controllers/operations/fund.ts");
 
     return [];
   }
@@ -127,7 +127,7 @@ export async function deleteFund(data: any): Promise<any> {
   } catch (error: any) {
     console.error(`An error occurred while deleting the trade: ${error}`);
     const dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    await insertEditLogs([error], "Errors", dateTime, "deleteFund", `${data["month"]}`);
+    await insertEditLogs([error], "errors", dateTime, "deleteFund", `${data["month"]}`);
     return { error: error.toString() };
   } finally {
     client.release();

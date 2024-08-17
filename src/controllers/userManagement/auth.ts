@@ -173,7 +173,7 @@ export async function sendResetPasswordRequest(userEmail: string) {
         if (actionEmail.statusCode != 200) {
           let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
 
-          await insertEditLogs([`${userEmail} did not recieve email`], "Errors", dateTime, "sendResetPasswordRequest", "controllers/userManagement/auth.ts");
+          await insertEditLogs([`${userEmail} did not recieve email`], "errors", dateTime, "sendResetPasswordRequest", "controllers/userManagement/auth.ts");
         }
         return { status: 200, message: "Reset code has been sent to your email!", email: user.email, actionEmail: actionEmail };
       } catch (error) {
@@ -319,7 +319,7 @@ export async function editUser(editedUser: any): Promise<any> {
       }
 
       const dateTime = new Date().toISOString();
-      await insertEditLogs(changesText, "Edit User", dateTime, userInfo["Edit Note"], `${userInfo.email} ${userInfo.name}`);
+      await insertEditLogs(changesText, "edit_user", dateTime, userInfo["Edit Note"], `${userInfo.email} ${userInfo.name}`);
 
       const updateQuery = `
         UPDATE public.auth_users
@@ -343,7 +343,7 @@ export async function editUser(editedUser: any): Promise<any> {
     console.error(error);
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "editUser", "src/controllers/auth.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "editUser", "src/controllers/auth.ts");
   } finally {
     client.release();
   }
@@ -403,7 +403,7 @@ export async function deleteUser(userId: string, userName: string, userEmail: st
       return { error: "User does not exist!" };
     } else {
       const dateTime = new Date().toISOString();
-      await insertEditLogs(["deleted"], "Delete User", dateTime, "deleted", `${userName} ${userEmail}`);
+      await insertEditLogs(["deleted"], "delete_user", dateTime, "deleted", `${userName} ${userEmail}`);
       return { error: null };
     }
   } catch (error) {
@@ -493,7 +493,7 @@ export async function updateUser(userInfo: any, newFileNames: any): Promise<any>
 
   try {
     const dateTime = new Date().toISOString();
-    await insertEditLogs(newFileNames, "Upload User", dateTime, "User uploaded a new file", `${userInfo.email} ${userInfo.name}`);
+    await insertEditLogs(newFileNames, "upload_user", dateTime, "User uploaded a new file", `${userInfo.email} ${userInfo.name}`);
 
     const updateQuery = `
       UPDATE public.auth_users
@@ -514,7 +514,7 @@ export async function updateUser(userInfo: any, newFileNames: any): Promise<any>
     console.error(error);
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "updateUser", "src/controllers/auth.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "updateUser", "src/controllers/auth.ts");
   } finally {
     client.release();
   }

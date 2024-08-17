@@ -1,5 +1,6 @@
 import { UserAuth } from "../../../models/auth";
 import { FactSheetBenchMarkDataInDB, FactSheetFundDataInDB } from "../../../models/factSheet";
+import { Logs } from "../../../models/logs";
 import { FundDetailsInDB } from "../../../models/portfolio";
 import { InformationInDB } from "../../../models/positionsInformation";
 import { CentralizedTrade, CentralizedTradeInDB } from "../../../models/trades";
@@ -32,6 +33,7 @@ export const positionsInfomrationPool = createPool("positions_information");
 export const authPool = createPool("auth");
 export const tradesPool = createPool("trades");
 export const fundMTDPool = createPool("fund-info-mtd");
+export const logsPool = createPool("logs");
 
 export async function migrateFactSheetData(name: string, className: string) {
   const from2010: any = new Date("2010-01-01").getTime();
@@ -518,6 +520,7 @@ export function formatFundMTD(data: any[]): FundDetailsInDB[] {
   }
   return result;
 }
+
 export async function insertFundMTDData(dataInput: FundDetailsInDB[], tableName: string) {
   const client = await fundMTDPool.connect();
   try {
@@ -538,6 +541,50 @@ export async function insertFundMTDData(dataInput: FundDetailsInDB[], tableName:
   } catch (err: any) {
     await client.query("ROLLBACK");
     console.error("Error inserting trades", err.stack);
+  } finally {
+    client.release();
+  }
+}
+export function formatEditLogs(data: any[], type: string): Logs[] {
+  let result: Logs[] = [];
+  for (let index = 0; index < data.length; index++) {
+    const element = data[index];
+    let id = uuidv4();
+    let object: Logs = {
+      id: id,
+      portfolio_id: "portfolio-main",
+      changes: typeof element["changes"][0] == "string" ? [] : element["changes"],
+      log_type: type,
+      date_time: element["dateTime"],
+      edit_note: element["editNote"],
+      identifier: element["identifier"],
+      timestamp: new Date(element["dateTime"]).getTime(),
+    };
+    result.push(object);
+  }
+  return result;
+}
+
+export async function insertLogsData(dataInput: Logs[], tableName: string) {
+  const client = await logsPool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const insertQuery = `
+  INSERT INTO public.logs_${tableName} (
+    id, changes,log_type, date_time, edit_note, identifier, timestamp, portfolio_id
+  )
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+  ON CONFLICT (id, portfolio_id) DO NOTHING;`;
+
+    for (const element of dataInput) {
+      await client.query(insertQuery, [element.id, element.changes, element.log_type, element.date_time, element.edit_note, element.identifier, element.timestamp, element.portfolio_id]);
+    }
+
+    await client.query("COMMIT");
+  } catch (err: any) {
+    await client.query("ROLLBACK");
+    console.error("Error inserting", err.stack);
   } finally {
     client.release();
   }

@@ -85,7 +85,7 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
     if (!errorMessage.toString().includes("Batch cannot be empty")) {
-      // await insertEditLogs([errorMessage], "Errors", dateTime, "getRlzdTrades", "controllers/reports/trades.ts");
+      // await insertEditLogs([errorMessage], "errors", dateTime, "getRlzdTrades", "controllers/reports/trades.ts");
     }
 
     return { documents: [], totalRow: { Rlzd: 0, "Rlzd P&L Amount": 0 }, averageCostMTD: 0, pnlDayRlzdHistory: {} };
@@ -222,7 +222,7 @@ async function getTradesForAPositionInDB(tradeType: "vcons" | "ib" | "emsx" | "w
     console.error(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getTradesForAPositionInDB", "controllers/operations/trades.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "getTradesForAPositionInDB", "controllers/operations/trades.ts");
 
     console.error("An error occurred while retrieving data from MongoDB:", error);
   } finally {
@@ -249,7 +249,7 @@ export async function getTradesMTD(date: any) {
     console.error(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getTradesForAPosition", "controllers/operations/trades.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "getTradesForAPosition", "controllers/operations/trades.ts");
 
     console.error("An error occurred while retrieving data from MongoDB:", error);
     return [];
@@ -334,7 +334,7 @@ export async function findTrade(tradeType: string, tradeTriadaId: string): Promi
     console.log(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
     if (!errorMessage.toString().includes("Batch cannot be empty")) {
-      await insertEditLogs([errorMessage], "Errors", dateTime, "findTrade", "controllers/reports/trades.ts");
+      await insertEditLogs([errorMessage], "errors", dateTime, "findTrade", "controllers/reports/trades.ts");
     }
     return {};
   } finally {

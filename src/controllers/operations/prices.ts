@@ -55,7 +55,7 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
           let updatedPortfolio = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
 
           let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-          await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "Update Previous Prices based on MUFG", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExists).length, "Link: " + link);
+          await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "update_previous_prices_mufg", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExists).length, "Link: " + link);
           let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio, collectionDate);
           console.log(updatedPricePortfolio.length, "number of positions prices updated");
 
@@ -118,7 +118,7 @@ export async function insertPreviousPricesUpdatesInPortfolio(updatedPortfolio: a
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "insertPreviousPricesUpdatesInPortfolio", "controllers/operations/prices.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "insertPreviousPricesUpdatesInPortfolio", "controllers/operations/prices.ts");
 
     return;
   }
@@ -317,11 +317,11 @@ export async function updatePricesPortfolio(path: string, link: string, collecti
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
         let updatedPortfolio = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
         if (collectionDate) {
-          await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames, errors], "Update Previous Prices based on bloomberg", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExists).length, "Link: " + link);
+          await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames, errors], "update_previous_prices_bbg", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExists).length, "Link: " + link);
           let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio, collectionDate);
         } else {
           let insertion = await insertPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio);
-          await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames, errors], "Update Prices", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length, "Link: " + link);
+          await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames, errors], "update_prices", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length, "Link: " + link);
         }
         if (Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length || Object.keys(errors).length) {
           return { error: { ...updatedPortfolio.positionsThatDoNotExistsNames, ...errors } };
@@ -427,7 +427,7 @@ export async function insertPricesUpdatesInPortfolio(updatedPortfolio: any) {
     console.log(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "insertPricesUpdatesInPortfolio", "controllers/operations/positions.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "insertPricesUpdatesInPortfolio", "controllers/operations/positions.ts");
     return "update prices error";
   }
 }

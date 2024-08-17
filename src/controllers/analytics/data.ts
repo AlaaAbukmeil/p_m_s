@@ -38,7 +38,7 @@ export async function insertPositionsInfo(positions: InformationInDB[]): Promise
     console.error("Error inserting or updating positions:", error);
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-    await insertEditLogs([errorMessage], "Errors", dateTime, "insertPositionsInfo", "controllers/analytics/data.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "insertPositionsInfo", "controllers/analytics/data.ts");
   } finally {
     connection.release();
   }
@@ -61,7 +61,7 @@ export async function getAllPositionsInformation(): Promise<any[]> {
     console.error("Error connecting to PostgreSQL or querying data:", error);
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getAllPositionsInformation", "controllers/analytics/data.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "getAllPositionsInformation", "controllers/analytics/data.ts");
     return [];
   } finally {
     connection.release();

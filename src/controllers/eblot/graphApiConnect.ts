@@ -108,7 +108,7 @@ export async function getVcons(token: string, start_time: any, end_time: any, tr
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "Get Vcons", "controllers/eblot/graphApiConnect.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "Get Vcons", "controllers/eblot/graphApiConnect.ts");
 
     return [];
   }
@@ -140,7 +140,7 @@ export async function getFxTrades(token: string, start_time: string, end_time: s
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getFxTrades", "controllers/eblot/graphApiConnect.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "getFxTrades", "controllers/eblot/graphApiConnect.ts");
 
     return [];
   }

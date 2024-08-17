@@ -33,7 +33,7 @@ export async function getPortfolio(date = null): Promise<PositionInDB[]> {
     console.log(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getPortfolio", "controllers/operations/positions.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "getPortfolio", "controllers/operations/positions.ts");
     return [];
   }
 }
@@ -324,7 +324,7 @@ export async function updatePositionPortfolio(
       let action4 = await insertTradesData(convertCentralizedToTradesSQL(trades.gsTrades), "cds_gs");
 
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-      await insertEditLogs([positions], "Upload Trades", dateTime, "Num of updated/created positions: " + Object.keys(positions).length, "Link: " + link);
+      await insertEditLogs([positions], "upload_trades", dateTime, "Num of updated/created positions: " + Object.keys(positions).length, "Link: " + link);
 
       return insertion;
     } catch (error: any) {
@@ -332,7 +332,7 @@ export async function updatePositionPortfolio(
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
       let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
       if (!errorMessage.toString().includes("Batch cannot be empty")) {
-        await insertEditLogs([errorMessage], "Errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts 1");
+        await insertEditLogs([errorMessage], "errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts 1");
       }
 
       return { error: error.toString() };
@@ -343,7 +343,7 @@ export async function updatePositionPortfolio(
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
     if (!errorMessage.toString().includes("Batch cannot be empty")) {
-      await insertEditLogs([errorMessage], "Errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts 2");
+      await insertEditLogs([errorMessage], "errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts 2");
     }
     return { error: error.toString() };
   }
@@ -405,7 +405,7 @@ export async function insertTradesInPortfolio(trades: any) {
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
     if (!errorMessage.toString().includes("Batch cannot be empty")) {
-      await insertEditLogs([errorMessage], "Errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts 3");
+      await insertEditLogs([errorMessage], "errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts 3");
     }
 
     return [];
@@ -649,7 +649,7 @@ export async function pinPosition(position: PinnedPosition) {
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "pinPosition", "controllers/operations/positions.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "pinPosition", "controllers/operations/positions.ts");
 
     return { error: errorMessage };
   }
@@ -674,7 +674,7 @@ export async function getPinnedPositions() {
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getPinnedPositions", "controllers/operations/positions.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "getPinnedPositions", "controllers/operations/positions.ts");
 
     return [];
   }
@@ -716,7 +716,7 @@ export async function insertTradesInPortfolioAtASpecificDateBasedOnID(trades: an
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "insertTradesInPortfolioAtASpecificDateBasedOnID", "controllers/operations/positions.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "insertTradesInPortfolioAtASpecificDateBasedOnID", "controllers/operations/positions.ts");
 
     return [];
   }
@@ -933,14 +933,14 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
       let action = await insertTradesInPortfolioAtASpecificDate(portfolio, `portfolio-${earliestPortfolioName.predecessorDate}`);
       let modifyTradesAction = await modifyTradesDueToRecalculate(data, tradeType);
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-      await insertEditLogs([], "Recalculate Position", dateTime, "", data[0]["BB Ticker"] + " " + data[0]["Location"]);
+      await insertEditLogs([], "recalculate_position", dateTime, "", data[0]["BB Ticker"] + " " + data[0]["Location"]);
       return action;
     } catch (error) {
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
       console.log(error);
       let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-      await insertEditLogs([errorMessage], "Errors", dateTime, "readCalculatePosition", "controllers/operations/portfolio.ts");
+      await insertEditLogs([errorMessage], "errors", dateTime, "readCalculatePosition", "controllers/operations/portfolio.ts");
 
       return { error: error };
     }
@@ -948,7 +948,7 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     console.log(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-    await insertEditLogs([errorMessage], "Errors", dateTime, "readCalculatePosition", "controllers/operations/portfolio.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "readCalculatePosition", "controllers/operations/portfolio.ts");
 
     return { error: error };
   }
@@ -992,7 +992,7 @@ export async function insertFXPosition(position: any, date: any) {
     console.log(updatedResult, "fx position added");
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
 
-    await insertEditLogs([fxPositions], "FX Position", dateTime, "insertFXPosition", "controllers/operations/positions.ts");
+    await insertEditLogs([fxPositions], "fx_position", dateTime, "insertFXPosition", "controllers/operations/positions.ts");
 
     return updatedResult;
   } catch (error: any) {
@@ -1000,7 +1000,7 @@ export async function insertFXPosition(position: any, date: any) {
     console.log(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
     if (!errorMessage.toString().includes("Batch cannot be empty")) {
-      await insertEditLogs([errorMessage], "Errors", dateTime, "insertFXPosition", "controllers/operations/positions.ts");
+      await insertEditLogs([errorMessage], "errors", dateTime, "insertFXPosition", "controllers/operations/positions.ts");
     }
   }
 }
@@ -1031,7 +1031,7 @@ export async function editPositionBulkPortfolio(path: string, link: string) {
         let updatedPortfolio = formatUpdatedPositions(positions, portfolio, "Last edit operation");
         let insertion = await insertTradesInPortfolio(updatedPortfolio.updatedPortfolio);
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-        await insertEditLogs(["bulk edit"], "Bulk Edit", dateTime, "Bulk Edit E-blot", "Link: " + link);
+        await insertEditLogs(["bulk edit"], "bulk_edit", dateTime, "Bulk Edit E-blot", "Link: " + link);
 
         return insertion;
       } catch (error) {
@@ -1061,7 +1061,7 @@ export async function deletePosition(data: any, dateInput: any): Promise<any> {
       return { error: "Document not updated. It may already have the same values" };
     }
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    await insertEditLogs([], "Delete Position", dateTime, "Delete Position", data["BB Ticker"] + " " + data["Location"]);
+    await insertEditLogs([], "delete_position", dateTime, "Delete Position", data["BB Ticker"] + " " + data["Location"]);
 
     return updateResult;
   } catch (error: any) {

@@ -26,7 +26,7 @@ export async function getAllTradesForSpecificPosition(tradeType: "vcons" | "ib" 
     console.error(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getAllTradesForSpecificPosition", "controllers/operations/trades.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "getAllTradesForSpecificPosition", "controllers/operations/trades.ts");
 
     return [];
   } finally {
@@ -52,7 +52,7 @@ export async function getTrade(tradeType: "vcons" | "ib" | "emsx" | "writter_blo
     console.error(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getTrade", "controllers/operations/trades.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "getTrade", "controllers/operations/trades.ts");
 
     // Handle any errors that occurred during the operation
     console.error("An error occurred while retrieving data from MongoDB:", error);
@@ -204,7 +204,7 @@ export async function editTrade(editedTrade: any, tradeType: "vcons" | "ib" | "e
         console.error(error);
         let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-        await insertEditLogs([errorMessage], "Errors", dateTime, "editTrade", "controllers/operations/trades.ts");
+        await insertEditLogs([errorMessage], "errors", dateTime, "editTrade", "controllers/operations/trades.ts");
         return { error: error.toString() };
       } finally {
         client.release();
@@ -217,7 +217,7 @@ export async function editTrade(editedTrade: any, tradeType: "vcons" | "ib" | "e
     console.error(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "editTrade", "controllers/operations/trades.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "editTrade", "controllers/operations/trades.ts");
     console.log(error);
     return { error: error };
   }
@@ -237,14 +237,14 @@ export async function deleteTrade(tradeType: string, tradeId: string, ticker: st
       return { error: `Trade does not exist!` };
     } else {
       const dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-      await insertEditLogs(["deleted"], "Edit Trade", dateTime, "deleted", `${ticker} ${location}`);
+      await insertEditLogs(["deleted"], "edit_trade", dateTime, "deleted", `${ticker} ${location}`);
       console.log("deleted");
       return { error: null };
     }
   } catch (error: any) {
     console.error(`An error occurred while deleting the trade: ${error}`);
     const dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    await insertEditLogs([error], "Errors", dateTime, "deleteTrade", `${ticker} ${location}`);
+    await insertEditLogs([error], "errors", dateTime, "deleteTrade", `${ticker} ${location}`);
     return { error: error.toString() };
   } finally {
     client.release();
@@ -277,7 +277,7 @@ export async function modifyTradesDueToRecalculate(trades: any, tradeType: "vcon
     const dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "modifyTradesDueToRecalculate", "controllers/operations/operations.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "modifyTradesDueToRecalculate", "controllers/operations/operations.ts");
     return "";
   } finally {
     client.release();
@@ -305,7 +305,7 @@ export async function getAllTrades(from: number, to: number, portfolioId: string
     console.error(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getAllTrades", "controllers/eblot/eblot.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "getAllTrades", "controllers/eblot/eblot.ts");
 
     return [];
   } finally {
@@ -366,7 +366,7 @@ export async function numberOfNewTrades(): Promise<any> {
     console.error(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getAllTrades", "controllers/eblot/eblot.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "getAllTrades", "controllers/eblot/eblot.ts");
 
     return [];
   } finally {
@@ -395,7 +395,7 @@ export async function getNewTrades(): Promise<CentralizedTrade[]> {
     console.error(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getNewTrades", "controllers/eblot/eblot.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "getNewTrades", "controllers/eblot/eblot.ts");
 
     return [];
   } finally {
@@ -447,7 +447,7 @@ export async function updateMatchedVcons(newVcons: CentralizedTrade[]) {
     console.error(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "updateMatchedVcons", "controllers/eblot/eblot.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "updateMatchedVcons", "controllers/eblot/eblot.ts");
 
     return [];
   } finally {

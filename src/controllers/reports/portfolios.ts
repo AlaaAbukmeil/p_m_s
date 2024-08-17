@@ -617,7 +617,7 @@ export async function getPortfolioOnSpecificDate(collectionDate: string, onlyThi
     console.log(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getPortfolioOnSpecificDate", "controllers/operations/operations.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "getPortfolioOnSpecificDate", "controllers/operations/operations.ts");
     return { portfolio: [], date: "" };
   }
 }
