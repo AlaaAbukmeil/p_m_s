@@ -3,7 +3,7 @@ import { convertExcelDateToJSDate, formatDateUS, formatDateWorld, getDate, getTr
 import { findTrade, insertTradesData } from "../reports/trades";
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../reports/common";
 import { readCentralizedEBlot, readEditInput, readPricingSheet } from "./readExcel";
-import { findTradeRecord, formatUpdatedPositions, getAverageCost, getCollectionName, getEarliestCollectionName, parseBondIdentifier } from "../reports/tools";
+import { findTradeRecord, formatUpdatedPositions, getAllCollectionNames, getAverageCost, getCollectionName, getEarliestCollectionName, parseBondIdentifier } from "../reports/tools";
 import { PinnedPosition, Position } from "../../models/position";
 import { CentralizedTrade } from "../../models/trades";
 import { modifyTradesDueToRecalculate, updateMatchedVcons } from "./trades";
@@ -12,14 +12,18 @@ import { getSecurityInPortfolioById } from "./tools";
 import { swapMonthDay } from "../common";
 import { PositionBeforeFormatting, PositionInDB } from "../../models/portfolio";
 import { convertCentralizedToTradesSQL } from "../eblot/eblot";
+import { indexPool, pinnedPool } from "./psql/operation";
 const ObjectId = require("mongodb").ObjectId;
+const { v4: uuidv4 } = require("uuid");
 
-export async function getPortfolio(date = null): Promise<PositionInDB[]> {
+export async function getPortfolio(portfolioId: string, date = null): Promise<PositionInDB[]> {
   try {
     let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date(date ? date : new Date()).getTime() - 0 * 24 * 60 * 60 * 1000));
     const database = client.db("portfolios");
     let latestCollectionTodayDate = day.split(" ")[0] + " 23:59";
-    let earliestCollectionName = await getEarliestCollectionName(latestCollectionTodayDate);
+    let allCollectionNames = await getAllCollectionNames(portfolioId);
+
+    let earliestCollectionName = await getEarliestCollectionName(latestCollectionTodayDate, allCollectionNames);
     console.log(earliestCollectionName.predecessorDate, "get portfolio date");
     const reportCollection = database.collection(`portfolio-${earliestCollectionName.predecessorDate}`);
     let documents = await reportCollection.find().toArray();
@@ -106,7 +110,7 @@ export async function updatePositionPortfolio(
     let data = trades.allTrades;
 
     let positions: any = [];
-    let portfolio = await getPortfolio();
+    let portfolio = await getPortfolio("portfolio-main");
     let triadaIds: any = [];
 
     for (let index = 0; index < data.length; index++) {
@@ -412,10 +416,12 @@ export async function insertTradesInPortfolio(trades: any) {
   }
 }
 
-export async function editPosition(editedPosition: any, date: string) {
+export async function editPosition(editedPosition: any, date: string, portfolioId: string) {
   try {
     const database = client.db("portfolios");
-    let earliestPortfolioName = await getEarliestCollectionName(date);
+    let allCollectionNames = await getAllCollectionNames(portfolioId);
+
+    let earliestPortfolioName = await getEarliestCollectionName(date, allCollectionNames);
 
     console.log(earliestPortfolioName.predecessorDate, "get edit portfolio");
     const reportCollection = database.collection(`portfolio-${earliestPortfolioName.predecessorDate}`);
@@ -615,31 +621,40 @@ export async function editPosition(editedPosition: any, date: string) {
 }
 
 export async function pinPosition(position: PinnedPosition) {
+  const client = await pinnedPool.connect();
   try {
-    const database = client.db("positions");
-
-    const reportCollection = database.collection("pinned");
-    position["Pin Timestamp"] = new Date().getTime();
-
-    if (position.ISIN) {
-      let positions = position.ISIN.split("&");
+    if (position.isin) {
+      let positions = position.isin.split("&");
       for (let index = 0; index < positions.length; index++) {
         const element = positions[index];
-        const query = { ISIN: element, Location: position.Location };
-        const newInsert = { ISIN: element, Location: position.Location, Pin: position.Pin };
 
-        console.log(query, position.Pin);
+        let selectQuery = `
+        SELECT * FROM public.pinned_positions
+        WHERE isin = $1 AND location = $2;
+        `;
 
-        // Find the document
-        const existingPosition = await reportCollection.findOne(query);
-        if (existingPosition) {
-          // If found, update the Pin property
-          const updateResult = await reportCollection.updateOne(query, { $set: { Pin: position.Pin } });
-          console.log(updateResult);
+        let insertQuery = `
+        INSERT INTO public.pinned_positions (
+          isin, location, ticker, id, portfolio_id, pinned
+        )
+        VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (id, portfolio_id) DO NOTHING;
+        `;
+
+        let updateQuery = `
+        UPDATE public.pinned_positions
+        SET pinned = $1
+        WHERE isin = $2 AND location = $3;
+        `;
+
+        const existingPosition = await client.query(selectQuery, [element, position.location]);
+
+        if (existingPosition.rowCount > 0) {
+          // If found, update the pinned property
+          const updateResult = await client.query(updateQuery, [position.pinned, element, position.location]);
         } else {
           // If not found, insert a new document
-          const insertResult = await reportCollection.insertOne(newInsert);
-          console.log(insertResult);
+          const insertResult = await client.query(insertQuery, [element, position.location, position.ticker, uuidv4(), position.portfolio_id, "pinned"]);
         }
       }
     }
@@ -652,23 +667,20 @@ export async function pinPosition(position: PinnedPosition) {
     await insertEditLogs([errorMessage], "errors", dateTime, "pinPosition", "controllers/operations/positions.ts");
 
     return { error: errorMessage };
+  } finally {
+    client.release();
   }
 }
 
 export async function getPinnedPositions() {
+  const client = await pinnedPool.connect();
   try {
-    const database = client.db("positions");
+    let selectQuery = `
+        SELECT * FROM public.pinned_positions;
+        `;
 
-    const reportCollection = database.collection("pinned");
-    const query = { Pin: "pinned" };
-
-    const pinnedPositions = await reportCollection.find(query).toArray();
-
-    if (pinnedPositions.length) {
-      return pinnedPositions;
-    } else {
-      return [];
-    }
+    const res = await client.query(selectQuery, []);
+    return res.rows;
   } catch (error: any) {
     console.log(error);
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
@@ -677,6 +689,8 @@ export async function getPinnedPositions() {
     await insertEditLogs([errorMessage], "errors", dateTime, "getPinnedPositions", "controllers/operations/positions.ts");
 
     return [];
+  } finally {
+    client.release();
   }
 }
 
@@ -767,11 +781,13 @@ export async function insertTradesInPortfolioAtASpecificDate(trades: any, date: 
   }
 }
 
-export async function readCalculatePosition(data: CentralizedTrade[], date: string, isin: any, location: any, tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs") {
+export async function readCalculatePosition(data: CentralizedTrade[], date: string, isin: any, location: any, tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs", portfolioId: string) {
   try {
     let positions: any = [];
     const database = client.db("portfolios");
-    let earliestPortfolioName = await getEarliestCollectionName(date);
+    let allCollectionNames = await getAllCollectionNames(portfolioId);
+
+    let earliestPortfolioName = await getEarliestCollectionName(date, allCollectionNames);
 
     console.log(earliestPortfolioName.predecessorDate, "get edit portfolio");
     const reportCollection = database.collection(`portfolio-${earliestPortfolioName.predecessorDate}`);
@@ -954,7 +970,7 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
   }
 }
 
-export async function insertFXPosition(position: any, date: any) {
+export async function insertFXPosition(position: any, date: any, portfolioId: string) {
   console.log(date, new Date(date), position);
   let today = swapMonthDay(date);
   let fxPositions: any = {
@@ -973,8 +989,9 @@ export async function insertFXPosition(position: any, date: any) {
 
   const database = client.db("portfolios");
   let day = getDateTimeInMongoDBCollectionFormat(new Date(today));
+  let allCollectionNames = await getAllCollectionNames(portfolioId);
 
-  let checkCollectionDay = await getEarliestCollectionName(day);
+  let checkCollectionDay = await getEarliestCollectionName(day, allCollectionNames);
   console.log(checkCollectionDay, "chec");
   if (checkCollectionDay) {
     day = checkCollectionDay.predecessorDate;
@@ -1012,7 +1029,8 @@ export async function editPositionBulkPortfolio(path: string, link: string) {
   } else {
     try {
       let positions: any = [];
-      let portfolio = await getPortfolio();
+
+      let portfolio = await getPortfolio("portfolio-main");
       let titles = ["Type", "Strategy", "Country", "Asset Class", "Sector"];
       for (let index = 0; index < data.length; index++) {
         let row = data[index];
@@ -1042,11 +1060,13 @@ export async function editPositionBulkPortfolio(path: string, link: string) {
     }
   }
 }
-export async function deletePosition(data: any, dateInput: any): Promise<any> {
+export async function deletePosition(data: any, dateInput: any, portfolioId: string): Promise<any> {
   try {
     const database = client.db("portfolios");
     let date = getDateTimeInMongoDBCollectionFormat(new Date(dateInput)).split(" ")[0] + " 23:59";
-    let earliestPortfolioName = await getEarliestCollectionName(date);
+    let allCollectionNames = await getAllCollectionNames(portfolioId);
+
+    let earliestPortfolioName = await getEarliestCollectionName(date, allCollectionNames);
 
     const reportCollection = database.collection(`portfolio-${earliestPortfolioName.predecessorDate}`);
 

@@ -141,7 +141,7 @@ factSheetRouter.post("/fact-sheet-data-input", verifyToken, uploadToBucket.any()
 
 factSheetRouter.post("/edit-fact-sheet-view", uploadToBucket.any(), verifyToken, async (req: Request | any, res: Response | any, next: NextFunction) => {
   try {
-    let data = req.body;
+    let data: { command: "view"; disabled: boolean } = req.body;
     let edit = await editFactSheetDisplay(data);
     res.sendStatus(200);
   } catch (error: any) {

@@ -92,7 +92,7 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
   }
 }
 
-export async function getRlzdTradesWithTrades(tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs", isin: any, location: any, date: any, mtdMark: any, mtdAmountInput: any, allMTDTrades: CentralizedTrade[], ticker: string): Promise<{ documents: any[]; totalRow: { Rlzd: number; "Rlzd P&L Amount": number }; averageCostMTD: any; pnlDayRlzdHistory: { [key: string]: number } }> {
+export function getRlzdTradesWithTrades(tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs", isin: any, location: any, date: any, mtdMark: any, mtdAmountInput: any, allMTDTrades: CentralizedTrade[], ticker: string): { documents: any[]; totalRow: { Rlzd: number; "Rlzd P&L Amount": number }; averageCostMTD: any; pnlDayRlzdHistory: { [key: string]: number } } {
   try {
     let shortLongGuess = tradeType == "ib" ? "S" : ticker.toString().split(" ")[0] == "T" ? "S" : "B";
     let mtdTradesPosition = getTradesForAPosition(isin, location, allMTDTrades, shortLongGuess);

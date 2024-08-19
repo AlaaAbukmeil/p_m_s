@@ -192,7 +192,6 @@ export async function editTrade(editedTrade: any, tradeType: "vcons" | "ib" | "e
       const client = await tradesPool.connect();
       try {
         const res = await client.query(query, values);
-        console.log({ res });
 
         if (res.rowCount > 0) {
           return { error: null };

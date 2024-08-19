@@ -4,7 +4,7 @@ import { formatDateRlzdDaily, getAllDatesSinceLastMonthLastDay, getAllDatesSince
 import { getFundDetails } from "../operations/fund";
 
 import { formatDateUS, getTradeDateYearTrades } from "../common";
-import { getEarliestCollectionName, parseBondIdentifier, remainingDaysInYear } from "./tools";
+import { getAllCollectionNames, getEarliestCollectionName, parseBondIdentifier, remainingDaysInYear } from "./tools";
 import { getHistoricalPortfolio, getPinnedPositions } from "../operations/positions";
 import { FinalPositionBackOffice, FundExposureOnlyMTD, FundMTD, PositionBeforeFormatting, PositionInDB, RlzdTrades } from "../../models/portfolio";
 import { formatFrontOfficeTable } from "../analytics/tables/frontOffice";
@@ -13,25 +13,33 @@ import { getRlzdTrades, getRlzdTradesWithTrades, getTradesMTD } from "./trades";
 import { insertEditLogs } from "../operations/logs";
 import { getMonthInFundDetailsFormat } from "../operations/tools";
 import { CentralizedTrade } from "../../models/trades";
+import { PinnedPosition } from "../../models/position";
 
-export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions: any = null, view: "front office" | "back office" | "exposure" | "fact sheet", sortBy: "pl" | "price move" | null): Promise<{ portfolio: FinalPositionBackOffice[]; fundDetails: FundMTD; analysis: any; uploadTradesDate: any; updatePriceDate: number; collectionName: string; error: null } | { fundDetails: FundExposureOnlyMTD; analysis: any; error: null } | { error: string }> {
+export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions: any = null, view: "front office" | "back office" | "exposure" | "fact sheet", sortBy: "pl" | "price move" | null, portfolioId: string): Promise<{ portfolio: FinalPositionBackOffice[]; fundDetails: FundMTD; analysis: any; uploadTradesDate: any; updatePriceDate: number; collectionName: string; error: null } | { fundDetails: FundExposureOnlyMTD; analysis: any; error: null } | { error: string }> {
   let timestamp = new Date().getTime();
+  let allCollectionNames = await getAllCollectionNames(portfolioId);
+  let timestamp_5 = new Date().getTime();
+  console.log("To get all collections: ", (timestamp_5 - timestamp) / 1000 + " seconds");
+
   const database = client.db("portfolios");
-  let earliestPortfolioName = await getEarliestCollectionName(date);
+  let earliestPortfolioName = getEarliestCollectionName(date, allCollectionNames);
+  let timestamp_6 = new Date().getTime();
+  console.log("To sort collections: ", (timestamp_6 - timestamp_5) / 1000 + " seconds");
 
   let yesterdayPortfolioName = getDateTimeInMongoDBCollectionFormat(new Date(new Date(earliestPortfolioName.predecessorDate).getTime() - 1 * 24 * 60 * 60 * 1000)).split(" ")[0] + " 23:59";
-  let lastDayBeforeToday = await getEarliestCollectionName(yesterdayPortfolioName);
+  let lastDayBeforeToday = getEarliestCollectionName(yesterdayPortfolioName, allCollectionNames);
   let lastDayOfThisMonth = getLastDayOfMonth(date);
   let yesterdayYesterdayPortfolioName = getDateTimeInMongoDBCollectionFormat(new Date(new Date(lastDayBeforeToday.predecessorDate).getTime() - 1 * 24 * 60 * 60 * 1000)).split(" ")[0] + " 23:59";
-  let lastDayBeforeYesterday = await getEarliestCollectionName(yesterdayYesterdayPortfolioName);
+  let lastDayBeforeYesterday = getEarliestCollectionName(yesterdayYesterdayPortfolioName, allCollectionNames);
 
-  let lastDayOfThisMonthCollectionName = await getEarliestCollectionName(lastDayOfThisMonth);
+  let lastDayOfThisMonthCollectionName = getEarliestCollectionName(lastDayOfThisMonth, allCollectionNames);
   console.log(lastDayOfThisMonthCollectionName.predecessorDate, "get rlzd dyanmic date");
 
   console.log(earliestPortfolioName.predecessorDate, "get portfolio");
   console.log(lastDayBeforeToday.predecessorDate, "get portfolio yesterday");
 
   const reportCollection = database.collection(`portfolio-${earliestPortfolioName.predecessorDate}`);
+  let timestamp_11 = new Date().getTime();
 
   let documents: PositionBeforeFormatting[] = await reportCollection
     .aggregate([
@@ -78,17 +86,22 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   let previousYearDate = getAllDatesSinceLastYearLastDay(currentDayDate);
   let lastYear = monthlyRlzdDate(previousYearDate);
   //+ 23:59 to make sure getEarliestcollectionname get the lastest date on last day of the month
-  let lastMonthLastCollectionName = await getEarliestCollectionName(previousMonthDates[0] + " 23:59");
-  let lastYearLastCollectionName = await getEarliestCollectionName(previousYearDate + " 23:59");
+  let lastMonthLastCollectionName = getEarliestCollectionName(previousMonthDates[0] + " 23:59", allCollectionNames);
+  let lastYearLastCollectionName = getEarliestCollectionName(previousYearDate + " 23:59", allCollectionNames);
   console.log(lastYearLastCollectionName.predecessorDate, "last year collection name");
+  let timestamp_7 = new Date().getTime();
   let lastMonthPortfolio = await getHistoricalPortfolio(lastMonthLastCollectionName.predecessorDate);
+  let timestamp_8 = new Date().getTime();
+  console.log("To get one portfolio: ", (timestamp_8 - timestamp_7) / 1000 + " seconds");
+
   let previousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeToday.predecessorDate);
   let previousPreviousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeYesterday.predecessorDate);
+
   let timestamp_2 = new Date().getTime();
 
-  console.log("To get all portfolios: ", (timestamp_2 - timestamp) / 1000 + " seconds");
+  console.log("To get all portfolios: ", (timestamp_2 - timestamp_11) / 1000 + " seconds");
 
-  let ytdDocuments = await getYTDInt(documents, lastYearLastCollectionName.predecessorDate, date);
+  let ytdDocuments = getYTDInt(documents, lastYearLastCollectionName.predecessorDate, date);
   documents = ytdDocuments.portfolio;
   let ytdinterest = ytdDocuments.ytdinterest;
 
@@ -122,26 +135,28 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   documents = getDayParams(documents, previousPreviousDayPortfolio, lastDayBeforeYesterday.predecessorDate, true);
   documents = getMTDParams(documents, lastMonthPortfolio, earliestPortfolioName.predecessorDate);
 
-  let mtdTrades: CentralizedTrade[] = await getTradesMTD(date);
   let timestamp_3 = new Date().getTime();
-  documents = await getMTDURlzdInt(documents, new Date(date), mtdTrades);
+  let mtdTrades: CentralizedTrade[] = await getTradesMTD(date);
+  documents = getMTDURlzdInt(documents, new Date(date), mtdTrades);
   let timestamp_4 = new Date().getTime();
   console.log("To calculate rlzd: ", (timestamp_4 - timestamp_3) / 1000 + " seconds");
 
-  let dayParamsWithLatestUpdates = await getDayURlzdInt(documents, new Date(date));
+  let dayParamsWithLatestUpdates = getDayURlzdInt(documents, new Date(date));
   documents = dayParamsWithLatestUpdates.portfolio;
 
-  documents = await getPL(documents, latestCollectionDate, date);
+  documents = getPL(documents, latestCollectionDate, date);
   let dates = {
     today: earliestPortfolioName.predecessorDate,
     yesterday: lastDayBeforeToday.predecessorDate,
     lastMonth: lastMonthLastCollectionName.predecessorDate,
   };
-  let pinnedPositions = await getPinnedPositions();
-  documents = assignPinnedPositions(documents, pinnedPositions);
+  let timestamp_9 = new Date().getTime();
+
   let previousMonthDate = monthlyRlzdDate(previousMonthDates[0]);
   let fundDetailsMTD: any = await getFundDetails(previousMonthDate, "portfolio-main");
   let fundDetailsYTD: any = await getFundDetails(lastYear, "portfolio-main");
+  let timestamp_10 = new Date().getTime();
+  console.log("To get fund: ", (timestamp_10 - timestamp_9) / 1000 + " seconds");
 
   if (fundDetailsMTD.length == 0) {
     return { error: "fundDetailsMTD Does not exist" };
@@ -156,6 +171,9 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   if (view == "fact sheet") {
     portfolioFormattedSorted = formatFactSheetStatsTable({ portfolio: documents, date: date, fund: fund, dates: dates, sort: sort, sign: sign, conditions: conditions, fundDetailsYTD: fundDetailsYTD, sortBy: sortBy, ytdinterest: ytdinterest });
     let fundDetails = portfolioFormattedSorted.fundDetails;
+    let final_timestamp = new Date().getTime();
+    console.log("final: ", (final_timestamp - timestamp) / 1000 + " seconds");
+
     return { fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, error: null };
   } else {
     if (view == "front office" || view == "exposure") {
@@ -165,6 +183,9 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
     }
     let fundDetails = portfolioFormattedSorted.fundDetails;
     let finalDocuments = portfolioFormattedSorted.portfolio;
+    let final_timestamp = new Date().getTime();
+    console.log("final: ", (final_timestamp - timestamp) / 1000 + " seconds");
+
     return { portfolio: finalDocuments, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: dayParamsWithLatestUpdates.lastUploadTradesDate, updatePriceDate: dayParamsWithLatestUpdates.lastUpdatePricesDate, collectionName: earliestPortfolioName.predecessorDate, error: null };
   }
 }
@@ -242,22 +263,6 @@ export function getDayParams(portfolio: PositionBeforeFormatting[], previousDayP
   return portfolio;
 }
 
-export function assignPinnedPositions(portfolio: PositionBeforeFormatting[], pinnedPositions: any): PositionBeforeFormatting[] {
-  // try {
-
-  for (let index = 0; index < portfolio.length; index++) {
-    let position = portfolio[index];
-
-    let pinnedPosition = pinnedPositions ? pinnedPositions.find((pinned: any) => pinned["ISIN"] == position["ISIN"] && pinned["Location"].replace(" Rlzd", "") == position["Location"]) : null;
-    if (pinnedPosition) {
-      portfolio[index]["Pin"] = pinnedPosition["Pin"];
-    } else {
-      portfolio[index]["Pin"] = "not pinned";
-    }
-  }
-
-  return portfolio;
-}
 
 export function getMTDParams(portfolio: any, lastMonthPortfolio: any, dateInput: string) {
   try {
@@ -373,7 +378,7 @@ export function getPrincipal(portfolio: any) {
   return { portfolio: portfolio };
 }
 
-export async function getMTDURlzdInt(portfolio: any, date: any, mtdTrades: CentralizedTrade[]) {
+export function getMTDURlzdInt(portfolio: any, date: any, mtdTrades: CentralizedTrade[]) {
   let currentDayDate: string = new Date(date).toISOString().slice(0, 10);
   let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate);
   let monthlyInterest: any = {};
@@ -398,7 +403,7 @@ export async function getMTDURlzdInt(portfolio: any, date: any, mtdTrades: Centr
 
     let multiplier = tradeType == "vcons" ? 100 : 1;
     if (tradeType != "fx") {
-      let trades = await getRlzdTradesWithTrades(`${tradeType}`, identifier, portfolio[index]["Location"], date, portfolio[index]["MTD Mark"] * multiplier, portfolio[index]["MTD Notional"], mtdTrades, portfolio[index]["BB Ticker"]);
+      let trades = getRlzdTradesWithTrades(`${tradeType}`, identifier, portfolio[index]["Location"], date, portfolio[index]["MTD Mark"] * multiplier, portfolio[index]["MTD Notional"], mtdTrades, portfolio[index]["BB Ticker"]);
       portfolio[index]["MTD Rlzd"] = trades.totalRow["Rlzd P&L Amount"];
       portfolio[index]["Day Rlzd"] = trades.pnlDayRlzdHistory[dateInTradeDateFormat] || 0;
 
@@ -471,7 +476,7 @@ export function getYTDInt(portfolio: any, lastYearDate: any, date: any) {
   return { portfolio: portfolio, ytdinterest: ytdinterest };
 }
 
-export async function getPL(portfolio: any, latestPortfolioThisMonth: any, date: any) {
+export function getPL(portfolio: any, latestPortfolioThisMonth: any, date: any) {
   let thisMonth = monthlyRlzdDate(date);
   for (let index = 0; index < portfolio.length; index++) {
     let positionUpToDateThisMonth = latestPortfolioThisMonth.filter((position: any, count: number) => portfolio[index]["Location"] == position["Location"] && portfolio[index]["ISIN"] == position["ISIN"]);
@@ -571,11 +576,12 @@ export function calculateAccruedSinceInception(interestInfo: any, couponRate: an
   return interest;
 }
 
-export async function getPortfolioOnSpecificDate(collectionDate: string, onlyThisMonth: null | string = null): Promise<{ portfolio: PositionInDB[] | []; date: string }> {
+export async function getPortfolioOnSpecificDate(collectionDate: string, onlyThisMonth: null | string = null, portfolioId: string): Promise<{ portfolio: PositionInDB[] | []; date: string }> {
   try {
     const database = client.db("portfolios");
     let date = getDateTimeInMongoDBCollectionFormat(new Date(collectionDate)).split(" ")[0] + " 23:59";
-    let earliestCollectionName = await getEarliestCollectionName(date);
+    let allCollectionNames = await getAllCollectionNames(portfolioId);
+    let earliestCollectionName = getEarliestCollectionName(date, allCollectionNames);
     console.log(earliestCollectionName, "check");
     const reportCollection = database.collection(`portfolio-${earliestCollectionName.predecessorDate}`);
     let documents = await reportCollection.find().toArray();
@@ -621,5 +627,3 @@ export async function getPortfolioOnSpecificDate(collectionDate: string, onlyThi
     return { portfolio: [], date: "" };
   }
 }
-
-

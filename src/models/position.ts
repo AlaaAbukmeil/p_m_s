@@ -59,10 +59,15 @@ export interface Position {
   "MTD Rlzd DC": Record<string, number>;
   "MTD Rlzd": Record<string, number>;
 
-  Pin: "pinned" | "not pinned";
+  Pin: "pinned" | "not_pinned";
   "Security Description": string;
 }
 
-export interface PinnedPosition extends Position {
-  "Pin Timestamp": number;
+export interface PinnedPosition {
+  isin: string;
+  location: string;
+  pinned: "pinned" | "not_pinned";
+  id: string;
+  portfolio_id: string;
+  ticker: string;
 }

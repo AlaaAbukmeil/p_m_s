@@ -14,7 +14,7 @@ reconcileRouter.post("/check-mufg", verifyToken, uploadToBucket.any(), async (re
     let collectionDate: string = req.body.collectionDate || new Date().toString();
     let files = req.files[0];
 
-    let portfolio: any = await getPortfolioOnSpecificDate(collectionDate, "true");
+    let portfolio: any = await getPortfolioOnSpecificDate(collectionDate, "true", "portfolio-main");
     let thisMonth = monthlyRlzdDate(collectionDate);
     console.log(collectionDate, thisMonth, "collectionDate");
 
@@ -51,7 +51,7 @@ reconcileRouter.post("/check-nomura", verifyToken, uploadToBucket.any(), async (
     let collectionDate: string = req.body.collectionDate;
     let files = req.files[0];
 
-    let portfolio = await getPortfolioOnSpecificDate(collectionDate, "true");
+    let portfolio = await getPortfolioOnSpecificDate(collectionDate, "true", "portfolio-main");
 
     let data: any = [];
     if (files) {

@@ -41,7 +41,7 @@ positionsRouter.post("/recalculate-position", verifyToken, uploadToBucket.any(),
     let date = data.date;
     let trades = await getAllTradesForSpecificPosition(tradeType, isin, location, date, "portfolio-main");
     if (trades.length) {
-      let action: any = await readCalculatePosition(trades, date, isin, location, tradeType);
+      let action: any = await readCalculatePosition(trades, date, isin, location, tradeType, "portfolio-main");
       console.log(action);
       res.sendStatus(200);
     } else {
@@ -56,7 +56,7 @@ positionsRouter.post("/recalculate-position", verifyToken, uploadToBucket.any(),
 
 positionsRouter.post("/edit-position", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
-    let action = await editPosition(req.body, req.body.date);
+    let action = await editPosition(req.body, req.body.date, "portfolio-main");
 
     res.sendStatus(200);
   } catch (error) {
@@ -84,7 +84,7 @@ positionsRouter.post("/fx-add-position", verifyToken, uploadToBucket.any(), asyn
     } else {
       let dateBroken = req.body.date.split("-");
       let newDate = dateBroken[2] + "/" + dateBroken[1] + "/" + dateBroken[0];
-      let action = await insertFXPosition(req.body, newDate);
+      let action = await insertFXPosition(req.body, newDate, "portfolio-main");
       res.sendStatus(200);
     }
   } catch (error) {
@@ -109,7 +109,7 @@ positionsRouter.post("/delete-position", verifyToken, uploadToBucket.any(), asyn
     let date = req.body.date;
     console.log(data["_id"]);
 
-    let action: any = await deletePosition(data, date);
+    let action: any = await deletePosition(data, date, "portfolio-main");
     console.log(action);
     if (action.error) {
       res.send({ error: action.error, status: 404 });

@@ -23,7 +23,7 @@ formatterRouter.post("/ib-excel", verifyToken, uploadToBucket.any(), async (req:
     let now = new Date().getTime() + 5 * 24 * 60 * 60 * 1000;
     let trades = await getAllTrades(beforeMonth, now, "ib");
     let data = await readIBRawExcel(path);
-    let portfolio = await getPortfolio();
+    let portfolio = await getPortfolio("portfolio-main");
     let action = formatIbTrades(data, trades, portfolio);
     // console.log(action)
 
@@ -128,7 +128,7 @@ formatterRouter.post("/emsx-excel", verifyToken, uploadToBucket.any(), async (re
 
     let data = await readEmsxRawExcel(path);
 
-    let portfolio = await getPortfolio();
+    let portfolio = await getPortfolio("portfolio-main");
 
     let action = formatEmsxTrades(data, trades, portfolio);
     if (!action) {

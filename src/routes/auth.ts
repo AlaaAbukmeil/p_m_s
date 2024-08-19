@@ -76,7 +76,7 @@ authRouter.post("/logout", uploadToBucket.any(), async (req: Request, res: Respo
     secure: process.env.PRODUCTION === "production", // Set to true if using HTTPS
     sameSite: "lax",
     path: "/",
-    domain: ".triadacapital.com",
+    // domain: ".triadacapital.com",
   });
 
   res.send("Cookie cleared successfully");

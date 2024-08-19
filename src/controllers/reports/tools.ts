@@ -2,6 +2,7 @@ import { CentralizedTrade } from "../../models/trades";
 import { client } from "../userManagement/auth";
 import { formatDateUS, formatDateWorld } from "../common";
 import { getAllDatesSinceLastMonthLastDay, getDateTimeInMongoDBCollectionFormat } from "./common";
+import { indexPool } from "../operations/psql/operation";
 
 export function getAverageCost(currentQuantity: number, previousQuantity: number, currentPrice: any, previousAverageCost: any) {
   if (!previousQuantity) {
@@ -268,63 +269,50 @@ export async function getCollectionName(originalDate: any) {
   }
   return predecessorDate;
 }
-export async function getEarliestCollectionName(originalDate: string): Promise<{ predecessorDate: string; collectionNames: string[] }> {
-  const database = client.db("portfolios");
 
-  const targetDate = new Date(originalDate);
-  const startDate = new Date(targetDate.getFullYear(), targetDate.getMonth() - 2, targetDate.getDate());
+export function getEarliestCollectionName(originalDate: string, collections: { name: string; timestamp: number }[]): { predecessorDate: string; collectionNames: string[] } {
+  const inputTimestamp = new Date(originalDate).getTime();
 
-  // Generate regex pattern to match collections within the two-month range
-  let startMonth = startDate.getMonth() + 1;
-  let startYear = startDate.getFullYear();
-  let endMonth = targetDate.getMonth() + 1;
-  let endYear = targetDate.getFullYear();
+  let collectionNames: string[] = [];
+  let closestPredecessorTimestamp = -Infinity;
 
-  let regexPattern = `^portfolio-(${startYear}-${startMonth.toString().padStart(2, "0")}`;
-  if (startYear !== endYear || startMonth !== endMonth) {
-    for (let date = new Date(startDate); date <= targetDate; date.setMonth(date.getMonth() + 1)) {
-      let month = date.getMonth() + 1;
-      let year = date.getFullYear();
-      regexPattern += `|${year}-${month.toString().padStart(2, "0")}`;
-    }
-  }
-  regexPattern += ")";
+  for (const collection of collections) {
+    const [_, year, month, day] = collection.name.split("-");
+    const collectionDate = `${year}-${month}-${day.split(" ")[0]}`;
 
-  const cursor = database.listCollections({ name: { $regex: new RegExp(regexPattern) } });
-  const collections = await cursor.toArray();
-
-  let collectionNames = [];
-  for (let index = 0; index < collections.length; index++) {
-    let collection = collections[index];
-    let collectionDateName = collection.name.split("-");
-    let collectionDate = collectionDateName[1] + "-" + collectionDateName[2] + "-" + collectionDateName[3].split(" ")[0];
     if (originalDate.includes(collectionDate)) {
       collectionNames.push(collection.name);
     }
-  }
 
-  let dates = [];
-  for (let collectionIndex = 0; collectionIndex < collections.length; collectionIndex++) {
-    let collection = collections[collectionIndex];
-    let collectionDateName = collection.name.split("-");
-    let collectionDate = collectionDateName[1] + "/" + collectionDateName[2] + "/" + collectionDateName[3];
-
-    if (new Date(collectionDate)) {
-      dates.push(new Date(collectionDate));
+    const { timestamp } = collection;
+    if (timestamp < inputTimestamp && timestamp > closestPredecessorTimestamp) {
+      closestPredecessorTimestamp = timestamp;
     }
   }
-  let inputDate = new Date(originalDate);
 
-  let predecessorDates: any = dates.filter((date) => date < inputDate);
+  if (closestPredecessorTimestamp === -Infinity) {
+    return { predecessorDate: "", collectionNames };
+  }
 
-  if (predecessorDates.length == 0) {
-    return { predecessorDate: "", collectionNames: collectionNames };
+  const predecessorDate = new Date(closestPredecessorTimestamp);
+  const formattedPredecessorDate = getDateTimeInMongoDBCollectionFormat(predecessorDate);
+
+  return { predecessorDate: formattedPredecessorDate, collectionNames };
+}
+export async function getAllCollectionNames(portfolioId: string) {
+  const client = await indexPool.connect();
+  try {
+    const query = `
+  SELECT * FROM public.indexing WHERE portfolio_id = $1 LIMIT 1;
+    `;
+    let res = await client.query(query, [portfolioId]);
+    return res.rows[0].portfolio_document_ids;
+  } catch (err: any) {
+    await client.query("ROLLBACK");
+    console.error("Error inserting", err.stack);
+  } finally {
+    client.release();
   }
-  let predecessorDate: any = new Date(Math.max.apply(null, predecessorDates));
-  if (predecessorDate) {
-    predecessorDate = getDateTimeInMongoDBCollectionFormat(new Date(predecessorDate));
-  }
-  return { predecessorDate: predecessorDate, collectionNames: collectionNames };
 }
 
 export async function getAllCollectionDatesSinceStartMonth(originalDate: string) {

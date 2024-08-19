@@ -932,7 +932,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         });
       }
       let totalTicker = "";
-      groupedByLocation[locationCode]["Pin"] = "pinned";
+      groupedByLocation[locationCode]["Pin"] = "not_pinned";
       for (let groupPositionIndex = 0; groupPositionIndex < groupedByLocation[locationCode].data.length; groupPositionIndex++) {
         if (groupedByLocation[locationCode].data[groupPositionIndex]["Notional Amount"] == 0) {
           groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = "#C5E1A5";
@@ -957,8 +957,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
           groupedByLocation[locationCode]["ISIN"] = groupedByLocation[locationCode].data[groupPositionIndex]["ISIN"];
         }
 
-        if (groupedByLocation[locationCode].data[groupPositionIndex]["Pin"] == "not pinned") {
-          groupedByLocation[locationCode]["Pin"] = "not pinned";
+        if (groupedByLocation[locationCode].data[groupPositionIndex]["Pin"] == "pinned") {
+          groupedByLocation[locationCode]["Pin"] = "pinned";
         }
         if (groupedByLocation[locationCode].data[groupPositionIndex]["Duration"] < 0) {
           groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = "red";

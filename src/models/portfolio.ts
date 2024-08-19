@@ -30,7 +30,7 @@ export interface FundDetailsInDB {
 }
 
 export interface PositionInDB {
-  _id: ObjectId;
+  id: string;
   Location: string;
   ISIN: string;
   Ask: string;
@@ -46,14 +46,12 @@ export interface PositionInDB {
   "Coupon Rate": string;
   Currency: string;
   DV01: string;
-  "Entry Price": any;
-  "Entry Yield": any;
-  "FX Rate": any;
+  "Entry Price": { [key: string]: string };
+  "Entry Yield": string;
+  "FX Rate": number;
   "Fitch Bond Rating": string;
   "Fitch Outlook": string;
-  Group: string;
   Interest: { [key: string]: string };
-  Issue: string;
   Issuer: string;
   "Last Individual Upload Trade": Date;
   "Last Modified Date": Date;
@@ -150,7 +148,6 @@ export interface PositionBeforeFormatting extends PositionInDB {
   "Last Upload Trade": Date;
   "Last edit operation": Date;
   "Last recalculate trades": Date;
-  "MTD Rlzd": string;
   Maturity: string;
   Mid: string;
   "Moddy's Outlook": string | null;
@@ -158,7 +155,6 @@ export interface PositionBeforeFormatting extends PositionInDB {
   "Monthly Capital Gains Rlzd": Record<string, string>;
   "Moody's Bond Rating": string;
   "Moody's Outlook": string;
-  Net: string;
   "Notional Amount": string;
   OAS: string;
   "Original Face": string;
@@ -170,37 +166,12 @@ export interface PositionBeforeFormatting extends PositionInDB {
   Type: string;
   YTM: string;
   YTW: string;
-  "Year Rlzd": Record<string, Array<any>>;
   "Z Spread": string;
-  date: Date;
-  "Previous FX": any;
-  "Previous Mark": string;
   Notes: string;
-  "MTD Mark": string;
-  "MTD FX": string;
-  "YTD FX": string;
-  "MTD URlzd": string;
-  "MTD Int.": string;
-  "Day URlzd": string;
-  "Day Int.": string;
-  "YTD URlzd": string;
   "Coupon Duration": string;
-  "YTD Int.": string;
-  "YTD Rlzd": string;
-  "MTD Rlzd DC": Record<string, Array<any>>;
-  "Cost MTD": any;
-  "Day P&L": string;
-  "MTD P&L": string;
-  "YTD P&L": string;
-  holdPortfXrate: string;
-  "Rating Class": string;
   "Asset Class": string;
-  "YTD Rate": any;
   "Day Price Move": number;
-  "MTD Price Move": string;
-  Pin: string;
   "3-Day Price Move": number;
-  "MTD Notional": number;
 }
 
 export interface PositionGeneralFormat extends PositionBeforeFormatting {
@@ -515,4 +486,9 @@ export interface Analysis {
     Total: AggregatedData;
   };
   tickerTable: { [key: string]: "" };
+}
+
+export interface Indexing {
+  portfolio_id: string;
+  portfolio_document_ids: { timestamp: number; name: string }[];
 }

@@ -1,4 +1,4 @@
-import { PinnedPosition } from "../../models/position";
+import {  Position } from "../../models/position";
 import { isNotNullOrUndefined, parsePercentage } from "../common";
 
 export function sortObjectBasedOnKey(object: any) {
@@ -455,7 +455,7 @@ export function assignAssetClass(locationCode: string, group: any, assetClassOrd
       assetClass = "";
     let unrlzdPositionsNum = group.filter((position: any) => position["Notional Amount"] != 0).length;
     for (let index = 0; index < group.length; index++) {
-      let position: PinnedPosition = group[index];
+      let position: Position = group[index];
       let duration = parseFloat(position["Duration"]) / 100;
 
       if (position["Notional Amount"] != 0) {
@@ -532,7 +532,7 @@ export function assignAssetClass(locationCode: string, group: any, assetClassOrd
         }
       }
     }
-    let position: PinnedPosition = group[0];
+    let position: Position = group[0];
     let duration = parseFloat(position["Duration"]) / 100;
 
     if (rlzd == 2) {

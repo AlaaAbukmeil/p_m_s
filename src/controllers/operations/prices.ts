@@ -17,7 +17,7 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
       return data;
     } else {
       let updatedPricePortfolio = [];
-      let action = await getPortfolioOnSpecificDate(collectionDate);
+      let action = await getPortfolioOnSpecificDate(collectionDate, null, "portfolio-main");
       if (action.date) {
         let portfolio = action.portfolio;
         collectionDate = action.date;
@@ -141,11 +141,11 @@ export async function updatePricesPortfolio(path: string, link: string, collecti
       let maturityType = "day/month";
       let portfolio;
       if (collectionDate) {
-        let action = await getPortfolioOnSpecificDate(collectionDate);
+        let action = await getPortfolioOnSpecificDate(collectionDate, null, "portfolio-main");
         portfolio = action.portfolio;
         collectionDate = action.date;
       } else {
-        portfolio = await getPortfolio();
+        portfolio = await getPortfolio("portfolio-main");
       }
 
       let currencyInUSD: any = {};
@@ -343,7 +343,7 @@ export async function updatePricesPortfolio(path: string, link: string, collecti
 
 export async function checkLivePositions() {
   try {
-    let portfolio = await getPortfolio();
+    let portfolio = await getPortfolio("portfolio-main");
     let positions: any = [];
 
     for (let index = 0; index < portfolio.length; index++) {

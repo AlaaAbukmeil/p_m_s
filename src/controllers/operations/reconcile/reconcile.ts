@@ -217,7 +217,7 @@ export async function reconcileNomuraCash({ path, collectionDate, start, end, po
     } else {
       let records = data.records;
       let portfolio: PositionInDB[] = [];
-      let action = await getPortfolioOnSpecificDate(collectionDate, "true");
+      let action = await getPortfolioOnSpecificDate(collectionDate, "true", "portfolio-main");
 
       portfolio = action.portfolio;
 

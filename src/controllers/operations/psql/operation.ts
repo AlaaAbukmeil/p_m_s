@@ -1,7 +1,8 @@
 import { UserAuth } from "../../../models/auth";
 import { FactSheetBenchMarkDataInDB, FactSheetFundDataInDB } from "../../../models/factSheet";
 import { Logs } from "../../../models/logs";
-import { FundDetailsInDB } from "../../../models/portfolio";
+import { FundDetailsInDB, Indexing } from "../../../models/portfolio";
+import { PinnedPosition } from "../../../models/position";
 import { InformationInDB } from "../../../models/positionsInformation";
 import { CentralizedTrade, CentralizedTradeInDB } from "../../../models/trades";
 import { getDateTimeInMongoDBCollectionFormat } from "../../reports/common";
@@ -32,8 +33,11 @@ export const factsheetPool = createPool("factsheet");
 export const positionsInfomrationPool = createPool("positions_information");
 export const authPool = createPool("auth");
 export const tradesPool = createPool("trades");
-export const fundMTDPool = createPool("fund-info-mtd");
+export const fundMTDPool = createPool("fund_info_mtd");
 export const logsPool = createPool("logs");
+export const indexPool = createPool("portfolio_index");
+export const pinnedPool = createPool("pinned");
+export const automationPool = createPool("automation");
 
 export async function migrateFactSheetData(name: string, className: string) {
   const from2010: any = new Date("2010-01-01").getTime();
@@ -579,6 +583,54 @@ export async function insertLogsData(dataInput: Logs[], tableName: string) {
 
     for (const element of dataInput) {
       await client.query(insertQuery, [element.id, element.changes, element.log_type, element.date_time, element.edit_note, element.identifier, element.timestamp, element.portfolio_id]);
+    }
+
+    await client.query("COMMIT");
+  } catch (err: any) {
+    await client.query("ROLLBACK");
+    console.error("Error inserting", err.stack);
+  } finally {
+    client.release();
+  }
+}
+export async function insertIndexingData(dataInput: Indexing[]) {
+  const client = await indexPool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const insertQuery = `
+  INSERT INTO public.indexing (
+    portfolio_id, portfolio_document_ids
+  )
+  VALUES ($1, $2)
+  ON CONFLICT (portfolio_id) DO NOTHING;`;
+
+    for (const element of dataInput) {
+      await client.query(insertQuery, [element.portfolio_id, element.portfolio_document_ids]);
+    }
+
+    await client.query("COMMIT");
+  } catch (err: any) {
+    await client.query("ROLLBACK");
+    console.error("Error inserting", err.stack);
+  } finally {
+    client.release();
+  }
+}
+export async function insertPinnedData(dataInput: PinnedPosition[]) {
+  const client = await pinnedPool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const insertQuery = `
+  INSERT INTO public.pinned_positions (
+    isin, location, ticker, id, portfolio_id, pinned
+  )
+  VALUES ($1, $2,$3,$4,$5, $6)
+  ON CONFLICT (id, portfolio_id) DO NOTHING;`;
+
+    for (const element of dataInput) {
+      await client.query(insertQuery, [element.isin, element.location, element.ticker, element.id, element.portfolio_id, "pinned"]);
     }
 
     await client.query("COMMIT");
