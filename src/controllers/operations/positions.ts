@@ -8,7 +8,6 @@ import { PinnedPosition, Position } from "../../models/position";
 import { CentralizedTrade } from "../../models/trades";
 import { modifyTradesDueToRecalculate, updateMatchedVcons } from "./trades";
 import { insertEditLogs } from "./logs";
-import { getSecurityInPortfolioById } from "./tools";
 import { swapMonthDay } from "../common";
 import { PositionBeforeFormatting, PositionInDB } from "../../models/portfolio";
 import { convertCentralizedToTradesSQL } from "../eblot/eblot";
@@ -19,17 +18,12 @@ const { v4: uuidv4 } = require("uuid");
 export async function getPortfolio(portfolioId: string, date = null): Promise<PositionInDB[]> {
   try {
     let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date(date ? date : new Date()).getTime() - 0 * 24 * 60 * 60 * 1000));
-    const database = client.db("portfolios");
     let latestCollectionTodayDate = day.split(" ")[0] + " 23:59";
     let allCollectionNames = await getAllCollectionNames(portfolioId);
-
     let earliestCollectionName = await getEarliestCollectionName(latestCollectionTodayDate, allCollectionNames);
+
     console.log(earliestCollectionName.predecessorDate, "get portfolio date");
-    const reportCollection = database.collection(`portfolio-${earliestCollectionName.predecessorDate}`);
-    let documents = await reportCollection.find().toArray();
-    for (let index = 0; index < documents.length; index++) {
-      documents[index]["Notional Amount"] = documents[index]["Notional Amount"] || parseFloat(documents[index]["Notional Amount"]) == 0 ? documents[index]["Notional Amount"] : documents[index]["Quantity"];
-    }
+    let documents: PositionBeforeFormatting[] = await getHistoricalPortfolio(earliestCollectionName.predecessorDate, portfolioId, true);
 
     return documents;
   } catch (error: any) {
@@ -434,23 +428,14 @@ export async function insertTradesInPortfolio(trades: any) {
 
 export async function editPosition(editedPosition: any, date: string, portfolioId: string) {
   try {
-    const database = client.db("portfolios");
     let allCollectionNames = await getAllCollectionNames(portfolioId);
 
     let earliestPortfolioName = await getEarliestCollectionName(date, allCollectionNames);
 
     console.log(earliestPortfolioName.predecessorDate, "get edit portfolio");
-    const reportCollection = database.collection(`portfolio-${earliestPortfolioName.predecessorDate}`);
 
-    let portfolio = await reportCollection
-      .aggregate([
-        {
-          $sort: {
-            "BB Ticker": 1, // replace 'BB Ticker' with the name of the field you want to sort alphabetically
-          },
-        },
-      ])
-      .toArray();
+    let portfolio: PositionBeforeFormatting[] = await getHistoricalPortfolio(earliestPortfolioName.predecessorDate, portfolioId, true);
+
     delete editedPosition["Quantity"];
     delete editedPosition["date"];
 
@@ -458,7 +443,7 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
 
     let editedPositionTitles = Object.keys(editedPosition);
 
-    let id = editedPosition["_id"];
+    let id = editedPosition["id"];
     let unEditableParams = [
       "Value",
       "Duration",
@@ -544,7 +529,7 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
 
     for (let index = 0; index < portfolio.length; index++) {
       let position = portfolio[index];
-      if (position["_id"].toString() == id) {
+      if (position["id"].toString() == id) {
         positionInPortfolio = position;
         positionIndex = index;
       }
@@ -1028,70 +1013,32 @@ export async function insertFXPosition(position: any, date: any, portfolioId: st
     }
   }
 }
-export async function editPositionBulkPortfolio(path: string, link: string) {
-  let data: any = await readEditInput(path);
 
-  if (data.error) {
-    return { error: data.error };
-  } else {
-    try {
-      let positions: any = [];
-
-      let portfolio = await getPortfolio("portfolio_main");
-      let titles = ["Type", "Strategy", "Country", "Asset Class", "Sector"];
-      for (let index = 0; index < data.length; index++) {
-        let row = data[index];
-        let identifier = row["_id"];
-        let securityInPortfolio: any = getSecurityInPortfolioById(portfolio, identifier);
-
-        if (securityInPortfolio != 404) {
-          for (let titleIndex = 0; titleIndex < titles.length; titleIndex++) {
-            let title = titles[titleIndex];
-            securityInPortfolio[title] = row[title];
-          }
-          positions.push(securityInPortfolio);
-        }
-      }
-      try {
-        let updatedPortfolio = formatUpdatedPositions(positions, portfolio, "Last edit operation");
-        let insertion = await insertTradesInPortfolio(updatedPortfolio.updatedPortfolio);
-        let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-        await insertEditLogs(["bulk edit"], "bulk_edit", dateTime, "Bulk Edit E-blot", "Link: " + link);
-
-        return insertion;
-      } catch (error) {
-        return { error: error };
-      }
-    } catch (error) {
-      return { error: error };
-    }
-  }
-}
 export async function deletePosition(data: any, dateInput: any, portfolioId: string): Promise<any> {
+  const client = await portfolioPool.connect();
   try {
-    const database = client.db("portfolios");
-    let date = getDateTimeInMongoDBCollectionFormat(new Date(dateInput)).split(" ")[0] + " 23:59";
-    let allCollectionNames = await getAllCollectionNames(portfolioId);
+    const query = `
+      DELETE FROM public.${portfolioId}
+      WHERE id = $1;
+    `;
 
-    let earliestPortfolioName = await getEarliestCollectionName(date, allCollectionNames);
+    const result = await client.query(query, [data["id"]]);
 
-    const reportCollection = database.collection(`portfolio-${earliestPortfolioName.predecessorDate}`);
+    if (result.rowCount === 0) {
+      return { error: `Position does not exist!` };
+    } else {
+      let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+      await insertEditLogs([], "delete_position", dateTime, "Delete Position", data["BB Ticker"] + " " + data["Location"]);
 
-    const id = new ObjectId(data["_id"]);
-
-    // Update the document with the built updates object
-    const updateResult = await reportCollection.deleteOne({ _id: id });
-    console.log(updateResult, id);
-    if (updateResult.deletedCount === 0) {
-      return { error: "Document does not exist" };
-    } else if (updateResult.deletedCount === 0) {
-      return { error: "Document not updated. It may already have the same values" };
+      console.log("deleted");
+      return { error: null };
     }
-    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    await insertEditLogs([], "delete_position", dateTime, "Delete Position", data["BB Ticker"] + " " + data["Location"]);
-
-    return updateResult;
   } catch (error: any) {
-    return { error: error.message }; // Return the error message
+    console.error(`An error occurred while deleting the trade: ${error}`);
+    const dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    await insertEditLogs([error], "errors", dateTime, "deletePosition", `controllers/operations/positions.ts`);
+    return { error: error.toString() };
+  } finally {
+    client.release();
   }
 }

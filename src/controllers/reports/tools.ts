@@ -315,26 +315,6 @@ export async function getAllCollectionNames(portfolioId: string) {
   }
 }
 
-export async function getAllCollectionDatesSinceStartMonth(originalDate: string) {
-  const database = client.db("portfolios");
-  let collections = await database.listCollections().toArray();
-  let currentDayDate = new Date(new Date(originalDate).getTime()).toISOString().slice(0, 10);
-  let previousMonthDates = getAllDatesSinceLastMonthLastDay(currentDayDate);
-
-  let dates = [];
-  for (let collectionIndex = 0; collectionIndex < collections.length; collectionIndex++) {
-    let collection = collections[collectionIndex];
-    let collectionDateName = collection.name.split("-");
-    let collectionDate: any = collectionDateName[1] + "/" + collectionDateName[2] + "/" + collectionDateName[3];
-    collectionDate = new Date(collectionDate);
-    if (collectionDate.getTime() > new Date(previousMonthDates[0]) && collectionDate.getTime() < new Date(previousMonthDates[previousMonthDates.length - 1])) {
-      dates.push(collection.name);
-    }
-  }
-
-  return dates;
-}
-
 export function getDaysBetween(startDate: any, endDate: any) {
   // Parse the start and end dates into Date objects
   const start = new Date(startDate).getTime();

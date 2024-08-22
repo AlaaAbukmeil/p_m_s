@@ -10,6 +10,8 @@ import { client } from "../../controllers/userManagement/auth";
 import { Indexing } from "../../models/portfolio";
 import { PinnedPosition } from "../../models/position";
 import { getAllCollectionNames, getEarliestCollectionName } from "../../controllers/reports/tools";
+import { getCollectionsInRange } from "../../controllers/analytics/compare/historicalData";
+import { getPortfolio } from "../../controllers/operations/positions";
 
 const migrateRouter = Router();
 const { v4: uuidv4 } = require("uuid");
@@ -107,10 +109,18 @@ const { v4: uuidv4 } = require("uuid");
 
 //   res.send(200);
 // });
+// migrateRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+//   let data = await migrateInformationDB("trades_v_2", "ib", {});
+//   let format = formatTrades(data, "ib");
+//   await insertTradesData(format, "ib");
+//   res.send(200);
+// });
+
 migrateRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  let data = await migrateInformationDB("trades_v_2", "ib", {});
-  let format = formatTrades(data, "ib");
-  await insertTradesData(format, "ib");
-  res.send(200);
+  let start = new Date().getTime() - 20 * 24 * 60 * 60 * 1000;
+  let end = new Date().getTime();
+
+  let list = await getPortfolio("portfolio_main");
+  res.send(list);
 });
 export default migrateRouter;

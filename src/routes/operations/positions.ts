@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { bucket, formatDateFile, generateSignedUrl, verifyToken } from "../../controllers/common";
 import { Request, Response, NextFunction } from "express";
-import { deletePosition, editPosition, editPositionBulkPortfolio, insertFXPosition, pinPosition, readCalculatePosition, updatePositionPortfolio } from "../../controllers/operations/positions";
+import { deletePosition, editPosition, insertFXPosition, pinPosition, readCalculatePosition, updatePositionPortfolio } from "../../controllers/operations/positions";
 import { readCentralizedEBlot, readMUFGPrices, readPricingSheet, uploadArrayAndReturnFilePath } from "../../controllers/operations/readExcel";
 import { checkLivePositions, updatePreviousPricesPortfolioMUFG, updatePricesPortfolio } from "../../controllers/operations/prices";
 import { getAllTradesForSpecificPosition } from "../../controllers/operations/trades";
@@ -9,6 +9,7 @@ import { getEditLogs } from "../../controllers/operations/logs";
 import { getCollectionDays } from "../../controllers/operations/tools";
 import { uploadToBucket } from "../../controllers/userManagement/tools";
 import { factsheetPool } from "../../controllers/operations/psql/operation";
+import { getAllCollectionNames } from "../../controllers/reports/tools";
 
 const positionsRouter = Router();
 
@@ -25,8 +26,9 @@ positionsRouter.get("/edit-logs", verifyToken, async (req, res) => {
 
 positionsRouter.get("/previous-collections", verifyToken, async (req, res) => {
   try {
-    let previousCollections = await getCollectionDays();
-    res.send(previousCollections);
+    let previousCollections = await getAllCollectionNames("portfolio_main");
+    let formatted = getCollectionDays(previousCollections);
+    res.send(formatted);
   } catch (error) {
     res.status(500).send("An error occurred while reading the file.");
   }
@@ -178,24 +180,7 @@ positionsRouter.post("/live-prices", verifyToken, uploadToBucket.any(), async (r
   }
 });
 
-positionsRouter.post("/bulk-edit", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  try {
-    const fileName = req.files[0].filename;
-    const path = await generateSignedUrl(fileName);
-    let link = bucket + "/" + fileName + "?authuser=2";
 
-    let action: any = await editPositionBulkPortfolio(path, link);
-    console.log(action);
-    if (action?.error) {
-      res.send({ error: action.error });
-    } else {
-      res.sendStatus(200);
-    }
-  } catch (error) {
-    console.log(error);
-    res.send({ error: "File Template is not correct" });
-  }
-});
 
 positionsRouter.post("/update-previous-prices", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {

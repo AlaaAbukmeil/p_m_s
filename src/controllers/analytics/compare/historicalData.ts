@@ -2,15 +2,12 @@ import { parse } from "path";
 import { AnalyticsSample } from "../../../models/analytics";
 import { formatDateRlzdDaily, getAllDatesSinceLastMonthLastDay, getLastDayOfMonth, monthlyRlzdDate } from "../../reports/common";
 import { calculateRlzd } from "../../reports/portfolios";
-import { parseBondIdentifier } from "../../reports/tools";
+import { getAllCollectionNames, parseBondIdentifier } from "../../reports/tools";
 import { getRlzdTrades } from "../../reports/trades";
 import { client } from "../../userManagement/auth";
 
-export async function getCollectionsInRange(start: any, end: any): Promise<any> {
-  const database = client.db("portfolios");
-
-  const cursor = database.listCollections();
-  const collections = await cursor.toArray();
+export async function getCollectionsInRange(start: any, end: any, portfolioId: string): Promise<any> {
+  let collections = await getAllCollectionNames(portfolioId);
   let finalCollections: any = {};
   let finalCollectionsArray: any = [];
 

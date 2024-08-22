@@ -37,7 +37,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
 
   let timestamp_11 = new Date().getTime();
 
-  let documents: PositionBeforeFormatting[] = await getHistoricalPortfolio(earliestPortfolioName.predecessorDate, "portfolio_main", true);
+  let documents: PositionBeforeFormatting[] = await getHistoricalPortfolio(earliestPortfolioName.predecessorDate, portfolioId, true);
   const lastDayOfLastYear = new Date(new Date().getFullYear(), 0, 0);
 
   for (let index = 0; index < documents.length; index++) {
@@ -73,12 +73,12 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
   let lastYearLastCollectionName = getEarliestCollectionName(previousYearDate + " 23:59", allCollectionNames);
   console.log(lastYearLastCollectionName.predecessorDate, "last year collection name");
   let timestamp_7 = new Date().getTime();
-  let lastMonthPortfolio = await getHistoricalPortfolio(lastMonthLastCollectionName.predecessorDate);
+  let lastMonthPortfolio = await getHistoricalPortfolio(lastMonthLastCollectionName.predecessorDate, portfolioId);
   let timestamp_8 = new Date().getTime();
   console.log("To get one portfolio: ", (timestamp_8 - timestamp_7) / 1000 + " seconds");
 
-  let previousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeToday.predecessorDate);
-  let previousPreviousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeYesterday.predecessorDate);
+  let previousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeToday.predecessorDate, portfolioId);
+  let previousPreviousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeYesterday.predecessorDate, portfolioId);
 
   let timestamp_2 = new Date().getTime();
 
@@ -544,17 +544,12 @@ export function calculateAccruedSinceInception(interestInfo: any, couponRate: an
 
 export async function getPortfolioOnSpecificDate(collectionDate: string, onlyThisMonth: null | string = null, portfolioId: string): Promise<{ portfolio: PositionInDB[] | []; date: string }> {
   try {
-    const database = client.db("portfolios");
     let date = getDateTimeInMongoDBCollectionFormat(new Date(collectionDate)).split(" ")[0] + " 23:59";
     let allCollectionNames = await getAllCollectionNames(portfolioId);
     let earliestCollectionName = getEarliestCollectionName(date, allCollectionNames);
-    console.log(earliestCollectionName, "check");
-    const reportCollection = database.collection(`portfolio-${earliestCollectionName.predecessorDate}`);
-    let documents = await reportCollection.find().toArray();
-    for (let index = 0; index < documents.length; index++) {
-      documents[index]["BB Ticker"] = documents[index]["BB Ticker"] ? documents[index]["BB Ticker"] : documents[index]["Issue"];
-      documents[index]["Notional Amount"] = documents[index]["Notional Amount"] || parseFloat(documents[index]["Notional Amount"]) == 0 ? documents[index]["Notional Amount"] : documents[index]["Quantity"];
-    }
+
+    let documents: PositionBeforeFormatting[] = await getHistoricalPortfolio(earliestCollectionName.predecessorDate, portfolioId, true);
+
     if (onlyThisMonth) {
       let thisMonth = monthlyRlzdDate(collectionDate);
       documents.filter((position: any) => {
