@@ -32,7 +32,6 @@ export interface Position {
   Issuer: string;
   "Last Price Update": Date;
   "Last Upload Trade": Date;
-  "Last edit operation": Date;
   "Last recalculate trades": Date;
   Maturity: string;
   Mid: number;

@@ -131,13 +131,13 @@ export function getPositionAggregated(isin: string, portfolio: PositionInDB[], d
       if (position["Coupon Frequency"]) {
         couponFrequency = position["Coupon Frequency"];
       }
-      notional += parseFloat(position["Notional Amount"]);
+      notional += position["Notional Amount"];
       locations += position["Location"] + " ";
       ticker = position["BB Ticker"];
       if (position["Security Description"]) {
         note = position["Security Description"];
       }
-      coupon = parseFloat(position["Coupon Rate"]) / 100;
+      coupon = position["Coupon Rate"] / 100;
       if (position["Coupon Frequency"]) {
         frequency = parseFloat(position["Coupon Frequency"]);
       }
@@ -149,7 +149,7 @@ export function getPositionAggregated(isin: string, portfolio: PositionInDB[], d
         let timestamp = new Date(date).getTime();
 
         if (timestamp < previousSettleDateTimestamp && date != previousSettleDate) {
-          totalSettled += parseFloat(position["Interest"][date]);
+          totalSettled += position["Interest"][date];
         }
       }
     }

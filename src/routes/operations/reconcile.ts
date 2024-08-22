@@ -14,7 +14,7 @@ reconcileRouter.post("/check-mufg", verifyToken, uploadToBucket.any(), async (re
     let collectionDate: string = req.body.collectionDate || new Date().toString();
     let files = req.files[0];
 
-    let portfolio: any = await getPortfolioOnSpecificDate(collectionDate, "true", "portfolio-main");
+    let portfolio: any = await getPortfolioOnSpecificDate(collectionDate, "true", "portfolio_main");
     let thisMonth = monthlyRlzdDate(collectionDate);
     console.log(collectionDate, thisMonth, "collectionDate");
 
@@ -51,7 +51,7 @@ reconcileRouter.post("/check-nomura", verifyToken, uploadToBucket.any(), async (
     let collectionDate: string = req.body.collectionDate;
     let files = req.files[0];
 
-    let portfolio = await getPortfolioOnSpecificDate(collectionDate, "true", "portfolio-main");
+    let portfolio = await getPortfolioOnSpecificDate(collectionDate, "true", "portfolio_main");
 
     let data: any = [];
     if (files) {
@@ -88,7 +88,7 @@ reconcileRouter.post("/reconcile-cash", verifyToken, uploadToBucket.any(), async
     let link = bucket + "/" + fileName + "?authuser=2";
     let start = new Date(req.body.timestamp_start).getTime();
     let end = new Date(req.body.timestamp_end).getTime();
-    let portfolioId = "portfolio-main";
+    let portfolioId = "portfolio_main";
 
     let action: any = await reconcileNomuraCash({ path, collectionDate, start, end, portfolioId });
     if (action.error) {

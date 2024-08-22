@@ -466,9 +466,9 @@ export function assignAssetClass(locationCode: string, group: any, assetClassOrd
           if ((position["Type"].includes("UST") || position["Strategy"] == "RV") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
             return assetClassOrder.RV + alphabetIndex(position["BB Ticker"]);
           }
-          if ((position["Type"].includes("FUT") || position["Type"].includes("FX")) && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
-            return assetClassOrder.RV;
-          }
+          // if ((position["Type"].includes("FUT") || position["Type"].includes("FX")) && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
+          //   return assetClassOrder.RV;
+          // }
           if (position["Type"].includes("UST") && position["Notional Amount"] <= 0 && (unrlzdPositionsNum == 1 || position["Strategy"] == "Global Hedge")) {
             return assetClassOrder.UST_GLOBAL;
           }
@@ -482,7 +482,7 @@ export function assignAssetClass(locationCode: string, group: any, assetClassOrd
           if (position["Type"] == "CDS") {
             return assetClassOrder.CDS;
           }
-          if (position["Currency"] != "USD" && unrlzdPositionsNum == 1) {
+          if (position["Currency"] != "USD") {
             return assetClassOrder.FUT_CURR;
           }
           if (position["Asset Class"] == "IG") {

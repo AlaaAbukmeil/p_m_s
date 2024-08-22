@@ -56,7 +56,7 @@ function getMonthAbbreviation(date: string) {
 }
 
 export async function getVcons(token: string, start_time: any, end_time: any, trades: any): Promise<Vcon[]> {
-  let portfolio = await getPortfolio("portfolio-main");
+  let portfolio = await getPortfolio("portfolio_main");
   try {
     let url = `https://graph.microsoft.com/v1.0/users/vcons@triadacapital.com/messages?$filter=contains(subject,'New BB') and receivedDateTime ge ${format_date_ISO(start_time)} and receivedDateTime le ${format_date_ISO(end_time)}&$top=1000000`;
     let action = await axios.get(url, {

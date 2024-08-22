@@ -52,7 +52,7 @@ export async function registerUser(email: string, password: string, verification
           ON CONFLICT (email) DO NOTHING
         `;
 
-        const values = [email, cryptedPassword, "admin", "portfolio-main", "", "", true, getDateTimeInMongoDBCollectionFormat(new Date()), "user", null, null, null, null, id];
+        const values = [email, cryptedPassword, "admin", "portfolio_main", "", "", true, getDateTimeInMongoDBCollectionFormat(new Date()), "user", null, null, null, null, id];
 
         const result = await client.query(insertQuery, values);
 

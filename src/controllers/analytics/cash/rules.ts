@@ -7,7 +7,7 @@ export function nomuraRuleMargin(position: PositionGeneralFormat) {
   try {
     let sector = parseStringWithNoSpecialCharacters(position["Sector"]);
     let country = parseStringWithNoSpecialCharacters(position["Country"]);
-    let spread = parseFloat(position["OAS"]);
+    let spread = position["OAS"];
     let type = position["Type"];
     let maturity = parseFloat(position["Duration"]);
     let assetClass = position["Asset Class"];

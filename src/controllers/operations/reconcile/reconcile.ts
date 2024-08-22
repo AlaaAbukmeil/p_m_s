@@ -217,7 +217,7 @@ export async function reconcileNomuraCash({ path, collectionDate, start, end, po
     } else {
       let records = data.records;
       let portfolio: PositionInDB[] = [];
-      let action = await getPortfolioOnSpecificDate(collectionDate, "true", "portfolio-main");
+      let action = await getPortfolioOnSpecificDate(collectionDate, "true", "portfolio_main");
 
       portfolio = action.portfolio;
 
@@ -280,13 +280,13 @@ export function checkIfPositionsGotRedeemped(redeemptionRecords: NomuraCashRecon
 
     let position = portfolio.find((position: PositionInDB, index: number) => position["ISIN"] == isin);
     if (position) {
-      if (parseFloat(position["Notional Amount"]) == 0) {
+      if (position["Notional Amount"] == 0) {
         let object = {
           Ticker: ticker,
           ISIN: position["ISIN"],
           Location: position["Location"],
           Currency: position["Currency"],
-          "Notional Amount Triada": parseFloat(position["Notional Amount"]),
+          "Notional Amount Triada": position["Notional Amount"],
           Difference: 0,
           Result: "Successful",
         };
@@ -297,7 +297,7 @@ export function checkIfPositionsGotRedeemped(redeemptionRecords: NomuraCashRecon
           ISIN: position["ISIN"],
           Location: position["Location"],
           Currency: position["Currency"],
-          "Notional Amount Triada": parseFloat(position["Notional Amount"]),
+          "Notional Amount Triada": position["Notional Amount"],
           Difference: 0,
           Result: "Position is not redeemped in the app",
         };

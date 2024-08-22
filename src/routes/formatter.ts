@@ -23,7 +23,7 @@ formatterRouter.post("/ib-excel", verifyToken, uploadToBucket.any(), async (req:
     let now = new Date().getTime() + 5 * 24 * 60 * 60 * 1000;
     let trades = await getAllTrades(beforeMonth, now, "ib");
     let data = await readIBRawExcel(path);
-    let portfolio = await getPortfolio("portfolio-main");
+    let portfolio = await getPortfolio("portfolio_main");
     let action = formatIbTrades(data, trades, portfolio);
     // console.log(action)
 
@@ -43,7 +43,7 @@ formatterRouter.post("/ib-excel", verifyToken, uploadToBucket.any(), async (req:
 formatterRouter.post("/mufg-excel", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   let data = req.body;
   let pathName = "mufg_" + formatDateFile(data.timestamp_start) + "_" + formatDateFile(data.timestamp_end) + "_";
-  let trades = await getAllTrades(data.timestamp_start, data.timestamp_end, "portfolio-main");
+  let trades = await getAllTrades(data.timestamp_start, data.timestamp_end, "portfolio_main");
 
   let array: MufgTrade[] = formatMufg(trades, data.timestamp_start, data.timestamp_end);
 
@@ -128,7 +128,7 @@ formatterRouter.post("/emsx-excel", verifyToken, uploadToBucket.any(), async (re
 
     let data = await readEmsxRawExcel(path);
 
-    let portfolio = await getPortfolio("portfolio-main");
+    let portfolio = await getPortfolio("portfolio_main");
 
     let action = formatEmsxTrades(data, trades, portfolio);
     if (!action) {

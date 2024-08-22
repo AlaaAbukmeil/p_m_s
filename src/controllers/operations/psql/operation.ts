@@ -1,7 +1,7 @@
 import { UserAuth } from "../../../models/auth";
 import { FactSheetBenchMarkDataInDB, FactSheetFundDataInDB } from "../../../models/factSheet";
 import { Logs } from "../../../models/logs";
-import { FundDetailsInDB, Indexing } from "../../../models/portfolio";
+import { FundDetailsInDB, Indexing, PositionInDB, PositionInSQLDB } from "../../../models/portfolio";
 import { PinnedPosition } from "../../../models/position";
 import { InformationInDB } from "../../../models/positionsInformation";
 import { CentralizedTrade, CentralizedTradeInDB } from "../../../models/trades";
@@ -38,6 +38,7 @@ export const logsPool = createPool("logs");
 export const indexPool = createPool("portfolio_index");
 export const pinnedPool = createPool("pinned");
 export const automationPool = createPool("automation");
+export const portfolioPool = createPool("portfolio");
 
 export async function migrateFactSheetData(name: string, className: string) {
   const from2010: any = new Date("2010-01-01").getTime();
@@ -263,7 +264,7 @@ export function formatUsers(data: any): UserAuth[] {
       email: element["email"],
       password: element["password"],
       access_role_instance: element["accessRole"],
-      access_role_portfolio: "portfolio-main",
+      access_role_portfolio: "portfolio_main",
       share_class: element["shareClass"].toString().replace("mkt", ""),
       last_time_accessed: element["lastTimeAccessed"] || "",
       reset_password: element["resetPassword"] == "true" ? true : false,
@@ -402,7 +403,7 @@ export function formatTrades(data: any[], tradeType: string): CentralizedTradeIn
       primary_market: false,
       broker_email_status: element["Broker Email Status"],
       id: id,
-      portfolio_id: "portfolio-main",
+      portfolio_id: "portfolio_main",
       front_office_check: true,
       resolved: true,
     };
@@ -511,7 +512,7 @@ export function formatFundMTD(data: any[]): FundDetailsInDB[] {
     console.log(new Date(date));
     let object: FundDetailsInDB = {
       id: id,
-      portfolio_id: "portfolio-main",
+      portfolio_id: "portfolio_main",
       share_price: element["a2 price"],
       borrowing_amount: element["borrowing amount"],
       month: element["month"],
@@ -556,7 +557,7 @@ export function formatEditLogs(data: any[], type: string): Logs[] {
     let id = uuidv4();
     let object: Logs = {
       id: id,
-      portfolio_id: "portfolio-main",
+      portfolio_id: "portfolio_main",
       changes: typeof element["changes"][0] == "string" ? [] : element["changes"],
       log_type: type,
       date_time: element["dateTime"],
@@ -603,7 +604,8 @@ export async function insertIndexingData(dataInput: Indexing[]) {
     portfolio_id, portfolio_document_ids
   )
   VALUES ($1, $2)
-  ON CONFLICT (portfolio_id) DO NOTHING;`;
+  ON CONFLICT (portfolio_id) DO UPDATE
+  SET portfolio_document_ids = EXCLUDED.portfolio_document_ids;`
 
     for (const element of dataInput) {
       await client.query(insertQuery, [element.portfolio_id, element.portfolio_document_ids]);
@@ -637,6 +639,245 @@ export async function insertPinnedData(dataInput: PinnedPosition[]) {
   } catch (err: any) {
     await client.query("ROLLBACK");
     console.error("Error inserting", err.stack);
+  } finally {
+    client.release();
+  }
+}
+
+export function formatPositionsTOSQL(positions: PositionInDB[]) {
+  let newResult: PositionInSQLDB[] = positions.map((pos) => {
+    let id = uuidv4();
+
+    // Helper function to ensure type safety
+    const safeString = (value: any) => (typeof value === "string" || typeof value === "number" ? value.toString() : "");
+    const safeNumber = (value: any) => (typeof value === "number" || parseFloat(value) ? parseFloat(value) : 0);
+    return {
+      id: id,
+      portfolio_id: "portfolio_main",
+      portfolio_snapshot_time: safeString(pos["portfolio_snapshot_time"]),
+      location: safeString(pos.Location),
+      isin: safeString(pos.ISIN),
+      cusip: safeString(pos.CUSIP),
+      bloomberg_id: safeString(pos["Bloomberg ID"]),
+      bid: safeNumber(pos.Bid),
+      mid: safeNumber(pos.Mid),
+      ask: safeNumber(pos.Ask),
+      bloomberg_mid_bgn: safeNumber(pos["Bloomberg Mid BGN"]),
+      notional_amount: safeNumber(pos["Notional Amount"]),
+      average_cost: safeNumber(pos["Average Cost"]),
+      bb_ticker: safeString(pos["BB Ticker"]),
+      cr01: safeNumber(pos.CR01),
+      dv01: safeNumber(pos.DV01),
+      broker: safeString(pos.Broker),
+      call_date: safeString(pos["Call Date"]),
+      country: safeString(pos.Country),
+      coupon_rate: safeNumber(pos["Coupon Rate"]),
+      currency: safeString(pos.Currency),
+      entry_price: pos["Entry Price"] || {},
+      entry_yield: safeNumber(pos["Entry Yield"]),
+      fx_rate: safeNumber(pos["FX Rate"]),
+      fitch_bond_rating: safeString(pos["Fitch Bond Rating"]),
+      fitch_outlook: safeString(pos["Fitch Outlook"]),
+      interest: pos.Interest || {},
+      issuer: safeString(pos.Issuer),
+      last_price_update: new Date(pos["Last Price Update"]).getTime(),
+      last_upload_trade: new Date(pos["Last Price Update"]).getTime(),
+      maturity: safeString(pos.Maturity),
+      moddys_outlook: safeString(pos["Moddy's Outlook"]),
+      moodys_bond_rating: safeString(pos["Moody's Bond Rating"]),
+      moodys_outlook: safeString(pos["Moody's Outlook"]),
+      bbg_composite_rating: safeString(pos["BBG Composite Rating"]),
+      sp_bond_rating: safeString(pos["S&P Bond Rating"]),
+      sp_outlook: safeString(pos["S&P Outlook"]),
+      oas: safeNumber(pos.OAS),
+      original_face: safeNumber(pos["Original Face"]),
+      sector: safeString(pos.Sector),
+      strategy: safeString(pos.Strategy),
+      ytm: safeNumber(pos.YTM),
+      ytw: safeNumber(pos.YTW),
+      z_spread: safeNumber(pos["Z Spread"]),
+      notes: safeString(pos.Notes),
+      coupon_duration: safeNumber(pos["Coupon Duration"]),
+      asset_class: safeString(pos["Asset Class"]),
+      pin: safeString(pos.Pin),
+      issuers_country: safeString(pos["Issuer's Country"]),
+      coupon_frequency: safeString(pos["Coupon Frequency"]),
+      previous_settle_date: safeString(pos["Previous Settle Date"]),
+      next_settle_date: safeString(pos["Next Settle Date"]),
+      cost_mtd: pos["Cost MTD"] || {},
+      security_description: safeString(pos["Security Description"]),
+      type: pos["Type"],
+    };
+  });
+
+  return newResult;
+}
+
+export function formatPositionsApp(positions: PositionInSQLDB[]): PositionInDB[] {
+  let result: PositionInDB[] = positions.map((pos) => {
+    return {
+      portfolio_snapshot_time: pos.portfolio_snapshot_time,
+      portfolio_id: pos.portfolio_id,
+      id: pos.id,
+      Type: pos.type,
+      Location: pos.location,
+      ISIN: pos.isin,
+      CUSIP: pos.cusip,
+      "Bloomberg ID": pos.bloomberg_id,
+      Bid: pos.bid,
+      Mid: pos.mid,
+      Ask: pos.ask,
+      "Bloomberg Mid BGN": pos.bloomberg_mid_bgn,
+      "Notional Amount": pos.notional_amount,
+      "Average Cost": pos.average_cost,
+      "BB Ticker": pos.bb_ticker,
+      CR01: pos.cr01,
+      DV01: pos.dv01,
+      Broker: pos.broker,
+      "Call Date": pos.call_date,
+      Country: pos.country,
+      "Coupon Rate": pos.coupon_rate,
+      Currency: pos.currency,
+      "Entry Price": pos.entry_price,
+      "Entry Yield": pos.entry_yield,
+      "FX Rate": pos.fx_rate,
+      "Fitch Bond Rating": pos.fitch_bond_rating,
+      "Fitch Outlook": pos.fitch_outlook,
+      Interest: pos.interest,
+      Issuer: pos.issuer,
+      "Last Price Update": pos.last_price_update,
+      "Last Upload Trade": pos.last_upload_trade,
+      Maturity: pos.maturity,
+      "Moddy's Outlook": pos.moddys_outlook,
+      "Moody's Bond Rating": pos.moodys_bond_rating,
+      "Moody's Outlook": pos.moodys_outlook,
+      "BBG Composite Rating": pos.bbg_composite_rating,
+      "S&P Bond Rating": pos.sp_bond_rating,
+      "S&P Outlook": pos.sp_outlook,
+      OAS: pos.oas,
+      "Original Face": pos.original_face,
+      Sector: pos.sector,
+      Strategy: pos.strategy,
+      YTM: pos.ytm,
+      YTW: pos.ytw,
+      "Z Spread": pos.z_spread,
+      Notes: pos.notes,
+      "Coupon Duration": pos.coupon_duration,
+      "Asset Class": pos.asset_class,
+      Pin: pos.pin,
+      "Issuer's Country": pos.issuers_country,
+      "Coupon Frequency": pos.coupon_frequency,
+      "Previous Settle Date": pos.previous_settle_date,
+      "Next Settle Date": pos.next_settle_date,
+      "Cost MTD": pos.cost_mtd,
+      "Security Description": pos.security_description,
+    };
+  });
+  return result;
+}
+
+export async function insertPositionsPortfolioData(dataInput: PositionInSQLDB[], portfolioId: string, snapShot: string) {
+  const client = await portfolioPool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Create table if it doesn't exist
+
+    // Insert or update data
+    const createTableQuery = `
+        CREATE TABLE IF NOT EXISTS "${snapShot}" PARTITION OF ${portfolioId}
+        FOR VALUES IN ('${snapShot}');
+    `;
+    await client.query(createTableQuery);
+    await client.query("COMMIT");
+
+    for (const element of dataInput) {
+      const insertQuery = `
+      INSERT INTO public.positions (
+        id, portfolio_id, portfolio_snapshot_time, location, isin, cusip, bloomberg_id,
+        bid, mid, ask, bloomberg_mid_bgn, notional_amount, average_cost, bb_ticker,
+        cr01, dv01, broker, call_date, country, coupon_rate, currency, entry_price,
+        entry_yield, fx_rate, fitch_bond_rating, fitch_outlook, interest, issuer,
+        last_price_update, last_upload_trade, maturity, moddys_outlook, moodys_bond_rating,
+        moodys_outlook, bbg_composite_rating, sp_bond_rating, sp_outlook, oas, original_face,
+        sector, strategy, ytm, ytw, z_spread, notes, coupon_duration, asset_class, pin,
+        issuers_country, coupon_frequency, previous_settle_date, next_settle_date, cost_mtd,
+        security_description, type
+      )
+      VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+        $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38,
+        $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55
+      )
+      ON CONFLICT (portfolio_id, portfolio_snapshot_time, id) DO UPDATE
+      SET last_price_update = EXCLUDED.last_price_update,
+          last_upload_trade = EXCLUDED.last_upload_trade;
+    `;
+
+      let idTest = uuidv4();
+      await client.query(insertQuery, [
+        idTest,
+        portfolioId,
+        snapShot,
+        element.location,
+        element.isin,
+        element.cusip,
+        element.bloomberg_id,
+        element.bid,
+        element.mid,
+        element.ask,
+        element.bloomberg_mid_bgn,
+        element.notional_amount,
+        element.average_cost,
+        element.bb_ticker,
+        element.cr01,
+        element.dv01,
+        element.broker,
+        element.call_date,
+        element.country,
+        element.coupon_rate,
+        element.currency,
+        JSON.stringify(element.entry_price),
+        element.entry_yield,
+        element.fx_rate,
+        element.fitch_bond_rating,
+        element.fitch_outlook,
+        JSON.stringify(element.interest),
+        element.issuer,
+        element.last_price_update,
+        element.last_upload_trade,
+        element.maturity,
+        element.moddys_outlook,
+        element.moodys_bond_rating,
+        element.moodys_outlook,
+        element.bbg_composite_rating,
+        element.sp_bond_rating,
+        element.sp_outlook,
+        element.oas,
+        element.original_face,
+        element.sector,
+        element.strategy,
+        element.ytm,
+        element.ytw,
+        element.z_spread,
+        element.notes,
+        element.coupon_duration,
+        element.asset_class,
+        element.pin,
+        element.issuers_country,
+        element.coupon_frequency,
+        element.previous_settle_date,
+        element.next_settle_date,
+        JSON.stringify(element.cost_mtd),
+        element.security_description,
+        element.type,
+      ]);
+    }
+    await client.query("COMMIT");
+    console.log({ tableName: snapShot + " SUCCESS" });
+  } catch (err: any) {
+    await client.query("ROLLBACK");
+    console.error("Error inserting", err);
   } finally {
     client.release();
   }

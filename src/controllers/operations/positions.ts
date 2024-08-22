@@ -12,7 +12,7 @@ import { getSecurityInPortfolioById } from "./tools";
 import { swapMonthDay } from "../common";
 import { PositionBeforeFormatting, PositionInDB } from "../../models/portfolio";
 import { convertCentralizedToTradesSQL } from "../eblot/eblot";
-import { indexPool, pinnedPool } from "./psql/operation";
+import { formatPositionsApp, indexPool, pinnedPool, portfolioPool } from "./psql/operation";
 const ObjectId = require("mongodb").ObjectId;
 const { v4: uuidv4 } = require("uuid");
 
@@ -42,14 +42,35 @@ export async function getPortfolio(portfolioId: string, date = null): Promise<Po
   }
 }
 
-export async function getHistoricalPortfolio(date: string): Promise<PositionBeforeFormatting[]> {
-  const database = client.db("portfolios");
-  const reportCollection = database.collection(`portfolio-${date}`);
-  let documents = await reportCollection.find().toArray();
-  for (let index = 0; index < documents.length; index++) {
-    documents[index]["Notional Amount"] = documents[index]["Notional Amount"] || parseFloat(documents[index]["Notional Amount"]) == 0 ? documents[index]["Notional Amount"] : documents[index]["Quantity"];
+export async function getHistoricalPortfolio(date: string, portfolioId: string = "portfolio_main", sort = false): Promise<PositionBeforeFormatting[]> {
+  const client = await portfolioPool.connect();
+  try {
+    let name = date.split("-");
+    let nameInDB = name[1] + "/" + name[2].split(" ")[0] + "/" + name[0];
+    let fullName = nameInDB.replace(/-/g, "_").replace(/\//g, "_");
+    let query = `
+      SELECT *
+      FROM public.${portfolioId}_${fullName}
+    `;
+
+    // if (sort) {
+    query += `ORDER BY bb_ticker`;
+    // }
+    const result = await client.query(query, []);
+    let formatted: any = formatPositionsApp(result.rows);
+    return formatted;
+  } catch (error: any) {
+    console.log({ error });
+    // const dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    // console.log(error);
+    // const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    // await insertEditLogs([errorMessage], "errors", dateTime, "getFundDetails", "controllers/operations/fund.ts");
+
+    return [];
+  } finally {
+    client.release();
   }
-  return documents;
 }
 
 export function getSecurityInPortfolio(portfolio: any, identifier: string, location: string) {
@@ -110,7 +131,7 @@ export async function updatePositionPortfolio(
     let data = trades.allTrades;
 
     let positions: any = [];
-    let portfolio = await getPortfolio("portfolio-main");
+    let portfolio = await getPortfolio("portfolio_main");
     let triadaIds: any = [];
 
     for (let index = 0; index < data.length; index++) {
@@ -180,7 +201,6 @@ export async function updatePositionPortfolio(
           let settlementDate = row["Settle Date"];
 
           object["Location"] = row["Location"].trim();
-          object["Last Modified Date"] = new Date();
           if (rlzdOperation == -1) {
             object["Entry Yield"] = row["Yield"] || 0;
           }
@@ -247,13 +267,10 @@ export async function updatePositionPortfolio(
             object["Entry Price"][thisMonth] = currentPrice;
           }
 
-          object["Last Individual Upload Trade"] = new Date();
-
           positions.push(object);
         } else if (returnPositionProgress(positions, identifier, location)) {
           let settlementDate = row["Settle Date"];
           object["Location"] = row["Location"].trim();
-          object["Last Modified Date"] = new Date();
           object["BB Ticker"] = row["BB Ticker"];
 
           object["ISIN"] = row["ISIN"];
@@ -308,7 +325,6 @@ export async function updatePositionPortfolio(
             object["Entry Price"][thisMonth] = currentPrice;
           }
 
-          object["Last Individual Upload Trade"] = new Date();
           positions = updateExisitingPosition(positions, identifier, location, object);
         }
       }
@@ -539,11 +555,6 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
     let changes = [];
     for (let indexTitle = 0; indexTitle < editedPositionTitles.length; indexTitle++) {
       let title = editedPositionTitles[indexTitle];
-
-      if (editedPosition[title] == "") {
-        editedPosition[title] == "";
-      }
-
       if (Array.isArray(editedPosition[title])) {
         editedPosition[title] == "";
       }
@@ -851,7 +862,6 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           let settlementDate = row["Settle Date"];
 
           object["Location"] = row["Location"].trim();
-          object["Last Modified Date"] = new Date();
 
           object["Entry Yield"] = row["Yield"] || 0;
 
@@ -881,7 +891,6 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
           if (rlzdOperation == -1) {
             object["Entry Price"][thisMonth] = currentPrice;
           }
-          object["Last Individual Upload Trade"] = new Date();
           let tradeRecord = null;
           if (!tradeRecord) {
             tradeRecord = findTradeRecord(data, row["Triada Trade Id"]);
@@ -894,7 +903,6 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
         } else if (returnPositionProgress(positions, identifier, location)) {
           let settlementDate = row["Settle Date"];
           object["Location"] = row["Location"].trim();
-          object["Last Modified Date"] = new Date();
           object["BB Ticker"] = row["BB Ticker"];
 
           object["ISIN"] = row["ISIN"];
@@ -922,7 +930,6 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
             object["Entry Price"][thisMonth] = currentPrice;
           }
 
-          object["Last Individual Upload Trade"] = new Date();
           let tradeRecord = null;
           if (!tradeRecord) {
             tradeRecord = findTradeRecord(data, row["Triada Trade Id"]);
@@ -1030,7 +1037,7 @@ export async function editPositionBulkPortfolio(path: string, link: string) {
     try {
       let positions: any = [];
 
-      let portfolio = await getPortfolio("portfolio-main");
+      let portfolio = await getPortfolio("portfolio_main");
       let titles = ["Type", "Strategy", "Country", "Asset Class", "Sector"];
       for (let index = 0; index < data.length; index++) {
         let row = data[index];

@@ -34,7 +34,7 @@ fundRouter.post("/delete-fund", verifyToken, uploadToBucket.any(), async (req: R
 fundRouter.post("/add-fund", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let data = req.body
-    data["portfolio_id"] = "portfolio-main"
+    data["portfolio_id"] = "portfolio_main"
     console.log(data, "before");
     let action = await addFund(data);
     if (action.error) {
@@ -53,7 +53,7 @@ fundRouter.get("/fund-details", verifyToken, async (req, res) => {
   try {
     const date: any = req.query.date;
     let thisMonth = monthlyRlzdDate(date);
-    let fundDetails: FundDetails[] = await getAllFundDetails(thisMonth, "portfolio-main");
+    let fundDetails: FundDetails[] = await getAllFundDetails(thisMonth, "portfolio_main");
     res.send(fundDetails);
   } catch (error) {
     res.status(500).send("An error occurred while reading the file.");

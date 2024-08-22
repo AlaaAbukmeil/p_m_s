@@ -110,6 +110,9 @@ export function getRlzdTradesWithTrades(tradeType: "vcons" | "ib" | "emsx" | "wr
       let tradeBS = trade["B/S"] == "B" ? 1 : -1;
       let newNotional = trade["Notional Amount"] * tradeBS;
       if (accumualteNotional + newNotional < accumualteNotional && accumualteNotional > 0) {
+        // if (trade["BB Ticker"] == "ESU4 IB") {
+        //   console.log({ price: trade["Price"], averageCost, notional: trade["Notional Amount"], multiplier });
+        // }
         trade["Rlzd"] = "True (Long)";
         trade["Price Diff"] = trade["Price"] - averageCost;
         trade["Rlzd P&L Amount"] = trade["Notional Amount"] * (trade["Price"] / multiplier - averageCost / multiplier);
@@ -135,6 +138,9 @@ export function getRlzdTradesWithTrades(tradeType: "vcons" | "ib" | "emsx" | "wr
         trade["Rlzd P&L Amount"] = 0;
         trade["Rlzd"] = "False";
         averageCost = getAverageCost(newNotional, accumualteNotional, trade["Price"], averageCost);
+        // if (trade["BB Ticker"] == "ESU4 IB") {
+        //   console.log({ newNotional, accumualteNotional, price: trade["Price"], averageCost, mtdAmount });
+        // }
         trade["Average Cost MTD"] = averageCost;
 
         accumualteNotional += newNotional;

@@ -21,7 +21,7 @@ router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: 
     let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | any = req.query.sort || "order";
     let sign: any = req.query.sign || 1;
     let conditions: any = req.query || {};
-    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, "back office", null, "portfolio-main");
+    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, "back office", null, "portfolio_main");
     if (report.error) {
       res.send({ error: report.error });
     } else {
@@ -46,7 +46,7 @@ router.get("/summary-portfolio", verifyToken, async (req: Request, res: Response
 
     date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
 
-    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, "front office", null, "portfolio-main");
+    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, "front office", null, "portfolio_main");
     if (report.error) {
       res.send({ error: report.error });
     } else {
@@ -71,7 +71,7 @@ router.get("/summary-exposure-portfolio", verifyToken, async (req: Request, res:
     }
 
     date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
-    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, "exposure", null, "portfolio-main");
+    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, "exposure", null, "portfolio_main");
     if (report.error) {
       res.send({ error: report.error });
     } else {
@@ -96,7 +96,7 @@ router.get("/performers-portfolio", verifyToken, async (req: Request, res: Respo
       date = getDateTimeInMongoDBCollectionFormat(new Date());
     }
     date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
-    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, view, type, "portfolio-main");
+    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, view, type, "portfolio_main");
     if (report.error) {
       res.send({ error: report.error });
     } else {
@@ -119,7 +119,7 @@ router.get("/risk-report", verifyTokenRiskMember, async (req: Request, res: Resp
     }
 
     date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
-    let report = await getPortfolioWithAnalytics(date, sort, sign, null, "front office", null, "portfolio-main");
+    let report = await getPortfolioWithAnalytics(date, sort, sign, null, "front office", null, "portfolio_main");
 
     res.send(report);
   } catch (error: any) {
@@ -159,7 +159,7 @@ router.get("/fact-sheet", uploadToBucket.any(), verifyTokenFactSheetMember, asyn
       let twoYears = await getFactSheet({ from: from2YearsAgo, to: now, type, inception: false, mkt: false });
       let chinaPeriod = await getFactSheet({ from: from2020, to: to2YearsAgo, type, inception: false, mkt: false });
       let lastDayOfThisMonth = getLastDayOfMonth(inception.lastDateTimestamp);
-      let countrySectorMacro = await getPortfolioWithAnalytics(lastDayOfThisMonth, sort, sign, null, "fact sheet", null, "portfolio-main");
+      let countrySectorMacro = await getPortfolioWithAnalytics(lastDayOfThisMonth, sort, sign, null, "fact sheet", null, "portfolio_main");
       res.send({ countrySectorMacro: countrySectorMacro, inception: inception, fiveYears: fiveYears, twoYears: twoYears, chinaPeriod: chinaPeriod, disabled: disabled });
     }
   } catch (error: any) {

@@ -280,7 +280,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
   let mtdFXGross = Math.round((mtdfx / fund.nav) * 100000) / 1000;
   let mtdplPercentage = mtdpl / fund.nav;
   let shadawYTDNAV = (fund["share price"] - fundDetailsYTD["share price"]) / fundDetailsYTD["share price"];
-  let shadawMTDNAV = fund.nav + (mtdpl - (fund.expenses / 10000) * fund.nav);
+  let shadawMTDNAV = +fund.nav + (+mtdpl - (fund.expenses / 10000) * +fund.nav);
 
   let ytdNet = Math.round((shadawYTDNAV + mtdplPercentage - fund.expenses / 10000) * 100000) / 1000;
   let fundDetails = {

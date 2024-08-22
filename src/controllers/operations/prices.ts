@@ -17,7 +17,7 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
       return data;
     } else {
       let updatedPricePortfolio = [];
-      let action = await getPortfolioOnSpecificDate(collectionDate, null, "portfolio-main");
+      let action = await getPortfolioOnSpecificDate(collectionDate, null, "portfolio_main");
       if (action.date) {
         let portfolio = action.portfolio;
         collectionDate = action.date;
@@ -141,11 +141,11 @@ export async function updatePricesPortfolio(path: string, link: string, collecti
       let maturityType = "day/month";
       let portfolio;
       if (collectionDate) {
-        let action = await getPortfolioOnSpecificDate(collectionDate, null, "portfolio-main");
+        let action = await getPortfolioOnSpecificDate(collectionDate, null, "portfolio_main");
         portfolio = action.portfolio;
         collectionDate = action.date;
       } else {
-        portfolio = await getPortfolio("portfolio-main");
+        portfolio = await getPortfolio("portfolio_main");
       }
 
       let currencyInUSD: any = {};
@@ -198,7 +198,7 @@ export async function updatePricesPortfolio(path: string, link: string, collecti
               determineBestPrice({ brokerBidOnePrice: row["Today's Bid"], brokerBidTwoPrice: row["Broker 2 Bid"], brokerBidThreePrice: row["Broker 2 Bid"], bgnBidPrice: row["Bloomberg Bid Test"], ticker: row["BB Ticker"], brokerAskOnePrice: row["Today's Ask"], brokerAskTwoPrice: row["Broker 2 Ask"], brokerAskThreePrice: row["Broker 2 Ask"], bgnAskPrice: row["Bloomberg Ask Test"], errors, object });
             }
 
-            object["Mid"] = divider == 1 ? parseFloat(row["Today's Mid"]).toString() : ((parseFloat(object["Bid"]) + parseFloat(object["Ask"])) / 2).toString();
+            object["Mid"] = divider == 1 ? parseFloat(row["Today's Mid"]) : (object["Bid"] + object["Ask"]) / 2;
 
             object["YTM"] = row["Mid Yield call"].toString().includes("N/A") ? 0 : row["Mid Yield call"];
             object["Broker"] = row["Broker"].toString().includes("N/A") ? "" : row["Broker"];
@@ -343,12 +343,12 @@ export async function updatePricesPortfolio(path: string, link: string, collecti
 
 export async function checkLivePositions() {
   try {
-    let portfolio = await getPortfolio("portfolio-main");
+    let portfolio = await getPortfolio("portfolio_main");
     let positions: any = [];
 
     for (let index = 0; index < portfolio.length; index++) {
       let position = portfolio[index];
-      let notional = parseFloat(position["Notional Amount"]);
+      let notional = position["Notional Amount"];
       let bloombergId = position["Bloomberg ID"];
       let ticker = position["BB Ticker"];
 
