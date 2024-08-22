@@ -3,6 +3,7 @@ import { client } from "../userManagement/auth";
 import { formatDateUS, formatDateWorld } from "../common";
 import { getAllDatesSinceLastMonthLastDay, getDateTimeInMongoDBCollectionFormat } from "./common";
 import { indexPool } from "../operations/psql/operation";
+import { getCollectionDays } from "../operations/tools";
 
 export function getAverageCost(currentQuantity: number, previousQuantity: number, currentPrice: any, previousAverageCost: any) {
   if (!previousQuantity) {
@@ -230,44 +231,14 @@ export function formatUpdatedPositions(positions: any, portfolio: any, lastUpdat
   return data;
 }
 
-export async function getCollectionName(originalDate: any) {
-  const database = client.db("portfolios");
-  const targetDate = new Date(originalDate);
-  let day = targetDate.getDate();
-  let month = targetDate.getMonth() + 1;
-  let year = targetDate.getFullYear();
-  let regexPattern = `portfolio-${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
-  const cursor = database.listCollections({ name: { $regex: new RegExp(regexPattern) } });
-  const collections = await cursor.toArray();
+export async function getCollectionName(originalDate: any, portfolioId: string) {
+  let list = await getAllCollectionNames(portfolioId);
+  let day = getDateTimeInMongoDBCollectionFormat(new Date(originalDate).getTime());
+  let formatted = getCollectionDays(list);
+  let date = formatDateUS(day);
 
-  let collectionNames = [];
-  for (let index = 0; index < collections.length; index++) {
-    let collection = collections[index];
-    let collectionDateName = collection.name.split("-");
-    let collectionDate = collectionDateName[1] + "-" + collectionDateName[2] + "-" + collectionDateName[3].split(" ")[0];
-    if (originalDate.includes(collectionDate)) {
-      collectionNames.push(collection.name);
-    }
-  }
-
-  let dates: any = [];
-  for (let collectionIndex = 0; collectionIndex < collections.length; collectionIndex++) {
-    let collection = collections[collectionIndex];
-    let collectionDateName = collection.name.split("-");
-    let collectionDate = collectionDateName[1] + "/" + collectionDateName[2] + "/" + collectionDateName[3];
-
-    if (new Date(collectionDate)) {
-      dates.push(new Date(collectionDate));
-    }
-  }
-  if (dates.length == 0) {
-    return null;
-  }
-  let predecessorDate: any = new Date(Math.max.apply(null, dates));
-  if (predecessorDate) {
-    predecessorDate = getDateTimeInMongoDBCollectionFormat(new Date(predecessorDate));
-  }
-  return predecessorDate;
+  let result = formatted.find((dateList: string) => dateList.includes(date));
+  return result;
 }
 
 export function getEarliestCollectionName(originalDate: string, collections: { name: string; timestamp: number }[]): { predecessorDate: string; collectionNames: string[] } {

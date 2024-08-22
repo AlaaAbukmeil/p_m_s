@@ -4,14 +4,14 @@ import { client } from "../userManagement/auth";
 import { Position } from "../../models/position";
 import { formatDateWorld } from "../common";
 import { readPricingSheet } from "./readExcel";
-import { getPortfolio } from "./positions";
-import { getSecurityInPortfolioWithoutLocation } from "./tools";
+import { getPortfolio, insertPositionsInPortfolio } from "./positions";
+import { getSQLIndexFormat, getSecurityInPortfolioWithoutLocation } from "./tools";
 import { getPortfolioOnSpecificDate } from "../reports/portfolios";
 import { insertEditLogs } from "./logs";
 import { isInteger, isNotInteger } from "../analytics/tools";
 import { PositionBeforeFormatting, PositionInDB } from "../../models/portfolio";
 const ObjectId = require("mongodb").ObjectId;
-export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDate: string, link: string) {
+export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDate: string, link: string, portfolioId: string) {
   try {
     if (data.error) {
       return data;
@@ -56,8 +56,9 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
 
           let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
           await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames], "update_previous_prices_mufg", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExists).length, "Link: " + link);
-          let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio, collectionDate);
           console.log(updatedPricePortfolio.length, "number of positions prices updated");
+          let snapShotName = getSQLIndexFormat(`portfolio-${getDateTimeInMongoDBCollectionFormat(collectionDate)}`, portfolioId);
+          let action = await insertPositionsInPortfolio(updatedPortfolio.updatedPortfolio, portfolioId, snapShotName);
 
           return { error: updatedPortfolio.positionsThatDoNotExistsNames };
         } catch (error: any) {
@@ -73,58 +74,7 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
   }
 }
 
-export async function insertPreviousPricesUpdatesInPortfolio(updatedPortfolio: any, collectionDate: string) {
-  const database = client.db("portfolios");
-  let portfolio = updatedPortfolio;
-  // Create an array of updateOne operations
-
-  // Execute the operations in bulk
-  let day = getDateTimeInMongoDBCollectionFormat(collectionDate);
-  console.log(day, "updated collection");
-  try {
-    //so the latest updated version portfolio profits will not be copied into a new instance
-    const updatedOperations = portfolio.map((position: any) => {
-      // Start with the known filters
-      const filters: any = [];
-      // Only add the "BB Ticker" filter if it's present in the trade object
-      if (position["ISIN"]) {
-        filters.push({
-          ISIN: position["ISIN"],
-          Location: position["Location"],
-          _id: new ObjectId(position["_id"]),
-        });
-      } else if (position["BB Ticker"]) {
-        filters.push({
-          "BB Ticker": position["BB Ticker"],
-          Location: position["Location"],
-          _id: new ObjectId(position["_id"]),
-        });
-      }
-
-      return {
-        updateOne: {
-          filter: { $or: filters },
-          update: { $set: position },
-        },
-      };
-    });
-
-    let updatedCollection = database.collection(`portfolio-${day}`);
-    let updatedResult = await updatedCollection.bulkWrite(updatedOperations);
-
-    return updatedResult;
-  } catch (error: any) {
-    console.log(error);
-    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-
-    await insertEditLogs([errorMessage], "errors", dateTime, "insertPreviousPricesUpdatesInPortfolio", "controllers/operations/prices.ts");
-
-    return;
-  }
-}
-
-export async function updatePricesPortfolio(path: string, link: string, collectionDate: null | string = null) {
+export async function updatePricesPortfolio(path: string, link: string, portfolioId: string, collectionDate: null | string = null) {
   try {
     let data: any = await readPricingSheet(path);
 
@@ -141,11 +91,11 @@ export async function updatePricesPortfolio(path: string, link: string, collecti
       let maturityType = "day/month";
       let portfolio;
       if (collectionDate) {
-        let action = await getPortfolioOnSpecificDate(collectionDate, null, "portfolio_main");
+        let action = await getPortfolioOnSpecificDate(collectionDate, null, portfolioId);
         portfolio = action.portfolio;
         collectionDate = action.date;
       } else {
-        portfolio = await getPortfolio("portfolio_main");
+        portfolio = await getPortfolio(portfolioId);
       }
 
       let currencyInUSD: any = {};
@@ -317,10 +267,11 @@ export async function updatePricesPortfolio(path: string, link: string, collecti
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
         let updatedPortfolio = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
         if (collectionDate) {
+          let snapShotName = getSQLIndexFormat(`portfolio-${getDateTimeInMongoDBCollectionFormat(collectionDate)}`, portfolioId);
+          let action = await insertPositionsInPortfolio(updatedPortfolio.updatedPortfolio, portfolioId, snapShotName);
           await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames, errors], "update_previous_prices_bbg", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExists).length, "Link: " + link);
-          let insertion = await insertPreviousPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio, collectionDate);
         } else {
-          let insertion = await insertPricesUpdatesInPortfolio(updatedPortfolio.updatedPortfolio);
+          let insertion = await insertPositionsInPortfolio(updatedPortfolio.updatedPortfolio, portfolioId);
           await insertEditLogs([updatedPortfolio.positionsThatDoNotExistsNames, errors], "update_prices", dateTime, "Num of Positions that did not update: " + Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length, "Link: " + link);
         }
         if (Object.keys(updatedPortfolio.positionsThatDoNotExistsNames).length || Object.keys(errors).length) {
@@ -372,63 +323,6 @@ export async function checkLivePositions() {
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
     return { error: errorMessage };
-  }
-}
-
-export async function insertPricesUpdatesInPortfolio(updatedPortfolio: any) {
-  const database = client.db("portfolios");
-  let portfolio = updatedPortfolio;
-  let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime()));
-
-  let checkCollectionDay = await getCollectionName(day);
-  if (checkCollectionDay) {
-    day = checkCollectionDay;
-  }
-  // Create an array of updateOne operations
-
-  // Execute the operations in bulk
-  try {
-    //so the latest updated version portfolio profits will not be copied into a new instance
-    const updatedOperations = portfolio.map((position: any) => {
-      // Start with the known filters
-      const filters: any = [];
-      // Only add the "BB Ticker" filter if it's present in the trade object
-
-      if (position["ISIN"]) {
-        filters.push({
-          ISIN: position["ISIN"],
-          Location: position["Location"],
-          _id: new ObjectId(position["_id"]),
-        });
-      } else if (position["BB Ticker"]) {
-        filters.push({
-          "BB Ticker": position["BB Ticker"],
-          Location: position["Location"],
-          _id: new ObjectId(position["_id"]),
-        });
-      }
-
-      return {
-        updateOne: {
-          filter: { $or: filters },
-          update: { $set: position },
-          upsert: true,
-        },
-      };
-    });
-    console.log(day, "inserted date");
-    let updatedCollection = database.collection(`portfolio-${day}`);
-
-    let updatedResult = await updatedCollection.bulkWrite(updatedOperations);
-
-    return updatedResult;
-  } catch (error: any) {
-    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    console.log(error);
-    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-
-    await insertEditLogs([errorMessage], "errors", dateTime, "insertPricesUpdatesInPortfolio", "controllers/operations/positions.ts");
-    return "update prices error";
   }
 }
 

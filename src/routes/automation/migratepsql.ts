@@ -12,6 +12,8 @@ import { PinnedPosition } from "../../models/position";
 import { getAllCollectionNames, getEarliestCollectionName } from "../../controllers/reports/tools";
 import { getCollectionsInRange } from "../../controllers/analytics/compare/historicalData";
 import { getPortfolio } from "../../controllers/operations/positions";
+import { getCollectionDays } from "../../controllers/operations/tools";
+import { formatDateUS } from "../../controllers/common";
 
 const migrateRouter = Router();
 const { v4: uuidv4 } = require("uuid");
@@ -117,10 +119,13 @@ const { v4: uuidv4 } = require("uuid");
 // });
 
 migrateRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  let start = new Date().getTime() - 20 * 24 * 60 * 60 * 1000;
-  let end = new Date().getTime();
+  let list = await getAllCollectionNames("portfolio_main");
+  let day = getDateTimeInMongoDBCollectionFormat(new Date().getTime() - 3 * 24 * 60 * 60 * 1000);
+  let formatted = getCollectionDays(list);
+  let date = formatDateUS(day);
 
-  let list = await getPortfolio("portfolio_main");
-  res.send(list);
+  let result = formatted.find((dateList: string) => dateList.includes(date));
+
+  res.send({ formatted, day, date, result });
 });
 export default migrateRouter;

@@ -132,3 +132,8 @@ export function getDateAndOneWeekLater() {
     endDate: formattedEndDate,
   };
 }
+export function getSQLIndexFormat(date: string, portfolioId: string) {
+  let name = date.split("-");
+  let nameInDB = name[2] + "/" + name[3].split(" ")[0] + "/" + name[1];
+  return portfolioId + "_" + nameInDB.replace(/-/g, "_").replace(/\//g, "_");
+}

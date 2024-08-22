@@ -9,9 +9,11 @@ import { CentralizedTrade } from "../../models/trades";
 import { modifyTradesDueToRecalculate, updateMatchedVcons } from "./trades";
 import { insertEditLogs } from "./logs";
 import { swapMonthDay } from "../common";
-import { PositionBeforeFormatting, PositionInDB } from "../../models/portfolio";
+import { PositionBeforeFormatting, PositionInDB, PositionInSQLDB } from "../../models/portfolio";
 import { convertCentralizedToTradesSQL } from "../eblot/eblot";
-import { formatPositionsApp, indexPool, pinnedPool, portfolioPool } from "./psql/operation";
+import { formatPositionsApp, formatPositionsTOSQL, indexPool, pinnedPool, portfolioPool } from "./psql/operation";
+import { CentralizedTradeInDB } from "../../models/trades";
+import { getSQLIndexFormat } from "./tools";
 const ObjectId = require("mongodb").ObjectId;
 const { v4: uuidv4 } = require("uuid");
 
@@ -55,11 +57,11 @@ export async function getHistoricalPortfolio(date: string, portfolioId: string =
     return formatted;
   } catch (error: any) {
     console.log({ error });
-    // const dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    // console.log(error);
-    // const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    const dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.log(error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    // await insertEditLogs([errorMessage], "errors", dateTime, "getFundDetails", "controllers/operations/fund.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "getHistoricalPortfolio", "controllers/operations/positions.ts");
 
     return [];
   } finally {
@@ -119,7 +121,8 @@ export async function updatePositionPortfolio(
     gsTrades: CentralizedTrade[];
     allTrades: CentralizedTrade[];
   },
-  link: string
+  link: string,
+  portfolioId: string
 ) {
   try {
     let data = trades.allTrades;
@@ -326,7 +329,7 @@ export async function updatePositionPortfolio(
 
     try {
       let updatedPortfolio = formatUpdatedPositions(positions, portfolio, "Last Upload Trade");
-      let insertion = await insertTradesInPortfolio(updatedPortfolio.updatedPortfolio);
+      let insertion = await insertPositionsInPortfolio(updatedPortfolio.updatedPortfolio, portfolioId);
       let action1 = await insertTradesData(convertCentralizedToTradesSQL(trades.vconTrades), "vcons");
       try {
         await updateMatchedVcons(trades.vconTrades);
@@ -346,7 +349,7 @@ export async function updatePositionPortfolio(
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
       let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
       if (!errorMessage.toString().includes("Batch cannot be empty")) {
-        await insertEditLogs([errorMessage], "errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts 1");
+        await insertEditLogs([errorMessage], "errors", dateTime, "insertPositionsInPortfolio", "controllers/operations/positions.ts 1");
       }
 
       return { error: error.toString() };
@@ -357,72 +360,182 @@ export async function updatePositionPortfolio(
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
     if (!errorMessage.toString().includes("Batch cannot be empty")) {
-      await insertEditLogs([errorMessage], "errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts 2");
+      await insertEditLogs([errorMessage], "errors", dateTime, "insertPositionsInPortfolio", "controllers/operations/positions.ts 2");
     }
     return { error: error.toString() };
   }
 }
 
-export async function insertTradesInPortfolio(trades: any) {
-  const database = client.db("portfolios");
-
-  // Create an array of updateOne operations
-  let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 0 * 24 * 60 * 60 * 1000));
-
-  let checkCollectionDay = await getCollectionName(day);
-  if (checkCollectionDay) {
-    day = checkCollectionDay;
-  }
-
-  let operations = trades
-    .filter((trade: any) => trade["Location"])
-    .map((trade: any) => {
-      // Start with the known filters
-      let filters: any = [];
-
-      // If "ISIN", "BB Ticker", or "BB Ticker" exists, check for both the field and "Location"
-      if (trade["ISIN"]) {
-        filters.push({
-          ISIN: trade["ISIN"],
-          Location: trade["Location"],
-          _id: new ObjectId(trade["_id"]),
-        });
-      } else if (trade["BB Ticker"]) {
-        filters.push({
-          "BB Ticker": trade["BB Ticker"],
-          Location: trade["Location"],
-          _id: new ObjectId(trade["_id"]),
-        });
-      }
-      if (filters.length > 0) {
-        return {
-          updateOne: {
-            filter: { $or: filters },
-            update: { $set: trade },
-            upsert: true,
-          },
-        };
-      }
-    });
-
-  // Execute the operations in bulk
+export async function insertPositionsInPortfolio(positions: PositionBeforeFormatting[], portfolioId: string, snapShotInput = "") {
+  const client = await portfolioPool();
   try {
-    const date = day;
-    console.log(`portfolio-${date}`);
-    console.log(operations, "operations inserted date");
-    const historicalReportCollection = database.collection(`portfolio-${date}`);
-    let action = await historicalReportCollection.bulkWrite(operations);
+    let formattedPositions = formatPositionsTOSQL(positions);
+    let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 0 * 24 * 60 * 60 * 1000));
 
-    return action;
+    let checkCollectionDay = await getCollectionName(day, portfolioId);
+    if (checkCollectionDay) {
+      day = checkCollectionDay;
+    } else {
+      //insert in index
+    }
+    let snapShot = snapShotInput || getSQLIndexFormat(day, portfolioId);
+    await client.query("BEGIN");
+
+    const createTableQuery = `
+          CREATE TABLE IF NOT EXISTS "${day}" PARTITION OF ${portfolioId}
+          FOR VALUES IN ('${snapShot}');
+      `;
+    await client.query(createTableQuery);
+    await client.query("COMMIT");
+
+    for (const element of formattedPositions) {
+      const insertQuery = `
+      INSERT INTO public.positions (
+        id, portfolio_id, portfolio_snapshot_time, location, isin, cusip, bloomberg_id,
+        bid, mid, ask, bloomberg_mid_bgn, notional_amount, average_cost, bb_ticker,
+        cr01, dv01, broker, call_date, country, coupon_rate, currency, entry_price,
+        entry_yield, fx_rate, fitch_bond_rating, fitch_outlook, interest, issuer,
+        last_price_update, last_upload_trade, maturity, moddys_outlook, moodys_bond_rating,
+        moodys_outlook, bbg_composite_rating, sp_bond_rating, sp_outlook, oas, original_face,
+        sector, strategy, ytm, ytw, z_spread, notes, coupon_duration, asset_class, pin,
+        issuers_country, coupon_frequency, previous_settle_date, next_settle_date, cost_mtd,
+        security_description, type
+      )
+      VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+        $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38,
+        $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55
+      )
+      ON CONFLICT (bb_ticker, location)
+      DO UPDATE SET
+        id = EXCLUDED.id,
+        portfolio_id = EXCLUDED.portfolio_id,
+        portfolio_snapshot_time = EXCLUDED.portfolio_snapshot_time,
+        isin = EXCLUDED.isin,
+        cusip = EXCLUDED.cusip,
+        bloomberg_id = EXCLUDED.bloomberg_id,
+        bid = EXCLUDED.bid,
+        mid = EXCLUDED.mid,
+        ask = EXCLUDED.ask,
+        bloomberg_mid_bgn = EXCLUDED.bloomberg_mid_bgn,
+        notional_amount = EXCLUDED.notional_amount,
+        average_cost = EXCLUDED.average_cost,
+        cr01 = EXCLUDED.cr01,
+        dv01 = EXCLUDED.dv01,
+        broker = EXCLUDED.broker,
+        call_date = EXCLUDED.call_date,
+        country = EXCLUDED.country,
+        coupon_rate = EXCLUDED.coupon_rate,
+        currency = EXCLUDED.currency,
+        entry_price = EXCLUDED.entry_price,
+        entry_yield = EXCLUDED.entry_yield,
+        fx_rate = EXCLUDED.fx_rate,
+        fitch_bond_rating = EXCLUDED.fitch_bond_rating,
+        fitch_outlook = EXCLUDED.fitch_outlook,
+        interest = EXCLUDED.interest,
+        issuer = EXCLUDED.issuer,
+        last_price_update = EXCLUDED.last_price_update,
+        last_upload_trade = EXCLUDED.last_upload_trade,
+        maturity = EXCLUDED.maturity,
+        moddys_outlook = EXCLUDED.moddys_outlook,
+        moodys_bond_rating = EXCLUDED.moodys_bond_rating,
+        moodys_outlook = EXCLUDED.moodys_outlook,
+        bbg_composite_rating = EXCLUDED.bbg_composite_rating,
+        sp_bond_rating = EXCLUDED.sp_bond_rating,
+        sp_outlook = EXCLUDED.sp_outlook,
+        oas = EXCLUDED.oas,
+        original_face = EXCLUDED.original_face,
+        sector = EXCLUDED.sector,
+        strategy = EXCLUDED.strategy,
+        ytm = EXCLUDED.ytm,
+        ytw = EXCLUDED.ytw,
+        z_spread = EXCLUDED.z_spread,
+        notes = EXCLUDED.notes,
+        coupon_duration = EXCLUDED.coupon_duration,
+        asset_class = EXCLUDED.asset_class,
+        pin = EXCLUDED.pin,
+        issuers_country = EXCLUDED.issuers_country,
+        coupon_frequency = EXCLUDED.coupon_frequency,
+        previous_settle_date = EXCLUDED.previous_settle_date,
+        next_settle_date = EXCLUDED.next_settle_date,
+        cost_mtd = EXCLUDED.cost_mtd,
+        security_description = EXCLUDED.security_description,
+        type = EXCLUDED.type;
+    `;
+
+      let idTest = uuidv4();
+      await client.query(insertQuery, [
+        idTest,
+        portfolioId,
+        snapShot,
+        element.location,
+        element.isin,
+        element.cusip,
+        element.bloomberg_id,
+        element.bid,
+        element.mid,
+        element.ask,
+        element.bloomberg_mid_bgn,
+        element.notional_amount,
+        element.average_cost,
+        element.bb_ticker,
+        element.cr01,
+        element.dv01,
+        element.broker,
+        element.call_date,
+        element.country,
+        element.coupon_rate,
+        element.currency,
+        JSON.stringify(element.entry_price),
+        element.entry_yield,
+        element.fx_rate,
+        element.fitch_bond_rating,
+        element.fitch_outlook,
+        JSON.stringify(element.interest),
+        element.issuer,
+        element.last_price_update,
+        element.last_upload_trade,
+        element.maturity,
+        element.moddys_outlook,
+        element.moodys_bond_rating,
+        element.moodys_outlook,
+        element.bbg_composite_rating,
+        element.sp_bond_rating,
+        element.sp_outlook,
+        element.oas,
+        element.original_face,
+        element.sector,
+        element.strategy,
+        element.ytm,
+        element.ytw,
+        element.z_spread,
+        element.notes,
+        element.coupon_duration,
+        element.asset_class,
+        element.pin,
+        element.issuers_country,
+        element.coupon_frequency,
+        element.previous_settle_date,
+        element.next_settle_date,
+        JSON.stringify(element.cost_mtd),
+        element.security_description,
+        element.type,
+      ]);
+    }
+    await client.query("COMMIT");
+
+    return;
   } catch (error: any) {
     console.log(error);
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
     if (!errorMessage.toString().includes("Batch cannot be empty")) {
-      await insertEditLogs([errorMessage], "errors", dateTime, "insertTradesInPortfolio", "controllers/operations/positions.ts 3");
+      await insertEditLogs([errorMessage], "errors", dateTime, "insertPositionsInPortfolio", "controllers/operations/positions.ts 3");
     }
 
     return [];
+  } finally {
+    client.release();
   }
 }
 
@@ -601,8 +714,8 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     portfolio[positionIndex] = positionInPortfolio;
     await insertEditLogs(changes, editedPosition["Event Type"], dateTime, editedPosition["Edit Note"], positionInPortfolio["BB Ticker"] + " " + positionInPortfolio["Location"]);
-
-    let action = await insertTradesInPortfolioAtASpecificDateBasedOnID(portfolio, `portfolio-${earliestPortfolioName.predecessorDate}`);
+    let snapShotName = getSQLIndexFormat(`portfolio-${earliestPortfolioName.predecessorDate}`, portfolioId);
+    let action = await insertPositionsInPortfolio(portfolio, portfolioId, snapShotName);
     if (action) {
       return { status: 200 };
     } else {
@@ -690,113 +803,14 @@ export async function getPinnedPositions() {
   }
 }
 
-export async function insertTradesInPortfolioAtASpecificDateBasedOnID(trades: any, date: string) {
-  const database = client.db("portfolios");
-
-  let operations = trades
-    .filter((trade: any) => trade["Location"])
-    .map((trade: any) => {
-      // Start with the known filters
-      let filters: any = [];
-
-      // If "ISIN", "BB Ticker", or "Issue" exists, check for both the field and "Location"
-      if (trade["ISIN"]) {
-        filters.push({
-          _id: new ObjectId(trade["_id"].toString()),
-        });
-      }
-
-      return {
-        updateOne: {
-          filter: { $or: filters },
-          update: { $set: trade },
-          upsert: true,
-        },
-      };
-    });
-
-  // Execute the operations in bulk
-  try {
-    const historicalReportCollection = database.collection(date);
-    let action = await historicalReportCollection.bulkWrite(operations);
-    console.log(action);
-    return action;
-  } catch (error: any) {
-    console.log(error);
-    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-
-    await insertEditLogs([errorMessage], "errors", dateTime, "insertTradesInPortfolioAtASpecificDateBasedOnID", "controllers/operations/positions.ts");
-
-    return [];
-  }
-}
-
-export async function insertTradesInPortfolioAtASpecificDate(trades: any, date: string) {
-  const database = client.db("portfolios");
-
-  let operations = trades
-    .filter((trade: any) => trade["Location"])
-    .map((trade: any) => {
-      // Start with the known filters
-      let filters: any = [];
-
-      // If "ISIN", "BB Ticker", or "Issue" exists, check for both the field and "Location"
-      if (trade["ISIN"]) {
-        filters.push({
-          ISIN: trade["ISIN"],
-          Location: trade["Location"],
-        });
-      } else if (trade["BB Ticker"]) {
-        filters.push({
-          "BB Ticker": trade["BB Ticker"],
-          Location: trade["Location"],
-        });
-      }
-
-      return {
-        updateOne: {
-          filter: { $or: filters },
-          update: { $set: trade },
-          upsert: true,
-        },
-      };
-    });
-
-  // Execute the operations in bulk
-  try {
-    const historicalReportCollection = database.collection(date);
-    let action = await historicalReportCollection.bulkWrite(operations);
-
-    return action;
-  } catch (error: any) {
-    console.log(error);
-    //BULK error is expected
-
-    return [];
-  }
-}
-
 export async function readCalculatePosition(data: CentralizedTrade[], date: string, isin: any, location: any, tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs", portfolioId: string) {
   try {
     let positions: any = [];
-    const database = client.db("portfolios");
     let allCollectionNames = await getAllCollectionNames(portfolioId);
 
     let earliestPortfolioName = await getEarliestCollectionName(date, allCollectionNames);
 
-    console.log(earliestPortfolioName.predecessorDate, "get edit portfolio");
-    const reportCollection = database.collection(`portfolio-${earliestPortfolioName.predecessorDate}`);
-
-    let portfolio = await reportCollection
-      .aggregate([
-        {
-          $sort: {
-            "BB Ticker": 1, // replace 'BB Ticker' with the name of the field you want to sort alphabetically
-          },
-        },
-      ])
-      .toArray();
+    let portfolio: PositionBeforeFormatting[] = await getHistoricalPortfolio(earliestPortfolioName.predecessorDate, portfolioId, true);
 
     let triadaIds: any = [];
 
@@ -927,18 +941,8 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
       }
     }
     try {
-      console.log(positions);
-      for (let index = 0; index < portfolio.length; index++) {
-        let position = portfolio[index];
-        if (position["ISIN"].trim() == isin.trim() && position["Location"] == location.trim()) {
-          portfolio[index] = positions[0];
-          portfolio[index]["Quantity"] = portfolio[index]["Notional Amount"];
-
-          // console.log(portfolio[index], "updateed", `portfolio-${earliestPortfolioName.predecessorDate}`);
-        }
-      }
-
-      let action = await insertTradesInPortfolioAtASpecificDate(portfolio, `portfolio-${earliestPortfolioName.predecessorDate}`);
+      let snapShotName = getSQLIndexFormat(`portfolio-${earliestPortfolioName.predecessorDate}`, portfolioId);
+      let action = await insertPositionsInPortfolio(portfolio, portfolioId, snapShotName);
       let modifyTradesAction = await modifyTradesDueToRecalculate(data, tradeType);
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
       await insertEditLogs([], "recalculate_position", dateTime, "", data[0]["BB Ticker"] + " " + data[0]["Location"]);
@@ -979,31 +983,173 @@ export async function insertFXPosition(position: any, date: any, portfolioId: st
   };
   fxPositions.Interest[today] = parseInt(position["Notional Amount"]);
 
-  const database = client.db("portfolios");
   let day = getDateTimeInMongoDBCollectionFormat(new Date(today));
   let allCollectionNames = await getAllCollectionNames(portfolioId);
 
   let checkCollectionDay = await getEarliestCollectionName(day, allCollectionNames);
-  console.log(checkCollectionDay, "chec");
   if (checkCollectionDay) {
     day = checkCollectionDay.predecessorDate;
   }
+
   // Create an array of updateOne operations
-
-  // Execute the operations in bulk
+  const client = await portfolioPool();
   try {
-    //so the latest updated version portfolio profits will not be copied into a new instance
+    let formattedPositions = formatPositionsTOSQL([...fxPositions]);
+    let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 0 * 24 * 60 * 60 * 1000));
 
-    console.log(day, "inserted date");
-    let updatedCollection = database.collection(`portfolio-${day}`);
+    let checkCollectionDay = await getCollectionName(day, portfolioId);
+    if (checkCollectionDay) {
+      day = checkCollectionDay;
+    } else {
+      //insert in index
+    }
+    let snapShot = getSQLIndexFormat(day, portfolioId);
+    await client.query("BEGIN");
 
-    let updatedResult = await updatedCollection.insertOne(fxPositions);
-    console.log(updatedResult, "fx position added");
-    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    const createTableQuery = `
+          CREATE TABLE IF NOT EXISTS "${day}" PARTITION OF ${portfolioId}
+          FOR VALUES IN ('${snapShot}');
+      `;
+    await client.query(createTableQuery);
+    await client.query("COMMIT");
 
-    await insertEditLogs([fxPositions], "fx_position", dateTime, "insertFXPosition", "controllers/operations/positions.ts");
+    for (const element of formattedPositions) {
+      const insertQuery = `
+      INSERT INTO public.positions (
+        id, portfolio_id, portfolio_snapshot_time, location, isin, cusip, bloomberg_id,
+        bid, mid, ask, bloomberg_mid_bgn, notional_amount, average_cost, bb_ticker,
+        cr01, dv01, broker, call_date, country, coupon_rate, currency, entry_price,
+        entry_yield, fx_rate, fitch_bond_rating, fitch_outlook, interest, issuer,
+        last_price_update, last_upload_trade, maturity, moddys_outlook, moodys_bond_rating,
+        moodys_outlook, bbg_composite_rating, sp_bond_rating, sp_outlook, oas, original_face,
+        sector, strategy, ytm, ytw, z_spread, notes, coupon_duration, asset_class, pin,
+        issuers_country, coupon_frequency, previous_settle_date, next_settle_date, cost_mtd,
+        security_description, type
+      )
+      VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+        $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38,
+        $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55
+      )
+      ON CONFLICT (bb_ticker, location)
+      DO UPDATE SET
+        id = EXCLUDED.id,
+        portfolio_id = EXCLUDED.portfolio_id,
+        portfolio_snapshot_time = EXCLUDED.portfolio_snapshot_time,
+        isin = EXCLUDED.isin,
+        cusip = EXCLUDED.cusip,
+        bloomberg_id = EXCLUDED.bloomberg_id,
+        bid = EXCLUDED.bid,
+        mid = EXCLUDED.mid,
+        ask = EXCLUDED.ask,
+        bloomberg_mid_bgn = EXCLUDED.bloomberg_mid_bgn,
+        notional_amount = EXCLUDED.notional_amount,
+        average_cost = EXCLUDED.average_cost,
+        cr01 = EXCLUDED.cr01,
+        dv01 = EXCLUDED.dv01,
+        broker = EXCLUDED.broker,
+        call_date = EXCLUDED.call_date,
+        country = EXCLUDED.country,
+        coupon_rate = EXCLUDED.coupon_rate,
+        currency = EXCLUDED.currency,
+        entry_price = EXCLUDED.entry_price,
+        entry_yield = EXCLUDED.entry_yield,
+        fx_rate = EXCLUDED.fx_rate,
+        fitch_bond_rating = EXCLUDED.fitch_bond_rating,
+        fitch_outlook = EXCLUDED.fitch_outlook,
+        interest = EXCLUDED.interest,
+        issuer = EXCLUDED.issuer,
+        last_price_update = EXCLUDED.last_price_update,
+        last_upload_trade = EXCLUDED.last_upload_trade,
+        maturity = EXCLUDED.maturity,
+        moddys_outlook = EXCLUDED.moddys_outlook,
+        moodys_bond_rating = EXCLUDED.moodys_bond_rating,
+        moodys_outlook = EXCLUDED.moodys_outlook,
+        bbg_composite_rating = EXCLUDED.bbg_composite_rating,
+        sp_bond_rating = EXCLUDED.sp_bond_rating,
+        sp_outlook = EXCLUDED.sp_outlook,
+        oas = EXCLUDED.oas,
+        original_face = EXCLUDED.original_face,
+        sector = EXCLUDED.sector,
+        strategy = EXCLUDED.strategy,
+        ytm = EXCLUDED.ytm,
+        ytw = EXCLUDED.ytw,
+        z_spread = EXCLUDED.z_spread,
+        notes = EXCLUDED.notes,
+        coupon_duration = EXCLUDED.coupon_duration,
+        asset_class = EXCLUDED.asset_class,
+        pin = EXCLUDED.pin,
+        issuers_country = EXCLUDED.issuers_country,
+        coupon_frequency = EXCLUDED.coupon_frequency,
+        previous_settle_date = EXCLUDED.previous_settle_date,
+        next_settle_date = EXCLUDED.next_settle_date,
+        cost_mtd = EXCLUDED.cost_mtd,
+        security_description = EXCLUDED.security_description,
+        type = EXCLUDED.type;
+    `;
 
-    return updatedResult;
+      let idTest = uuidv4();
+      await client.query(insertQuery, [
+        idTest,
+        portfolioId,
+        snapShot,
+        element.location,
+        element.isin,
+        element.cusip,
+        element.bloomberg_id,
+        element.bid,
+        element.mid,
+        element.ask,
+        element.bloomberg_mid_bgn,
+        element.notional_amount,
+        element.average_cost,
+        element.bb_ticker,
+        element.cr01,
+        element.dv01,
+        element.broker,
+        element.call_date,
+        element.country,
+        element.coupon_rate,
+        element.currency,
+        JSON.stringify(element.entry_price),
+        element.entry_yield,
+        element.fx_rate,
+        element.fitch_bond_rating,
+        element.fitch_outlook,
+        JSON.stringify(element.interest),
+        element.issuer,
+        element.last_price_update,
+        element.last_upload_trade,
+        element.maturity,
+        element.moddys_outlook,
+        element.moodys_bond_rating,
+        element.moodys_outlook,
+        element.bbg_composite_rating,
+        element.sp_bond_rating,
+        element.sp_outlook,
+        element.oas,
+        element.original_face,
+        element.sector,
+        element.strategy,
+        element.ytm,
+        element.ytw,
+        element.z_spread,
+        element.notes,
+        element.coupon_duration,
+        element.asset_class,
+        element.pin,
+        element.issuers_country,
+        element.coupon_frequency,
+        element.previous_settle_date,
+        element.next_settle_date,
+        JSON.stringify(element.cost_mtd),
+        element.security_description,
+        element.type,
+      ]);
+    }
+    await client.query("COMMIT");
+
+    return;
   } catch (error: any) {
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     console.log(error);
@@ -1011,6 +1157,9 @@ export async function insertFXPosition(position: any, date: any, portfolioId: st
     if (!errorMessage.toString().includes("Batch cannot be empty")) {
       await insertEditLogs([errorMessage], "errors", dateTime, "insertFXPosition", "controllers/operations/positions.ts");
     }
+    return [];
+  } finally {
+    client.release();
   }
 }
 

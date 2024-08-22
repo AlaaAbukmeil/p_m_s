@@ -136,7 +136,7 @@ positionsRouter.post("/upload-trades", verifyToken, uploadToBucket.any(), async 
     if (allTrades?.error) {
       res.send({ error: allTrades.error });
     } else {
-      let action: any = await updatePositionPortfolio(allTrades, link);
+      let action: any = await updatePositionPortfolio(allTrades, link, "portfolio_main");
       if (action?.error) {
         console.log(action);
         res.send({ error: action.error });
@@ -156,7 +156,7 @@ positionsRouter.post("/update-prices", verifyToken, uploadToBucket.any(), async 
     const fileName = req.files[0].filename;
     const path = await generateSignedUrl(fileName);
     let link = bucket + "/" + fileName + "?authuser=2";
-    let action: any = await updatePricesPortfolio(path, link);
+    let action: any = await updatePricesPortfolio(path, link, "portfolio_main");
     if (action?.error) {
       res.send({ error: action.error });
     } else {
@@ -180,8 +180,6 @@ positionsRouter.post("/live-prices", verifyToken, uploadToBucket.any(), async (r
   }
 });
 
-
-
 positionsRouter.post("/update-previous-prices", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let collectionDate: string = req.body.collectionDate;
@@ -194,7 +192,7 @@ positionsRouter.post("/update-previous-prices", verifyToken, uploadToBucket.any(
     let link = bucket + "/" + fileName + "?authuser=2";
 
     if (!data.error) {
-      let action = collectionType == "MUFG" ? await updatePreviousPricesPortfolioMUFG(data, collectionDate, link) : await updatePricesPortfolio(path, link, collectionDate);
+      let action = collectionType == "MUFG" ? await updatePreviousPricesPortfolioMUFG(data, collectionDate, link, "portfolio_main") : await updatePricesPortfolio(path, link, "portfolio_main", collectionDate);
       if (action?.error && Object.keys(action.error).length) {
         res.send({ error: action.error, status: 404 });
       } else {
