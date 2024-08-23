@@ -1,6 +1,0 @@
-# // docker build -t gcr.io/app-backend-414212/tapi .
-# docker push gcr.io/app-backend-414212/tapi 
-docker exec -it <container_name_or_id> bash
-docker tag tapi triadadeveloper/tapi:tag
-docker run -p host_port:container_port image_name
-docker run -p 8080:8080

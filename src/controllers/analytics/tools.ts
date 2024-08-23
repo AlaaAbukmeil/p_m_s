@@ -1,4 +1,5 @@
-import { PinnedPosition } from "../../models/position";
+import { PositionBeforeFormatting } from "../../models/portfolio";
+import { PositionAfterFormating } from "../../models/position";
 import { isNotNullOrUndefined, parsePercentage } from "../common";
 
 export function sortObjectBasedOnKey(object: any) {
@@ -455,7 +456,7 @@ export function assignAssetClass(locationCode: string, group: any, assetClassOrd
       assetClass = "";
     let unrlzdPositionsNum = group.filter((position: any) => position["Notional Amount"] != 0).length;
     for (let index = 0; index < group.length; index++) {
-      let position: PinnedPosition = group[index];
+      let position: PositionAfterFormating = group[index];
       let duration = parseFloat(position["Duration"]) / 100;
 
       if (position["Notional Amount"] != 0) {
@@ -466,7 +467,7 @@ export function assignAssetClass(locationCode: string, group: any, assetClassOrd
           if ((position["Type"].includes("UST") || position["Strategy"] == "RV") && position["Notional Amount"] <= 0 && unrlzdPositionsNum > 1) {
             return assetClassOrder.RV + alphabetIndex(position["BB Ticker"]);
           }
-          
+
           if (position["Type"].includes("UST") && position["Notional Amount"] <= 0 && (unrlzdPositionsNum == 1 || position["Strategy"] == "Global Hedge")) {
             return assetClassOrder.UST_GLOBAL;
           }
@@ -530,7 +531,7 @@ export function assignAssetClass(locationCode: string, group: any, assetClassOrd
         }
       }
     }
-    let position: PinnedPosition = group[0];
+    let position: PositionAfterFormating = group[0];
     let duration = parseFloat(position["Duration"]) / 100;
 
     if (rlzd == 2) {

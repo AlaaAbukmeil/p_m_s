@@ -177,7 +177,7 @@ const verifyTokenFactSheetMember = (req, res, next) => {
         }
         if (linkToken) {
             let cookie = {
-                maxAge: 3 * 24 * 60 * 60 * 1000,
+                maxAge: 7 * 24 * 60 * 60 * 1000,
                 httpOnly: process.env.PRODUCTION === "production",
                 secure: process.env.PRODUCTION === "production",
                 sameSite: "lax",

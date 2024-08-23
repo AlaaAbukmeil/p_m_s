@@ -1,4 +1,4 @@
-import { Analysis, FundMTD, PositionBeforeFormatting, PositionGeneralFormat } from "../../../models/portfolio";
+import { Analysis, FundDetails, FundMTD, PositionBeforeFormatting, PositionGeneralFormat } from "../../../models/portfolio";
 import { formatDateUS, parsePercentage } from "../../common";
 import { calculateAccruedSinceInception } from "../../reports/portfolios";
 import { parseBondIdentifier } from "../../reports/tools";
@@ -8,8 +8,9 @@ import { getTopWorst } from "./frontOffice";
 import { adjustMarginMultiplier, nomuraRuleMargin } from "../cash/rules";
 import { sumTable } from "./riskTables";
 
-export function formatGeneralTable({ portfolio, date, fund, dates, conditions, fundDetailsYTD, ytdinterest }: { portfolio: PositionBeforeFormatting[]; date: any; fund: any; dates: any; conditions: any; fundDetailsYTD: any; ytdinterest: any }): { portfolio: PositionGeneralFormat[]; fundDetails: FundMTD; currencies: any } {
+export function formatGeneralTable({ portfolio, date, fund, dates, conditions, fundDetailsYTD, ytdinterest }: { portfolio: PositionBeforeFormatting[]; date: any; fund: FundDetails; dates: any; conditions: any; fundDetailsYTD: FundDetails; ytdinterest: any }): { portfolio: PositionGeneralFormat[]; fundDetails: FundMTD; currencies: any } {
   let currencies: any = {};
+  // console.log({ fund, fundDetailsYTD , result:(fund["share price"] - fundDetailsYTD["share price"])});
   let dv01Sum = 0;
   let mtdpl = 0,
     mtdrlzd = 0,
@@ -33,7 +34,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     //to make it consistent with previous versions
     let originalFace = position["Original Face"] || 1;
     let usdRatio = parseFloat(position["FX Rate"] || position["holdPortfXrate"]) || 1;
-    let holdBackRatio = (position["Asset Class"] || position["Rating Class"]) == "Illiquid" ? parseFloat(fund.holdBackRatio) : 1;
+    let holdBackRatio = (position["Asset Class"] || position["Rating Class"]) == "Illiquid" ? fund.holdBackRatio : 1;
     position["Interest"] = position["Interest"] ? position["Interest"] : {};
     position["Quantity"] = position["Notional Amount"] / originalFace;
     position["Interest"];
@@ -273,21 +274,21 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
       cr01Sum += parseFloat(position["CR01"] || 0);
     }
   }
-  let dayplPercentage = Math.round((daypl / parseFloat(fund.nav)) * 100000) / 1000;
-  let dayFXGross = Math.round((dayfx / parseFloat(fund.nav)) * 100000) / 1000;
+  let dayplPercentage = Math.round((daypl / fund.nav) * 100000) / 1000;
+  let dayFXGross = Math.round((dayfx / fund.nav) * 100000) / 1000;
 
-  let mtdFXGross = Math.round((mtdfx / parseFloat(fund.nav)) * 100000) / 1000;
-  let mtdplPercentage = mtdpl / parseFloat(fund.nav);
-  let shadawYTDNAV = (parseFloat(fund["a2 price"]) - parseFloat(fundDetailsYTD["a2 price"])) / parseFloat(fundDetailsYTD["a2 price"]);
-  let shadawMTDNAV = parseFloat(fund.nav) + (mtdpl - (fund.expenses / 10000) * fund.nav);
+  let mtdFXGross = Math.round((mtdfx / fund.nav) * 100000) / 1000;
+  let mtdplPercentage = mtdpl / fund.nav;
+  let shadawYTDNAV = (fund["share price"] - fundDetailsYTD["share price"]) / fundDetailsYTD["share price"];
+  let shadawMTDNAV = +fund.nav + (+mtdpl - (fund.expenses / 10000) * +fund.nav);
 
   let ytdNet = Math.round((shadawYTDNAV + mtdplPercentage - fund.expenses / 10000) * 100000) / 1000;
   let fundDetails = {
-    nav: parseFloat(fund.nav),
-    holdbackRatio: parseFloat(fund.holdBackRatio),
+    nav: fund.nav,
+    holdbackRatio: fund.holdBackRatio,
     shadawNAV: Math.round(shadawMTDNAV),
     month: fund.month,
-    borrowAmount: Math.round(parseFloat((fund["borrowing amount"] || "").replace(/,/g, ""))),
+    borrowAmount: fund["borrowing amount"],
 
     mtdplPercentage: padInteger(mtdplPercentage * 100),
     mtdpl: Math.round(mtdpl * 1000) / 1000,
@@ -295,17 +296,17 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     mtdurlzd: Math.round(mtdurlzd * 1000) / 1000,
     mtdint: Math.round(mtdint * 1000) / 1000,
     mtdfx: Math.round(mtdfx * 1000) / 1000,
-    mtdintPercentage: Math.round((mtdint / parseFloat(fund.nav)) * 100000) / 1000,
+    mtdintPercentage: Math.round((mtdint / fund.nav) * 100000) / 1000,
     mtdFXGross: mtdFXGross,
 
     ytdNet: padInteger(ytdNet),
     ytdint: Math.round(ytdinterest * 1000) / 1000,
-    ytdintPercentage: Math.round((ytdinterest / parseFloat(fund.nav)) * 100000) / 1000,
+    ytdintPercentage: Math.round((ytdinterest / fund.nav) * 100000) / 1000,
 
     dayplPercentage: padInteger(dayplPercentage),
     dayFXGross: dayFXGross,
     dayint: Math.round(dayint * 1000) / 1000,
-    dayintPercentage: Math.round((dayint / parseFloat(fund.nav)) * 100000) / 1000,
+    dayintPercentage: Math.round((dayint / fund.nav) * 100000) / 1000,
     daypl: Math.round(daypl * 1000) / 1000,
     dayfx: Math.round(dayfx * 1000) / 1000,
     dayurlzd: Math.round(dayurlzd * 1000) / 1000,
@@ -322,8 +323,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     gmvOfNav: Math.round((lmv - smv) * 10000) / (100 * fund.nav),
     nmvOfNav: Math.round(nmv * 10000) / (100 * fund.nav),
     ytdEstInt: ytdEstInt,
-    ytdEstIntPercentage: Math.round((ytdEstInt / parseFloat(fund.nav)) * 100000) / 1000 || 0,
-    "3 month treasury rate": fund["3 month treasury rate"],
+    ytdEstIntPercentage: Math.round((ytdEstInt / fund.nav) * 100000) / 1000 || 0,
   };
   let updatedPortfolio: PositionGeneralFormat[] | any = portfolio;
   return { portfolio: updatedPortfolio, fundDetails: fundDetails, currencies: currencies };
@@ -948,7 +948,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         });
       }
       let totalTicker = "";
-      groupedByLocation[locationCode]["Pin"] = "pinned";
+      groupedByLocation[locationCode]["Pin"] = "not_pinned";
       for (let groupPositionIndex = 0; groupPositionIndex < groupedByLocation[locationCode].data.length; groupPositionIndex++) {
         if (groupedByLocation[locationCode].data[groupPositionIndex]["Notional Amount"] == 0) {
           groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = "#C5E1A5";
@@ -973,8 +973,14 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
           groupedByLocation[locationCode]["ISIN"] = groupedByLocation[locationCode].data[groupPositionIndex]["ISIN"];
         }
 
-        if (groupedByLocation[locationCode].data[groupPositionIndex]["Pin"] == "not pinned") {
-          groupedByLocation[locationCode]["Pin"] = "not pinned";
+        if (groupedByLocation[locationCode]["id"]) {
+          groupedByLocation[locationCode]["id"] = (groupedByLocation[locationCode]["id"] || "") + "&" + groupedByLocation[locationCode].data[groupPositionIndex]["id"];
+        } else {
+          groupedByLocation[locationCode]["id"] = groupedByLocation[locationCode].data[groupPositionIndex]["id"];
+        }
+
+        if (groupedByLocation[locationCode].data[groupPositionIndex]["Pin"] == "pinned") {
+          groupedByLocation[locationCode]["Pin"] = "pinned";
         }
         if (groupedByLocation[locationCode].data[groupPositionIndex]["Duration"] < 0) {
           groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = "red";
@@ -1008,6 +1014,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
           "Notional Amount": groupedByLocation[locationCode].groupNotional,
           ISIN: groupedByLocation[locationCode]["ISIN"],
           Pin: groupedByLocation[locationCode]["Pin"],
+          id: groupedByLocation[locationCode]["id"]
         };
         if (groupedByLocation[locationCode].groupSpreadTZ || groupedByLocation[locationCode].groupSpreadTZ == 0) {
           newObject["Current Spread (T)"] = Math.round(groupedByLocation[locationCode].groupSpreadTZ * 100);

@@ -14,3 +14,19 @@ export interface SampleSD {
 export interface SampleSDAndVolitality extends SampleSD {
   volitality: number;
 }
+
+export interface FactSheetBenchMarkDataInDB {
+  timestamp: number;
+  date: string;
+  data: { main: number };
+  fund: string;
+  id: string;
+
+}
+export interface FactSheetFundDataInDB {
+  timestamp: number;
+  date: string;
+  data: { [key: string]: number };
+  fund: string;
+  id: string;
+}

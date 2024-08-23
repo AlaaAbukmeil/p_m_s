@@ -1,52 +1,49 @@
 import { ObjectId } from "mongodb";
 import { client } from "../userManagement/auth";
+import { automationPool } from "./psql/operation";
 
-export async function editFactSheetDisplay(data: any): Promise<any> {
+export async function editFactSheetDisplay(data: { command: "view"; disabled: boolean }): Promise<any> {
   try {
-    const database = client.db("commands");
-    const reportCollection = database.collection("factsheet");
-    const command = data["command"];
-    const updates = {} as any;
-    const tableTitles = ["disabled"];
-    // Build the updates object based on `data` and `tableTitles`
-    for (const title of tableTitles) {
-      if (data[title] !== "" && data[title] != null) {
-        updates[title] = data[title];
-      }
-    }
+    const client = await automationPool.connect();
+    try {
+      let upsertQuery = `
+      INSERT INTO public.commands (command, status, type)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (command)
+      DO UPDATE SET status = EXCLUDED.status, type = EXCLUDED.type;
+      `;
+      const values = [data["command"], data["disabled"], "factsheet-display"];
 
-    if (Object.keys(updates).length === 0) {
-      throw new Error("No valid fields to update");
+      const result = await client.query(upsertQuery, values);
+      console.log({ result: result.rows });
+      return result.rows;
+    } finally {
+      client.release();
     }
-    // Update the document with the built updates object
-    const updateResult = await reportCollection.updateOne({ command: command }, { $set: updates }, { upsert: true });
-
-    if (updateResult.matchedCount === 0) {
-      return { error: "Document does not exist" };
-    } else if (updateResult.modifiedCount === 0) {
-      return { error: "Document not updated. It may already have the same values" };
-    }
-
-    return updateResult;
   } catch (error: any) {
-    return { error: error.message }; // Return the error message
+    console.log(error);
   }
 }
 
 export async function getFactSheetDisplay(commandId: string): Promise<any> {
   try {
-    const database = client.db("commands");
-    const reportCollection = database.collection("factsheet");
+    const client = await automationPool.connect();
+    try {
+      const query = `
+  SELECT *
+  FROM public.commands
+  WHERE command = $1
+  LIMIT 1;
+`;
+      const values = [commandId];
 
-    // Find the document based on the command ObjectId
-    const document = await reportCollection.findOne({ command: commandId });
-
-    if (document) {
-      return document.disabled;
-    } else {
-      return true;
+      const result = await client.query(query, values);
+      console.log({ result_to_show: result.rows });
+      return result.rows[0].status == "true" ? true : false;
+    } finally {
+      client.release();
     }
   } catch (error: any) {
-    return { success: false, error: error.message };
+    console.log(error);
   }
 }

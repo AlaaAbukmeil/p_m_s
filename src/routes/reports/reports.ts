@@ -21,7 +21,7 @@ router.get("/portfolio", verifyToken, async (req: Request, res: Response, next: 
     let sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | any = req.query.sort || "order";
     let sign: any = req.query.sign || 1;
     let conditions: any = req.query || {};
-    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, "back office", null);
+    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, "back office", null, "portfolio_main");
     if (report.error) {
       res.send({ error: report.error });
     } else {
@@ -47,7 +47,7 @@ router.get("/summary-portfolio", verifyToken, async (req: Request, res: Response
 
     date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
 
-    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, "front office", null);
+    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, "front office", null, "portfolio_main");
     if (report.error) {
       res.send({ error: report.error });
     } else {
@@ -72,7 +72,7 @@ router.get("/summary-exposure-portfolio", verifyToken, async (req: Request, res:
     }
 
     date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
-    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, "exposure", null);
+    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, "exposure", null, "portfolio_main");
     if (report.error) {
       res.send({ error: report.error });
     } else {
@@ -97,7 +97,7 @@ router.get("/performers-portfolio", verifyToken, async (req: Request, res: Respo
       date = getDateTimeInMongoDBCollectionFormat(new Date());
     }
     date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
-    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, view, type);
+    let report = await getPortfolioWithAnalytics(date, sort, sign, conditions, view, type, "portfolio_main");
     if (report.error) {
       res.send({ error: report.error });
     } else {
@@ -120,7 +120,7 @@ router.get("/risk-report", verifyTokenRiskMember, async (req: Request, res: Resp
     }
 
     date = getDateTimeInMongoDBCollectionFormat(new Date(date)).split(" ")[0] + " 23:59";
-    let report = await getPortfolioWithAnalytics(date, sort, sign, null, "front office", null);
+    let report = await getPortfolioWithAnalytics(date, sort, sign, null, "front office", null, "portfolio_main");
 
     res.send(report);
   } catch (error: any) {
@@ -160,7 +160,7 @@ router.get("/fact-sheet", uploadToBucket.any(), verifyTokenFactSheetMember, asyn
       let twoYears = await getFactSheet({ from: from2YearsAgo, to: now, type, inception: false, mkt: false });
       let chinaPeriod = await getFactSheet({ from: from2020, to: to2YearsAgo, type, inception: false, mkt: false });
       let lastDayOfThisMonth = getLastDayOfMonth(inception.lastDateTimestamp);
-      let countrySectorMacro = await getPortfolioWithAnalytics(lastDayOfThisMonth, sort, sign, null, "fact sheet", null);
+      let countrySectorMacro = await getPortfolioWithAnalytics(lastDayOfThisMonth, sort, sign, null, "fact sheet", null, "portfolio_main");
       res.send({ countrySectorMacro: countrySectorMacro, inception: inception, fiveYears: fiveYears, twoYears: twoYears, chinaPeriod: chinaPeriod, disabled: disabled });
     }
   } catch (error: any) {
@@ -177,6 +177,34 @@ router.get("/fact-sheet-mkt", uploadToBucket.any(), verifyTokenFactSheetMember, 
     let disabled = await getFactSheetDisplay("view");
 
     if (accessRole == "member (factsheet report)" && !shareClass.includes(type)) {
+      res.sendStatus(401);
+    } else {
+      if (accessRole != "member (factsheet report)") {
+        type = shareClasses.includes(type) ? type : "a2";
+        disabled = false;
+      }
+
+      const now = new Date();
+      const from2015: any = new Date("2015-04-01").getTime();
+
+      let inception = await getFactSheet({ from: from2015, to: now, type, inception: true, mkt: true });
+
+      res.send({ inception: inception, disabled: disabled });
+    }
+  } catch (error: any) {
+    console.log(error);
+    res.send({ error: error.toString(), disabled: true });
+  }
+});
+
+router.get("/fact-sheet-mkt", uploadToBucket.any(), verifyTokenFactSheetMember, async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let type = req.query.type;
+    let shareClass = req.shareClass;
+    let accessRole = req.accessRole;
+    let disabled = await getFactSheetDisplay("view");
+
+    if ((accessRole == "member (factsheet report)" && !shareClass.includes(type)) || (accessRole == "member (factsheet report)" && !shareClass.includes("mkt"))) {
       res.sendStatus(401);
     } else {
       if (accessRole != "member (factsheet report)") {

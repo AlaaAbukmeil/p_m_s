@@ -131,13 +131,13 @@ export function getPositionAggregated(isin: string, portfolio: PositionInDB[], d
       if (position["Coupon Frequency"]) {
         couponFrequency = position["Coupon Frequency"];
       }
-      notional += parseFloat(position["Notional Amount"]);
+      notional += position["Notional Amount"];
       locations += position["Location"] + " ";
       ticker = position["BB Ticker"];
       if (position["Security Description"]) {
         note = position["Security Description"];
       }
-      coupon = parseFloat(position["Coupon Rate"]) / 100;
+      coupon = position["Coupon Rate"] / 100;
       if (position["Coupon Frequency"]) {
         frequency = parseFloat(position["Coupon Frequency"]);
       }
@@ -149,7 +149,7 @@ export function getPositionAggregated(isin: string, portfolio: PositionInDB[], d
         let timestamp = new Date(date).getTime();
 
         if (timestamp < previousSettleDateTimestamp && date != previousSettleDate) {
-          totalSettled += parseFloat(position["Interest"][date]);
+          totalSettled += position["Interest"][date];
         }
       }
     }
@@ -175,31 +175,6 @@ export function sumUpCouponPaymentRecords(couponPaymentRecords: NomuraCashReconc
     result[isin].ticker = ticker;
   }
   return result;
-}
-
-export async function getMTDRlzd(portfolio: PositionBeforeFormatting[] | any, date: string) {
-  for (let index = 0; index < portfolio.length; index++) {
-    let position = portfolio[index];
-    let identifier = position["ISIN"];
-
-    let trades = await getRlzdTrades(`vcons`, identifier, position["Location"], date, parseFloat(position["MTD Mark"]) * 100, portfolio[index]["MTD Notional"]);
-    position["MTD Rlzd"] = trades.totalRow["Rlzd P&L Amount"].toString();
-  }
-}
-export async function findTrade(tradeType: string, tradeTriadaId: string): Promise<CentralizedTrade[]> {
-  try {
-    const database = client.db("trades_v_2");
-    const reportCollection = database.collection(tradeType);
-    const query = { "Triada Trade Id": { $regex: tradeTriadaId, $options: "i" } };
-
-    const documents = await reportCollection.find(query).toArray();
-
-    return documents;
-  } catch (error: any) {
-    console.log(error);
-
-    return [];
-  }
 }
 
 export function convertNomuraDateToAppTradeDate(nomuraDate: string): string {

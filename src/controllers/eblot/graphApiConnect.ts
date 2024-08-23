@@ -56,7 +56,7 @@ function getMonthAbbreviation(date: string) {
 }
 
 export async function getVcons(token: string, start_time: any, end_time: any, trades: any): Promise<Vcon[]> {
-  let portfolio = await getPortfolio();
+  let portfolio = await getPortfolio("portfolio_main");
   try {
     let url = `https://graph.microsoft.com/v1.0/users/vcons@triadacapital.com/messages?$filter=contains(subject,'New BB') and receivedDateTime ge ${format_date_ISO(start_time)} and receivedDateTime le ${format_date_ISO(end_time)}&$top=1000000`;
     let action = await axios.get(url, {
@@ -109,7 +109,7 @@ export async function getVcons(token: string, start_time: any, end_time: any, tr
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "Get Vcons", "controllers/eblot/graphApiConnect.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "Get Vcons", "controllers/eblot/graphApiConnect.ts");
 
     return [];
   }
@@ -141,7 +141,7 @@ export async function getFxTrades(token: string, start_time: string, end_time: s
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getFxTrades", "controllers/eblot/graphApiConnect.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "getFxTrades", "controllers/eblot/graphApiConnect.ts");
 
     return [];
   }

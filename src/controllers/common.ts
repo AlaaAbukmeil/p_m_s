@@ -196,7 +196,7 @@ export const verifyTokenFactSheetMember = (req: Request | any, res: Response, ne
     }
     if (linkToken) {
       let cookie: CookieOptions = {
-        maxAge: 3 * 24 * 60 * 60 * 1000,
+        maxAge: 7 * 24 * 60 * 60 * 1000,
         httpOnly: process.env.PRODUCTION === "production",
         secure: process.env.PRODUCTION === "production", // Set to true if using HTTPS
         sameSite: "lax",

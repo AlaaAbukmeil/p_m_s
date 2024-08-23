@@ -40,11 +40,11 @@ analyticsRouter.post("/update-compare", uploadToBucket.any(), async (req: Reques
     let start = new Date(req.body.start).getTime();
     let end = new Date(req.body.end).getTime();
 
-    let list = await getCollectionsInRange(start, end);
+    let list = await getCollectionsInRange(start, end, "portfolio_main");
 
     for (let index = 0; index < list.length; index++) {
       let date = list[index].split(" ")[0] + " 23:59";
-      let report: any = await getPortfolioWithAnalytics(date, "order", 1, {}, "back office", null);
+      let report: any = await getPortfolioWithAnalytics(date, "order", 1, {}, "back office", null, "portfolio_main");
       let name = report.collectionName.split(" ");
       let analytics = breakdown(report.portfolio, report.fundDetails, name);
       analytics.name = name[0];

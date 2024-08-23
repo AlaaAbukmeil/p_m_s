@@ -13,7 +13,7 @@ logRouter.post("/automation-logs", verifyToken, uploadToBucket.any(), async (req
     let data = req.body;
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
 
-    await insertEditLogs([data.errorMessage], "Errors", dateTime, data.functionName, data.functionPosition);
+    await insertEditLogs([data.errorMessage], "errors", dateTime, data.functionName, data.functionPosition);
 
     res.sendStatus(200);
   } catch (error) {

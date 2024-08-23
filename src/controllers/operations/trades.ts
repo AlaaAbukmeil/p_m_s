@@ -3,54 +3,34 @@ import { client } from "../userManagement/auth";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { CentralizedTrade, NewIssue } from "../../models/trades";
 import { insertEditLogs } from "./logs";
+import { tradesPool } from "./psql/operation";
+import { convertCentralizedToTradesSQL, convertTradesSQLToCentralized } from "../eblot/eblot";
 
-export async function getAllTradesForSpecificPosition(tradeType: string, isin: string, location: string, date: string) {
+export async function getAllTradesForSpecificPosition(tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs", isin: string, location: string, date: string, portfolioId: string) {
+  const client = await tradesPool.connect();
   try {
-    // Connect to the MongoDB client
     let timestamp = new Date(date).getTime();
 
-    // Access the 'structure' database
-    const database = client.db("trades_v_2");
+    const query = `
+      SELECT *
+      FROM public.trades_${tradeType}
+      WHERE isin = $1 AND location = $2 AND timestamp <= $3 AND portfolio_id = $4;
+    `;
 
-    // Access the collection named by the 'customerId' parameter
-    const collection = database.collection(tradeType);
+    const { rows } = await client.query(query, [isin, location, timestamp, portfolioId]);
+    let trades: any = convertTradesSQLToCentralized(rows, "uploaded_to_app");
 
-    // Perform your operations, such as find documents in the collection
-    // This is an example operation that fetches all documents in the collection
-    // Empty query object means "match all documents"
-    const options = {}; // You can set options for the find operation if needed
-    const query = { ISIN: isin, Location: location, timestamp: { $lt: timestamp } }; // Replace yourIdValue with the actual ID you're querying
-    let results = await collection.find(query, options).toArray();
-    for (let index = 0; index < results.length; index++) {
-      let trade = results[index];
-      if (!trade["BB Ticker"] && trade["Issue"]) {
-        trade["BB Ticker"] = trade["Issue"];
-        delete trade["Issue"];
-      }
-    }
-    if (results.length) {
-      let buySellGuess = results[0]["ISIN"].toString().toLowerCase().includes("ib") ? "S" : results[0]["BB Ticker"].toString().split(" ")[0] == "T" ? "S" : "B";
+    return trades;
+  } catch (error: any) {
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.error(error);
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-      results = results.sort((tradeA: CentralizedTrade, tradeB: CentralizedTrade) => {
-        let tradeDateA = new Date(tradeA["Trade Date"]).getTime();
-        let tradeDateB = new Date(tradeB["Trade Date"]).getTime();
-        if (tradeDateA == tradeDateB) {
-          if (tradeA["B/S"] == buySellGuess) {
-            return -1;
-          } else {
-            return 1;
-          }
-        }
-        return tradeDateA - tradeDateB;
-      });
-      // The 'results' variable now contains an array of documents from the collection
-      return results;
-    } else {
-      return [];
-    }
-  } catch (error) {
-    // Handle any errors that occurred during the operation
-    console.error("An error occurred while retrieving data from MongoDB:", error);
+    await insertEditLogs([errorMessage], "errors", dateTime, "getAllTradesForSpecificPosition", "controllers/operations/trades.ts");
+
+    return [];
+  } finally {
+    client.release();
   }
 }
 export async function getCancelVcons(start: number, end: number) {
@@ -82,45 +62,41 @@ export async function getCancelVcons(start: number, end: number) {
     return [];
   }
 }
-export async function getTrade(tradeType: string, tradeId: string) {
+export async function getTrade(tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs", tradeId: string, portfolioId: string) {
+  const client = await tradesPool.connect();
   try {
-    // Connect to the MongoDB client
+    const query = `
+      SELECT *
+      FROM public.trades_${tradeType}
+      WHERE id = $1 AND portfolio_id = $2;
+    `;
 
-    // Access the 'structure' database
-    const database = client.db("trades_v_2");
+    const { rows } = await client.query(query, [tradeId, portfolioId]);
+    let trades: any = convertTradesSQLToCentralized(rows, "uploaded_to_app");
 
-    // Access the collection named by the 'customerId' parameter
-    const collection = database.collection(tradeType);
-
-    // Perform your operations, such as find documents in the collection
-    // This is an example operation that fetches all documents in the collection
-    // Empty query object means "match all documents"
-    const options = {}; // You can set options for the find operation if needed
-    const query = { _id: new ObjectId(tradeId) }; // Replace yourIdValue with the actual ID you're querying
-    const results = await collection.find(query, options).toArray();
-    for (let index = 0; index < results.length; index++) {
-      let trade = results[index];
-      if (!trade["BB Ticker"] && trade["Issue"]) {
-        trade["BB Ticker"] = trade["Issue"];
-        delete trade["Issue"];
-      }
-    }
-    // The 'results' variable now contains an array of documents from the collection
-    return results[0];
+    return trades[0];
   } catch (error) {
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.error(error);
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    await insertEditLogs([errorMessage], "errors", dateTime, "getTrade", "controllers/operations/trades.ts");
+
     // Handle any errors that occurred during the operation
     console.error("An error occurred while retrieving data from MongoDB:", error);
+  } finally {
+    client.release();
   }
 }
 
-export async function editTrade(editedTrade: any, tradeType: any, logs = false, source = "main") {
+export async function editTrade(editedTrade: any, tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs", logs = false, source = "main", portfolioId: string) {
   try {
-    let tradeInfo = await getTrade(tradeType, editedTrade["_id"]);
-    let unEditableParams = ["_id", "Updated Notional", "B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Triada Trade Id", "Seq No", "ISIN", "Currency", "Yield", "Accrued Interest", "Trade Type", "App Check Test", "Trade App Status", "Nomura Upload Status", "Broker Email Status", "App Check Test", "Front Office Check", "Trade Type"];
+    let tradeInfo = await getTrade(tradeType, editedTrade["Id"], portfolioId);
+    let unEditableParams = ["Id", "Updated Notional", "B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Triada Trade Id", "Seq No", "ISIN", "Currency", "Yield", "Accrued Interest", "Trade Type", "App Check Test", "Trade App Status", "Nomura Upload Status", "Broker Email Status", "App Check Test", "Front Office Check", "Trade Type"];
 
     if (tradeInfo) {
       let beforeModify = JSON.parse(JSON.stringify(tradeInfo));
-      beforeModify["_id"] = new ObjectId(beforeModify["_id"]);
+      beforeModify["id"] = new ObjectId(beforeModify["id"]);
 
       let centralizedBlotKeys: any = [
         "B/S",
@@ -179,329 +155,278 @@ export async function editTrade(editedTrade: any, tradeType: any, logs = false, 
       if (!changes) {
         return { error: "The trade is still the same." };
       }
+      let newTradeInSQL = convertCentralizedToTradesSQL([tradeInfo])[0];
+      const query = `
+    UPDATE public.trades_${tradeType}
+    SET 
+      b_s = $1,
+      bb_ticker = $2,
+      location = $3,
+      trade_date = $4,
+      trade_time = $5,
+      settle_date = $6,
+      price = $7,
+      notional_amount = $8,
+      settlement_amount = $9,
+      principal = $10,
+      counter_party = $11,
+      seq_no = $12,
+      isin = $13,
+      cuisp = $14,
+      currency = $15,
+      yield = $16,
+      accrued_interest = $17,
+      original_face = $18,
+      comm_fee = $19,
+      
+      broker_full_name_account = $20,
+      broker_email = $21,
+      broker_email_status = $22,
+      settlement_venue = $23,
+      primary_market = $24
+      WHERE id = $25;
+  `;
 
-      // Access the 'structure' database
-      const database = client.db("trades_v_2");
+      const values = [
+        newTradeInSQL.b_s,
+        newTradeInSQL.bb_ticker,
+        newTradeInSQL.location,
+        newTradeInSQL.trade_date,
+        newTradeInSQL.trade_time,
+        newTradeInSQL.settle_date,
+        newTradeInSQL.price,
+        newTradeInSQL.notional_amount,
+        newTradeInSQL.settlement_amount,
+        newTradeInSQL.principal,
+        newTradeInSQL.counter_party,
+        newTradeInSQL.seq_no,
+        newTradeInSQL.isin,
+        newTradeInSQL.cuisp,
+        newTradeInSQL.currency,
+        newTradeInSQL.yield,
+        newTradeInSQL.accrued_interest,
+        newTradeInSQL.original_face,
+        newTradeInSQL.comm_fee,
 
-      // Access the collection named by the 'customerId' parameter
-      const collection = database.collection(tradeType);
+        newTradeInSQL.broker_full_name_account,
+        newTradeInSQL.broker_email,
+        newTradeInSQL.broker_email_status,
+        newTradeInSQL.settlement_venue,
+        newTradeInSQL.primary_market,
 
-      let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-      if (logs) {
-        await insertEditLogs(changesText, "Edit Trade", dateTime, tradeInfo["Edit Note"], tradeInfo["BB Ticker"] + " " + tradeInfo["Location"]);
-      }
+        newTradeInSQL.id,
+      ];
 
-      let action = await collection.updateOne(
-        { _id: tradeInfo["_id"] }, // Filter to match the document
-        { $set: tradeInfo } // Update operation
-      );
+      const client = await tradesPool.connect();
+      try {
+        const res = await client.query(query, values);
 
-      if (action) {
-        return { error: null };
-      } else {
-        return {
-          error: "unexpected error, please contact Triada team",
-        };
+        if (res.rowCount > 0) {
+          return { error: null };
+        } else {
+          return { error: "unexpected error, please contact Triada team" };
+        }
+      } catch (error: any) {
+        let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+        console.error(error);
+        let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+        await insertEditLogs([errorMessage], "errors", dateTime, "editTrade", "controllers/operations/trades.ts");
+        return { error: error.toString() };
+      } finally {
+        client.release();
       }
     } else {
       return { error: "Trade does not exist, please referesh the page!" };
     }
   } catch (error: any) {
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.error(error);
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    await insertEditLogs([errorMessage], "errors", dateTime, "editTrade", "controllers/operations/trades.ts");
     console.log(error);
     return { error: error };
   }
 }
 
-export async function deleteTrade(tradeType: string, tradeId: string, tradeIssue: string, location: string) {
+export async function deleteTrade(tradeType: string, tradeId: string, ticker: string, location: string) {
+  const client = await tradesPool.connect();
   try {
-    // Connect to the MongoDB client
+    const query = `
+      DELETE FROM public.trades_${tradeType}
+      WHERE id = $1;
+    `;
 
-    // Get the database and the specific collection
-    const database = client.db("trades_v_2");
-    const collection = database.collection(tradeType);
+    const result = await client.query(query, [tradeId]);
 
-    let query = { _id: new ObjectId(tradeId) };
-
-    // Delete the document with the specified _id
-    const result = await collection.deleteOne(query);
-
-    if (result.deletedCount === 0) {
+    if (result.rowCount === 0) {
       return { error: `Trade does not exist!` };
     } else {
-      let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-      await insertEditLogs(["deleted"], "Edit Trade", dateTime, "deleted", tradeIssue + " " + location);
+      const dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+      await insertEditLogs(["deleted"], "edit_trade", dateTime, "deleted", `${ticker} ${location}`);
       console.log("deleted");
       return { error: null };
     }
-  } catch (error) {
-    console.error(`An error occurred while deleting the document: ${error}`);
-    return { error: "Unexpected error 501" };
+  } catch (error: any) {
+    console.error(`An error occurred while deleting the trade: ${error}`);
+    const dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    await insertEditLogs([error], "errors", dateTime, "deleteTrade", `${ticker} ${location}`);
+    return { error: error.toString() };
+  } finally {
+    client.release();
   }
 }
-export async function deleteNewTrade(triadaTradeId: string) {
+//tessting
+export async function modifyTradesDueToRecalculate(trades: any, tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs") {
+  const client = await tradesPool.connect();
+
   try {
-    // Connect to the MongoDB client
+    const updatePromises = trades.map(async (trade: any) => {
+      let tradeInSql = convertCentralizedToTradesSQL([trade])[0];
+      const query = `
+        UPDATE public.trades_${tradeType}
+        SET
+         updated_notional = $1
+        WHERE id = $2;
+      `;
 
-    // Get the database and the specific collection
-    const database = client.db("trades_v_2");
-    const collection = database.collection("new_trades");
+      const values = [tradeInSql.updated_notional, tradeInSql.id];
 
-    let query = { "Triada Trade Id": triadaTradeId };
-
-    // Delete the document with the specified _id
-    const result = await collection.deleteOne(query);
-
-    if (result.deletedCount === 0) {
-      return { error: `Trade does not exist!` };
-    } else {
-      return { error: null };
-    }
-  } catch (error) {
-    console.error(`An error occurred while deleting the document: ${error}`);
-    return { error: "Unexpected error 501" };
-  }
-}
-export async function modifyTradesDueToRecalculate(trades: any, tradeType: any) {
-  const database = client.db("trades_v_2");
-
-  let operations = trades.map((trade: any) => {
-    // Start with the known filters
-    let filters: any = [];
-
-    // If "ISIN", "BB Ticker", or "Issue" exists, check for both the field and "Location"
-
-    filters.push({
-      _id: new ObjectId(trade["_id"].toString()),
+      return client.query(query, values);
     });
 
-    return {
-      updateOne: {
-        filter: { $or: filters },
-        update: { $set: trade },
-        upsert: false,
-      },
-    };
-  });
-
-  // Execute the operations in bulk
-  try {
-    const historicalReportCollection = database.collection(tradeType);
-    let action = await historicalReportCollection.bulkWrite(operations);
-    console.log(action);
-    return action;
+    const results = await Promise.all(updatePromises);
+    console.log(results);
+    return results;
   } catch (error: any) {
     console.log(error);
-    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    const dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "modifyTradesDueToRecalculate", "controllers/operations/operations.ts");
-
+    await insertEditLogs([errorMessage], "errors", dateTime, "modifyTradesDueToRecalculate", "controllers/operations/operations.ts");
     return "";
+  } finally {
+    client.release();
   }
 }
-export async function allTrades(start: any, end: any): Promise<CentralizedTrade[]> {
+
+export async function getAllTrades(from: number, to: number, portfolioId: string, tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs" | "" = ""): Promise<CentralizedTrade[]> {
+  const client = await tradesPool.connect();
+
   try {
-    const database = client.db("trades_v_2");
-    const reportCollection1 = database.collection("vcons");
-    const reportCollection2 = database.collection("ib");
-    const reportCollection3 = database.collection("emsx");
-    const query = {
-      timestamp: {
-        $gte: new Date(start).getTime() - 5 * 24 * 60 * 60 * 1000, // Greater than or equal to "from" timestamp
-        $lte: new Date(end).getTime() + 5 * 24 * 60 * 60 * 1000, // Less than or equal to "to" timestamp
-      },
-    };
-    const document1 = await reportCollection1.find(query).toArray();
-    const document2 = await reportCollection2.find(query).toArray();
-    const document3 = await reportCollection3.find(query).toArray();
-    let document = [...document1.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime()), ...document2.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime()), ...document3.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime())];
-    for (let index = 0; index < document.length; index++) {
-      let trade = document[index];
-      if (!trade["BB Ticker"] && trade["Issue"]) {
-        trade["BB Ticker"] = trade["Issue"];
-        delete trade["Issue"];
-      }
+    const query = `
+      SELECT *
+      FROM public.trades${tradeType ? "_" + tradeType : ""}
+      WHERE timestamp >= $1 AND timestamp <= $2 AND portfolio_id = $3;
+    `;
+
+    const { rows } = await client.query(query, [from, to, portfolioId]);
+    let trades: any = convertTradesSQLToCentralized(rows, "uploaded_to_app");
+    for (let index = 0; index < trades.length; index++) {
+      trades[index]["Front Office Check"] = true;
     }
-    return document;
+    return trades;
   } catch (error: any) {
-    console.log(error);
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.error(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "Get Vcons", "controllers/operations/mufgOperations.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "getAllTrades", "controllers/eblot/eblot.ts");
+
     return [];
+  } finally {
+    client.release();
   }
 }
 
-export async function allTradesCDS(start: any, end: any): Promise<CentralizedTrade[]> {
+export async function addNomuraGeneratedDateToTrades(fromTimestamp: number | null = 0, toTimestamp: number | null = 0) {
+  const client = await tradesPool.connect();
+
   try {
-    const database = client.db("trades_v_2");
-    const reportCollection1 = database.collection("gs");
-    const query = {
-      timestamp: {
-        $gte: new Date(start).getTime() - 5 * 24 * 60 * 60 * 1000, // Greater than or equal to "from" timestamp
-        $lte: new Date(end).getTime() + 5 * 24 * 60 * 60 * 1000, // Less than or equal to "to" timestamp
-      },
-    };
-    const document1 = await reportCollection1.find(query).toArray();
-    let document = [...document1.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime())];
-    for (let index = 0; index < document.length; index++) {
-      let trade = document[index];
-      if (!trade["BB Ticker"] && trade["Issue"]) {
-        trade["BB Ticker"] = trade["Issue"];
-        delete trade["Issue"];
-      }
-    }
-    return document;
-  } catch (error: any) {
-    console.log(error);
-    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    let query = `
+      UPDATE public.trades_vcons
+      SET last_nomura_generated = $1
+    `;
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "Get Vcons", "controllers/operations/mufgOperations.ts");
-    return [];
-  }
-}
+    const dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    let values: any = [dateTime];
 
-export async function getTriadaTrades(tradeType: any, fromTimestamp: number | null = 0, toTimestamp: number | null = 0) {
-  const database = client.db("trades_v_2");
-
-  let options: any = [];
-
-  // If both timestamps are provided, use them to filter the results
-  if (fromTimestamp !== null && toTimestamp !== null) {
-    options.push({ timestamp: { $gte: fromTimestamp, $lte: toTimestamp } });
-    // If only fromTimestamp is provided
-  } else if (fromTimestamp !== null) {
-    options.push({ timestamp: { $gte: fromTimestamp } });
-    // If only toTimestamp is provided
-  } else if (toTimestamp !== null) {
-    options.push({ timestamp: { $lte: toTimestamp } });
-  }
-
-  let query: any = {};
-
-  // If there are any timestamp options, use them in the query
-  if (options.length > 0) {
-    query.$and = options;
-  }
-
-  let reportCollection = await database.collection(`${tradeType}`).find(query).toArray();
-  if (fromTimestamp && toTimestamp) {
-    reportCollection = reportCollection.filter((trade: any, index: any) => {
-      // Include trade if tradeDate property does not exist
-
-      // Convert tradeDate to a timestamp if necessary
-      const tradeDateTimestamp = new Date(trade["Trade Date"]).getTime();
-
-      // Check if tradeDate falls within the specified range
-      return tradeDateTimestamp >= fromTimestamp && tradeDateTimestamp <= toTimestamp;
-    });
-  }
-  for (let index = 0; index < reportCollection.length; index++) {
-    let trade = reportCollection[index];
-    trade["Trade App Status"] = "uploaded_to_app";
-    trade["BB Ticker"] = trade["BB Ticker"] ? trade["BB Ticker"] : trade["Issue"];
-    trade["Notional Amount"] = trade["Notional Amount"] && parseFloat(trade["Notional Amount"]) != 0 ? trade["Notional Amount"] : trade["Quantity"];
-    delete trade["_id"];
-    delete trade["Quantity"];
-    delete trade["Issue"];
-    delete trade["timestamp"];
-  }
-  return reportCollection;
-}
-export async function addNomuraGeneratedDateToTrades(tradeType: any, fromTimestamp: number | null = 0, toTimestamp: number | null = 0) {
-  const database = client.db("trades_v_2");
-
-  let options: any = [];
-
-  // If both timestamps are provided, use them to filter the results
-  if (fromTimestamp !== null && toTimestamp !== null) {
-    options.push({ timestamp: { $gte: fromTimestamp, $lte: toTimestamp } });
-    // If only fromTimestamp is provided
-  } else if (fromTimestamp !== null) {
-    options.push({ timestamp: { $gte: fromTimestamp } });
-    // If only toTimestamp is provided
-  } else if (toTimestamp !== null) {
-    options.push({ timestamp: { $lte: toTimestamp } });
-  }
-
-  let query: any = {};
-
-  // If there are any timestamp options, use them in the query
-  if (options.length > 0) {
-    query.$and = options;
-  }
-
-  const update = {
-    $set: {
-      "Last Nomura Generated": getDateTimeInMongoDBCollectionFormat(new Date()),
-    },
-  };
-
-  let action = await database.collection(tradeType).updateMany(query, update);
-  console.log({ action, query });
-}
-export async function addNewTrade(data: any): Promise<any> {
-  try {
-    const database = client.db("trades_v_2");
-    const reportCollection = database.collection("new_trades");
-    // Insert the new document into the collection
-    const insertResult = await reportCollection.insertOne(data);
-
-    // The insertOne operation returns an InsertOneResult object
-    // You can check the result by inspecting `insertedCount` and `insertedId`
-    if (insertResult.insertedCount === 0) {
-      return { error: "Failed to insert document" };
+    if (fromTimestamp !== null && toTimestamp !== null) {
+      query += ` WHERE timestamp BETWEEN $2 AND $3`;
+      values.push(fromTimestamp, toTimestamp);
+    } else if (fromTimestamp !== null) {
+      query += ` WHERE timestamp >= $2`;
+      values.push(fromTimestamp);
+    } else if (toTimestamp !== null) {
+      query += ` WHERE timestamp <= $2`;
+      values.push(toTimestamp);
     }
 
-    return { success: true, insertedId: insertResult.insertedId, error: null };
+    const action = await client.query(query, values);
+    console.log({ action, query });
   } catch (error: any) {
-    return { error: error.message }; // Return the error message
+    console.error(`An error occurred: ${error.message}`);
+  } finally {
+    client.release();
   }
 }
 
 export async function numberOfNewTrades(): Promise<any> {
+  const client = await tradesPool.connect();
+
   try {
-    const database = client.db("trades_v_2");
-    const reportCollection = database.collection("new_trades");
+    const query = `
+      SELECT *
+      FROM public.trades_written_blotter
+      WHERE resolved = false;
+    `;
 
-    // Define the query to count documents with 'Resolved' equal to an empty string
-    const query = { Resolved: "False" };
-
-    // Count the documents that match the query
-    const stats = await reportCollection.countDocuments(query);
-    return stats;
-    // The insertOne operation returns an InsertOneResult object
+    const { rows } = await client.query(query);
+    let trades: any = convertTradesSQLToCentralized(rows, "uploaded_to_app");
+    for (let index = 0; index < trades.length; index++) {
+      trades[index]["Front Office Check"] = true;
+    }
+    return trades;
   } catch (error: any) {
-    return { error: error.message }; // Return the error message
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.error(error);
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    await insertEditLogs([errorMessage], "errors", dateTime, "getAllTrades", "controllers/eblot/eblot.ts");
+
+    return [];
+  } finally {
+    client.release();
   }
 }
 
-async function getNewTrades(): Promise<CentralizedTrade[]> {
+export async function getNewTrades(): Promise<CentralizedTrade[]> {
+  const client = await tradesPool.connect();
+
   try {
-    // Connect to the MongoDB client
+    const query = `
+      SELECT *
+      FROM public.trades_written_blotter WHERE resolved = false;
+    `;
 
-    // Access the 'structure' database
-    const database = client.db("trades_v_2");
-
-    // Access the collection named by the 'customerId' parameter
-    const collection = database.collection("new_trades");
-
-    // Perform your operations, such as find documents in the collection
-    // This is an example operation that fetches all documents in the collection
-    // Empty query object means "match all documents"
-    let results = await collection.find({ Resolved: "False" }).sort({ timestamp: -1 }).toArray();
-    for (let index = 0; index < results.length; index++) {
-      results[index]["App Check Test"] = "This was inputted by front office and it did not match any new vcon";
+    const { rows } = await client.query(query);
+    let trades: any = convertTradesSQLToCentralized(rows, "uploaded_to_app");
+    for (let index = 0; index < trades.length; index++) {
+      trades[index]["App Check Test"] = "This was inputted by front office and it did not match any new vcon";
     }
 
-    // The 'results' variable now contains an array of documents from the collection
-    return results;
-  } catch (error) {
-    // Handle any errors that occurred during the operation
-    console.error("An error occurred while retrieving data from MongoDB:", error);
+    return trades;
+  } catch (error: any) {
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.error(error);
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    await insertEditLogs([errorMessage], "errors", dateTime, "getNewTrades", "controllers/eblot/eblot.ts");
+
     return [];
+  } finally {
+    client.release();
   }
 }
 
@@ -517,7 +442,7 @@ export function matchVconToNewTrade(newVcons: CentralizedTrade[], newTrades: Cen
       let settleDate = newVconTrade["Settle Date"] == newTrade["Settle Date"];
       let currency = newVconTrade["Currency"] == newTrade["Currency"];
       let isin = newVconTrade["ISIN"] == newTrade["ISIN"];
-      let price = parseFloat(newVconTrade["Price"]) == parseFloat(newTrade["Price"]);
+      let price = newVconTrade["Price"] == newTrade["Price"];
 
       if (notionalCondition && buySell && tradeDate && settleDate && currency && isin && price) {
         let object = { vconTriadaId: newVconTrade["Triada Trade Id"], newTradeTriadaId: newTrade["Triada Trade Id"] };
@@ -530,28 +455,29 @@ export function matchVconToNewTrade(newVcons: CentralizedTrade[], newTrades: Cen
 }
 
 export async function updateMatchedVcons(newVcons: CentralizedTrade[]) {
+  const client = await tradesPool.connect();
+
   try {
+    const query = `
+    UPDATE public.trades_written_blotter
+    SET resolved = true
+    WHERE triada_trade_id = $1;
+  `;
     let newTrades = await getNewTrades();
     let matchedIds = matchVconToNewTrade(newVcons, newTrades);
 
-    // Access the 'structure' database
-    const database = client.db("trades_v_2");
-
-    // Access the collection named by the 'customerId' parameter
-    const collection = database.collection("new_trades");
-
-    // Iterate over the issues array and update each document
     for (const newTrade of matchedIds) {
-      await collection.updateOne(
-        { "Triada Trade Id": newTrade["newTradeTriadaId"] }, // filter by "triada id"
-        { $set: { Resolved: "True" } } // update operation
-      );
+      const { rows } = await client.query(query, newTrade["newTradeTriadaId"]);
     }
-
-    console.log("Documents updated successfully.");
   } catch (error: any) {
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.error(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-    await insertEditLogs([errorMessage], "Errors", dateTime, "updateMatchedVcons", "controllers/operations/trades.ts");
+
+    await insertEditLogs([errorMessage], "errors", dateTime, "updateMatchedVcons", "controllers/eblot/eblot.ts");
+
+    return [];
+  } finally {
+    client.release();
   }
 }

@@ -56,7 +56,35 @@ export function generateRandomIntegers(n = 5, min = 1, max = 10) {
   return resetCode;
 }
 
-
+export async function sendRegsiterationEmail({ email, name, resetCode }: { email: any; name: any; resetCode: string }) {
+  try {
+    let date = getDateAndOneWeekLater();
+    let action = new SibApiV3Sdk.TransactionalEmailsApi().sendTransacEmail({
+      sender: { email: "IR@triadacapital.com", name: "Developer Triada" },
+      subject: `Admin Triada - Invitation `,
+      htmlContent: "<!DOCTYPE html><html><body><p>Invitation .</p></body></html>",
+      params: {
+        greeting: "Hello " + name,
+        headline: `Admin Triada Account Set Up`,
+      },
+      messageVersions: [
+        {
+          to: [
+            {
+              email: email,
+            },
+          ],
+          htmlContent: `<!DOCTYPE html><html><body>Hello ${name},<br />
+                      <p>A Triada Account was created under the email: ${email}. <br /><br /> Please login with the provided credentials and reset your password between ${date.startDate} -> ${date.endDate} . Otherwise, your account will be deleted. <br /><br /> Platform Link:  ${platform}&email=${email} </p><br /><br /> Verification Code: ${resetCode} <br />< br/> Thanks,<br /><br /> Developer</body></html>`,
+          subject: `Admin Triada - Invitation `,
+        },
+      ],
+    });
+    return { statusCode: 200 };
+  } catch (error) {
+    return error;
+  }
+}
 
 export async function sendWelcomeEmail({ email, name, resetCode }: { email: any; name: any; resetCode: any }) {
   try {

@@ -6,6 +6,7 @@ import { getPortfolioWithAnalytics } from "./portfolios";
 import { calculateAnnualizedReturn, deleteUnnecessaryValues, getMonthName, getSampleStandardDeviation, getStatistics, sortObjectByValues, transformData, updateStats } from "./tools";
 import { fiditbd, pimglba, test } from "./data";
 import { dateWithMonthOnly } from "../common";
+import { factsheetPool } from "../operations/psql/operation";
 export let beforeSwitchRatios: any = {
   a4: 1000 / 1477.16,
   a5: 1000 / 1154.61,
@@ -27,6 +28,7 @@ export let beforeSwitchRatiosMasterTwo: any = {
 };
 
 function customEditMonthlyReturn(variables: any, monthlyReturns: any) {
+  //these are the months, where triada switched, so initial should be 0. but we show performance of previous class
   if (variables[0] == "a5" || variables[0] == "a6") {
     if (monthlyReturns["06/2016"]) {
       monthlyReturns["06/2016"][variables[0]] = 2.05 / 100;
@@ -296,24 +298,39 @@ export function calculateMonthlyReturn(data: any, variables: any, fundData = fal
 }
 
 export async function getFactSheetData(collectionName: any, from: any, to: any, variable: any) {
+  // Connect to MongoDB
+  const client = await factsheetPool.connect();
+  let psqlFactSheetDBNames: any = {
+    "LEGATRUU Index": "bbg_global_aggregate",
+    "EMUSTRUU Index": "bbg_em_aggregate",
+    "BEUCTRUU Index": "bbg_em_asia",
+    "BEUYTRUU Index": "bbg_em_asia_hy",
+    "LG30TRUU Index": "bbg_global_hy",
+    "FIDITBD LX Equity": "fidelity_global_bond",
+    "PIMGLBA ID Equity": "pimco_global_bond",
+    "3 Month Treasury": "3_month_treasury",
+    Triada: "triada_main",
+    "Triada Master": "triada_master",
+    "BEBGTRUU Index": "bbg_em_global_hy",
+  };
   try {
-    // Connect to MongoDB
-    const database = client.db("factsheet");
-    const collection = database.collection(collectionName);
-
     const startDate = new Date(from).getTime();
     const endDate = new Date(to).getTime();
 
-    const query = {
-      timestamp: { $gte: startDate, $lte: endDate },
-    };
+    const query = `
+      SELECT *
+      FROM public.factsheet_${psqlFactSheetDBNames[collectionName]}
+      WHERE timestamp >= $1 AND timestamp <= $2
+      ORDER BY timestamp ASC;
+    `;
 
-    // Modify the find query to include a filter for timestamps after May 2015
-    let report = await collection.find(query).sort({ timestamp: 1 }).toArray();
-    report = report.filter((data: any) => data.data[variable] != null);
+    const result = await client.query(query, [startDate, endDate]);
+    const report = result.rows
     return report;
   } catch (error) {
-    console.error("Failed in bulk operation:", error);
+    console.error("Failed in bulk operation:", error, collectionName);
+  } finally {
+    client.release();
   }
 }
 
@@ -439,31 +456,6 @@ export function trimDate(data: any, benchmark = false, triada = false, masterTri
   return final;
 }
 
-async function updateOrInsertDataWithBulk(entries: any, collectionName: any) {
-  try {
-    // Connect to MongoDB
-    await client.connect();
-    const database = client.db("factsheet");
-    const collection = database.collection(collectionName);
-    // await collection.deleteMany({});
-    // Create bulk operations array
-    const bulkOps = entries.map((entry: any) => {
-      return {
-        updateOne: {
-          filter: { date: entry.date }, // Filter to match documents based on the date
-          update: { $set: { timestamp: entry.timestamp, data: entry.data } },
-          upsert: true, // Insert a new document if no existing document matches
-        },
-      };
-    });
-
-    // Execute bulk operations
-    const result = await collection.bulkWrite(bulkOps);
-    console.log("Bulk operation result:", result);
-  } catch (error) {
-    console.error("Failed in bulk operation:", error);
-  }
-}
 
 export function calculateOutPerformance({ benchmarks, data }: { benchmarks: any; data: any }) {
   let years = Object.keys(data);
@@ -764,34 +756,34 @@ export function trimFactSheetData(triada: any, triadaMaster: any, others: any) {
   let formmated: any = { a2: {}, a3: {}, a4: {}, a5: {}, a6: {}, "3 Month Treasury": {}, "LEGATRUU Index": {}, "EMUSTRUU Index": {}, "BEUCTRUU Index": {}, "LG30TRUU Index": {}, "BEBGTRUU Index": {}, ma2: {}, ma3: {}, ma4: {}, ma6: {} };
   for (let index = 0; index < triada.length; index++) {
     let month = triada[index].date;
-    let id = triada[index]["_id"];
+    let id = triada[index]["id"];
     let price = triada[index]["data"];
     months.push(month);
-    formmated.a2[month] = { _id: id, price: price.a2, month: month, name: "a2" };
-    formmated.a3[month] = { _id: id, price: price.a3, month: month, name: "a3" };
-    formmated.a4[month] = { _id: id, price: price.a4, month: month, name: "a4" };
-    formmated.a5[month] = { _id: id, price: price.a5, month: month, name: "a5" };
-    formmated.a6[month] = { _id: id, price: price.a6, month: month, name: "a6" };
+    formmated.a2[month] = { id: id, price: price.a2, month: month, name: "a2" };
+    formmated.a3[month] = { id: id, price: price.a3, month: month, name: "a3" };
+    formmated.a4[month] = { id: id, price: price.a4, month: month, name: "a4" };
+    formmated.a5[month] = { id: id, price: price.a5, month: month, name: "a5" };
+    formmated.a6[month] = { id: id, price: price.a6, month: month, name: "a6" };
   }
 
   for (let index = 0; index < triadaMaster.length; index++) {
     let month = triadaMaster[index].date;
-    let id = triadaMaster[index]["_id"];
+    let id = triadaMaster[index]["id"];
     let price = triadaMaster[index].data;
 
-    formmated.ma2[month] = { _id: id, price: price.ma2, month: month, name: "ma2" };
-    formmated.ma3[month] = { _id: id, price: price.ma3, month: month, name: "ma3" };
-    formmated.ma4[month] = { _id: id, price: price.ma4, month: month, name: "ma4" };
-    formmated.ma6[month] = { _id: id, price: price.ma6, month: month, name: "ma6" };
+    formmated.ma2[month] = { id: id, price: price.ma2, month: month, name: "ma2" };
+    formmated.ma3[month] = { id: id, price: price.ma3, month: month, name: "ma3" };
+    formmated.ma4[month] = { id: id, price: price.ma4, month: month, name: "ma4" };
+    formmated.ma6[month] = { id: id, price: price.ma6, month: month, name: "ma6" };
   }
 
   for (let name in others) {
     for (let index = 0; index < others[name].length; index++) {
       let month = others[name][index].date;
-      let id = others[name][index]["_id"];
+      let id = others[name][index]["id"];
       let price = others[name][index]["data"];
       formmated[name] = formmated[name] ? formmated[name] : {};
-      formmated[name][month] = { _id: id, price: price.main, month: month, name: name };
+      formmated[name][month] = { id: id, price: price.main, month: month, name: name };
     }
   }
   return { formmated: formmated, months: months };

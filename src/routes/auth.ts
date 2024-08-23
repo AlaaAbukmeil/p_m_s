@@ -2,12 +2,9 @@ import { addUser, checkIfUserExists, checkLinkRight, checkPasswordStrength, chec
 import { bucketPublic, bucketPublicBucket, generateSignedUrl, verifyToken, verifyTokenFactSheetMember } from "../controllers/common";
 import { CookieOptions, NextFunction, Router } from "express";
 import { Request, Response } from "express";
-import { readUsersSheet } from "../controllers/operations/readExcel";
 import { getDateTimeInMongoDBCollectionFormat } from "../controllers/reports/common";
 import { numberOfNewTrades } from "../controllers/operations/trades";
 import { bucketPublicTest, multerTest, uploadToBucket } from "../controllers/userManagement/tools";
-const bcrypt = require("bcrypt");
-const saltRounds: any = process.env.SALT_ROUNDS;
 const authRouter = Router();
 
 authRouter.get("/auth", uploadToBucket.any(), verifyTokenFactSheetMember, async (req: any, res: Response, next: NextFunction) => {
@@ -70,21 +67,21 @@ authRouter.post("/login", uploadToBucket.any(), async (req: Request, res: Respon
   let user: any = await checkIfUserExists(email, password);
 
   let cookie: CookieOptions = {
-    maxAge: 3 * 24 * 60 * 60 * 1000,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: process.env.PRODUCTION === "production",
     secure: process.env.PRODUCTION === "production", // Set to true if using HTTPS
     sameSite: "lax",
     path: "/",
     domain: ".triadacapital.com",
   };
+  
   res.cookie("triada.admin.cookie", user, cookie);
-
   res.send(user);
 });
 
 authRouter.post("/logout", uploadToBucket.any(), async (req: Request, res: Response, next: NextFunction) => {
   res.clearCookie("triada.admin.cookie", {
-    maxAge: 3 * 24 * 60 * 60 * 1000,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: process.env.PRODUCTION === "production",
     secure: process.env.PRODUCTION === "production", // Set to true if using HTTPS
     sameSite: "lax",
@@ -140,7 +137,7 @@ authRouter.post("/edit-user", verifyToken, uploadToBucket.any(), async (req: Req
 authRouter.post("/delete-user", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let data = req.body;
-    let action: any = await deleteUser(data["_id"], data["name"], data["email"]);
+    let action: any = await deleteUser(data["id"], data["name"], data["email"]);
     if (action.error) {
       res.send({ error: action.error, status: 404 });
     } else {
@@ -155,8 +152,9 @@ authRouter.post("/delete-user", verifyToken, uploadToBucket.any(), async (req: R
 authRouter.post("/add-user", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     let data = req.body;
-    if (data.email && data.name && data.shareClass && data.accessRole) {
-      req.body.welcome = true;
+    if (data.email && data.share_class && data.access_role_instance) {
+      req.body.welcome = false;
+      console.log(req.body);
       let action = await addUser(req.body);
       if (action.error) {
         res.send({ error: action.error });

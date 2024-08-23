@@ -1,4 +1,3 @@
-import { Position } from "../../models/position";
 import { client } from "../userManagement/auth";
 import { bucket, bucketPublic, formatDateUS, generateRandomString } from "../common";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
@@ -43,10 +42,8 @@ export function parseYYYYMMDDAndReturnMonth(dateString: string) {
   return month + 1;
 }
 
-export async function getCollectionDays(): Promise<string[]> {
+export function getCollectionDays(collections: { name: string; timestamp: number }[]): string[] {
   try {
-    const database = client.db("portfolios");
-    let collections = await database.listCollections().toArray();
     let dates: any = [];
     for (let index = 0; index < collections.length; index++) {
       let collectionTime = collections[index].name.split("portfolio");
@@ -59,12 +56,7 @@ export async function getCollectionDays(): Promise<string[]> {
 
     return dates;
   } catch (error: any) {
-    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    console.log(error);
-    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-
-    await insertEditLogs([errorMessage], "Errors", dateTime, "getCollectionDays", "controllers/operations/operations.ts");
-
+    console.log({ getCollectionDays: error });
     return [];
   }
 }
@@ -92,20 +84,7 @@ export function getSecurityInPortfolioWithoutLocation(portfolio: any, identifier
   // If a matching document was found, return it. Otherwise, return a message indicating that no match was found.
   return document.length ? document : 404;
 }
-export function getSecurityInPortfolioById(portfolio: any, id: string) {
-  let document = 404;
-  if (id == "" || !id) {
-    return document;
-  }
-  for (let index = 0; index < portfolio.length; index++) {
-    let issue = portfolio[index];
-    if (id.toString() == issue["_id"].toString()) {
-      document = issue;
-    }
-  }
-  // If a matching document was found, return it. Otherwise, return a message indicating that no match was found.
-  return document;
-}
+
 export function compareMonths(a: any, b: any) {
   // Reformat the month string to 'MM/01/YYYY' for comparison
   let reformattedMonthA = a.month.substring(5) + "/01/" + a.month.substring(0, 4);
@@ -151,4 +130,9 @@ export function getDateAndOneWeekLater() {
     startDate: formattedStartDate,
     endDate: formattedEndDate,
   };
+}
+export function getSQLIndexFormat(date: string, portfolioId: string) {
+  let name = date.split("-");
+  let nameInDB = name[2] + "/" + name[3].split(" ")[0] + "/" + name[1];
+  return portfolioId + "_" + nameInDB.replace(/-/g, "_").replace(/\//g, "_");
 }

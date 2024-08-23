@@ -1,5 +1,4 @@
 import { Capacity, FinalPositionBackOffice, PositionGeneralFormat } from "../../../models/portfolio";
-import { Position } from "../../../models/position";
 import { parsePercentage } from "../../common";
 import { parseStringWithNoSpecialCharacters, toTitleCase } from "../tools";
 
@@ -7,7 +6,7 @@ export function nomuraRuleMargin(position: PositionGeneralFormat) {
   try {
     let sector = parseStringWithNoSpecialCharacters(position["Sector"]);
     let country = parseStringWithNoSpecialCharacters(position["Country"]);
-    let spread = parseFloat(position["OAS"]);
+    let spread = position["OAS"];
     let type = position["Type"];
     let maturity = parseFloat(position["Duration"]);
     let assetClass = position["Asset Class"];

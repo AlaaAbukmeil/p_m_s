@@ -8,179 +8,165 @@ export interface RlzdTrades {
 }
 
 export interface FundDetails {
-  _id: ObjectId;
   month: string;
-  nav: string;
-  holdBackRatio: string;
-  "3 month treasury rate": string;
+  nav: number;
+  expenses: number;
+  holdBackRatio: number;
+  "borrowing amount": number;
+  "share price": number;
+}
+
+export interface FundDetailsInDB {
+  id: string;
+  portfolio_id: string;
+  share_price: number;
+  borrowing_amount: number;
+  month: string;
+  nav: number;
+  expenses: number;
+
+  holdback_ratio: number;
+  timestamp: number;
 }
 
 export interface PositionInDB {
+  portfolio_id: string;
+  portfolio_snapshot_time: string;
+  id: string;
+  Type: string;
   Location: string;
   ISIN: string;
-  Ask: string;
-  "Average Cost": string;
-  "BB Ticker": string;
-  "BBG Composite Rating": string;
-  Bid: string;
-  "Bloomberg ID": string;
-  Broker: string;
   CUSIP: string;
+  "Bloomberg ID": string;
+
+  Bid: number;
+  Mid: number;
+  Ask: number;
+  "Bloomberg Mid BGN": number;
+
+  "Notional Amount": number;
+
+  "Average Cost": number;
+
+  "BB Ticker": string;
+
+  CR01: number;
+  DV01: number;
+
+  Broker: string;
   "Call Date": string;
   Country: string;
-  "Coupon Rate": string;
+  "Coupon Rate": number;
   Currency: string;
-  DV01: string;
-  "Entry Price": any;
-  "Entry Yield": any;
-  "FX Rate": any;
+  "Entry Price": { [key: string]: number };
+  "Entry Yield": number;
+  "FX Rate": number;
   "Fitch Bond Rating": string;
   "Fitch Outlook": string;
-  Group: string;
-  Interest: { [key: string]: string };
-  Issue: string;
+  Interest: { [key: string]: number };
   Issuer: string;
-  "Last Individual Upload Trade": Date;
-  "Last Modified Date": Date;
-  "Last Price Update": Date;
-  "Last Upload Trade": Date;
-  "Last edit operation": Date;
-  "Last recalculate trades": Date;
-  "MTD Rlzd": string;
+  "Last Price Update": number;
+  "Last Upload Trade": number;
   Maturity: string;
-  Mid: string;
-  "Moddy's Outlook": string | null;
-  "Modified Duration": string;
+
+  "Moddy's Outlook": string;
   "Moody's Bond Rating": string;
   "Moody's Outlook": string;
-  Net: string;
-  "Notional Amount": string;
-  OAS: string;
-  "Original Face": string;
-  Quantity: string;
+  "BBG Composite Rating": string;
   "S&P Bond Rating": string;
   "S&P Outlook": string;
+
+  OAS: number;
+  "Original Face": number;
+
   Sector: string;
   Strategy: string;
-  Type: string;
-  YTM: string;
-  YTW: string;
-  "Z Spread": string;
-  "Previous FX": any;
-  "Previous Mark": string;
+
+  YTM: number;
+  YTW: number;
+
+  "Z Spread": number;
+
   Notes: string;
-  "MTD Mark": string;
-  "MTD FX": string;
-  "YTD FX": string;
-  "MTD URlzd": string;
-  "MTD Int.": string;
-  "Day URlzd": string;
-  "Day Int.": string;
-  "YTD URlzd": string;
-  "Coupon Duration": string;
-  "YTD Int.": string;
-  "YTD Rlzd": string;
-  "Cost MTD": any;
-  "Day P&L": string;
-  "MTD P&L": string;
-  "YTD P&L": string;
+  "Coupon Duration": number;
   "Asset Class": string;
+
   Pin: string;
-  CR01: string;
+
   "Issuer's Country": string;
   "Coupon Frequency": string;
   "Previous Settle Date": string;
   "Next Settle Date": string;
+  "Cost MTD": { [key: string]: number };
+
   "Security Description": string;
-  "Bloomberg Mid BGN": number;
+}
+
+// TypeScript interface for the transformed data structure
+export interface PositionInSQLDB {
+  id: string;
+  type: string;
+  portfolio_id: string;
+  portfolio_snapshot_time: string;
+  location: string;
+  isin: string;
+  cusip: string;
+  bloomberg_id: string;
+  bid: number;
+  mid: number;
+  ask: number;
+  bloomberg_mid_bgn: number;
+  notional_amount: number;
+  average_cost: number;
+  bb_ticker: string;
+  cr01: number;
+  dv01: number;
+  broker: string;
+  call_date: string;
+  country: string;
+  coupon_rate: number;
+  currency: string;
+  entry_price: { [key: string]: number }; // JSON string of object
+  entry_yield: number;
+  fx_rate: number;
+  fitch_bond_rating: string;
+  fitch_outlook: string;
+  interest: { [key: string]: number }; // JSON string of object
+  issuer: string;
+  last_price_update: number; // ISO string of Date
+  last_upload_trade: number; // ISO string of Date
+  maturity: string;
+  moddys_outlook: string;
+  moodys_bond_rating: string;
+  moodys_outlook: string;
+  bbg_composite_rating: string;
+  sp_bond_rating: string;
+  sp_outlook: string;
+  oas: number;
+  original_face: number;
+  sector: string;
+  strategy: string;
+  ytm: number;
+  ytw: number;
+  z_spread: number;
+  notes: string;
+  coupon_duration: number;
+  asset_class: string;
+  pin: string;
+  issuers_country: string;
+  coupon_frequency: string;
+  previous_settle_date: string;
+  next_settle_date: string;
+  cost_mtd: { [key: string]: number }; // JSON string of object
+  security_description: string;
 }
 
 export interface PositionBeforeFormatting extends PositionInDB {
-  _id: ObjectId;
-  Location: string;
-  ISIN: string;
-  Ask: string;
-  "Average Cost": string;
-  "BB Ticker": string;
-  "BBG Composite Rating": string;
-  Bid: string;
-  "Bloomberg ID": string;
-  Broker: string;
-  CUSIP: string;
-  "Call Date": string;
-  Country: string;
-  "Coupon Rate": string;
-  Currency: string;
-  DV01: string;
-  "Day Rlzd": string;
-  "Day Rlzd K G/L": Record<string, string>;
-  "Edit Note": string;
-  "Entry Price": any;
-  "Entry Yield": any;
-  "Event Type": string;
-  "FX Rate": any;
-  "Fitch Bond Rating": string;
-  "Fitch Outlook": string;
-  Group: string;
-  Interest: Record<string, string>;
-  Issue: string;
-  Issuer: string;
-  "Last Individual Upload Trade": Date;
-  "Last Modified Date": Date;
-  "Last Price Update": Date;
-  "Last Upload Trade": Date;
-  "Last edit operation": Date;
-  "Last recalculate trades": Date;
-  "MTD Rlzd": string;
-  Maturity: string;
-  Mid: string;
-  "Moddy's Outlook": string | null;
-  "Modified Duration": string;
-  "Moody's Bond Rating": string;
-  "Moody's Outlook": string;
-  Net: string;
-  "Notional Amount": string;
-  OAS: string;
-  "Original Face": string;
-  Quantity: string;
-  "S&P Bond Rating": string;
-  "S&P Outlook": string;
-  Sector: string;
-  Strategy: string;
-  Type: string;
-  YTM: string;
-  YTW: string;
-  "Year Rlzd": Record<string, Array<any>>;
-  "Z Spread": string;
-  date: Date;
-  "Previous FX": any;
-  "Previous Mark": string;
-  Notes: string;
-  "MTD Mark": string;
-  "MTD FX": string;
-  "YTD FX": string;
-  "MTD URlzd": string;
-  "MTD Int.": string;
-  "Day URlzd": string;
-  "Day Int.": string;
-  "YTD URlzd": string;
-  "Coupon Duration": string;
-  "YTD Int.": string;
-  "YTD Rlzd": string;
-  "MTD Rlzd DC": Record<string, Array<any>>;
-  "Cost MTD": any;
-  "Day P&L": string;
-  "MTD P&L": string;
-  "YTD P&L": string;
-  holdPortfXrate: string;
-  "Rating Class": string;
-  "Asset Class": string;
-  "YTD Rate": any;
   "Day Price Move": number;
-  "MTD Price Move": string;
-  Pin: string;
   "3-Day Price Move": number;
-  "MTD Notional": number;
+  Type: string;
+  "Previous Mark": number;
+  "Previous FX": number;
 }
 
 export interface PositionGeneralFormat extends PositionBeforeFormatting {
@@ -283,7 +269,6 @@ export interface FundMTD {
   smvOfNav: number;
   gmvOfNav: number;
   nmvOfNav: number;
-  "3 month treasury rate": string;
 }
 export interface FundExposureOnlyMTD {
   nav: number;
@@ -297,8 +282,6 @@ export interface FundExposureOnlyMTD {
 export interface FinalPositionBackOffice {
   Issuer: string;
   "Issuer's Country": string;
-  "Last Individual Upload Trade": string; // ISO 8601 date string
-  "Last Modified Date": string; // ISO 8601 date string
   "Last Price Update": string; // ISO 8601 date string
   "Last Upload Trade": string; // ISO 8601 date string
   "MTD Rlzd": number;
@@ -496,4 +479,9 @@ export interface Analysis {
     Total: AggregatedData;
   };
   tickerTable: { [key: string]: "" };
+}
+
+export interface Indexing {
+  portfolio_id: string;
+  portfolio_document_ids: { timestamp: number; name: string }[];
 }

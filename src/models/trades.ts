@@ -57,10 +57,10 @@ export interface CentralizedTrade {
   "Trade Date": string;
   "Trade Time": string;
   "Settle Date": string;
-  Price: string;
-  "Notional Amount": string;
-  "Settlement Amount": string;
-  Principal: string;
+  Price: number;
+  "Notional Amount": number;
+  "Settlement Amount": number;
+  Principal: number;
   "Counter Party": string;
   "Triada Trade Id": string;
   "Seq No": string;
@@ -68,22 +68,68 @@ export interface CentralizedTrade {
   Cuisp: string;
   Currency: string;
   Yield: string;
-  "Accrued Interest": string;
+  "Accrued Interest": number;
   "Original Face": string;
-  "Comm/Fee": string;
+  "Comm/Fee": number;
   "Trade Type": string;
   "Trade App Status": string;
-  "Updated Notional": string;
-  Timestamp: number;
-  "Nomura Upload Status": string;
-  "Last Nomura Generated": string;
-  "Broker Full Name & Account": string;
-  "Broker Email": string;
-  "Settlement Venue": string;
-  "Primary (True/False)": string;
-  "Broker Email Status": string;
-  "App Check Test": string;
+  "Updated Notional": number | null;
+  timestamp: number;
+  "Nomura Upload Status": string | null;
+  "Last Nomura Generated": string | null;
+  "Broker Full Name & Account": string | null;
+  "Broker Email": string | null;
+  "Settlement Venue": string | null;
+  "Primary (True/False)": string | null;
+  "Broker Email Status": string | null;
+  "App Check Test": string | null;
+  "Portfolio ID": string;
+  Resolved: boolean;
+  Id: string;
 }
+export interface CentralizedTradeMTDRlzd extends CentralizedTrade {
+  "Rlzd P&L Amount": number | undefined;
+  "Price Diff": number | undefined;
+  Rlzd: string | undefined;
+  "Average Cost MTD": number;
+}
+export interface CentralizedTradeInDB {
+  b_s: string;
+  bb_ticker: string;
+  location: string;
+  trade_date: string;
+  trade_time: string;
+  settle_date: string;
+  price: number;
+  notional_amount: number;
+  settlement_amount: number;
+  principal: number;
+  counter_party: string;
+  triada_trade_id: string;
+  seq_no: string;
+  isin: string;
+  cuisp: string;
+  currency: string;
+  yield: string;
+  accrued_interest: number;
+  original_face: string;
+  comm_fee: number;
+  trade_type: string;
+  updated_notional: number | null;
+  timestamp: number;
+  nomura_upload_status: string | null;
+  last_nomura_generated: string | null;
+  broker_full_name_account: string | null;
+  broker_email: string | null;
+  settlement_venue: string | null;
+  primary_market: boolean;
+  broker_email_status: string | null;
+  id: string;
+  portfolio_id: string;
+  front_office_check: boolean;
+  resolved: boolean;
+}
+
 export interface NewIssue {
   "BB Ticker": string;
   "Issue Price": string;

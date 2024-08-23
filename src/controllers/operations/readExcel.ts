@@ -1,3 +1,4 @@
+import { InformationInDB } from "../../models/positionsInformation";
 import { NomuraCashReconcileFileUpload, NomuraReconcileCashOutput } from "../../models/reconcile";
 import { CentralizedTrade } from "../../models/trades";
 import { insertPositionsInfo } from "../analytics/data";
@@ -128,11 +129,22 @@ export async function readCentralizedEBlot(path: string): Promise<
       let newPositions = [];
       for (let index = 0; index < allTrades.length; index++) {
         let newTrade = allTrades[index];
-        let object = {
-          "BB Ticker": newTrade["BB Ticker"],
-          Currency: newTrade["Currency"],
-          ISIN: newTrade["ISIN"],
-          CUSIP: newTrade["Cusip"],
+        let object: InformationInDB = {
+          bb_ticker: newTrade["BB Ticker"],
+          isin: newTrade["ISIN"],
+          cusip: newTrade["CUSIP"],
+          currency: newTrade["Currency"],
+          type: "Position",
+          issue_price: null,
+
+          trade_date: null,
+          settle_date: null,
+          email_id: null,
+
+          reoffer_price: null,
+
+          treasury_and_spread: null,
+          timestamp: null,
         };
         newPositions.push(object);
       }
@@ -155,7 +167,7 @@ export async function readCentralizedEBlot(path: string): Promise<
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "readCentralizedEBlot", "src/controllers/operations/readExcel.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "readCentralizedEBlot", "src/controllers/operations/readExcel.ts");
     return { error: errorMessage };
   }
 }
@@ -237,7 +249,7 @@ export async function readIBRawExcel(path: string) {
     console.log(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "Errors", dateTime, "readIBRawExcel", "controllers/operations/readExcel.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "readIBRawExcel", "controllers/operations/readExcel.ts");
 
     return [];
   }

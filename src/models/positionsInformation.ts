@@ -1,25 +1,17 @@
-export interface PositionTickers {
-  bb_ticker: string;
-  isin: string;
-  cusip: string | null;
-  currency: string;
-  type: string | "New Issue" | "Position";
-}
-
 export interface InformationInDB {
   bb_ticker: string;
   isin: string;
   cusip: string | null;
   currency: string;
-  type: string | "New Issue" | "Position";
-  
-  issue_price: string;
+  type: "New Issues" | "Position";
+  issue_price: string | null;
 
-  trade_date: string;
-  settle_date: string;
-  email_id: string;
+  trade_date: string | null;
+  settle_date: string | null;
+  email_id: string | null;
 
-  reoffer_price: string;
+  reoffer_price: string | null;
 
   treasury_and_spread: string | null;
+  timestamp: number | null;
 }
