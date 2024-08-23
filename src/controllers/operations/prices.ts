@@ -1,7 +1,6 @@
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { formatUpdatedPositions, getCollectionName } from "../reports/tools";
 import { client } from "../userManagement/auth";
-import { Position } from "../../models/position";
 import { formatDateWorld } from "../common";
 import { readPricingSheet } from "./readExcel";
 import { getPortfolio, insertPositionsInPortfolio } from "./positions";
@@ -45,7 +44,7 @@ export async function updatePreviousPricesPortfolioMUFG(data: any, collectionDat
             }
             position["Mid"] = parseFloat(row["Price"]) / divider;
             position["FX Rate"] = row["FXRate"];
-            position["Last Price Update"] = new Date();
+            position["Last Price Update"] = new Date().getTime();
 
             updatedPricePortfolio.push(position);
           }

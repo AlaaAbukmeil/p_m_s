@@ -209,7 +209,7 @@ export function formatUpdatedPositions(positions: any, portfolio: any, lastUpdat
 
         positionsIndexThatExists.push(indexPositions);
       }
-      portfolio[indexPortfolio][lastUpdatedDescription] = new Date();
+      portfolio[indexPortfolio][lastUpdatedDescription] = new Date().getTime();
     }
   }
 

@@ -1,5 +1,4 @@
 import { Capacity, FinalPositionBackOffice, PositionGeneralFormat } from "../../../models/portfolio";
-import { Position } from "../../../models/position";
 import { parsePercentage } from "../../common";
 import { parseStringWithNoSpecialCharacters, toTitleCase } from "../tools";
 

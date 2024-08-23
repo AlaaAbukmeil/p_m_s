@@ -1,10 +1,8 @@
-import { client } from "../userManagement/auth";
 import { convertExcelDateToJSDate, formatDateUS, formatDateWorld, getDate, getTradeDateYearTrades } from "../common";
 import { findTrade, insertTradesData } from "../reports/trades";
 import { getDateTimeInMongoDBCollectionFormat, monthlyRlzdDate } from "../reports/common";
-import { readCentralizedEBlot, readEditInput, readPricingSheet } from "./readExcel";
 import { findTradeRecord, formatUpdatedPositions, getAllCollectionNames, getAverageCost, getCollectionName, getEarliestCollectionName, parseBondIdentifier } from "../reports/tools";
-import { PinnedPosition, Position } from "../../models/position";
+import { PinnedPosition } from "../../models/position";
 import { CentralizedTrade } from "../../models/trades";
 import { modifyTradesDueToRecalculate, updateMatchedVcons } from "./trades";
 import { insertEditLogs } from "./logs";
@@ -14,6 +12,7 @@ import { convertCentralizedToTradesSQL } from "../eblot/eblot";
 import { formatPositionsApp, formatPositionsTOSQL, indexPool, pinnedPool, portfolioPool } from "./psql/operation";
 import { CentralizedTradeInDB } from "../../models/trades";
 import { getSQLIndexFormat } from "./tools";
+import { insertNewIndex } from "./indexing";
 const ObjectId = require("mongodb").ObjectId;
 const { v4: uuidv4 } = require("uuid");
 
@@ -22,7 +21,7 @@ export async function getPortfolio(portfolioId: string, date = null): Promise<Po
     let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date(date ? date : new Date()).getTime() - 0 * 24 * 60 * 60 * 1000));
     let latestCollectionTodayDate = day.split(" ")[0] + " 23:59";
     let allCollectionNames = await getAllCollectionNames(portfolioId);
-    let earliestCollectionName = await getEarliestCollectionName(latestCollectionTodayDate, allCollectionNames);
+    let earliestCollectionName = getEarliestCollectionName(latestCollectionTodayDate, allCollectionNames);
 
     console.log(earliestCollectionName.predecessorDate, "get portfolio date");
     let documents: PositionBeforeFormatting[] = await getHistoricalPortfolio(earliestCollectionName.predecessorDate, portfolioId, true);
@@ -367,30 +366,92 @@ export async function updatePositionPortfolio(
 }
 
 export async function insertPositionsInPortfolio(positions: PositionBeforeFormatting[], portfolioId: string, snapShotInput = "") {
-  const client = await portfolioPool();
+  const client = await portfolioPool.connect();
   try {
     let formattedPositions = formatPositionsTOSQL(positions);
     let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 0 * 24 * 60 * 60 * 1000));
 
     let checkCollectionDay = await getCollectionName(day, portfolioId);
+    console.log({ checkCollectionDay, day, snapShotInput });
     if (checkCollectionDay) {
       day = checkCollectionDay;
     } else {
       //insert in index
+      day = "portfolio-" + day;
+      await insertNewIndex(portfolioId, day);
     }
     let snapShot = snapShotInput || getSQLIndexFormat(day, portfolioId);
     await client.query("BEGIN");
 
     const createTableQuery = `
-          CREATE TABLE IF NOT EXISTS "${day}" PARTITION OF ${portfolioId}
+          CREATE TABLE IF NOT EXISTS "${snapShot}" PARTITION OF ${portfolioId}
           FOR VALUES IN ('${snapShot}');
       `;
     await client.query(createTableQuery);
     await client.query("COMMIT");
 
     for (const element of formattedPositions) {
-      const insertQuery = `
-      INSERT INTO public.positions (
+      const query = `
+      WITH updated AS (
+        UPDATE public.${snapShot}
+        SET
+          id = $1,
+          portfolio_id = $2,
+          portfolio_snapshot_time = $3,
+          cusip = $6,
+          bloomberg_id = $7,
+          bid = $8,
+          mid = $9,
+          ask = $10,
+          bloomberg_mid_bgn = $11,
+          notional_amount = $12,
+          average_cost = $13,
+          bb_ticker = $14,
+          cr01 = $15,
+          dv01 = $16,
+          broker = $17,
+          call_date = $18,
+          country = $19,
+          coupon_rate = $20,
+          currency = $21,
+          entry_price = $22,
+          entry_yield = $23,
+          fx_rate = $24,
+          fitch_bond_rating = $25,
+          fitch_outlook = $26,
+          interest = $27,
+          issuer = $28,
+          last_price_update = $29,
+          last_upload_trade = $30,
+          maturity = $31,
+          moddys_outlook = $32,
+          moodys_bond_rating = $33,
+          moodys_outlook = $34,
+          bbg_composite_rating = $35,
+          sp_bond_rating = $36,
+          sp_outlook = $37,
+          oas = $38,
+          original_face = $39,
+          sector = $40,
+          strategy = $41,
+          ytm = $42,
+          ytw = $43,
+          z_spread = $44,
+          notes = $45,
+          coupon_duration = $46,
+          asset_class = $47,
+          pin = $48,
+          issuers_country = $49,
+          coupon_frequency = $50,
+          previous_settle_date = $51,
+          next_settle_date = $52,
+          cost_mtd = $53,
+          security_description = $54,
+          type = $55
+        WHERE isin = $5 AND location = $4
+        RETURNING *
+      )
+      INSERT INTO public.${snapShot} (
         id, portfolio_id, portfolio_snapshot_time, location, isin, cusip, bloomberg_id,
         bid, mid, ask, bloomberg_mid_bgn, notional_amount, average_cost, bb_ticker,
         cr01, dv01, broker, call_date, country, coupon_rate, currency, entry_price,
@@ -401,70 +462,16 @@ export async function insertPositionsInPortfolio(positions: PositionBeforeFormat
         issuers_country, coupon_frequency, previous_settle_date, next_settle_date, cost_mtd,
         security_description, type
       )
-      VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-        $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38,
-        $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55
-      )
-      ON CONFLICT (bb_ticker, location)
-      DO UPDATE SET
-        id = EXCLUDED.id,
-        portfolio_id = EXCLUDED.portfolio_id,
-        portfolio_snapshot_time = EXCLUDED.portfolio_snapshot_time,
-        isin = EXCLUDED.isin,
-        cusip = EXCLUDED.cusip,
-        bloomberg_id = EXCLUDED.bloomberg_id,
-        bid = EXCLUDED.bid,
-        mid = EXCLUDED.mid,
-        ask = EXCLUDED.ask,
-        bloomberg_mid_bgn = EXCLUDED.bloomberg_mid_bgn,
-        notional_amount = EXCLUDED.notional_amount,
-        average_cost = EXCLUDED.average_cost,
-        cr01 = EXCLUDED.cr01,
-        dv01 = EXCLUDED.dv01,
-        broker = EXCLUDED.broker,
-        call_date = EXCLUDED.call_date,
-        country = EXCLUDED.country,
-        coupon_rate = EXCLUDED.coupon_rate,
-        currency = EXCLUDED.currency,
-        entry_price = EXCLUDED.entry_price,
-        entry_yield = EXCLUDED.entry_yield,
-        fx_rate = EXCLUDED.fx_rate,
-        fitch_bond_rating = EXCLUDED.fitch_bond_rating,
-        fitch_outlook = EXCLUDED.fitch_outlook,
-        interest = EXCLUDED.interest,
-        issuer = EXCLUDED.issuer,
-        last_price_update = EXCLUDED.last_price_update,
-        last_upload_trade = EXCLUDED.last_upload_trade,
-        maturity = EXCLUDED.maturity,
-        moddys_outlook = EXCLUDED.moddys_outlook,
-        moodys_bond_rating = EXCLUDED.moodys_bond_rating,
-        moodys_outlook = EXCLUDED.moodys_outlook,
-        bbg_composite_rating = EXCLUDED.bbg_composite_rating,
-        sp_bond_rating = EXCLUDED.sp_bond_rating,
-        sp_outlook = EXCLUDED.sp_outlook,
-        oas = EXCLUDED.oas,
-        original_face = EXCLUDED.original_face,
-        sector = EXCLUDED.sector,
-        strategy = EXCLUDED.strategy,
-        ytm = EXCLUDED.ytm,
-        ytw = EXCLUDED.ytw,
-        z_spread = EXCLUDED.z_spread,
-        notes = EXCLUDED.notes,
-        coupon_duration = EXCLUDED.coupon_duration,
-        asset_class = EXCLUDED.asset_class,
-        pin = EXCLUDED.pin,
-        issuers_country = EXCLUDED.issuers_country,
-        coupon_frequency = EXCLUDED.coupon_frequency,
-        previous_settle_date = EXCLUDED.previous_settle_date,
-        next_settle_date = EXCLUDED.next_settle_date,
-        cost_mtd = EXCLUDED.cost_mtd,
-        security_description = EXCLUDED.security_description,
-        type = EXCLUDED.type;
+      SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+             $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38,
+             $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55
+      WHERE NOT EXISTS (
+        SELECT 1 FROM updated
+      );
     `;
 
       let idTest = uuidv4();
-      await client.query(insertQuery, [
+      await client.query(query, [
         idTest,
         portfolioId,
         snapShot,
@@ -543,7 +550,7 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
   try {
     let allCollectionNames = await getAllCollectionNames(portfolioId);
 
-    let earliestPortfolioName = await getEarliestCollectionName(date, allCollectionNames);
+    let earliestPortfolioName = getEarliestCollectionName(date, allCollectionNames);
 
     console.log(earliestPortfolioName.predecessorDate, "get edit portfolio");
 
@@ -557,7 +564,9 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
     let editedPositionTitles = Object.keys(editedPosition);
 
     let id = editedPosition["id"];
+    console.log({ id });
     let unEditableParams = [
+      "id",
       "Value",
       "Duration",
       "Base LTV",
@@ -575,7 +584,6 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
       "MTD P&L (BC)",
       "Cost (LC)",
       "Day Accrual",
-      "_id",
 
       "Day Price Move",
       "Value (BC)",
@@ -715,7 +723,7 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
     portfolio[positionIndex] = positionInPortfolio;
     await insertEditLogs(changes, editedPosition["Event Type"], dateTime, editedPosition["Edit Note"], positionInPortfolio["BB Ticker"] + " " + positionInPortfolio["Location"]);
     let snapShotName = getSQLIndexFormat(`portfolio-${earliestPortfolioName.predecessorDate}`, portfolioId);
-    let action = await insertPositionsInPortfolio(portfolio, portfolioId, snapShotName);
+    let action = await insertPositionsInPortfolio([positionInPortfolio], portfolioId, snapShotName);
     if (action) {
       return { status: 200 };
     } else {
@@ -730,41 +738,20 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
 }
 
 export async function pinPosition(position: PinnedPosition) {
-  const client = await pinnedPool.connect();
   try {
-    if (position.isin) {
-      let positions = position.isin.split("&");
+    if (position.ISIN) {
+      let positions = position.ISIN.split("&");
+      let positionsId = position.id.split("&");
+
       for (let index = 0; index < positions.length; index++) {
         const element = positions[index];
-
-        let selectQuery = `
-        SELECT * FROM public.pinned_positions
-        WHERE isin = $1 AND location = $2;
-        `;
-
-        let insertQuery = `
-        INSERT INTO public.pinned_positions (
-          isin, location, ticker, id, portfolio_id, pinned
-        )
-        VALUES ($1, $2, $3, $4, $5, $6)
-        ON CONFLICT (id, portfolio_id) DO NOTHING;
-        `;
-
-        let updateQuery = `
-        UPDATE public.pinned_positions
-        SET pinned = $1
-        WHERE isin = $2 AND location = $3;
-        `;
-
-        const existingPosition = await client.query(selectQuery, [element, position.location]);
-
-        if (existingPosition.rowCount > 0) {
-          // If found, update the pinned property
-          const updateResult = await client.query(updateQuery, [position.pinned, element, position.location]);
-        } else {
-          // If not found, insert a new document
-          const insertResult = await client.query(insertQuery, [element, position.location, position.ticker, uuidv4(), position.portfolio_id, "pinned"]);
-        }
+        let pinnedPosition = {
+          ISIN: element,
+          Location: position["Location"],
+          id: positionsId[index],
+          Pin: position["Pin"],
+        };
+        await editPosition(pinnedPosition, position["Date"] + " 23:50", position["portfolio_id"]);
       }
     }
     return { status: 200, message: "Position inserted successfully." };
@@ -776,8 +763,6 @@ export async function pinPosition(position: PinnedPosition) {
     await insertEditLogs([errorMessage], "errors", dateTime, "pinPosition", "controllers/operations/positions.ts");
 
     return { error: errorMessage };
-  } finally {
-    client.release();
   }
 }
 
@@ -808,7 +793,7 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
     let positions: any = [];
     let allCollectionNames = await getAllCollectionNames(portfolioId);
 
-    let earliestPortfolioName = await getEarliestCollectionName(date, allCollectionNames);
+    let earliestPortfolioName = getEarliestCollectionName(date, allCollectionNames);
 
     let portfolio: PositionBeforeFormatting[] = await getHistoricalPortfolio(earliestPortfolioName.predecessorDate, portfolioId, true);
 
@@ -986,7 +971,7 @@ export async function insertFXPosition(position: any, date: any, portfolioId: st
   let day = getDateTimeInMongoDBCollectionFormat(new Date(today));
   let allCollectionNames = await getAllCollectionNames(portfolioId);
 
-  let checkCollectionDay = await getEarliestCollectionName(day, allCollectionNames);
+  let checkCollectionDay = getEarliestCollectionName(day, allCollectionNames);
   if (checkCollectionDay) {
     day = checkCollectionDay.predecessorDate;
   }

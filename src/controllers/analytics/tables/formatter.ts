@@ -957,6 +957,12 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
           groupedByLocation[locationCode]["ISIN"] = groupedByLocation[locationCode].data[groupPositionIndex]["ISIN"];
         }
 
+        if (groupedByLocation[locationCode]["id"]) {
+          groupedByLocation[locationCode]["id"] = (groupedByLocation[locationCode]["id"] || "") + "&" + groupedByLocation[locationCode].data[groupPositionIndex]["id"];
+        } else {
+          groupedByLocation[locationCode]["id"] = groupedByLocation[locationCode].data[groupPositionIndex]["id"];
+        }
+
         if (groupedByLocation[locationCode].data[groupPositionIndex]["Pin"] == "pinned") {
           groupedByLocation[locationCode]["Pin"] = "pinned";
         }
@@ -992,6 +998,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
           "Notional Amount": groupedByLocation[locationCode].groupNotional,
           ISIN: groupedByLocation[locationCode]["ISIN"],
           Pin: groupedByLocation[locationCode]["Pin"],
+          id: groupedByLocation[locationCode]["id"]
         };
         if (groupedByLocation[locationCode].groupSpreadTZ || groupedByLocation[locationCode].groupSpreadTZ == 0) {
           newObject["Current Spread (T)"] = Math.round(groupedByLocation[locationCode].groupSpreadTZ * 100);

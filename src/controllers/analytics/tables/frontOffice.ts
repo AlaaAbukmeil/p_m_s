@@ -105,6 +105,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "CR01 Dollar Value Impact Utilization % of Nav",
     "CR01 Dollar Value Impact Test",
     "CR01 Dollar Value Impact Test Color",
+    "id",
   ];
 
   let titlesValues: any = {
@@ -194,6 +195,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "CR01 Dollar Value Impact Utilization % of Nav": "CR01 Dollar Value Impact Utilization % of Nav",
     "CR01 Dollar Value Impact Test": "CR01 Dollar Value Impact Test",
     "CR01 Dollar Value Impact Test Color": "CR01 Dollar Value Impact Test Color",
+    id: "id",
   };
 
   let twoDigits = [`${formatMarkDate(dates.lastMonth)}`, `${formatMarkDate(dates.yesterday)}`, `Mid ${formatMarkDate(dates.today)}`, `Yesterday's Mid ${formatMarkDate(dates.yesterday)}`, "Bid", "Ask", "Duration", "Average Cost", "Entry Price", "Previous Mark", "Day Price Move", "MTD Price Move", "3-Day Price Move"];

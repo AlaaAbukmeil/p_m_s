@@ -2,12 +2,9 @@ import { addUser, checkIfUserExists, checkLinkRight, checkPasswordStrength, chec
 import { bucketPublic, bucketPublicBucket, generateSignedUrl, verifyToken, verifyTokenFactSheetMember } from "../controllers/common";
 import { CookieOptions, NextFunction, Router } from "express";
 import { Request, Response } from "express";
-import { readUsersSheet } from "../controllers/operations/readExcel";
 import { getDateTimeInMongoDBCollectionFormat } from "../controllers/reports/common";
 import { numberOfNewTrades } from "../controllers/operations/trades";
 import { bucketPublicTest, multerTest, uploadToBucket } from "../controllers/userManagement/tools";
-const bcrypt = require("bcrypt");
-const saltRounds: any = process.env.SALT_ROUNDS;
 const authRouter = Router();
 
 authRouter.get("/auth", uploadToBucket.any(), verifyTokenFactSheetMember, async (req: any, res: Response, next: NextFunction) => {

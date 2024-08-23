@@ -2,43 +2,45 @@ import { Router } from "express";
 import { Request, Response, NextFunction } from "express";
 
 import { uploadToBucket } from "../../controllers/userManagement/tools";
-import { factsheetPool, formatEditLogs, formatFactSheet, formatFundMTD, formatLinks, formatNewIssues, formatPositions, formatPositionsTOSQL, formatTrades, formatUsers, insertFactSheetData, insertFundMTDData, insertIndexingData, insertLinksData, insertLogsData, insertNewIssuesData, insertPinnedData, insertPositionsData, insertPositionsPortfolioData, insertTradesData, insertUsersData, migrateFactSheetData, migrateInformationDB, testPsqlTime } from "../../controllers/operations/psql/operation";
+import { factsheetPool, formatEditLogs, formatFactSheet, formatFundMTD, formatLinks, formatNewIssues, formatPositions, formatPositionsTOSQL, formatTrades, formatUsers, insertFactSheetData, insertFundMTDData, insertIndexingData, insertLinksData, insertLogsData, insertNewIssuesData, insertPositionsData, insertPositionsPortfolioData, insertTradesData, insertUsersData, migrateFactSheetData, migrateInformationDB, testPsqlTime } from "../../controllers/operations/psql/operation";
 import { findTrade } from "../../controllers/reports/trades";
 import { getDateTimeInMongoDBCollectionFormat } from "../../controllers/reports/common";
 import { insertEditLogs } from "../../controllers/operations/logs";
 import { client } from "../../controllers/userManagement/auth";
 import { Indexing } from "../../models/portfolio";
-import { PinnedPosition } from "../../models/position";
 import { getAllCollectionNames, getEarliestCollectionName } from "../../controllers/reports/tools";
 import { getCollectionsInRange } from "../../controllers/analytics/compare/historicalData";
 import { getPortfolio } from "../../controllers/operations/positions";
 import { getCollectionDays } from "../../controllers/operations/tools";
 import { formatDateUS } from "../../controllers/common";
+import { getIndexingData } from "../../controllers/operations/indexing";
 
 const migrateRouter = Router();
 const { v4: uuidv4 } = require("uuid");
 
-// migrateRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-//   const database = client.db("portfolios");
+migrateRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  const database = client.db("portfolios");
 
-//   const cursor = await database.listCollections().toArray();
-//   let ans = [];
-//   for (let index = 0; index < cursor.length; index++) {
-//     const element = cursor[index];
-//     let object = {
-//       name: element["name"],
-//       timestamp: new Date(element["name"].split("portfolio-")[1]).getTime(),
-//     };
-//     ans.push(object);
-//   }
+  const cursor = await database.listCollections().toArray();
+  let ans = [];
+  for (let index = 0; index < cursor.length; index++) {
+    const element = cursor[index];
+    let object = {
+      name: element["name"],
+      timestamp: new Date(element["name"].split("portfolio-")[1]).getTime(),
+    };
+    if (!element["name"].includes("2024-08-23")) {
+      ans.push(object);
+    }
+  }
 
-//   let result: Indexing = {
-//     portfolio_id: "portfolio_main",
-//     portfolio_document_ids: ans,
-//   };
-//   await insertIndexingData([result]);
-//   res.send(result);
-// });
+  let result: Indexing = {
+    portfolio_id: "portfolio_main",
+    portfolio_document_ids: ans,
+  };
+  await insertIndexingData([result]);
+  res.send(result);
+});
 // migrateRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
 //   let allCollectionNames = await getAllCollectionNames("portfolio_main");
 //   res.send({ allCollectionNames });
@@ -93,7 +95,7 @@ const { v4: uuidv4 } = require("uuid");
 //     finalCollectionsArray.push(finalCollections[element]);
 //   }
 
-//   for (let index = 0; index < 25; index++) {
+//   for (let index = 0; index < 1; index++) {
 //     let data = await migrateInformationDB("portfolios", finalCollectionsArray[index], {});
 //     let name = finalCollectionsArray[index].split("-");
 //     let nameInDB = name[2] + "/" + name[3].split(" ")[0] + "/" + name[1];
@@ -118,14 +120,18 @@ const { v4: uuidv4 } = require("uuid");
 //   res.send(200);
 // });
 
-migrateRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  let list = await getAllCollectionNames("portfolio_main");
-  let day = getDateTimeInMongoDBCollectionFormat(new Date().getTime() - 3 * 24 * 60 * 60 * 1000);
-  let formatted = getCollectionDays(list);
-  let date = formatDateUS(day);
+// migrateRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+//   let list = await getAllCollectionNames("portfolio_main");
+//   let day = getDateTimeInMongoDBCollectionFormat(new Date().getTime() - 3 * 24 * 60 * 60 * 1000);
+//   let formatted = getCollectionDays(list);
+//   let date = formatDateUS(day);
 
-  let result = formatted.find((dateList: string) => dateList.includes(date));
+//   let result = formatted.find((dateList: string) => dateList.includes(date));
 
-  res.send({ formatted, day, date, result });
-});
+//   res.send({ formatted, day, date, result });
+// });
+// migrateRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+//   let test = await getIndexingData("portfolio_main");
+//   res.send({ test });
+// });
 export default migrateRouter;

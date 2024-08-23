@@ -605,37 +605,14 @@ export async function insertIndexingData(dataInput: Indexing[]) {
   )
   VALUES ($1, $2)
   ON CONFLICT (portfolio_id) DO UPDATE
-  SET portfolio_document_ids = EXCLUDED.portfolio_document_ids;`
+  SET portfolio_document_ids = EXCLUDED.portfolio_document_ids;`;
 
     for (const element of dataInput) {
       await client.query(insertQuery, [element.portfolio_id, element.portfolio_document_ids]);
     }
 
     await client.query("COMMIT");
-  } catch (err: any) {
-    await client.query("ROLLBACK");
-    console.error("Error inserting", err.stack);
-  } finally {
-    client.release();
-  }
-}
-export async function insertPinnedData(dataInput: PinnedPosition[]) {
-  const client = await pinnedPool.connect();
-  try {
-    await client.query("BEGIN");
-
-    const insertQuery = `
-  INSERT INTO public.pinned_positions (
-    isin, location, ticker, id, portfolio_id, pinned
-  )
-  VALUES ($1, $2,$3,$4,$5, $6)
-  ON CONFLICT (id, portfolio_id) DO NOTHING;`;
-
-    for (const element of dataInput) {
-      await client.query(insertQuery, [element.isin, element.location, element.ticker, element.id, element.portfolio_id, "pinned"]);
-    }
-
-    await client.query("COMMIT");
+    console.log("indexing added");
   } catch (err: any) {
     await client.query("ROLLBACK");
     console.error("Error inserting", err.stack);
@@ -680,8 +657,8 @@ export function formatPositionsTOSQL(positions: PositionInDB[]) {
       fitch_outlook: safeString(pos["Fitch Outlook"]),
       interest: pos.Interest || {},
       issuer: safeString(pos.Issuer),
-      last_price_update: new Date(pos["Last Price Update"]).getTime(),
-      last_upload_trade: new Date(pos["Last Price Update"]).getTime(),
+      last_price_update: pos["Last Price Update"],
+      last_upload_trade: pos["Last Upload Trade"],
       maturity: safeString(pos.Maturity),
       moddys_outlook: safeString(pos["Moddy's Outlook"]),
       moodys_bond_rating: safeString(pos["Moody's Bond Rating"]),

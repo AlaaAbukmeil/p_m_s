@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb";
 
-export interface Position {
-  _id: ObjectId;
+export interface PositionAfterFormating {
+  id: ObjectId;
   Location: string;
   ISIN: string;
   Ask: number;
@@ -54,19 +54,17 @@ export interface Position {
   YTM: number;
   YTW: number;
   "Z Spread": number;
-  holdPortfXrate: number;
-  "MTD Rlzd DC": Record<string, number>;
-  "MTD Rlzd": Record<string, number>;
 
   Pin: "pinned" | "not_pinned";
   "Security Description": string;
 }
 
 export interface PinnedPosition {
-  isin: string;
-  location: string;
-  pinned: "pinned" | "not_pinned";
+  ISIN: string;
+  Location: string;
+  Pin: "pinned" | "not_pinned";
   id: string;
   portfolio_id: string;
   ticker: string;
+  Date: string;
 }

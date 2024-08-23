@@ -25,7 +25,7 @@ export async function insertEditLogs(changes: any[], logType: string, dateTime: 
       }
     }
 
-    await client.query(insertQuery, [id, changes, logType, dateTime, editNote, identifier, new Date().getTime(), portfolioId.replace("_", "-")]);
+    await client.query(insertQuery, [id, changes, logType, dateTime, editNote, identifier, new Date().getTime(), portfolioId]);
 
     await client.query("COMMIT");
     if (logType == "Errors") {
