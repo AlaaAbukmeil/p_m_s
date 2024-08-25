@@ -363,7 +363,7 @@ export function getMTDURlzdInt(portfolio: any, date: any, mtdTrades: Centralized
     let position = portfolio[index];
     let todayPrice = parseFloat(portfolio[index]["Mid"]);
 
-    let tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs" | "fx" = "vcons";
+    let tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs" | "fx" = "vcons";
     let identifier = portfolio[index]["ISIN"];
     let typeCheck = portfolio[index]["Type"] || "";
     if (identifier.includes("IB")) {

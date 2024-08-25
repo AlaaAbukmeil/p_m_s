@@ -69,7 +69,7 @@ export interface CentralizedTrade {
   Currency: string;
   Yield: string;
   "Accrued Interest": number;
-  "Original Face": string;
+  "Original Face": number;
   "Comm/Fee": number;
   "Trade Type": string;
   "Trade App Status": string;
@@ -87,6 +87,7 @@ export interface CentralizedTrade {
   Resolved: boolean;
   Id: string;
   "Front Office Note": string;
+  "Front Office Check": boolean;
 }
 export interface CentralizedTradeMTDRlzd extends CentralizedTrade {
   "Rlzd P&L Amount": number | undefined;
@@ -113,7 +114,7 @@ export interface CentralizedTradeInDB {
   currency: string;
   yield: string;
   accrued_interest: number;
-  original_face: string;
+  original_face: number;
   comm_fee: number;
   trade_type: string;
   updated_notional: number | null;

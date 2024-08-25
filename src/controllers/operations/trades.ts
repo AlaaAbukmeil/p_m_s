@@ -1,12 +1,12 @@
 import { ObjectId } from "mongodb";
 import { client } from "../userManagement/auth";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
-import { CentralizedTrade, NewIssue } from "../../models/trades";
+import { CentralizedTrade, CentralizedTradeInDB, NewIssue } from "../../models/trades";
 import { insertEditLogs } from "./logs";
 import { tradesPool } from "./psql/operation";
 import { convertCentralizedToTradesSQL, convertTradesSQLToCentralized } from "../eblot/eblot";
 
-export async function getAllTradesForSpecificPosition(tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs" | "canceled_vcons", isin: string, location: string, date: string, portfolioId: string) {
+export async function getAllTradesForSpecificPosition(tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs" | "canceled_vcons", isin: string, location: string, date: string, portfolioId: string) {
   const client = await tradesPool.connect();
   try {
     let timestamp = new Date(date).getTime();
@@ -34,7 +34,7 @@ export async function getAllTradesForSpecificPosition(tradeType: "vcons" | "ib" 
   }
 }
 
-export async function getTrade(tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs", tradeId: string, portfolioId: string) {
+export async function getTrade(tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs", tradeId: string, portfolioId: string) {
   const client = await tradesPool.connect();
   try {
     const query = `
@@ -61,73 +61,29 @@ export async function getTrade(tradeType: "vcons" | "ib" | "emsx" | "writter_blo
   }
 }
 
-export async function editTrade(editedTrade: any, tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs", logs = false, source = "main", portfolioId: string) {
+export async function editTrade(editedTrade: any, tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs", portfolioId: string) {
   try {
-    let tradeInfo = await getTrade(tradeType, editedTrade["Id"], portfolioId);
-    let unEditableParams = ["Id", "Updated Notional", "B/S", "BB Ticker", "Location", "Trade Date", "Trade Time", "Settle Date", "Price", "Notional Amount", "Settlement Amount", "Principal", "Triada Trade Id", "Seq No", "ISIN", "Currency", "Yield", "Accrued Interest", "Trade Type", "App Check Test", "Trade App Status", "Nomura Upload Status", "Broker Email Status", "App Check Test", "Front Office Check", "Trade Type"];
-
+    console.log({ editedTrade });
+    let tradeInfo: CentralizedTrade | any = await getTrade(tradeType, editedTrade["Id"], portfolioId);
+    console.log({ tradeInfo });
+    let centralizedBlotKeys = Object.keys(tradeInfo);
     if (tradeInfo) {
-      let beforeModify = JSON.parse(JSON.stringify(tradeInfo));
-      beforeModify["id"] = new ObjectId(beforeModify["id"]);
-
-      let centralizedBlotKeys: any = [
-        "B/S",
-        "BB Ticker",
-        "Location",
-        "Trade Date",
-        "Trade Time",
-        "Settle Date",
-        "Price",
-        "Notional Amount",
-        "Settlement Amount",
-        "Principal",
-        "Counter Party",
-        "Triada Trade Id",
-        "Seq No",
-        "ISIN",
-        "Cuisp",
-        "Currency",
-        "Yield",
-        "Accrued Interest",
-        "Original Face",
-        "Comm/Fee",
-        "Trade Type",
-        "Nomura Upload Status",
-        "Broker Full Name & Account",
-        "Broker Email Status",
-        "Broker Email",
-        "Primary (True/False)",
-        "Settlement Venue",
-        "Edit Note",
-        "Resolved",
-        "Front Office Check",
-        "Front Office Note",
-      ];
-
       let changes = 0;
       let changesText = [];
       for (let index = 0; index < centralizedBlotKeys.length; index++) {
-        let key: any = centralizedBlotKeys[index];
-        if (source == "main") {
-          if (editedTrade[key] != "" && editedTrade[key]) {
-            changesText.push(`${key} changed from ${tradeInfo[key]} to ${editedTrade[key]} `);
-            tradeInfo[key] = editedTrade[key];
+        let key = centralizedBlotKeys[index];
+        if (editedTrade[key] != "" && editedTrade[key]) {
+          changesText.push(`${key} changed from ${tradeInfo[key]} to ${editedTrade[key]} `);
+          tradeInfo[key] = editedTrade[key];
 
-            changes++;
-          }
-        } else {
-          if (editedTrade[key] != "" && editedTrade[key] && !unEditableParams.includes(key)) {
-            changesText.push(`${key} changed from ${tradeInfo[key]} to ${editedTrade[key]} `);
-            tradeInfo[key] = editedTrade[key];
-
-            changes++;
-          }
+          changes++;
         }
       }
       if (!changes) {
         return { error: "The trade is still the same." };
       }
       let newTradeInSQL = convertCentralizedToTradesSQL([tradeInfo])[0];
+      console.log({ newTradeInSQL });
       const query = `
     UPDATE public.trades_${tradeType}
     SET 
@@ -155,8 +111,10 @@ export async function editTrade(editedTrade: any, tradeType: "vcons" | "ib" | "e
       broker_email = $21,
       broker_email_status = $22,
       settlement_venue = $23,
-      primary_market = $24
-      WHERE id = $25;
+      primary_market = $24,
+      nomura_upload_status = $25,
+      front_office_check = $26
+      WHERE id = $27;
   `;
 
       const values = [
@@ -185,14 +143,17 @@ export async function editTrade(editedTrade: any, tradeType: "vcons" | "ib" | "e
         newTradeInSQL.broker_email_status,
         newTradeInSQL.settlement_venue,
         newTradeInSQL.primary_market,
+        newTradeInSQL.nomura_upload_status,
+        newTradeInSQL.front_office_check,
 
         newTradeInSQL.id,
       ];
 
       const client = await tradesPool.connect();
+
       try {
         const res = await client.query(query, values);
-
+        console.log({ res });
         if (res.rowCount > 0) {
           return { error: null };
         } else {
@@ -250,7 +211,7 @@ export async function deleteTrade(tradeType: string, tradeId: string, ticker: st
   }
 }
 //tessting
-export async function modifyTradesDueToRecalculate(trades: any, tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs") {
+export async function modifyTradesDueToRecalculate(trades: any, tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs") {
   const client = await tradesPool.connect();
 
   try {
@@ -283,7 +244,7 @@ export async function modifyTradesDueToRecalculate(trades: any, tradeType: "vcon
   }
 }
 
-export async function getAllTrades(from: number, to: number, portfolioId: string, tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs" | "" = ""): Promise<CentralizedTrade[]> {
+export async function getAllTrades(from: number, to: number, portfolioId: string, tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs" | "" = ""): Promise<CentralizedTrade[]> {
   const client = await tradesPool.connect();
 
   try {
@@ -344,30 +305,18 @@ export async function addNomuraGeneratedDateToTrades(fromTimestamp: number | nul
   }
 }
 
-export async function numberOfNewTrades(): Promise<any> {
+export async function numberOfNewTrades(): Promise<number> {
   const client = await tradesPool.connect();
 
   try {
     const query = `
-      SELECT *
-      FROM public.trades_written_blotter
-      WHERE resolved = false;
+    SELECT COUNT(*) FROM trades_written_blotter WHERE resolved = false;
     `;
 
-    const { rows } = await client.query(query);
-    let trades: any = convertTradesSQLToCentralized(rows, "uploaded_to_app");
-    for (let index = 0; index < trades.length; index++) {
-      trades[index]["Front Office Check"] = true;
-    }
-    return trades;
+    const res = await client.query(query);
+    return res.rows[0].count;
   } catch (error: any) {
-    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    console.error(error);
-    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-
-    await insertEditLogs([errorMessage], "errors", dateTime, "getAllTrades", "controllers/eblot/eblot.ts");
-
-    return [];
+    return 0;
   } finally {
     client.release();
   }

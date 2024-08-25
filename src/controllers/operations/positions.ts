@@ -594,7 +594,7 @@ export async function getPinnedPositions() {
   }
 }
 
-export async function readCalculatePosition(data: CentralizedTrade[], date: string, isin: any, location: any, tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs", portfolioId: string) {
+export async function readCalculatePosition(data: CentralizedTrade[], date: string, isin: any, location: any, tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs", portfolioId: string) {
   try {
     let positions: any = [];
     let allCollectionNames = await getAllCollectionNames(portfolioId);
@@ -860,7 +860,7 @@ export async function updatePositionsBasedOnTrade(data: CentralizedTrade[], port
   for (let index = 0; index < data.length; index++) {
     let row = data[index];
     row["BB Ticker"] = row["BB Ticker"];
-    let originalFace = parseFloat(row["Original Face"]);
+    let originalFace = row["Original Face"];
     let identifier = row["ISIN"] !== "" ? row["ISIN"].trim() : row["BB Ticker"].trim();
     let location = row["Location"].trim();
     let securityInPortfolio: any = getSecurityInPortfolio(portfolio, identifier, location);

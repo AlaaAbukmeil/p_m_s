@@ -10,7 +10,7 @@ const tradesRouter = Router();
 
 tradesRouter.get("/trades", verifyToken, async (req, res) => {
   try {
-    const tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs" | any = req.query.tradeType;
+    const tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs" | any = req.query.tradeType;
     console.log({ tradeType });
     let trades = await getTrades(tradeType, "portfolio_main");
     res.send(trades);
@@ -46,7 +46,7 @@ tradesRouter.post("/edit-trade", verifyToken, uploadToBucket.any(), async (req: 
     let logs = req.query.logs == "false" ? false : true;
     let source = req.query.source ? req.query.source : "main";
 
-    let action = await editTrade(req.body, req.body.tradeType, logs, source, "portfolio_main");
+    let action = await editTrade(req.body, req.body.tradeType, "portfolio_main");
 
     if (action.error) {
       res.send({ error: action.error });

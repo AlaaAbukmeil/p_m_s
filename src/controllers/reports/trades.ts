@@ -9,7 +9,7 @@ import { sortTradesOnTheSameDate } from "../operations/readExcel";
 import { tradesPool } from "../operations/psql/operation";
 import { convertTradesSQLToCentralized } from "../eblot/eblot";
 
-export async function getTrades(tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs", portfolioId: string) {
+export async function getTrades(tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs", portfolioId: string) {
   const client = await tradesPool.connect();
   try {
     const query = `
@@ -95,7 +95,7 @@ export async function getRlzdTrades(tradeType: any, isin: any, location: any, da
   }
 }
 
-export function getRlzdTradesWithTrades(tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs", isin: any, location: any, date: any, mtdMark: any, mtdAmountInput: any, allMTDTrades: CentralizedTrade[], ticker: string): { documents: any[]; totalRow: { Rlzd: number; "Rlzd P&L Amount": number }; averageCostMTD: any; pnlDayRlzdHistory: { [key: string]: number } } {
+export function getRlzdTradesWithTrades(tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs", isin: any, location: any, date: any, mtdMark: any, mtdAmountInput: any, allMTDTrades: CentralizedTrade[], ticker: string): { documents: any[]; totalRow: { Rlzd: number; "Rlzd P&L Amount": number }; averageCostMTD: any; pnlDayRlzdHistory: { [key: string]: number } } {
   try {
     let shortLongGuess = tradeType == "ib" ? "S" : ticker.toString().split(" ")[0] == "T" ? "S" : "B";
     let mtdTradesPosition = getTradesForAPosition(isin, location, allMTDTrades, shortLongGuess);
@@ -192,7 +192,7 @@ function getTradesForAPosition(isin: string, location: string, allMTDTrades: Cen
   });
   return mtdTrades;
 }
-async function getTradesForAPositionInDB(tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs", isin: string, location: string, date: any, ticker: string) {
+async function getTradesForAPositionInDB(tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs", isin: string, location: string, date: any, ticker: string) {
   const client = await tradesPool.connect();
   try {
     const query = `
