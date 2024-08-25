@@ -7,8 +7,8 @@ import { getPortfolio } from "../controllers/operations/positions";
 import { formatFxMufg, formatMufg, formatMufgCDS } from "../controllers/operations/mufgOperations";
 import { getFxTrades, getGraphToken, getVcons } from "../controllers/eblot/graphApiConnect";
 import { MufgTrade } from "../models/mufg";
-import { addNomuraGeneratedDateToTrades,  getCancelVcons } from "../controllers/operations/trades";
-import {  getAllTrades } from "../controllers/operations/trades";
+import { addNomuraGeneratedDateToTrades } from "../controllers/operations/trades";
+import { getAllTrades } from "../controllers/operations/trades";
 import { bucket, formatDateFile, generateSignedUrl, verifyToken } from "../controllers/common";
 import { uploadToBucket } from "../controllers/userManagement/tools";
 import { CentralizedTrade } from "../models/trades";
@@ -91,7 +91,7 @@ formatterRouter.post("/centralized-blotter", verifyToken, uploadToBucket.any(), 
     let startLimit = new Date(data.timestamp_start).getTime() - 1 * 24 * 60 * 60 * 1000;
     let endLimit = new Date(data.timestamp_end).getTime() + 1 * 24 * 60 * 60 * 1000;
     let cdsTrades: [CentralizedTrade[], number] | any = await await getAllTrades(start, end, "cds_gs");
-    let canceledTrades = await getCancelVcons(start, end);
+    let canceledTrades = await getAllTrades(start, end, "canceled_vcons");
     let vconTrades = await getAllTrades(start, end, "vcons");
 
     vconTrades = [...vconTrades, ...cdsTrades, ...canceledTrades];

@@ -212,17 +212,15 @@ export function getDayParams(portfolio: PositionBeforeFormatting[], previousDayP
         portfolio[index]["Notes"] += " Previous Mark X ";
       }
 
-      let type = portfolio[index]["Type"] == "CDS" ? -1 : portfolio[index]["Notional Amount"] < 0 ? -1 : 1;
       let todayPrice: any = position["Mid"];
       let yesterdayPrice: any = position["Previous Mark"];
 
       if (portfolio[index]["Type"] == "BND" || portfolio[index]["Type"] == "UST") {
-        portfolio[index]["Day Price Move"] = Math.round((todayPrice - yesterdayPrice) * 10000 * type) / 100 || 0;
+        portfolio[index]["Day Price Move"] = Math.round((todayPrice - yesterdayPrice) * 10000) / 100 || 0;
       } else {
         portfolio[index]["Day Price Move"] = 0;
       }
     } else if (threeDayAnalytics) {
-      let type = portfolio[index]["Type"] == "CDS" ? -1 : portfolio[index]["Notional Amount"] < 0 ? -1 : 1;
       let todayPrice: any = position["Mid"];
       let previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue: any) => previousDayIssue["ISIN"] == position["ISIN"] && previousDayIssue["ISIN"] && position["ISIN"]) : null;
 
@@ -231,7 +229,7 @@ export function getDayParams(portfolio: PositionBeforeFormatting[], previousDayP
       }
       let yesterdayTwoPrice = previousDayPosition ? previousDayPosition["Mid"] : todayPrice;
       if (portfolio[index]["Type"] == "BND" || portfolio[index]["Type"] == "UST") {
-        portfolio[index]["3-Day Price Move"] = Math.round((todayPrice - yesterdayTwoPrice) * 10000 * type) / 100 || 0;
+        portfolio[index]["3-Day Price Move"] = Math.round((todayPrice - yesterdayTwoPrice) * 10000) / 100 || 0;
       } else {
         portfolio[index]["3-Day Price Move"] = 0;
       }

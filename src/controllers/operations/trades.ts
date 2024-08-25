@@ -6,7 +6,7 @@ import { insertEditLogs } from "./logs";
 import { tradesPool } from "./psql/operation";
 import { convertCentralizedToTradesSQL, convertTradesSQLToCentralized } from "../eblot/eblot";
 
-export async function getAllTradesForSpecificPosition(tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs", isin: string, location: string, date: string, portfolioId: string) {
+export async function getAllTradesForSpecificPosition(tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs" | "canceled_vcons", isin: string, location: string, date: string, portfolioId: string) {
   const client = await tradesPool.connect();
   try {
     let timestamp = new Date(date).getTime();
@@ -33,35 +33,7 @@ export async function getAllTradesForSpecificPosition(tradeType: "vcons" | "ib" 
     client.release();
   }
 }
-export async function getCancelVcons(start: number, end: number) {
-  try {
-    // Connect to the MongoDB client
 
-    // Access the 'structure' database
-    const database = client.db("trades_v_2");
-
-    // Access the collection named by the 'customerId' parameter
-    const collection = database.collection("canceled_vcons");
-
-    // Perform your operations, such as find documents in the collection
-    // This is an example operation that fetches all documents in the collection
-    // Empty query object means "match all documents"
-    let results = await collection
-      .find({ timestamp: { $gte: start, $lte: end } })
-      .sort({ timestamp: -1 })
-      .toArray();
-    for (let index = 0; index < results.length; index++) {
-      results[index]["App Check Test"] = "Canceled Vcon";
-    }
-
-    // The 'results' variable now contains an array of documents from the collection
-    return results;
-  } catch (error) {
-    // Handle any errors that occurred during the operation
-    console.error("An error occurred while retrieving data from MongoDB:", error);
-    return [];
-  }
-}
 export async function getTrade(tradeType: "vcons" | "ib" | "emsx" | "writter_blotter" | "cds_gs", tradeId: string, portfolioId: string) {
   const client = await tradesPool.connect();
   try {

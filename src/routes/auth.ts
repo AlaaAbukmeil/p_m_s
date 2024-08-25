@@ -9,7 +9,6 @@ const authRouter = Router();
 
 authRouter.get("/auth", uploadToBucket.any(), verifyTokenFactSheetMember, async (req: any, res: Response, next: NextFunction) => {
   let test = await checkUserRight(req.email, req.accessRole, req.shareClass);
-
   if (test == false && req.link == true) {
     test = await checkLinkRight(req.token, req.accessRole, req.shareClass);
   }
@@ -74,7 +73,7 @@ authRouter.post("/login", uploadToBucket.any(), async (req: Request, res: Respon
     path: "/",
     domain: ".triadacapital.com",
   };
-  
+
   res.cookie("triada.admin.cookie", user, cookie);
   res.send(user);
 });

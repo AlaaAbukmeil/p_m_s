@@ -33,8 +33,8 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
 
     //to make it consistent with previous versions
     let originalFace = position["Original Face"] || 1;
-    let usdRatio = parseFloat(position["FX Rate"] || position["holdPortfXrate"]) || 1;
-    let holdBackRatio = (position["Asset Class"] || position["Rating Class"]) == "Illiquid" ? fund.holdBackRatio : 1;
+    let usdRatio = parseFloat(position["FX Rate"]) || 1;
+    let holdBackRatio = position["Asset Class"] == "Illiquid" ? fund.holdBackRatio : 1;
     position["Interest"] = position["Interest"] ? position["Interest"] : {};
     position["Quantity"] = position["Notional Amount"] / originalFace;
     position["Interest"];
@@ -124,7 +124,6 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     position["YTD Int. (BC)"] = Math.round(position["YTD Int."] * usdRatio * holdBackRatio);
     position["YTD Int. (USD)"] = position["YTD Int. (BC)"];
 
-    // position["MTD Cost (LC)"] = Math.round(position["MTD Cost"] * holdBackRatio * 1000000) / 1000000;
     position["Cost (LC)"] = Math.round((position["Average Cost"] / bondDivider) * position["Notional Amount"] * holdBackRatio);
     position["Cost MTD (LC)"] = position["Cost MTD"];
 
@@ -221,6 +220,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     }
     portfolio[index]["Asset Class"] = portfolio[index]["Asset Class"] == "" ? "Unspecified" : portfolio[index]["Asset Class"];
     position["FX Rate"] = Math.round(position["FX Rate"] * 1000) / 1000;
+    position["Pin"] = position["Pin"] ? position["Pin"] : "not_pinned";
 
     if (position["Type"] == "FX") {
       // console.log(usdRatio);
@@ -948,7 +948,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         });
       }
       let totalTicker = "";
-      groupedByLocation[locationCode]["Pin"] = "not_pinned";
+      groupedByLocation[locationCode]["Pin"] = "pinned";
       for (let groupPositionIndex = 0; groupPositionIndex < groupedByLocation[locationCode].data.length; groupPositionIndex++) {
         if (groupedByLocation[locationCode].data[groupPositionIndex]["Notional Amount"] == 0) {
           groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = "#C5E1A5";
@@ -979,8 +979,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
           groupedByLocation[locationCode]["id"] = groupedByLocation[locationCode].data[groupPositionIndex]["id"];
         }
 
-        if (groupedByLocation[locationCode].data[groupPositionIndex]["Pin"] == "pinned") {
-          groupedByLocation[locationCode]["Pin"] = "pinned";
+        if (groupedByLocation[locationCode].data[groupPositionIndex]["Pin"] == "not_pinned") {
+          groupedByLocation[locationCode]["Pin"] = "not_pinned";
         }
         if (groupedByLocation[locationCode].data[groupPositionIndex]["Duration"] < 0) {
           groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = "red";
@@ -1014,7 +1014,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
           "Notional Amount": groupedByLocation[locationCode].groupNotional,
           ISIN: groupedByLocation[locationCode]["ISIN"],
           Pin: groupedByLocation[locationCode]["Pin"],
-          id: groupedByLocation[locationCode]["id"]
+          id: groupedByLocation[locationCode]["id"],
         };
         if (groupedByLocation[locationCode].groupSpreadTZ || groupedByLocation[locationCode].groupSpreadTZ == 0) {
           newObject["Current Spread (T)"] = Math.round(groupedByLocation[locationCode].groupSpreadTZ * 100);

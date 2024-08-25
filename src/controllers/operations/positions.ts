@@ -181,7 +181,7 @@ export async function insertPositionsInPortfolio(positions: PositionBeforeFormat
     console.log({ checkCollectionDay, day, snapShotInput });
     if (checkCollectionDay) {
       day = checkCollectionDay;
-    } else {
+    } else if (!checkCollectionDay && !snapShotInput) {
       //insert in index
       day = "portfolio-" + day;
       await insertNewIndex(portfolioId, day);

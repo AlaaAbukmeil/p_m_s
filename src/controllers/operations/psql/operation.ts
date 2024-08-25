@@ -406,6 +406,7 @@ export function formatTrades(data: any[], tradeType: string): CentralizedTradeIn
       portfolio_id: "portfolio_main",
       front_office_check: true,
       resolved: true,
+      front_office_note: element["Front Office Note"],
     };
     result.push(object);
   }
@@ -657,8 +658,8 @@ export function formatPositionsTOSQL(positions: PositionInDB[]) {
       fitch_outlook: safeString(pos["Fitch Outlook"]),
       interest: pos.Interest || {},
       issuer: safeString(pos.Issuer),
-      last_price_update: pos["Last Price Update"],
-      last_upload_trade: pos["Last Upload Trade"],
+      last_price_update: new Date(pos["Last Price Update"]).getTime(),
+      last_upload_trade: new Date(pos["Last Upload Trade"]).getTime(),
       maturity: safeString(pos.Maturity),
       moddys_outlook: safeString(pos["Moddy's Outlook"]),
       moodys_bond_rating: safeString(pos["Moody's Bond Rating"]),

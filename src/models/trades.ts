@@ -86,6 +86,7 @@ export interface CentralizedTrade {
   "Portfolio ID": string;
   Resolved: boolean;
   Id: string;
+  "Front Office Note": string;
 }
 export interface CentralizedTradeMTDRlzd extends CentralizedTrade {
   "Rlzd P&L Amount": number | undefined;
@@ -128,6 +129,7 @@ export interface CentralizedTradeInDB {
   portfolio_id: string;
   front_office_check: boolean;
   resolved: boolean;
+  front_office_note: string;
 }
 
 export interface NewIssue {

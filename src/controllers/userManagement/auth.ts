@@ -7,6 +7,7 @@ import { insertEditLogs } from "../operations/logs";
 import { copyFileSync } from "fs";
 import { generateRandomIntegers, sendEmailToResetPassword, sendWelcomeEmail } from "./tools";
 import { authPool } from "../operations/psql/operation";
+import { UserAuth } from "../../models/auth";
 
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
@@ -90,17 +91,12 @@ export async function checkIfUserExists(
       const userResult = await client.query(userQuery, [email]);
 
       if (userResult.rows.length > 0) {
-        const user = userResult.rows[0];
+        const user: UserAuth = userResult.rows[0];
         const result = await bcrypt.compare(password, user.password);
 
         if (result) {
-          const jwtObject = { email: email, accessRole: user["accessRole"], shareClass: user["shareClass"] };
+          const jwtObject = { email: email, accessRole: user["access_role_instance"], shareClass: user["share_class"] };
           const token = jwt.sign(jwtObject, jwtSecret, { expiresIn: "7d" });
-          const updateDoc = {
-            $set: {
-              lastTimeAccessed: getDateTimeInMongoDBCollectionFormat(new Date()),
-            },
-          };
 
           const updateQuery = `
             UPDATE public.auth_users

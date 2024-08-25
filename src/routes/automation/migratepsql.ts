@@ -18,29 +18,28 @@ import { getIndexingData } from "../../controllers/operations/indexing";
 const migrateRouter = Router();
 const { v4: uuidv4 } = require("uuid");
 
-migrateRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-  const database = client.db("portfolios");
+// migrateRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+//   const database = client.db("portfolios");
 
-  const cursor = await database.listCollections().toArray();
-  let ans = [];
-  for (let index = 0; index < cursor.length; index++) {
-    const element = cursor[index];
-    let object = {
-      name: element["name"],
-      timestamp: new Date(element["name"].split("portfolio-")[1]).getTime(),
-    };
-    if (!element["name"].includes("2024-08-23")) {
-      ans.push(object);
-    }
-  }
+//   const cursor = await database.listCollections().toArray();
+//   let ans = [];
+//   for (let index = 0; index < cursor.length; index++) {
+//     const element = cursor[index];
+//     let object = {
+//       name: element["name"],
+//       timestamp: new Date(element["name"].split("portfolio-")[1]).getTime(),
+//     };
+//     ans.push(object);
+//   }
 
-  let result: Indexing = {
-    portfolio_id: "portfolio_main",
-    portfolio_document_ids: ans,
-  };
-  await insertIndexingData([result]);
-  res.send(result);
-});
+//   let result: Indexing = {
+//     portfolio_id: "portfolio_main",
+//     portfolio_document_ids: ans,
+//   };
+//   await insertIndexingData([result]);
+//   res.send(result);
+// });
+
 // migrateRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
 //   let allCollectionNames = await getAllCollectionNames("portfolio_main");
 //   res.send({ allCollectionNames });
@@ -113,12 +112,12 @@ migrateRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res
 
 //   res.send(200);
 // });
-// migrateRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
-//   let data = await migrateInformationDB("trades_v_2", "ib", {});
-//   let format = formatTrades(data, "ib");
-//   await insertTradesData(format, "ib");
-//   res.send(200);
-// });
+migrateRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  let data = await migrateInformationDB("trades_v_2", "canceled_vcons", {});
+  let format = formatTrades(data, "canceled_vcons");
+  await insertTradesData(format, "canceled_vcons");
+  res.send(200);
+});
 
 // migrateRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
 //   let list = await getAllCollectionNames("portfolio_main");
