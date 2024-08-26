@@ -23,7 +23,7 @@ tradesRouter.get("/rlzd-trades", verifyToken, async (req, res) => {
   try {
     const tradeType: any = req.query.tradeType;
     const isin: any = req.query["isin"];
-    const ticker: any = req.query["ticker"];
+    let ticker: any = req.query["ticker"];
 
     const location: any = req.query["location"];
     let date: any = req.query["date"];

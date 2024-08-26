@@ -207,7 +207,7 @@ async function getTradesForAPositionInDB(tradeType: "vcons" | "ib" | "emsx" | "w
     const { rows } = await client.query(query, [isin, location, startOfMonth, endOfMonth]);
     let trades: any = convertTradesSQLToCentralized(rows, "uploaded_to_app");
 
-    let shortLongGuess = tradeType == "ib" ? "S" : ticker.toString().split(" ")[0] == "T" ? "S" : "B";
+    let shortLongGuess = tradeType == "ib" ? "S" : (ticker || "").toString().split(" ")[0] == "T" ? "S" : "B";
 
     trades = trades.sort((tradeA: any, tradeB: any) => {
       const dateA = new Date(tradeA["Trade Date"]).getTime();
@@ -231,7 +231,7 @@ async function getTradesForAPositionInDB(tradeType: "vcons" | "ib" | "emsx" | "w
     console.error(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "errors", dateTime, "getTradesForAPositionInDB", "controllers/operations/trades.ts");
+    // await insertEditLogs([errorMessage], "errors", dateTime, "getTradesForAPositionInDB", "controllers/operations/trades.ts");
 
     console.error("An error occurred while retrieving data from MongoDB:", error);
   } finally {
@@ -313,7 +313,42 @@ export async function insertTradesData(dataInput: CentralizedTradeInDB[], tableN
 `;
 
     for (const trade of dataInput) {
-      await client.query(insertQuery, [trade.b_s, trade.bb_ticker, trade.location, trade.trade_date, trade.trade_time, trade.settle_date, trade.price, trade.notional_amount, trade.settlement_amount, trade.principal, trade.counter_party, trade.triada_trade_id, trade.seq_no, trade.isin, trade.cuisp, trade.currency, trade.yield, trade.accrued_interest, trade.original_face, trade.comm_fee, trade.trade_type, trade.updated_notional, trade.timestamp, trade.nomura_upload_status, trade.last_nomura_generated, trade.broker_full_name_account, trade.broker_email, trade.settlement_venue, trade.primary_market, trade.broker_email_status, trade.id, trade.portfolio_id, trade.front_office_check, trade.front_office_note]);
+      await client.query(insertQuery, [
+        trade.b_s,
+        trade.bb_ticker,
+        trade.location,
+        trade.trade_date,
+        trade.trade_time,
+        trade.settle_date,
+        trade.price,
+        trade.notional_amount,
+        trade.settlement_amount,
+        trade.principal,
+        trade.counter_party,
+        trade.triada_trade_id,
+        trade.seq_no,
+        trade.isin,
+        trade.cuisp,
+        trade.currency,
+        trade.yield,
+        trade.accrued_interest,
+        trade.original_face,
+        trade.comm_fee,
+        trade.trade_type,
+        trade.updated_notional,
+        trade.timestamp,
+        trade.nomura_upload_status,
+        trade.last_nomura_generated,
+        trade.broker_full_name_account,
+        trade.broker_email,
+        trade.settlement_venue,
+        trade.primary_market,
+        trade.broker_email_status,
+        trade.id,
+        trade.portfolio_id,
+        trade.front_office_check,
+        trade.front_office_note,
+      ]);
     }
 
     await client.query("COMMIT");
