@@ -132,6 +132,8 @@ export async function updatePositionPortfolio(
     let triadaIds: string[] = [];
 
     try {
+      updatePositionsBasedOnTrade(data, portfolio, triadaIds, positions);
+      let updatedPortfolio = formatUpdatedPositions(positions, portfolio, "Last Upload Trade");
       let action1 = await insertTradesData(convertCentralizedToTradesSQL(trades.vconTrades), "vcons");
       try {
         await updateMatchedVcons(trades.vconTrades);
@@ -141,10 +143,8 @@ export async function updatePositionPortfolio(
       let action2 = await insertTradesData(convertCentralizedToTradesSQL(trades.ibTrades), "ib");
       let action3 = await insertTradesData(convertCentralizedToTradesSQL(trades.emsxTrades), "emsx");
       let action4 = await insertTradesData(convertCentralizedToTradesSQL(trades.gsTrades), "cds_gs");
-      updatePositionsBasedOnTrade(data, portfolio, triadaIds, positions);
-      let updatedPortfolio = formatUpdatedPositions(positions, portfolio, "Last Upload Trade");
-      let insertion = await insertPositionsInPortfolio(updatedPortfolio.updatedPortfolio, portfolioId);
 
+      let insertion = await insertPositionsInPortfolio(updatedPortfolio.updatedPortfolio, portfolioId);
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
       await insertEditLogs([positions], "upload_trades", dateTime, "Num of updated/created positions: " + Object.keys(positions).length, "Link: " + link);
 
@@ -601,13 +601,15 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
 
     updatePositionsBasedOnTrade(data, portfolio, triadaIds, positions);
 
+    let updatedPortfolio = formatUpdatedPositions(positions, portfolio, "Last Upload Trade");
+
     try {
       let snapShotName = getSQLIndexFormat(`portfolio-${earliestPortfolioName.predecessorDate}`, portfolioId);
-      let action = await insertPositionsInPortfolio(portfolio, portfolioId, snapShotName);
+      let insertion = await insertPositionsInPortfolio(updatedPortfolio.updatedPortfolio, portfolioId);
       let modifyTradesAction = await modifyTradesDueToRecalculate(data, tradeType);
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
       await insertEditLogs([], "recalculate_position", dateTime, "", data[0]["BB Ticker"] + " " + data[0]["Location"]);
-      return action;
+      return insertion;
     } catch (error) {
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
       console.log(error);
@@ -880,7 +882,7 @@ export function updatePositionsBasedOnTrade(data: CentralizedTrade[], portfolio:
     let tradeExistsAlready = triadaIds.includes(row["Triada Trade Id"]);
 
     let updatingPosition = returnPositionProgress(positions, identifier, location);
-    console.log("returnPositionProgress", { updatingPosition, identifier, location });
+    console.log("returnPositionProgress", { positionQuantity: updatingPosition ? updatingPosition["Notional Amount"] : object["Notional Amount"], tradeQuantatity: currentQuantity, identifier, location });
     let tradeDate: any = new Date(row["Trade Date"]);
     let thisMonth = monthlyRlzdDate(tradeDate);
 
