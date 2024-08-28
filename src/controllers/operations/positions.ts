@@ -819,6 +819,7 @@ export async function updatePositionsBasedOnTrade(data: CentralizedTrade[], port
     let object: any = {};
     if (securityInPortfolio !== 404) {
       object = securityInPortfolio;
+      object["Notional Amount"] = parseFloat(object["Notional Amount"]);
     }
 
     let couponDaysYear = row["BB Ticker"].split(" ")[0] == "T" || row["BB Ticker"].includes("U.S") ? 365.0 : 360.0;
@@ -856,7 +857,7 @@ export async function updatePositionsBasedOnTrade(data: CentralizedTrade[], port
 
     if (!tradeExistsAlready && identifier !== "") {
       triadaIds.push(row["Triada Trade Id"]);
-      if (!updatingPosition) {
+      if (!updatingPosition && securityInPortfolio == 404) {
         let settlementDate = row["Settle Date"];
 
         object["Location"] = row["Location"].trim();
@@ -900,7 +901,7 @@ export async function updatePositionsBasedOnTrade(data: CentralizedTrade[], port
         }
 
         positions.push(object);
-      } else if (returnPositionProgress(positions, identifier, location)) {
+      } else if (updatingPosition) {
         let settlementDate = row["Settle Date"];
         object["Location"] = row["Location"].trim();
         object["Last Modified Date"] = new Date();
@@ -940,6 +941,47 @@ export async function updatePositionsBasedOnTrade(data: CentralizedTrade[], port
           }
         }
         positions = updateExisitingPosition(positions, identifier, location, object);
+      }
+      if (!updatingPosition && securityInPortfolio != 404) {
+        let settlementDate = row["Settle Date"];
+
+        object["Location"] = row["Location"].trim();
+        object["Last Modified Date"] = new Date();
+
+        object["Entry Yield"] = row["Yield"] || 0;
+
+        object["BB Ticker"] = row["BB Ticker"];
+
+        object["ISIN"] = row["ISIN"].trim();
+        object["CUSIP"] = row["Cuisp"].trim() || "";
+        object["Notional Amount"] += currentQuantity;
+
+        object["Currency"] = currency;
+        object["Average Cost"] = rlzdOperation == -1 ? getAverageCost(currentQuantity, object["Notional Amount"], currentPrice, parseFloat(object["Average Cost"])) : object["Average Cost"];
+
+        object["Coupon Rate"] = bondCouponMaturity.rate || 0;
+        object["Maturity"] = bondCouponMaturity.date || 0;
+        object["Interest"] = {};
+        object["Interest"][settlementDate] = object["Interest"][settlementDate] ? parseFloat(object["Interest"][settlementDate]) + currentQuantity : currentQuantity;
+
+        object["Cost MTD"] = {};
+
+        object["Cost MTD"][thisMonth] = operation == 1 ? parseFloat(currentPrincipal) : 0;
+        object["Original Face"] = originalFace;
+
+        if (rlzdOperation == -1) {
+          object["Entry Price"][thisMonth] = currentPrice;
+        }
+        object["Last Individual Upload Trade"] = new Date();
+        let tradeRecord = null;
+        if (!tradeRecord) {
+          tradeRecord = findTradeRecord(data, row["Triada Trade Id"]);
+          if (tradeRecord != null && tradeRecord != undefined) {
+            data[tradeRecord]["Updated Notional"] = object["Notional Amount"];
+          }
+        }
+
+        positions.push(object);
       }
     }
   }
