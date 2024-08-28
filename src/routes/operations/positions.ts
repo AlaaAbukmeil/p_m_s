@@ -49,7 +49,6 @@ positionsRouter.post("/recalculate-position", verifyToken, uploadToBucket.any(),
     } else {
       res.send({ error: "no trades" });
     }
-    res.send(200);
   } catch (error) {
     console.log(error);
     res.send({ error: error });
@@ -137,6 +136,7 @@ positionsRouter.post("/upload-trades", verifyToken, uploadToBucket.any(), async 
       res.send({ error: allTrades.error });
     } else {
       let action: any = await updatePositionPortfolio(allTrades, link, "portfolio_main");
+      console.log({ action });
       if (action?.error) {
         console.log(action);
         res.send({ error: action.error });
@@ -154,9 +154,12 @@ positionsRouter.post("/upload-trades", verifyToken, uploadToBucket.any(), async 
 positionsRouter.post("/update-prices", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
     const fileName = req.files[0].filename;
+    let timestamp = new Date().getTime();
     const path = await generateSignedUrl(fileName);
     let link = bucket + "/" + fileName + "?authuser=2";
     let action: any = await updatePricesPortfolio(path, link, "portfolio_main");
+    let timestamp_2 = new Date().getTime();
+    console.log((timestamp_2 - timestamp) / 1000 + " seconds to update prices");
     if (action?.error) {
       res.send({ error: action.error });
     } else {

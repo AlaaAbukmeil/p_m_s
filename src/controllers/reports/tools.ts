@@ -3,7 +3,7 @@ import { client } from "../userManagement/auth";
 import { formatDateUS, formatDateWorld } from "../common";
 import { getAllDatesSinceLastMonthLastDay, getDateTimeInMongoDBCollectionFormat } from "./common";
 import { indexPool } from "../operations/psql/operation";
-import { getCollectionDays } from "../operations/tools";
+import { getCollectionDays, getCollectionIndexDays } from "../operations/tools";
 
 export function getAverageCost(currentQuantity: number, previousQuantity: number, currentPrice: any, previousAverageCost: any) {
   if (!previousQuantity) {
@@ -234,10 +234,11 @@ export function formatUpdatedPositions(positions: any, portfolio: any, lastUpdat
 export async function getCollectionName(originalDate: any, portfolioId: string) {
   let list = await getAllCollectionNames(portfolioId);
   let day = getDateTimeInMongoDBCollectionFormat(new Date(originalDate).getTime());
-  let formatted = getCollectionDays(list);
-  let date = formatDateUS(day);
+  let formatted = getCollectionIndexDays(list);
+  let date = day.split(" ")[0];
 
   let result = formatted.find((dateList: string) => dateList.includes(date));
+
   return result;
 }
 

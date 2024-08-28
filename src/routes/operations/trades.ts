@@ -63,7 +63,8 @@ tradesRouter.post("/delete-trade", verifyToken, uploadToBucket.any(), async (req
   try {
     let data = req.body;
     let tradeType = req.body.tradeType;
-    let action: any = await deleteTrade(tradeType, data["id"], data["BB Ticker"], data["Location"]);
+    let action: any = await deleteTrade(tradeType, data["Id"], data["BB Ticker"], data["Location"]);
+    console.log({ tradeType, action }, data["Id"], data["BB Ticker"], data["Location"]);
     if (action.error) {
       res.send({ error: action.error, status: 404 });
     } else {

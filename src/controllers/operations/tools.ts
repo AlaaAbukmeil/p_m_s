@@ -60,6 +60,26 @@ export function getCollectionDays(collections: { name: string; timestamp: number
     return [];
   }
 }
+export function getCollectionIndexDays(collections: { name: string; timestamp: number }[]): string[] {
+  try {
+    let dates: any = [];
+    let datesIndex: any = [];
+
+    for (let index = 0; index < collections.length; index++) {
+      let collectionTime = collections[index].name.split("portfolio");
+      let date = formatDateUS(collectionTime);
+      if (!dates.includes(date)) {
+        dates.push(date);
+        datesIndex.push(collections[index].name);
+      }
+    }
+
+    return datesIndex;
+  } catch (error: any) {
+    console.log({ getCollectionDays: error });
+    return [];
+  }
+}
 export function getSecurityInPortfolioWithoutLocation(portfolio: any, identifier: string): PositionInDB[] | 404 {
   let document: any = [];
   if (identifier == "" || !identifier) {

@@ -116,10 +116,10 @@ export async function updatePricesPortfolio(path: string, link: string, portfoli
         }
 
         if (!currencyStart) {
-          let positions: PositionInDB[] | 404 = getSecurityInPortfolioWithoutLocation(portfolio, row["Bloomberg ID"]);
+          let positions: PositionInDB[] | 404 = getSecurityInPortfolioWithoutLocation(portfolio, row["ISIN"]);
 
           if (positions == 404) {
-            positions = getSecurityInPortfolioWithoutLocation(portfolio, row["ISIN"]);
+            positions = getSecurityInPortfolioWithoutLocation(portfolio, row["Bloomberg ID"]);
           }
           if (positions == 404) {
             positions = getSecurityInPortfolioWithoutLocation(portfolio, row["BB Ticker"]);

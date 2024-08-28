@@ -95,9 +95,10 @@ export function returnPositionProgress(positions: any, identifier: any, location
   let updateingPosition;
   for (let index = 0; index < positions.length; index++) {
     let position = positions[index];
-    if ((position["ISIN"] == identifier || position["BB Ticker"] == identifier) && position["Location"] == location) {
-      updateingPosition = position;
-    }
+    if (position["ISIN"])
+      if ((position["ISIN"] == identifier || position["BB Ticker"] == identifier) && position["Location"] == location) {
+        updateingPosition = position;
+      }
   }
   return updateingPosition;
 }
@@ -130,11 +131,7 @@ export async function updatePositionPortfolio(
     let portfolio = await getPortfolio(portfolioId);
     let triadaIds: string[] = [];
 
-    await updatePositionsBasedOnTrade(data, portfolio, triadaIds, positions, trades);
-
     try {
-      let updatedPortfolio = formatUpdatedPositions(positions, portfolio, "Last Upload Trade");
-      let insertion = await insertPositionsInPortfolio(updatedPortfolio.updatedPortfolio, portfolioId);
       let action1 = await insertTradesData(convertCentralizedToTradesSQL(trades.vconTrades), "vcons");
       try {
         await updateMatchedVcons(trades.vconTrades);
@@ -144,6 +141,9 @@ export async function updatePositionPortfolio(
       let action2 = await insertTradesData(convertCentralizedToTradesSQL(trades.ibTrades), "ib");
       let action3 = await insertTradesData(convertCentralizedToTradesSQL(trades.emsxTrades), "emsx");
       let action4 = await insertTradesData(convertCentralizedToTradesSQL(trades.gsTrades), "cds_gs");
+      updatePositionsBasedOnTrade(data, portfolio, triadaIds, positions);
+      let updatedPortfolio = formatUpdatedPositions(positions, portfolio, "Last Upload Trade");
+      let insertion = await insertPositionsInPortfolio(updatedPortfolio.updatedPortfolio, portfolioId);
 
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
       await insertEditLogs([positions], "upload_trades", dateTime, "Num of updated/created positions: " + Object.keys(positions).length, "Link: " + link);
@@ -153,9 +153,7 @@ export async function updatePositionPortfolio(
       console.log(error);
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
       let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-      if (!errorMessage.toString().includes("Batch cannot be empty")) {
-        await insertEditLogs([errorMessage], "errors", dateTime, "insertPositionsInPortfolio", "controllers/operations/positions.ts 1");
-      }
+      await insertEditLogs([errorMessage.toString()], "errors", dateTime, "insertPositionsInPortfolio", "controllers/operations/positions.ts 1");
 
       return { error: error.toString() };
     }
@@ -164,9 +162,7 @@ export async function updatePositionPortfolio(
 
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-    if (!errorMessage.toString().includes("Batch cannot be empty")) {
-      await insertEditLogs([errorMessage], "errors", dateTime, "insertPositionsInPortfolio", "controllers/operations/positions.ts 2");
-    }
+    await insertEditLogs([errorMessage.toString()], "errors", dateTime, "insertPositionsInPortfolio", "controllers/operations/positions.ts 2");
     return { error: error.toString() };
   }
 }
@@ -178,7 +174,6 @@ export async function insertPositionsInPortfolio(positions: PositionBeforeFormat
     let day = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() - 0 * 24 * 60 * 60 * 1000));
 
     let checkCollectionDay = await getCollectionName(day, portfolioId);
-    console.log({ checkCollectionDay, day, snapShotInput });
     if (checkCollectionDay) {
       day = checkCollectionDay;
     } else if (!checkCollectionDay && !snapShotInput) {
@@ -370,7 +365,6 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
     let editedPositionTitles = Object.keys(editedPosition);
 
     let id = editedPosition["id"];
-    console.log({ id });
     let unEditableParams = [
       "id",
       "Value",
@@ -605,7 +599,7 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
 
     let triadaIds: any = [];
 
-    await updatePositionsBasedOnTrade(data, portfolio, triadaIds, positions, {});
+    updatePositionsBasedOnTrade(data, portfolio, triadaIds, positions);
 
     try {
       let snapShotName = getSQLIndexFormat(`portfolio-${earliestPortfolioName.predecessorDate}`, portfolioId);
@@ -856,7 +850,7 @@ export async function deletePosition(data: any, dateInput: any, portfolioId: str
     client.release();
   }
 }
-export async function updatePositionsBasedOnTrade(data: CentralizedTrade[], portfolio: PositionInDB[], triadaIds: string[], positions: PositionInDB[], trades: { [key: string]: CentralizedTrade[] }) {
+export function updatePositionsBasedOnTrade(data: CentralizedTrade[], portfolio: PositionInDB[], triadaIds: string[], positions: PositionInDB[]) {
   for (let index = 0; index < data.length; index++) {
     let row = data[index];
     row["BB Ticker"] = row["BB Ticker"];
@@ -864,10 +858,10 @@ export async function updatePositionsBasedOnTrade(data: CentralizedTrade[], port
     let identifier = row["ISIN"] !== "" ? row["ISIN"].trim() : row["BB Ticker"].trim();
     let location = row["Location"].trim();
     let securityInPortfolio: any = getSecurityInPortfolio(portfolio, identifier, location);
-
     let object: any = {};
     if (securityInPortfolio !== 404) {
       object = securityInPortfolio;
+      object["Notional Amount"] = parseFloat(object["Notional Amount"]);
     }
 
     let couponDaysYear = row["BB Ticker"].split(" ")[0] == "T" || row["BB Ticker"].includes("U.S") ? 365.0 : 360.0;
@@ -886,6 +880,7 @@ export async function updatePositionsBasedOnTrade(data: CentralizedTrade[], port
     let tradeExistsAlready = triadaIds.includes(row["Triada Trade Id"]);
 
     let updatingPosition = returnPositionProgress(positions, identifier, location);
+    console.log("returnPositionProgress", { updatingPosition, identifier, location });
     let tradeDate: any = new Date(row["Trade Date"]);
     let thisMonth = monthlyRlzdDate(tradeDate);
 
@@ -905,7 +900,7 @@ export async function updatePositionsBasedOnTrade(data: CentralizedTrade[], port
 
     if (!tradeExistsAlready && identifier !== "") {
       triadaIds.push(row["Triada Trade Id"]);
-      if (!updatingPosition) {
+      if (!updatingPosition && securityInPortfolio == 404) {
         let settlementDate = row["Settle Date"];
 
         object["Location"] = row["Location"].trim();
@@ -949,7 +944,7 @@ export async function updatePositionsBasedOnTrade(data: CentralizedTrade[], port
         }
 
         positions.push(object);
-      } else if (returnPositionProgress(positions, identifier, location)) {
+      } else if (updatingPosition) {
         let settlementDate = row["Settle Date"];
         object["Location"] = row["Location"].trim();
         object["Last Modified Date"] = new Date();
@@ -989,6 +984,44 @@ export async function updatePositionsBasedOnTrade(data: CentralizedTrade[], port
           }
         }
         positions = updateExisitingPosition(positions, identifier, location, object);
+      } else if (securityInPortfolio != 404 && !updatingPosition) {
+        let settlementDate = row["Settle Date"];
+        object["Location"] = row["Location"].trim();
+        object["Last Modified Date"] = new Date();
+        object["BB Ticker"] = row["BB Ticker"];
+        object["Mid"] = currentPrice;
+
+        object["ISIN"] = row["ISIN"];
+        object["Currency"] = currency;
+        object["Notional Amount"] += currentQuantity;
+
+        object["Average Cost"] = rlzdOperation == -1 ? getAverageCost(currentQuantity, object["Notional Amount"], currentPrice, parseFloat(object["Average Cost"])) : object["Average Cost"];
+        // this is reversed because the quantity is negated
+
+        if (!object["Cost MTD"]) {
+          object["Cost MTD"][thisMonth] = 0;
+        }
+
+        object["Cost MTD"][thisMonth] = operation == 1 ? parseFloat(object["Cost MTD"][thisMonth]) + currentPrincipal : 0;
+
+        object["Coupon Rate"] = bondCouponMaturity.rate || 0;
+        object["Maturity"] = bondCouponMaturity.date || 0;
+        object["Interest"][settlementDate] = object["Interest"][settlementDate] ? parseFloat(object["Interest"][settlementDate]) + currentQuantity : currentQuantity;
+        object["Original Face"] = originalFace;
+        object["Coupon Duration"] = object["Coupon Rate"] ? couponDaysYear : "";
+        if (rlzdOperation == -1) {
+          object["Entry Price"][thisMonth] = currentPrice;
+        }
+
+        object["Last Individual Upload Trade"] = new Date();
+        let tradeRecord = null;
+        if (!tradeRecord) {
+          tradeRecord = findTradeRecord(data, row["Triada Trade Id"]);
+          if (tradeRecord != null && tradeRecord != undefined) {
+            data[tradeRecord]["Updated Notional"] = object["Notional Amount"];
+          }
+        }
+        positions.push(object);
       }
     }
   }

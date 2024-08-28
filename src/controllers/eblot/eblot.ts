@@ -3,6 +3,7 @@ import { insertEditLogs } from "../operations/logs";
 import { tradesPool } from "../operations/psql/operation";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { client } from "../userManagement/auth";
+const { v4: uuidv4 } = require("uuid");
 
 export async function getNewTrades(portfolioId: string): Promise<CentralizedTrade[]> {
   const client = await tradesPool.connect();
@@ -75,43 +76,46 @@ export function convertCentralizedToTradesSQL(centralizedTrades: CentralizedTrad
   const safeString = (value: any) => (typeof value === "string" || typeof value === "number" ? value.toString() : "");
   const safeNumber = (value: any) => (typeof value === "number" || parseFloat(value) ? parseFloat(value) : 0);
 
-  let copy: CentralizedTradeInDB[] = centralizedTrades.map((trade) => ({
-    b_s: safeString(trade["B/S"]),
-    bb_ticker: safeString(trade["BB Ticker"]),
-    location: safeString(trade.Location),
-    trade_date: safeString(trade["Trade Date"]),
-    trade_time: safeString(trade["Trade Time"]),
-    settle_date: safeString(trade["Settle Date"]),
-    price: safeNumber(trade.Price),
-    notional_amount: safeNumber(trade["Notional Amount"]),
-    settlement_amount: safeNumber(trade["Settlement Amount"]),
-    principal: safeNumber(trade.Principal),
-    counter_party: safeString(trade["Counter Party"]),
-    triada_trade_id: safeString(trade["Triada Trade Id"]),
-    seq_no: safeString(trade["Seq No"]),
-    isin: safeString(trade.ISIN),
-    cuisp: safeString(trade.Cuisp),
-    currency: safeString(trade.Currency),
-    yield: safeString(trade.Yield),
-    accrued_interest: safeNumber(trade["Accrued Interest"]),
-    original_face: safeNumber(trade["Original Face"]),
-    comm_fee: safeNumber(trade["Comm/Fee"]),
-    trade_type: safeString(trade["Trade Type"]),
-    updated_notional: safeNumber(trade["Updated Notional"]) || null,
-    timestamp: safeNumber(trade.timestamp),
-
-    nomura_upload_status: safeString(trade["Nomura Upload Status"]),
-    last_nomura_generated: safeString(trade["Last Nomura Generated"]),
-    broker_full_name_account: safeString(trade["Broker Full Name & Account"]),
-    broker_email: safeString(trade["Broker Email"]),
-    settlement_venue: safeString(trade["Settlement Venue"]),
-    primary_market: trade["Primary (True/False)"] === "True",
-    broker_email_status: safeString(trade["Broker Email Status"]),
-    front_office_check: trade["Front Office Check"] ,
-    portfolio_id: safeString(trade["Portfolio ID"]),
-    resolved: trade.Resolved,
-    id: safeString(trade.Id),
-    front_office_note: trade["Front Office Note"] || "",
-  }));
+  let copy: CentralizedTradeInDB[] = centralizedTrades.map((trade) => {
+    let id = uuidv4();
+    return {
+      b_s: safeString(trade["B/S"]),
+      bb_ticker: safeString(trade["BB Ticker"]),
+      location: safeString(trade.Location),
+      trade_date: safeString(trade["Trade Date"]),
+      trade_time: safeString(trade["Trade Time"]),
+      settle_date: safeString(trade["Settle Date"]),
+      price: safeNumber(trade.Price),
+      notional_amount: safeNumber(trade["Notional Amount"]),
+      settlement_amount: safeNumber(trade["Settlement Amount"]),
+      principal: safeNumber(trade.Principal),
+      counter_party: safeString(trade["Counter Party"]),
+      triada_trade_id: safeString(trade["Triada Trade Id"]),
+      seq_no: safeString(trade["Seq No"]),
+      isin: safeString(trade.ISIN),
+      cuisp: safeString(trade.Cuisp),
+      currency: safeString(trade.Currency),
+      yield: safeString(trade.Yield),
+      accrued_interest: safeNumber(trade["Accrued Interest"]),
+      original_face: safeNumber(trade["Original Face"]),
+      comm_fee: safeNumber(trade["Comm/Fee"]),
+      trade_type: safeString(trade["Trade Type"]),
+      updated_notional: safeNumber(trade["Updated Notional"]) || null,
+      timestamp: safeNumber(trade.timestamp),
+      nomura_upload_status: safeString(trade["Nomura Upload Status"]),
+      last_nomura_generated: safeString(trade["Last Nomura Generated"]),
+      broker_full_name_account: safeString(trade["Broker Full Name & Account"]),
+      broker_email: safeString(trade["Broker Email"]),
+      settlement_venue: safeString(trade["Settlement Venue"]),
+      primary_market: trade["Primary (True/False)"] === "True",
+      broker_email_status: safeString(trade["Broker Email Status"]),
+      front_office_check: trade["Front Office Check"],
+      portfolio_id: "portfolio_main",
+      resolved: trade.Resolved,
+      id: trade.Id || id,
+      front_office_note: trade["Front Office Note"] || "",
+    };
+  });
+  console.log({ copy });
   return copy;
 }

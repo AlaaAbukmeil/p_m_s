@@ -412,96 +412,7 @@ export function formatTrades(data: any[], tradeType: string): CentralizedTradeIn
   }
   return result;
 }
-export async function insertTradesData(dataInput: CentralizedTradeInDB[], tableName: string) {
-  const client = await tradesPool.connect();
-  try {
-    await client.query("BEGIN");
 
-    const insertQuery = `
-  INSERT INTO public.trades_${tableName} (
-    b_s, bb_ticker, location, trade_date, trade_time, settle_date, price, notional_amount, settlement_amount, principal, counter_party, triada_trade_id, seq_no, isin, cuisp, currency, yield, accrued_interest, original_face, comm_fee, trade_type, updated_notional, timestamp, nomura_upload_status, last_nomura_generated, broker_full_name_account, broker_email, settlement_venue, primary_market, broker_email_status, id, portfolio_id, front_office_check
-  )
-  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33)
-  ON CONFLICT (triada_trade_id, trade_type) DO UPDATE SET
-    b_s = EXCLUDED.b_s,
-    bb_ticker = EXCLUDED.bb_ticker,
-    location = EXCLUDED.location,
-    trade_date = EXCLUDED.trade_date,
-    trade_time = EXCLUDED.trade_time,
-    settle_date = EXCLUDED.settle_date,
-    price = EXCLUDED.price,
-    notional_amount = EXCLUDED.notional_amount,
-    settlement_amount = EXCLUDED.settlement_amount,
-    principal = EXCLUDED.principal,
-    counter_party = EXCLUDED.counter_party,
-    seq_no = EXCLUDED.seq_no,
-    isin = EXCLUDED.isin,
-    cuisp = EXCLUDED.cuisp,
-    currency = EXCLUDED.currency,
-    yield = EXCLUDED.yield,
-    accrued_interest = EXCLUDED.accrued_interest,
-    original_face = EXCLUDED.original_face,
-    comm_fee = EXCLUDED.comm_fee,
-    trade_type = EXCLUDED.trade_type,
-    updated_notional = EXCLUDED.updated_notional,
-    timestamp = EXCLUDED.timestamp,
-    nomura_upload_status = EXCLUDED.nomura_upload_status,
-    last_nomura_generated = EXCLUDED.last_nomura_generated,
-    broker_full_name_account = EXCLUDED.broker_full_name_account,
-    broker_email = EXCLUDED.broker_email,
-    settlement_venue = EXCLUDED.settlement_venue,
-    primary_market = EXCLUDED.primary_market,
-    broker_email_status = EXCLUDED.broker_email_status,
-    portfolio_id = EXCLUDED.portfolio_id,
-    front_office_check = EXCLUDED.front_office_check;
-`;
-
-    for (const trade of dataInput) {
-      await client.query(insertQuery, [
-        trade.b_s,
-        trade.bb_ticker,
-        trade.location,
-        trade.trade_date,
-        trade.trade_time,
-        trade.settle_date,
-        trade.price,
-        trade.notional_amount,
-        trade.settlement_amount,
-        trade.principal,
-        trade.counter_party,
-        trade.triada_trade_id,
-        trade.seq_no,
-        trade.isin,
-        trade.cuisp,
-        trade.currency,
-        trade.yield,
-        trade.accrued_interest,
-        trade.original_face,
-        trade.comm_fee,
-        trade.trade_type,
-        trade.updated_notional,
-        trade.timestamp,
-        trade.nomura_upload_status,
-        trade.last_nomura_generated,
-        trade.broker_full_name_account,
-        trade.broker_email,
-        trade.settlement_venue,
-        trade.primary_market,
-        trade.broker_email_status,
-        trade.id,
-        trade.portfolio_id,
-        trade.front_office_check,
-      ]);
-    }
-
-    await client.query("COMMIT");
-  } catch (err: any) {
-    await client.query("ROLLBACK");
-    console.error("Error inserting trades", err.stack);
-  } finally {
-    client.release();
-  }
-}
 
 export function formatFundMTD(data: any[]): FundDetailsInDB[] {
   let result: FundDetailsInDB[] = [];
@@ -658,8 +569,8 @@ export function formatPositionsTOSQL(positions: PositionInDB[]) {
       fitch_outlook: safeString(pos["Fitch Outlook"]),
       interest: pos.Interest || {},
       issuer: safeString(pos.Issuer),
-      last_price_update: new Date(pos["Last Price Update"]).getTime(),
-      last_upload_trade: new Date(pos["Last Upload Trade"]).getTime(),
+      last_price_update: pos["Last Price Update"],
+      last_upload_trade: pos["Last Upload Trade"],
       maturity: safeString(pos.Maturity),
       moddys_outlook: safeString(pos["Moddy's Outlook"]),
       moodys_bond_rating: safeString(pos["Moody's Bond Rating"]),
