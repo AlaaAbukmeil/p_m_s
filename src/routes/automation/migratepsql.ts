@@ -30,7 +30,7 @@ migrateRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res
       timestamp: new Date(element["name"].split("portfolio-")[1]).getTime(),
     };
     console.log(element["name"]);
-    if (!element["name"].includes("2024-08-26")) {
+    if (!element["name"].includes("2024-08-28")) {
       ans.push(object);
     }
   }

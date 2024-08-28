@@ -202,7 +202,7 @@ export async function insertPositionsInPortfolio(positions: PositionBeforeFormat
           cusip = $6,
           bloomberg_id = $7,
           bid = $8,
-          mid = $9,
+          mid = COALESCE($9,mid),
           ask = $10,
           bloomberg_mid_bgn = $11,
           notional_amount = $12,
@@ -447,7 +447,6 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
     // these keys are made up by the function frontend table, it reverts keys to original keys
 
     let positionIndex = null;
-
     for (let index = 0; index < portfolio.length; index++) {
       let position = portfolio[index];
       if (position["id"].toString() == id) {
