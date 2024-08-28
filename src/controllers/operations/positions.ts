@@ -108,7 +108,7 @@ export async function updatePositionPortfolio(
     let portfolio = await getPortfolio();
     let triadaIds: string[] = [];
 
-    await updatePositionsBasedOnTrade(data, portfolio, triadaIds, positions, trades);
+    await updatePositionsBasedOnTrade(data, portfolio, triadaIds, positions, false);
 
     try {
       let updatedPortfolio = formatUpdatedPositions(positions, portfolio, "Last Upload Trade");
@@ -589,7 +589,7 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
 
     let triadaIds: any = [];
 
-    await updatePositionsBasedOnTrade(data, portfolio, triadaIds, positions, {});
+    await updatePositionsBasedOnTrade(data, portfolio, triadaIds, positions, true);
 
     try {
       console.log(positions);
@@ -807,14 +807,14 @@ export async function deletePosition(data: any, dateInput: any): Promise<any> {
     return { error: error.message }; // Return the error message
   }
 }
-export async function updatePositionsBasedOnTrade(data: CentralizedTrade[], portfolio: PositionInDB[], triadaIds: string[], positions: PositionInDB[], trades: { [key: string]: CentralizedTrade[] }) {
+export async function updatePositionsBasedOnTrade(data: CentralizedTrade[], portfolio: PositionInDB[], triadaIds: string[], positions: PositionInDB[], reset: boolean) {
   for (let index = 0; index < data.length; index++) {
     let row = data[index];
     row["BB Ticker"] = row["BB Ticker"];
     let originalFace = parseFloat(row["Original Face"]);
     let identifier = row["ISIN"] !== "" ? row["ISIN"].trim() : row["BB Ticker"].trim();
     let location = row["Location"].trim();
-    let securityInPortfolio: any = getSecurityInPortfolio(portfolio, identifier, location);
+    let securityInPortfolio: any = reset ? 404 : getSecurityInPortfolio(portfolio, identifier, location);
 
     let object: any = {};
     if (securityInPortfolio !== 404) {
