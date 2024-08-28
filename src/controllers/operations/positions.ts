@@ -132,7 +132,7 @@ export async function updatePositionPortfolio(
     let triadaIds: string[] = [];
 
     try {
-      updatePositionsBasedOnTrade(data, portfolio, triadaIds, positions);
+      updatePositionsBasedOnTrade(data, portfolio, triadaIds, positions, false);
       let updatedPortfolio = formatUpdatedPositions(positions, portfolio, "Last Upload Trade");
       let action1 = await insertTradesData(convertCentralizedToTradesSQL(trades.vconTrades), "vcons");
       try {
@@ -599,13 +599,13 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
 
     let triadaIds: any = [];
 
-    updatePositionsBasedOnTrade(data, portfolio, triadaIds, positions);
+    updatePositionsBasedOnTrade(data, portfolio, triadaIds, positions, true);
 
     let updatedPortfolio = formatUpdatedPositions(positions, portfolio, "Last Upload Trade");
 
     try {
       let snapShotName = getSQLIndexFormat(`portfolio-${earliestPortfolioName.predecessorDate}`, portfolioId);
-      let insertion = await insertPositionsInPortfolio(updatedPortfolio.updatedPortfolio, portfolioId);
+      let insertion = await insertPositionsInPortfolio(updatedPortfolio.updatedPortfolio, portfolioId, snapShotName);
       let modifyTradesAction = await modifyTradesDueToRecalculate(data, tradeType);
       let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
       await insertEditLogs([], "recalculate_position", dateTime, "", data[0]["BB Ticker"] + " " + data[0]["Location"]);
@@ -852,14 +852,14 @@ export async function deletePosition(data: any, dateInput: any, portfolioId: str
     client.release();
   }
 }
-export function updatePositionsBasedOnTrade(data: CentralizedTrade[], portfolio: PositionInDB[], triadaIds: string[], positions: PositionInDB[]) {
+export function updatePositionsBasedOnTrade(data: CentralizedTrade[], portfolio: PositionInDB[], triadaIds: string[], positions: PositionInDB[], reset: boolean) {
   for (let index = 0; index < data.length; index++) {
     let row = data[index];
     row["BB Ticker"] = row["BB Ticker"];
     let originalFace = row["Original Face"];
     let identifier = row["ISIN"] !== "" ? row["ISIN"].trim() : row["BB Ticker"].trim();
     let location = row["Location"].trim();
-    let securityInPortfolio: any = getSecurityInPortfolio(portfolio, identifier, location);
+    let securityInPortfolio: any = reset ? 404 : getSecurityInPortfolio(portfolio, identifier, location);
     let object: any = {};
     if (securityInPortfolio !== 404) {
       object = securityInPortfolio;
@@ -909,6 +909,7 @@ export function updatePositionsBasedOnTrade(data: CentralizedTrade[], portfolio:
         object["Last Modified Date"] = new Date();
 
         object["Entry Yield"] = row["Yield"] || 0;
+        object["Mid"] = currentPrice;
 
         object["BB Ticker"] = row["BB Ticker"];
 
@@ -951,6 +952,7 @@ export function updatePositionsBasedOnTrade(data: CentralizedTrade[], portfolio:
         object["Location"] = row["Location"].trim();
         object["Last Modified Date"] = new Date();
         object["BB Ticker"] = row["BB Ticker"];
+        object["Mid"] = currentPrice;
 
         object["ISIN"] = row["ISIN"];
         object["Currency"] = currency;
