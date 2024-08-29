@@ -4,7 +4,7 @@ import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { CentralizedTrade, CentralizedTradeInDB, NewIssue } from "../../models/trades";
 import { insertEditLogs } from "./logs";
 import { tradesPool } from "./psql/operation";
-import { convertCentralizedToTradesSQL, convertTradesSQLToCentralized } from "../eblot/eblot";
+import { convertCentralizedToTradesSQL, convertTradesSQLToCentralized } from "../db/convert";
 
 export async function getAllTradesForSpecificPosition(tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs" | "canceled_vcons", isin: string, location: string, date: string, portfolioId: string) {
   const client = await tradesPool.connect();

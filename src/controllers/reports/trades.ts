@@ -7,7 +7,7 @@ import { getAverageCost } from "./tools";
 import { updatePositionsBasedOnTrade } from "../operations/positions";
 import { sortTradesOnTheSameDate } from "../operations/readExcel";
 import { tradesPool } from "../operations/psql/operation";
-import { convertTradesSQLToCentralized } from "../eblot/eblot";
+import { convertTradesSQLToCentralized } from "../db/convert";
 
 export async function getTrades(tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs", portfolioId: string) {
   const client = await tradesPool.connect();

@@ -8,11 +8,11 @@ import { modifyTradesDueToRecalculate, updateMatchedVcons } from "./trades";
 import { insertEditLogs } from "./logs";
 import { swapMonthDay } from "../common";
 import { PositionBeforeFormatting, PositionInDB, PositionInSQLDB } from "../../models/portfolio";
-import { convertCentralizedToTradesSQL } from "../eblot/eblot";
-import { formatPositionsApp, formatPositionsTOSQL, indexPool, pinnedPool, portfolioPool } from "./psql/operation";
+import {  indexPool, pinnedPool, portfolioPool } from "./psql/operation";
 import { CentralizedTradeInDB } from "../../models/trades";
 import { getSQLIndexFormat } from "./tools";
 import { insertNewIndex } from "./indexing";
+import { convertCentralizedToTradesSQL, formatPositionsApp, formatPositionsTOSQL } from "../db/convert";
 const ObjectId = require("mongodb").ObjectId;
 const { v4: uuidv4 } = require("uuid");
 
