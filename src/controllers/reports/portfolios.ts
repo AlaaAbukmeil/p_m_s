@@ -187,9 +187,8 @@ export function getDayParams(portfolio: PositionBeforeFormatting[], previousDayP
       let previousDayPosition = previousDayPortfolio ? previousDayPortfolio.find((previousDayIssue: any) => previousDayIssue["ISIN"] == position["ISIN"] && previousDayIssue["ISIN"] && position["ISIN"] && previousDayIssue["Notional Amount"] != 0) : null;
 
       if (previousDayPosition) {
-        let previousMark = previousDayPosition ? (previousDayPosition["Mid"] ? previousDayPosition["Mid"] : null) : null;
-        let previousFxRate = previousDayPosition ? (previousDayPosition["FX Rate"] ? previousDayPosition["FX Rate"] : previousDayPosition["holdPortfXrate"] ? previousDayPosition["holdPortfXrate"] : portfolio[index]["FX Rate"]) : portfolio[index]["FX Rate"];
-
+        let previousMark = previousDayPosition["Mid"];
+        let previousFxRate = previousDayPosition["FX Rate"];
         portfolio[index]["Previous FX"] = previousFxRate;
         portfolio[index]["Previous Mark"] = previousMark;
       }
