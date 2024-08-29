@@ -595,14 +595,14 @@ export function sortObjectByValues(obj: any, param = "") {
     return sortedObj;
   }
 }
-export function getLatestDateYYYYMM(dates: string[]): string {
+export function getLatestDateYYYYMM(dates: string[], log = false): string {
   if (dates.length === 0) return "";
 
   return dates.reduce((latest, current) => {
-    const [currentMonth, currentYear] = latest.split("/").map(Number);
-    const [latestMonth, latestYear] = current.split("/").map(Number);
+    const [currentYear, currentMonth] = [latest.split("/")[0], latest.split("/")[1]];
+    const [latestYear, latestMonth] = [current.split("/")[0], current.split("/")[1]];
 
-    if (currentYear > latestYear || (currentYear === latestYear && latestMonth > currentMonth)) {
+    if (currentYear > latestYear || (currentYear === latestYear && currentMonth > latestMonth)) {
       return latest;
     }
 
