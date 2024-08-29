@@ -316,6 +316,8 @@ export async function editPosition(editedPosition: any, date: string) {
       "Event Type",
       "Edit Note",
       "Factor Date (if any)",
+      "Bloomberg Mid BGN",
+      "MTD Int.",
     ];
     // these keys are made up by the function frontend table, it reverts keys to original keys
 
@@ -398,10 +400,9 @@ export async function editPosition(editedPosition: any, date: string) {
       }
     }
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    portfolio[positionIndex] = positionInPortfolio;
     await insertEditLogs(changes, editedPosition["Event Type"], dateTime, editedPosition["Edit Note"], positionInPortfolio["BB Ticker"] + " " + positionInPortfolio["Location"]);
-
-    let action = await insertTradesInPortfolioAtASpecificDateBasedOnID(portfolio, `portfolio-${earliestPortfolioName.predecessorDate}`);
+    console.log({ positionInPortfolio });
+    let action = await insertTradesInPortfolioAtASpecificDateBasedOnID([positionInPortfolio], `portfolio-${earliestPortfolioName.predecessorDate}`);
     if (action) {
       return { status: 200 };
     } else {
@@ -628,9 +629,8 @@ export async function readCalculatePosition(data: CentralizedTrade[], date: stri
 }
 
 export async function insertFXPosition(position: any, date: any) {
-  console.log(date, new Date(date), position);
   let today = swapMonthDay(date);
-  let fxPositions: PositionInDB = {
+  let fxPositions: any = {
     Type: "FX",
     "Notional Amount": position["Notional Amount"],
     "BB Ticker": position["Code"],
@@ -640,74 +640,6 @@ export async function insertFXPosition(position: any, date: any) {
     Location: position["Location"],
     Interest: {},
     "Entry Price": {},
-    Currency: "",
-    Ask: "",
-    "Average Cost": "",
-    "BBG Composite Rating": "",
-    Bid: "",
-    "Bloomberg ID": "",
-    Broker: "",
-    CUSIP: "",
-    "Call Date": "",
-    Country: "",
-    "Coupon Rate": "",
-    DV01: "",
-    "Entry Yield": "",
-    "FX Rate": "",
-    "Fitch Bond Rating": "",
-    "Fitch Outlook": "",
-    Group: "",
-    Issue: "",
-    Issuer: "",
-    "Last Individual Upload Trade": new Date(),
-    "Last Modified Date": new Date(),
-    "Last Price Update": new Date(),
-    "Last Upload Trade": new Date(),
-    "Last edit operation": new Date(),
-    "Last recalculate trades": new Date(),
-    "MTD Rlzd": "",
-    Maturity: "",
-    Mid: "",
-    "Moddy's Outlook": "",
-    "Modified Duration": "",
-    "Moody's Bond Rating": "",
-    "Moody's Outlook": "",
-    Net: "",
-    OAS: "",
-    "Original Face": "",
-    Quantity: "",
-    "S&P Bond Rating": "",
-    "S&P Outlook": "",
-    Sector: "",
-    YTM: "",
-    YTW: "",
-    "Z Spread": "",
-    "Previous FX": "",
-    "Previous Mark": "",
-    Notes: "",
-    "MTD Mark": "",
-    "MTD FX": "",
-    "YTD FX": "",
-    "MTD URlzd": "",
-    "MTD Int.": "",
-    "Day URlzd": "",
-    "Day Int.": "",
-    "YTD URlzd": "",
-    "Coupon Duration": "",
-    "YTD Int.": "",
-    "YTD Rlzd": "",
-    "Cost MTD": {},
-    "Day P&L": "",
-    "MTD P&L": "",
-    "YTD P&L": "",
-    Pin: "",
-    CR01: "",
-    "Issuer's Country": "",
-    "Coupon Frequency": "",
-    "Previous Settle Date": "",
-    "Next Settle Date": "",
-    "Security Description": "",
-    "Bloomberg Mid BGN": 0,
   };
   fxPositions.Interest[today.toString()] = position["Notional Amount"];
 
@@ -733,7 +665,7 @@ export async function insertFXPosition(position: any, date: any) {
 
     await insertEditLogs([fxPositions], "FX Position", dateTime, "insertFXPosition", "controllers/operations/positions.ts");
 
-    return updatedResult;
+    return "updatedResult";
   } catch (error: any) {
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
     console.log(error);
