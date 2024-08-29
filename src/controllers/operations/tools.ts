@@ -156,3 +156,10 @@ export function getSQLIndexFormat(date: string, portfolioId: string) {
   let nameInDB = name[2] + "/" + name[3].split(" ")[0] + "/" + name[1];
   return portfolioId + "_" + nameInDB.replace(/-/g, "_").replace(/\//g, "_");
 }
+
+export function takeDateWithTimeAndReturnTimestamp(date: any) {
+  const [month, day, year, time] = date.split(/[/ ]/);
+  const [hours, minutes] = time.split(":");
+  const timestamp = new Date(year, month - 1, day, hours, minutes).getTime();
+  return timestamp;
+}
