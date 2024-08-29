@@ -152,3 +152,9 @@ export function getDateAndOneWeekLater() {
     endDate: formattedEndDate,
   };
 }
+export function takeDateWithTimeAndReturnTimestamp(date: any) {
+  const [month, day, year, time] = date.split(/[/ ]/);
+  const [hours, minutes] = time.split(":");
+  const timestamp = new Date(year, month - 1, day, hours, minutes).getTime();
+  return timestamp;
+}

@@ -4,6 +4,7 @@ import { insertPositionsInfo } from "../analytics/data";
 import { convertExcelDateToJSDate, generateRandomString, generateSignedUrl, getTradeDateYearTrades, storage } from "../common";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { insertEditLogs } from "./logs";
+import { takeDateWithTimeAndReturnTimestamp } from "./tools";
 require("dotenv").config();
 
 const xlsx = require("xlsx");
@@ -48,7 +49,7 @@ export async function readCentralizedEBlot(path: string): Promise<
       });
 
       let filtered = data.filter((trade: any, index: any) => trade["Trade App Status"] == "new");
-      filtered.sort((a: any, b: any) => new Date(a["Trade Date"]).getTime() - new Date(b["Trade Date"]).getTime());
+      filtered.sort((a: any, b: any) => takeDateWithTimeAndReturnTimestamp(a["Trade Date"] + " " + a["Trade Time"]) - takeDateWithTimeAndReturnTimestamp(b["Trade Date"] + " " + b["Trade Time"]));
 
       let missingLocation = data.filter((trade: any, index: any) => trade["Location"] == "" || (trade["ISIN"] == "" && trade["Trade Type"].includes("vcon")) || !trade["Location"] || trade["Location"].trim().split(" ").length > 1);
       if (missingLocation.length) {
@@ -75,9 +76,6 @@ export async function readCentralizedEBlot(path: string): Promise<
         }
         vconTrades[rowIndex]["timestamp"] = new Date(vconTrades[rowIndex]["Trade Date"]).getTime();
         vconTrades[rowIndex]["Trade App Status"] = "uploaded_to_app";
-      }
-      if (vconTrades.length) {
-        sortTradesOnTheSameDate(vconTrades);
       }
 
       for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
