@@ -166,7 +166,6 @@ const verifyTokenFactSheetMember = (req, res, next) => {
             linkToken = true;
         }
         const decoded = jwt.verify(token, process.env.SECRET);
-        console.log({ token, decoded });
         req.accessRole = decoded.accessRole;
         req.shareClass = decoded.shareClass;
         req.email = decoded.email;

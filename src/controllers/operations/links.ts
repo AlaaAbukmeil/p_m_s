@@ -103,6 +103,8 @@ export async function addLink(data: any, route: string): Promise<any> {
     newData["createdOn"] = getDateTimeInMongoDBCollectionFormat(new Date());
     newData["expiration"] = getDateTimeInMongoDBCollectionFormat(new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000));
     newData["accessRole"] = data["accessRole"];
+    newData["route"] = route == "" ? "factsheet" : route;
+
     // You might want to check if all required fields are present
     // if some fields are mandatory e.g.,
 

@@ -14,7 +14,6 @@ authRouter.get("/auth", uploadToBucket.any(), verifyTokenFactSheetMember, async 
   let test = await checkUserRight(req.email, req.accessRole, req.shareClass);
 
   if (test == false && req.link == true) {
-    console.log({ modifyemaillink: req.query });
     test = await checkLinkRight(req.token, req.accessRole, req.shareClass, req.query.email);
   }
   if (test) {

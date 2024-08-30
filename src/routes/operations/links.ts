@@ -37,12 +37,12 @@ linksRouter.post("/delete-link", verifyToken, uploadToBucket.any(), async (req: 
 linksRouter.post("/add-link", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response | any, next: NextFunction) => {
   try {
     console.log(req.body);
-    // let action = await addLink(req.body, req.body.route);
-    // if (action.error) {
-    //   res.send({ error: action.error });
-    // } else {
-    //   res.sendStatus(200);
-    // }
+    let action = await addLink(req.body, req.body.route);
+    if (action.error) {
+      res.send({ error: action.error });
+    } else {
+      res.sendStatus(200);
+    }
   } catch (error) {
     console.log(error);
     res.send({ error: "Something is not correct, check error log records" });

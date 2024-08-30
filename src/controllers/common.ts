@@ -185,7 +185,6 @@ export const verifyTokenFactSheetMember = (req: Request | any, res: Response, ne
     }
 
     const decoded = jwt.verify(token, process.env.SECRET);
-    console.log({ token, decoded });
     req.accessRole = decoded.accessRole;
     req.shareClass = decoded.shareClass;
     req.email = decoded.email;
