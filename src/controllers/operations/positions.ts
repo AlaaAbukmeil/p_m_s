@@ -893,10 +893,8 @@ export async function updatePositionsBasedOnTrade(data: CentralizedTrade[], port
 
         object["Coupon Rate"] = bondCouponMaturity.rate || 0;
         object["Maturity"] = bondCouponMaturity.date || 0;
-        object["Interest"] = {};
         object["Interest"][settlementDate] = object["Interest"][settlementDate] ? parseFloat(object["Interest"][settlementDate]) + currentQuantity : currentQuantity;
 
-        object["Cost MTD"] = {};
 
         object["Cost MTD"][thisMonth] = operation == 1 ? parseFloat(currentPrincipal) : 0;
         object["Original Face"] = originalFace;

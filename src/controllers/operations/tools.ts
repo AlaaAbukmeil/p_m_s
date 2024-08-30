@@ -84,7 +84,7 @@ export function getSecurityInPortfolioWithoutLocation(portfolio: any, identifier
         document.push(issue);
       }
     } else if (identifier.includes(issue["Bloomberg ID"])) {
-      if (issue["Bloomber ID"] != "") {
+      if (issue["Bloomberg ID"] != "") {
         document.push(issue);
       }
     }
