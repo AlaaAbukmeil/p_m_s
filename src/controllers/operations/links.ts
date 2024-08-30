@@ -82,7 +82,7 @@ export async function deleteLink(data: any): Promise<any> {
   }
 }
 
-export async function addLink(data: any): Promise<any> {
+export async function addLink(data: any, route: string): Promise<any> {
   try {
     const database = client.db("auth");
     const reportCollection = database.collection("links");
@@ -96,7 +96,8 @@ export async function addLink(data: any): Promise<any> {
     }
     const jwtObject = { name: data["name"], accessRole: data["accessRole"], shareClass: data["accessRight"], link: true };
     const token = jwt.sign(jwtObject, jwtSecret, { expiresIn: "30d" });
-    let base = "https://admin.triadacapital.com/links-redirect?token=" + token;
+    let base = `https://admin.triadacapital.com/links-redirect${route}?token=` + token;
+
     newData["link"] = base;
     newData["token"] = token;
     newData["createdOn"] = getDateTimeInMongoDBCollectionFormat(new Date());
@@ -107,12 +108,6 @@ export async function addLink(data: any): Promise<any> {
 
     // Insert the new document into the collection
     const insertResult = await reportCollection.insertOne(newData);
-    let email = newData["email"];
-    let name = newData["name"];
-    if (email != "") {
-      let result = await sendLinkEmail({ email, name, link: base });
-      console.log(result);
-    }
     // The insertOne operation returns an InsertOneResult object
     // You can check the result by inspecting `insertedCount` and `insertedId`
     if (insertResult.insertedCount === 0) {

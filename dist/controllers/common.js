@@ -158,7 +158,6 @@ const verifyTokenFactSheetMember = (req, res, next) => {
         req.query = req.query ? req.query : {};
         let tokenQuery = req.query.token;
         let linkToken = false;
-        // console.log(!token && !tokenQuery, "test 1");
         if (!token && !tokenQuery) {
             return res.sendStatus(401);
         }
@@ -167,6 +166,7 @@ const verifyTokenFactSheetMember = (req, res, next) => {
             linkToken = true;
         }
         const decoded = jwt.verify(token, process.env.SECRET);
+        console.log({ token, decoded });
         req.accessRole = decoded.accessRole;
         req.shareClass = decoded.shareClass;
         req.email = decoded.email;

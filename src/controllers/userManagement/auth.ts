@@ -204,7 +204,7 @@ export async function checkUserRight(email: string, accessRole: string, shareCla
   return user !== null;
 }
 
-export async function checkLinkRight(token: string, accessRole: string, shareClass: string) {
+export async function checkLinkRight(token: string, accessRole: string, shareClass: string, email: string) {
   const database = client.db("auth");
   const linksCollection = database.collection("links");
 
@@ -217,7 +217,11 @@ export async function checkLinkRight(token: string, accessRole: string, shareCla
   if (user) {
     // User exists, update lastAccessedTime
     const currentTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    await linksCollection.updateOne({ _id: user._id }, { $set: { lastAccessedTime: currentTime } });
+    let update: any = { lastAccessedTime: currentTime };
+    if (email) {
+      update.email = email;
+    }
+    await linksCollection.updateOne({ _id: user._id }, { $set: update });
     return true;
   }
   // Return true if a matching user is found, otherwise false
