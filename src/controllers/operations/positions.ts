@@ -641,7 +641,7 @@ export async function insertFXPosition(position: any, date: any, portfolioId: st
     Location: position["Location"],
     Interest: {},
   };
-  fxPositions.Interest[today.toString()] = position["Notional Amount"];
+  fxPositions.Interest[today] = position["Notional Amount"];
 
   let day = getDateTimeInMongoDBCollectionFormat(new Date(today));
   let allCollectionNames = await getAllCollectionNames(portfolioId);

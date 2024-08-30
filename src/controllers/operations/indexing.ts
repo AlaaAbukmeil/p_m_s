@@ -36,7 +36,6 @@ export async function insertNewIndex(portfolioId: string, newIndex: string) {
     portfolio_id: portfolioId,
     portfolio_document_ids: allIndexes,
   };
-  console.log({ newIndexingRow: newIndexObject });
 
   await insertIndexingData([newIndexingRow]);
 }

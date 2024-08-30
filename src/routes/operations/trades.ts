@@ -11,7 +11,6 @@ const tradesRouter = Router();
 tradesRouter.get("/trades", verifyToken, async (req, res) => {
   try {
     const tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs" | any = req.query.tradeType;
-    console.log({ tradeType });
     let trades = await getTrades(tradeType, "portfolio_main");
     res.send(trades);
   } catch (error) {
@@ -64,7 +63,6 @@ tradesRouter.post("/delete-trade", verifyToken, uploadToBucket.any(), async (req
     let data = req.body;
     let tradeType = req.body.tradeType;
     let action: any = await deleteTrade(tradeType, data["Id"], data["BB Ticker"], data["Location"]);
-    console.log({ tradeType, action }, data["Id"], data["BB Ticker"], data["Location"]);
     if (action.error) {
       res.send({ error: action.error, status: 404 });
     } else {

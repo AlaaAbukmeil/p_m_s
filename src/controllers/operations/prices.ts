@@ -117,6 +117,7 @@ export async function updatePricesPortfolio(path: string, link: string, portfoli
 
         if (!currencyStart) {
           let positions: PositionInDB[] | 404 = getSecurityInPortfolioWithoutLocation(portfolio, row["ISIN"]);
+          console.log(positions == 404 ? "used sth else" : "prices found via isin", row["ISIN"]);
 
           if (positions == 404) {
             positions = getSecurityInPortfolioWithoutLocation(portfolio, row["Bloomberg ID"]);

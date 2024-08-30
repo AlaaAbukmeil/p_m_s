@@ -15,7 +15,6 @@ export async function editFactSheetDisplay(data: { command: "view"; disabled: bo
       const values = [data["command"], data["disabled"], "factsheet-display"];
 
       const result = await client.query(upsertQuery, values);
-      console.log({ result: result.rows });
       return result.rows;
     } finally {
       client.release();
@@ -38,7 +37,6 @@ export async function getFactSheetDisplay(commandId: string): Promise<any> {
       const values = [commandId];
 
       const result = await client.query(query, values);
-      console.log({ result_to_show: result.rows });
       return result.rows[0].status == "true" ? true : false;
     } finally {
       client.release();

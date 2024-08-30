@@ -63,9 +63,7 @@ export async function getTrade(tradeType: "vcons" | "ib" | "emsx" | "written_blo
 
 export async function editTrade(editedTrade: any, tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs", portfolioId: string) {
   try {
-    console.log({ editedTrade });
     let tradeInfo: CentralizedTrade | any = await getTrade(tradeType, editedTrade["Id"], portfolioId);
-    console.log({ tradeInfo });
     let centralizedBlotKeys = Object.keys(tradeInfo);
     if (tradeInfo) {
       let changes = 0;
@@ -83,7 +81,6 @@ export async function editTrade(editedTrade: any, tradeType: "vcons" | "ib" | "e
         return { error: "The trade is still the same." };
       }
       let newTradeInSQL = convertCentralizedToTradesSQL([tradeInfo])[0];
-      console.log({ newTradeInSQL });
       const query = `
     UPDATE public.trades_${tradeType}
     SET 
@@ -153,7 +150,6 @@ export async function editTrade(editedTrade: any, tradeType: "vcons" | "ib" | "e
 
       try {
         const res = await client.query(query, values);
-        console.log({ res });
         if (res.rowCount > 0) {
           return { error: null };
         } else {
@@ -297,7 +293,6 @@ export async function addNomuraGeneratedDateToTrades(fromTimestamp: number | nul
     }
 
     const action = await client.query(query, values);
-    console.log({ action, query });
   } catch (error: any) {
     console.error(`An error occurred: ${error.message}`);
   } finally {

@@ -10,7 +10,6 @@ import { sumTable } from "./riskTables";
 
 export function formatGeneralTable({ portfolio, date, fund, dates, conditions, fundDetailsYTD, ytdinterest }: { portfolio: PositionBeforeFormatting[]; date: any; fund: FundDetails; dates: any; conditions: any; fundDetailsYTD: FundDetails; ytdinterest: any }): { portfolio: PositionGeneralFormat[]; fundDetails: FundMTD; currencies: any } {
   let currencies: any = {};
-  // console.log({ fund, fundDetailsYTD , result:(fund["share price"] - fundDetailsYTD["share price"])});
   let dv01Sum = 0;
   let mtdpl = 0,
     mtdrlzd = 0,

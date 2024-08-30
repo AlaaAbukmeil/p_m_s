@@ -88,7 +88,6 @@ export function convertCentralizedToTradesSQL(centralizedTrades: CentralizedTrad
       front_office_note: trade["Front Office Note"] || "",
     };
   });
-  console.log({ copy });
   return copy;
 }
 export function formatPositionsTOSQL(positions: PositionInDB[]) {

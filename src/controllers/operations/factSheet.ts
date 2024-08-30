@@ -83,7 +83,6 @@ export async function editFactSheet(data: { data: { [key: string]: number }; mon
       const originalData = originalResult.rows[0].data;
       let updatedData = { ...originalData };
       updatedData[param] = data.data[param];
-      console.log({ updatedData });
       const updateQuery = `
         UPDATE ${tableName}
         SET data = $1
@@ -109,7 +108,6 @@ export async function editFactSheet(data: { data: { [key: string]: number }; mon
         fund: psqlFactSheetDBNames[name],
         id: id,
       };
-      console.log({ newRow });
       return await addFactSheet(newRow, name);
     }
   } catch (error: any) {
