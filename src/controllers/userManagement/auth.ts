@@ -260,7 +260,7 @@ export async function checkUserRight(email: string, accessRole: string, shareCla
   }
 }
 
-export async function checkLinkRight(token: string, accessRole: string, shareClass: string): Promise<boolean> {
+export async function checkLinkRight(token: string, accessRole: string, shareClass: string, email: string): Promise<boolean> {
   const client = await authPool.connect();
 
   try {
@@ -276,10 +276,11 @@ export async function checkLinkRight(token: string, accessRole: string, shareCla
 
       const updateQuery = `
         UPDATE public.auth_links
-        SET last_time_accessed = $1
-        WHERE id = $2
+        SET last_time_accessed = $1,
+        SET email = $2,
+        WHERE id = $3
       `;
-      await client.query(updateQuery, [currentTime, user.id]);
+      await client.query(updateQuery, [currentTime, email || user.email, user.id]);
 
       return true;
     }

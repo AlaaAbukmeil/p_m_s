@@ -79,7 +79,6 @@ export async function readCentralizedEBlot(path: string): Promise<
         vconTrades[rowIndex]["Trade App Status"] = "uploaded_to_app";
       }
 
-
       for (let ibTradesIndex = 0; ibTradesIndex < ibTrades.length; ibTradesIndex++) {
         ibTrades[ibTradesIndex]["ISIN"] = ibTrades[ibTradesIndex]["BB Ticker"];
         if (!ibTrades[ibTradesIndex]["Trade Date"].includes("/")) {

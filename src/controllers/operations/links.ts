@@ -57,8 +57,9 @@ export async function deleteLink(data: any): Promise<any> {
   }
 }
 
-export async function addLink(data: { name: string; email: string; share_class: string }): Promise<any> {
+export async function addLink(data: any, route: string): Promise<any> {
   const client = await authPool.connect();
+
   try {
     const jwtObject = {
       name: data["name"],
@@ -90,13 +91,13 @@ export async function addLink(data: { name: string; email: string; share_class: 
     const insertQuery = `
       INSERT INTO public.auth_links (
         email, password, share_class, access_role_portfolio, access_role_instance,
-        last_time_accessed, reset_password, created_on, type, name, link, expiration, token, id
+        last_time_accessed, reset_password, created_on, type, name, link, expiration, token, id, route
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       RETURNING id
     `;
 
-    const values = [newData.email, newData.password, newData.share_class, newData.access_role_portfolio, newData.access_role_instance, newData.last_time_accessed, newData.reset_password, newData.created_on, newData.type, newData.name, newData.link, newData.expiration, newData.token, newData.id];
+    const values = [newData.email, newData.password, newData.share_class, newData.access_role_portfolio, newData.access_role_instance, newData.last_time_accessed, newData.reset_password, newData.created_on, newData.type, newData.name, newData.link, newData.expiration, newData.token, newData.id, route];
 
     const result = await client.query(insertQuery, values);
 

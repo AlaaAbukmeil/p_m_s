@@ -26,9 +26,8 @@ linksRouter.post("/delete-link", verifyToken, uploadToBucket.any(), async (req: 
 
 linksRouter.post("/add-link", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response | any, next: NextFunction) => {
   try {
-    let input: { name: string; email: string; share_class: string } = req.body;
-    console.log({ input });
-    let action = await addLink(req.body);
+    console.log(req.body);
+    let action = await addLink(req.body, req.body.route);
     if (action.error) {
       res.send({ error: action.error });
     } else {

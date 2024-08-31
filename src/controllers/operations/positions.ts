@@ -443,6 +443,8 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
       "Event Type",
       "Edit Note",
       "Factor Date (if any)",
+      "Bloomberg Mid BGN",
+      "MTD Int.",
     ];
     // these keys are made up by the function frontend table, it reverts keys to original keys
 
@@ -519,7 +521,6 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
       }
     }
     let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-    portfolio[positionIndex] = positionInPortfolio;
     await insertEditLogs(changes, editedPosition["Event Type"], dateTime, editedPosition["Edit Note"], positionInPortfolio["BB Ticker"] + " " + positionInPortfolio["Location"]);
     let snapShotName = getSQLIndexFormat(`portfolio-${earliestPortfolioName.predecessorDate}`, portfolioId);
     let action = await insertPositionsInPortfolio([positionInPortfolio], portfolioId, snapShotName);
@@ -951,6 +952,7 @@ export function updatePositionsBasedOnTrade(data: CentralizedTrade[], portfolio:
         object["Location"] = row["Location"].trim();
         object["Last Modified Date"] = new Date();
         object["BB Ticker"] = row["BB Ticker"];
+        object["Mid"] = currentPrice;
 
         object["ISIN"] = row["ISIN"];
         object["Currency"] = currency;
@@ -1027,3 +1029,4 @@ export function updatePositionsBasedOnTrade(data: CentralizedTrade[], portfolio:
     }
   }
 }
+

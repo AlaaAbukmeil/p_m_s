@@ -5,6 +5,7 @@ import { CentralizedTrade, CentralizedTradeInDB, NewIssue } from "../../models/t
 import { insertEditLogs } from "./logs";
 import { tradesPool } from "./psql/operation";
 import { convertCentralizedToTradesSQL, convertTradesSQLToCentralized } from "../db/convert";
+import { takeDateWithTimeAndReturnTimestamp } from "./tools";
 
 export async function getAllTradesForSpecificPosition(tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs" | "canceled_vcons", isin: string, location: string, date: string, portfolioId: string) {
   const client = await tradesPool.connect();
@@ -18,7 +19,21 @@ export async function getAllTradesForSpecificPosition(tradeType: "vcons" | "ib" 
     `;
 
     const { rows } = await client.query(query, [isin, location, timestamp, portfolioId]);
+    
     let trades: any = convertTradesSQLToCentralized(rows, "uploaded_to_app");
+    let buySellGuess = trades[0]["ISIN"].toString().toLowerCase().includes("ib") ? "S" : trades[0]["BB Ticker"].toString().split(" ")[0] == "T" ? "S" : "B";
+    trades = trades.sort((tradeA: CentralizedTrade, tradeB: CentralizedTrade) => {
+      let tradeDateA = takeDateWithTimeAndReturnTimestamp(tradeA["Trade Date"] + " " + tradeA["Trade Time"]);
+      let tradeDateB = takeDateWithTimeAndReturnTimestamp(tradeB["Trade Date"] + " " + tradeB["Trade Time"]);
+      if (tradeDateA == tradeDateB) {
+        if (tradeA["B/S"] == buySellGuess) {
+          return -1;
+        } else {
+          return 1;
+        }
+      }
+      return tradeDateA - tradeDateB;
+    });
 
     return trades;
   } catch (error: any) {

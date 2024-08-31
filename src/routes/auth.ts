@@ -10,7 +10,7 @@ const authRouter = Router();
 authRouter.get("/auth", uploadToBucket.any(), verifyTokenFactSheetMember, async (req: any, res: Response, next: NextFunction) => {
   let test = await checkUserRight(req.email, req.accessRole, req.shareClass);
   if (test == false && req.link == true) {
-    test = await checkLinkRight(req.token, req.accessRole, req.shareClass);
+    test = await checkLinkRight(req.token, req.accessRole, req.shareClass, req.query.email);
   }
   if (test) {
     let investorReports: any = {
@@ -71,7 +71,7 @@ authRouter.post("/login", uploadToBucket.any(), async (req: Request, res: Respon
     secure: process.env.PRODUCTION === "production", // Set to true if using HTTPS
     sameSite: "lax",
     path: "/",
-    domain: ".triadacapital.com",
+    // domain: ".triadacapital.com",
   };
 
   res.cookie("triada.admin.cookie", user, cookie);
