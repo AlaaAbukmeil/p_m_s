@@ -125,23 +125,22 @@ positionsRouter.post("/delete-position", verifyToken, uploadToBucket.any(), asyn
 
 positionsRouter.post("/upload-trades", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
+    let timestamp = new Date().getTime();
     let files = req.files;
     const fileName = files[0].filename;
     const path = await generateSignedUrl(fileName);
     let link = bucket + "/" + fileName + "?authuser=2";
-
     let allTrades: any = await readCentralizedEBlot(path);
 
     if (allTrades?.error) {
       res.send({ error: allTrades.error });
     } else {
       let action: any = await updatePositionPortfolio(allTrades, link, "portfolio_main");
-      console.log({ action });
+      let timestamp_2 = new Date().getTime();
+      console.log((timestamp_2 - timestamp) / 1000 + " seconds to upload trades");
       if (action?.error) {
-        console.log(action);
         res.send({ error: action.error });
       } else {
-        console.log(action);
         res.send(action);
       }
     }
