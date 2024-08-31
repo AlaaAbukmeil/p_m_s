@@ -160,6 +160,7 @@ router.get("/fact-sheet", uploadToBucket.any(), verifyTokenFactSheetMember, asyn
       let twoYears = await getFactSheet({ from: from2YearsAgo, to: now, type, inception: false, mkt: false });
       let chinaPeriod = await getFactSheet({ from: from2020, to: to2YearsAgo, type, inception: false, mkt: false });
       let lastDayOfThisMonth = getLastDayOfMonth(inception.lastDateTimestamp);
+      console.log({ lastDayOfThisMonth });
       let countrySectorMacro = await getPortfolioWithAnalytics(lastDayOfThisMonth, sort, sign, null, "fact sheet", null, "portfolio_main");
       res.send({ countrySectorMacro: countrySectorMacro, inception: inception, fiveYears: fiveYears, twoYears: twoYears, chinaPeriod: chinaPeriod, disabled: disabled });
     }

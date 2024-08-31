@@ -277,7 +277,7 @@ export async function checkLinkRight(token: string, accessRole: string, shareCla
       const updateQuery = `
         UPDATE public.auth_links
         SET last_time_accessed = $1,
-        SET email = $2,
+         email = $2
         WHERE id = $3
       `;
       await client.query(updateQuery, [currentTime, email || user.email, user.id]);

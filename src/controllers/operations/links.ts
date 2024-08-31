@@ -57,7 +57,7 @@ export async function deleteLink(data: any): Promise<any> {
   }
 }
 
-export async function addLink(data: any, route: string): Promise<any> {
+export async function addLink(data: { email: string; name: string; share_class: string }, route: string): Promise<any> {
   const client = await authPool.connect();
 
   try {
@@ -68,7 +68,7 @@ export async function addLink(data: any, route: string): Promise<any> {
       link: true,
     };
     const token = jwt.sign(jwtObject, jwtSecret, { expiresIn: "30d" });
-    const base = "https://admin.triadacapital.com/links-redirect?token=" + token;
+    const base = `https://admin.triadacapital.com/links-redirect${route}?token=${token}`;
     const id = uuidv4();
 
     const newData = {
@@ -103,11 +103,6 @@ export async function addLink(data: any, route: string): Promise<any> {
 
     if (result.rowCount === 0) {
       return { error: "Failed to insert document" };
-    }
-
-    if (newData.email !== "") {
-      const emailResult = await sendLinkEmail({ email: newData.email, name: newData.name, link: base });
-      console.log(emailResult);
     }
 
     return { success: true, insertedId: result.rows[0].id, error: null };
