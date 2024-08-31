@@ -743,11 +743,10 @@ export async function updatePositionsBasedOnTrade(data: CentralizedTrade[], port
   for (let index = 0; index < data.length; index++) {
     let row = data[index];
     row["BB Ticker"] = row["BB Ticker"];
-    let originalFace = parseFloat(row["Original Face"]);
+    let originalFace = row["Original Face"];
     let identifier = row["ISIN"] !== "" ? row["ISIN"].trim() : row["BB Ticker"].trim();
     let location = row["Location"].trim();
     let securityInPortfolio: any = reset ? 404 : getSecurityInPortfolio(portfolio, identifier, location);
-
     let object: any = {};
     if (securityInPortfolio !== 404) {
       object = securityInPortfolio;
@@ -770,6 +769,7 @@ export async function updatePositionsBasedOnTrade(data: CentralizedTrade[], port
     let tradeExistsAlready = triadaIds.includes(row["Triada Trade Id"]);
 
     let updatingPosition = returnPositionProgress(positions, identifier, location);
+    console.log("returnPositionProgress", { positionQuantity: updatingPosition ? updatingPosition["Notional Amount"] : object["Notional Amount"], tradeQuantatity: currentQuantity, identifier, location });
     let tradeDate: any = new Date(row["Trade Date"]);
     let thisMonth = monthlyRlzdDate(tradeDate);
 
@@ -796,6 +796,7 @@ export async function updatePositionsBasedOnTrade(data: CentralizedTrade[], port
         object["Last Modified Date"] = new Date();
 
         object["Entry Yield"] = row["Yield"] || 0;
+        object["Mid"] = currentPrice;
 
         object["BB Ticker"] = row["BB Ticker"];
 
@@ -838,6 +839,7 @@ export async function updatePositionsBasedOnTrade(data: CentralizedTrade[], port
         object["Location"] = row["Location"].trim();
         object["Last Modified Date"] = new Date();
         object["BB Ticker"] = row["BB Ticker"];
+        object["Mid"] = currentPrice;
 
         object["ISIN"] = row["ISIN"];
         object["Currency"] = currency;
@@ -873,35 +875,35 @@ export async function updatePositionsBasedOnTrade(data: CentralizedTrade[], port
           }
         }
         positions = updateExisitingPosition(positions, identifier, location, object);
-      }
-      if (!updatingPosition && securityInPortfolio != 404) {
+      } else if (securityInPortfolio != 404 && !updatingPosition) {
         let settlementDate = row["Settle Date"];
-
         object["Location"] = row["Location"].trim();
         object["Last Modified Date"] = new Date();
-
-        object["Entry Yield"] = row["Yield"] || 0;
-
         object["BB Ticker"] = row["BB Ticker"];
+        object["Mid"] = currentPrice;
 
-        object["ISIN"] = row["ISIN"].trim();
-        object["CUSIP"] = row["Cuisp"].trim() || "";
+        object["ISIN"] = row["ISIN"];
+        object["Currency"] = currency;
         object["Notional Amount"] += currentQuantity;
 
-        object["Currency"] = currency;
         object["Average Cost"] = rlzdOperation == -1 ? getAverageCost(currentQuantity, object["Notional Amount"], currentPrice, parseFloat(object["Average Cost"])) : object["Average Cost"];
+        // this is reversed because the quantity is negated
+
+        if (!object["Cost MTD"]) {
+          object["Cost MTD"][thisMonth] = 0;
+        }
+
+        object["Cost MTD"][thisMonth] = operation == 1 ? parseFloat(object["Cost MTD"][thisMonth]) + currentPrincipal : 0;
 
         object["Coupon Rate"] = bondCouponMaturity.rate || 0;
         object["Maturity"] = bondCouponMaturity.date || 0;
         object["Interest"][settlementDate] = object["Interest"][settlementDate] ? parseFloat(object["Interest"][settlementDate]) + currentQuantity : currentQuantity;
-
-
-        object["Cost MTD"][thisMonth] = operation == 1 ? parseFloat(currentPrincipal) : 0;
         object["Original Face"] = originalFace;
-
+        object["Coupon Duration"] = object["Coupon Rate"] ? couponDaysYear : "";
         if (rlzdOperation == -1) {
           object["Entry Price"][thisMonth] = currentPrice;
         }
+
         object["Last Individual Upload Trade"] = new Date();
         let tradeRecord = null;
         if (!tradeRecord) {
@@ -910,9 +912,9 @@ export async function updatePositionsBasedOnTrade(data: CentralizedTrade[], port
             data[tradeRecord]["Updated Notional"] = object["Notional Amount"];
           }
         }
-
         positions.push(object);
       }
     }
   }
 }
+

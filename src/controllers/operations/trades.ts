@@ -32,8 +32,8 @@ export async function getAllTradesForSpecificPosition(tradeType: string, isin: s
       let buySellGuess = results[0]["ISIN"].toString().toLowerCase().includes("ib") ? "S" : results[0]["BB Ticker"].toString().split(" ")[0] == "T" ? "S" : "B";
 
       results = results.sort((tradeA: CentralizedTrade, tradeB: CentralizedTrade) => {
-        let tradeDateA = new Date(tradeA["Trade Date"]).getTime();
-        let tradeDateB = new Date(tradeB["Trade Date"]).getTime();
+        let tradeDateA = new Date(tradeA["Trade Date"] + tradeA["Trade Time"]).getTime();
+        let tradeDateB = new Date(tradeB["Trade Date"] + tradeB["Trade Time"]).getTime();
         if (tradeDateA == tradeDateB) {
           if (tradeA["B/S"] == buySellGuess) {
             return -1;
