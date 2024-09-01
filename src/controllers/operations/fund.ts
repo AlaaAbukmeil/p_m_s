@@ -154,6 +154,7 @@ export async function addFund(data: FundDetailsInDB): Promise<any> {
     await client.query("COMMIT");
     return { error: null };
   } catch (err: any) {
+    console.log({ err });
     await client.query("ROLLBACK");
     return { error: err };
   } finally {

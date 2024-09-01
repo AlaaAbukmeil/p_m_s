@@ -138,4 +138,11 @@ const { v4: uuidv4 } = require("uuid");
 //   let test = await getIndexingData("portfolio_main");
 //   res.send({ test });
 // });
+// migrateRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+//   let data = await migrateInformationDB("auth", "users", {});
+//   let format = formatUsers(data);
+//   await insertUsersData(format);
+//   res.send(200);
+// });
+
 export default migrateRouter;

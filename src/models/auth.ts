@@ -23,4 +23,5 @@ export interface UserAuth {
         createdOn: string;
       }[]
     | null;
+  route: string | null;
 }

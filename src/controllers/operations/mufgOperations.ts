@@ -16,7 +16,7 @@ export function formatMufg(trades: any, start: string, end: string): MufgTrade[]
     obj["Transaction_Event"] = "N";
     obj["Transaction_Type"] = trade["B/S"];
     obj["Security_ID_ISIN"] = trade["Trade Type"].includes("vcon") ? trade["ISIN"] : "";
-    obj["Security_ID_CUSIP"] = trade["Trade Type"].includes("vcon") ? trade["Cusip"] : "";
+    obj["Security_ID_CUSIP"] = trade["Trade Type"].includes("vcon") ? trade["Cuisp"] : "";
     obj["Security_ID_SEDOL"] = "";
     obj["Security_ID_Bloomberg"] = trade["BB Ticker"];
     obj["Security_ID_Reuters"] = "";

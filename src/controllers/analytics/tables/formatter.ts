@@ -56,6 +56,9 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
       position["Currency"] = position["BB Ticker"];
     } else {
       position["FX Rate"] = usdRatio;
+
+      position["MTD FX"] = parseFloat(position["MTD FX"]) ? position["MTD FX"] : position["FX Rate"];
+      position["Previous FX"] = parseFloat(position["Previous FX"]) ? position["Previous FX"] : position["FX Rate"];
     }
 
     position["Cost (BC)"] = position["Type"] == "CDS" ? Math.round((position["Average Cost"] * position["Notional Amount"] * usdRatio) / position["Original Face"]) : Math.round(position["Average Cost"] * position["Notional Amount"] * usdRatio);
@@ -277,11 +280,11 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
   let dayFXGross = Math.round((dayfx / fund.nav) * 100000) / 1000;
 
   let mtdFXGross = Math.round((mtdfx / fund.nav) * 100000) / 1000;
-  let mtdplPercentage = mtdpl / fund.nav;
+  let mtdplPercentage = mtdpl / fund.nav - fund.expenses / 10000;
   let shadawYTDNAV = (fund["share price"] - fundDetailsYTD["share price"]) / fundDetailsYTD["share price"];
   let shadawMTDNAV = +fund.nav + (+mtdpl - (fund.expenses / 10000) * +fund.nav);
 
-  let ytdNet = Math.round((shadawYTDNAV + mtdplPercentage - fund.expenses / 10000) * 100000) / 1000;
+  let ytdNet = Math.round((shadawYTDNAV + mtdplPercentage) * 100000) / 1000;
   let fundDetails = {
     nav: fund.nav,
     holdbackRatio: fund.holdBackRatio,

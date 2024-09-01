@@ -44,8 +44,11 @@ formatterRouter.post("/ib-excel", verifyToken, uploadToBucket.any(), async (req:
 formatterRouter.post("/mufg-excel", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   let data = req.body;
   let pathName = "mufg_" + formatDateFile(data.timestamp_start) + "_" + formatDateFile(data.timestamp_end) + "_";
-  let trades = await getAllTrades(data.timestamp_start, data.timestamp_end, "portfolio_main");
-
+  let vcons = await getAllTrades(new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime(), "portfolio_main", "vcons");
+  let ib = await getAllTrades(new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime(), "portfolio_main", "ib");
+  let emsx = await getAllTrades(new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime(), "portfolio_main", "emsx");
+  let trades = [...vcons,... ib, ...emsx];
+  console.log({ trades });
   let array: MufgTrade[] = formatMufg(trades, data.timestamp_start, data.timestamp_end);
 
   if (array.length == 0) {

@@ -277,6 +277,7 @@ export function formatUsers(data: any): UserAuth[] {
       id: id,
       files: element["files"],
       reset_code: element["resetCode"],
+      route: ""
     };
     result.push(object);
   }
@@ -293,7 +294,21 @@ export async function insertUsersData(dataInput: UserAuth[]) {
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       ON CONFLICT (email)
-      DO NOTHING
+      DO UPDATE SET
+        password = EXCLUDED.password,
+        access_role_instance = EXCLUDED.access_role_instance,
+        access_role_portfolio = EXCLUDED.access_role_portfolio,
+        share_class = EXCLUDED.share_class,
+        last_time_accessed = EXCLUDED.last_time_accessed,
+        reset_password = EXCLUDED.reset_password,
+        created_on = EXCLUDED.created_on,
+        type = EXCLUDED.type,
+        name = EXCLUDED.name,
+        link = EXCLUDED.link,
+        expiration = EXCLUDED.expiration,
+        id = EXCLUDED.id,
+        files = EXCLUDED.files,
+        reset_code = EXCLUDED.reset_code
     `;
 
     for (const ticker of dataInput) {
@@ -332,6 +347,7 @@ export function formatLinks(data: any): UserAuth[] {
       id: id,
       files: null,
       reset_code: null,
+      route:element["route"]
     };
     if (element["email"]) {
       result.push(object);
