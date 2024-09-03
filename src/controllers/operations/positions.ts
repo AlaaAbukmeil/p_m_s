@@ -202,7 +202,7 @@ export async function insertPositionsInPortfolio(positions: PositionBeforeFormat
           cusip = $6,
           bloomberg_id = $7,
           bid = $8,
-          mid = COALESCE($9,mid),
+          mid = $9,
           ask = $10,
           bloomberg_mid_bgn = $11,
           notional_amount = $12,

@@ -80,7 +80,7 @@ export function getCollectionIndexDays(collections: { name: string; timestamp: n
     return [];
   }
 }
-export function getSecurityInPortfolioWithoutLocation(portfolio: any, identifier: string): PositionInDB[] | 404 {
+export function getSecurityInPortfolioWithoutLocation(portfolio: any, identifier: string, fx = false): PositionInDB[] | 404 {
   let document: any = [];
   if (identifier == "" || !identifier) {
     return document;
@@ -88,15 +88,15 @@ export function getSecurityInPortfolioWithoutLocation(portfolio: any, identifier
   for (let index = 0; index < portfolio.length; index++) {
     let position = portfolio[index];
     if (identifier.includes(position["ISIN"])) {
-      if (position["ISIN"] != "" && position["Type"] != "FX") {
+      if (position["ISIN"] != "" && (position["Type"] != "FX" || fx)) {
         document.push(position);
       }
     } else if (identifier.includes(position["BB Ticker"])) {
-      if (position["BB Ticker"] != "" && position["Type"] != "FX") {
+      if (position["BB Ticker"] != "" && (position["Type"] != "FX" || fx)) {
         document.push(position);
       }
     } else if (identifier.includes(position["Bloomberg ID"])) {
-      if (position["Bloomberg ID"] != "" && position["Type"] != "FX") {
+      if (position["Bloomberg ID"] != "" && (position["Type"] != "FX" || fx)) {
         document.push(position);
       }
     }

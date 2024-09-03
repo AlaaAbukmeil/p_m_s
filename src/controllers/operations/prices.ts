@@ -117,13 +117,9 @@ export async function updatePricesPortfolio(path: string, link: string, portfoli
 
         if (!currencyStart) {
           let positions: PositionInDB[] | 404 = getSecurityInPortfolioWithoutLocation(portfolio, row["ISIN"]);
-          console.log(positions == 404 ? "used sth else" : "prices found via isin", row["ISIN"]);
 
           if (positions == 404) {
             positions = getSecurityInPortfolioWithoutLocation(portfolio, row["Bloomberg ID"]);
-          }
-          if (positions == 404) {
-            positions = getSecurityInPortfolioWithoutLocation(portfolio, row["BB Ticker"]);
           }
 
           if (positions == 404) {
@@ -147,8 +143,8 @@ export async function updatePricesPortfolio(path: string, link: string, portfoli
             } else if (divider == 100) {
               determineBestPrice({ brokerBidOnePrice: row["Today's Bid"], brokerBidTwoPrice: row["Broker 2 Bid"], brokerBidThreePrice: row["Broker 2 Bid"], bgnBidPrice: row["Bloomberg Bid Test"], ticker: row["BB Ticker"], brokerAskOnePrice: row["Today's Ask"], brokerAskTwoPrice: row["Broker 2 Ask"], brokerAskThreePrice: row["Broker 2 Ask"], bgnAskPrice: row["Bloomberg Ask Test"], errors, object });
             }
-
             object["Mid"] = divider == 1 ? parseFloat(row["Today's Mid"]) : (object["Bid"] + object["Ask"]) / 2;
+            console.log({ mid: object["Mid"], ask: object["Ask"], bid: object["Bid"], ticker: object["BB Ticker"], location: object["Location"] });
 
             object["YTM"] = row["Mid Yield call"].toString().includes("N/A") ? 0 : row["Mid Yield call"];
             object["Broker"] = row["Broker"].toString().includes("N/A") ? "" : row["Broker"];
@@ -227,7 +223,7 @@ export async function updatePricesPortfolio(path: string, link: string, portfoli
       let currencies = Object.keys(currencyInUSD);
       for (let index = 0; index < currencies.length; index++) {
         let currency = currencies[index];
-        let positions: any = getSecurityInPortfolioWithoutLocation(portfolio, currency);
+        let positions: any = getSecurityInPortfolioWithoutLocation(portfolio, currency, true);
         for (let indexPosition = 0; indexPosition < positions.length; indexPosition++) {
           let position = positions[indexPosition];
           position["Mid"] = currencyInUSD[currency];
@@ -266,6 +262,7 @@ export async function updatePricesPortfolio(path: string, link: string, portfoli
       try {
         let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
         let updatedPortfolio = formatUpdatedPositions(updatedPricePortfolio, portfolio, "Last Price Update");
+
         if (collectionDate) {
           let snapShotName = getSQLIndexFormat(`portfolio-${getDateTimeInMongoDBCollectionFormat(collectionDate)}`, portfolioId);
           let action = await insertPositionsInPortfolio(updatedPortfolio.updatedPortfolio, portfolioId, snapShotName);
