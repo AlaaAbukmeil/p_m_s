@@ -73,7 +73,14 @@ authRouter.post("/login", uploadToBucket.any(), async (req: Request, res: Respon
     path: "/",
     domain: ".triadacapital.com",
   };
-
+  res.clearCookie("triada.admin.cookie", {
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    httpOnly: process.env.PRODUCTION === "production",
+    secure: process.env.PRODUCTION === "production", // Set to true if using HTTPS
+    sameSite: "lax",
+    path: "/",
+    domain: ".triadacapital.com",
+  });
   res.cookie("triada.admin.cookie", user, cookie);
   res.send(user);
 });

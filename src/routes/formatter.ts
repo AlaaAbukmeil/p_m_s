@@ -47,7 +47,7 @@ formatterRouter.post("/mufg-excel", verifyToken, uploadToBucket.any(), async (re
   let vcons = await getAllTrades(new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime(), "portfolio_main", "vcons");
   let ib = await getAllTrades(new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime(), "portfolio_main", "ib");
   let emsx = await getAllTrades(new Date(data.timestamp_start).getTime(), new Date(data.timestamp_end).getTime(), "portfolio_main", "emsx");
-  let trades = [...vcons,... ib, ...emsx];
+  let trades = [...vcons, ...ib, ...emsx];
   console.log({ trades });
   let array: MufgTrade[] = formatMufg(trades, data.timestamp_start, data.timestamp_end);
 
@@ -171,8 +171,8 @@ formatterRouter.post("/nomura-excel", verifyToken, uploadToBucket.any(), async (
   let pathName = "nomura" + formatDateFile(data.timestamp_start) + "_" + formatDateFile(data.timestamp_end) + "_";
   let start = new Date(data.timestamp_start).getTime() - 5 * 24 * 60 * 60 * 1000;
   let end = new Date(data.timestamp_end).getTime() + 5 * 24 * 60 * 60 * 1000;
-  await addNomuraGeneratedDateToTrades(start, end);
-  let vconTrades = await getAllTrades(start, end, "vcons");
+  await addNomuraGeneratedDateToTrades("portfolio_main", start, end);
+  let vconTrades = await getAllTrades(start, end, "portfolio_main", "vcons");
   let array = formatNomura(vconTrades, data.timestamp_start, data.timestamp_end);
   if (array.length == 0) {
     res.send({ error: "No Trades" });

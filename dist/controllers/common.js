@@ -161,9 +161,9 @@ const verifyTokenFactSheetMember = (req, res, next) => {
         if (!token && !tokenQuery) {
             return res.sendStatus(401);
         }
-        if (!token) {
-            token = tokenQuery;
+        if (tokenQuery != "null" && tokenQuery) {
             linkToken = true;
+            token = tokenQuery;
         }
         const decoded = jwt.verify(token, process.env.SECRET);
         req.accessRole = decoded.accessRole;
@@ -183,6 +183,14 @@ const verifyTokenFactSheetMember = (req, res, next) => {
                 path: "/",
                 domain: ".triadacapital.com",
             };
+            res.clearCookie("triada.admin.cookie", {
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+                httpOnly: process.env.PRODUCTION === "production",
+                secure: process.env.PRODUCTION === "production",
+                sameSite: "lax",
+                path: "/",
+                domain: ".triadacapital.com",
+            });
             res.cookie("triada.admin.cookie", { token: token }, cookie);
         }
         next();

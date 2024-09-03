@@ -153,16 +153,16 @@ export async function sendResetPasswordRequest(userEmail: string) {
   try {
     const userQuery = `SELECT * FROM public.auth_users WHERE email = $1`;
     const userResult = await client.query(userQuery, [userEmail]);
-
     if (userResult.rows.length > 0) {
       const user = userResult.rows[0];
+      console.log({ user });
 
       try {
         let resetPasswordCode = generateRandomIntegers();
 
         const updateQuery = `
       UPDATE public.auth_users
-      SET reset_password = $1
+      SET reset_code = $1
       WHERE email = $2
     `;
         await client.query(updateQuery, [resetPasswordCode, userEmail]);
@@ -174,6 +174,7 @@ export async function sendResetPasswordRequest(userEmail: string) {
         }
         return { status: 200, message: "Reset code has been sent to your email!", email: user.email, actionEmail: actionEmail };
       } catch (error) {
+        console.log({ error });
         return error;
         // handle error appropriately
       }

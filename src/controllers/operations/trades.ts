@@ -19,7 +19,7 @@ export async function getAllTradesForSpecificPosition(tradeType: "vcons" | "ib" 
     `;
 
     const { rows } = await client.query(query, [isin, location, timestamp, portfolioId]);
-    
+
     let trades: any = convertTradesSQLToCentralized(rows, "uploaded_to_app");
     let buySellGuess = trades[0]["ISIN"].toString().toLowerCase().includes("ib") ? "S" : trades[0]["BB Ticker"].toString().split(" ")[0] == "T" ? "S" : "B";
     trades = trades.sort((tradeA: CentralizedTrade, tradeB: CentralizedTrade) => {
@@ -285,7 +285,7 @@ export async function getAllTrades(from: number, to: number, portfolioId: string
   }
 }
 
-export async function addNomuraGeneratedDateToTrades(fromTimestamp: number | null = 0, toTimestamp: number | null = 0) {
+export async function addNomuraGeneratedDateToTrades(portfolioId: string, fromTimestamp: number | null = 0, toTimestamp: number | null = 0) {
   const client = await tradesPool.connect();
 
   try {
@@ -298,14 +298,14 @@ export async function addNomuraGeneratedDateToTrades(fromTimestamp: number | nul
     let values: any = [dateTime];
 
     if (fromTimestamp !== null && toTimestamp !== null) {
-      query += ` WHERE timestamp BETWEEN $2 AND $3`;
-      values.push(fromTimestamp, toTimestamp);
+      query += ` WHERE timestamp BETWEEN $2 AND $3 AND portfolio_id = $4`;
+      values.push(fromTimestamp, toTimestamp, portfolioId);
     } else if (fromTimestamp !== null) {
-      query += ` WHERE timestamp >= $2`;
-      values.push(fromTimestamp);
+      query += ` WHERE timestamp >= $2 AND portfolio_id = $3`;
+      values.push(fromTimestamp, portfolioId);
     } else if (toTimestamp !== null) {
-      query += ` WHERE timestamp <= $2`;
-      values.push(toTimestamp);
+      query += ` WHERE timestamp <= $2 AND portfolio_id = $3`;
+      values.push(toTimestamp, portfolioId);
     }
 
     const action = await client.query(query, values);

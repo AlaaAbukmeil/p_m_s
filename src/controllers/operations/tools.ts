@@ -86,18 +86,18 @@ export function getSecurityInPortfolioWithoutLocation(portfolio: any, identifier
     return document;
   }
   for (let index = 0; index < portfolio.length; index++) {
-    let issue = portfolio[index];
-    if (identifier.includes(issue["ISIN"])) {
-      if (issue["ISIN"] != "") {
-        document.push(issue);
+    let position = portfolio[index];
+    if (identifier.includes(position["ISIN"])) {
+      if (position["ISIN"] != "" && position["Type"] != "FX") {
+        document.push(position);
       }
-    } else if (identifier.includes(issue["BB Ticker"])) {
-      if (issue["BB Ticker"] != "") {
-        document.push(issue);
+    } else if (identifier.includes(position["BB Ticker"])) {
+      if (position["BB Ticker"] != "" && position["Type"] != "FX") {
+        document.push(position);
       }
-    } else if (identifier.includes(issue["Bloomberg ID"])) {
-      if (issue["Bloomberg ID"] != "") {
-        document.push(issue);
+    } else if (identifier.includes(position["Bloomberg ID"])) {
+      if (position["Bloomberg ID"] != "" && position["Type"] != "FX") {
+        document.push(position);
       }
     }
   }
