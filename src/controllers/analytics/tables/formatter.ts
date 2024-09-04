@@ -1,7 +1,7 @@
 import { Analysis, FundDetails, FundMTD, PositionBeforeFormatting, PositionGeneralFormat } from "../../../models/portfolio";
 import { formatDateUS, parsePercentage } from "../../common";
 import { calculateAccruedSinceInception } from "../../reports/portfolios";
-import { parseBondIdentifier } from "../../reports/tools";
+import { daysSinceBeginningOfMonth, parseBondIdentifier } from "../../reports/tools";
 import { getCountrySectorStrategySum } from "./statistics";
 import { sortObjectBasedOnKey, oasWithChange, checkPosition, yearsUntil, getDuration, AggregatedData, assignAssetClass, getDurationBucket, assetClassOrderFrontOffice, assetClassOrderExposure, rateSensitive, toTitleCase, AggregateRow, getStandardRating, classifyCountry, padInteger, isRatingHigherThanBBBMinus, isNotInteger } from "../tools";
 import { getTopWorst } from "./frontOffice";
@@ -176,7 +176,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     position["Accrued Int. Since Inception (BC)"] = calculateAccruedSinceInception(position["Interest"], position["Coupon Rate"] / 100, position["Coupon Duration"], position["ISIN"], date) * usdRatio;
 
     position["Total Gain/ Loss (USD)"] = Math.round(position["Capital Gain/ Loss since Inception (Live Position)"] + position["Accrued Int. Since Inception (BC)"]) || 0;
-    position["% of Total Gain/ Loss since Inception (Live Position)"] = (Math.round(((position["Total Gain/ Loss (USD)"] + position["Cost (BC)"]) / position["Cost (BC)"] - 1) * shortLongType * 10000) / 100 || 0) + " %";
+    position["% of Total Gain/ Loss since Inception (Live Position)"] = position["Cost (BC)"] ? (Math.round(((position["Total Gain/ Loss (USD)"] + position["Cost (BC)"]) / position["Cost (BC)"] - 1) * shortLongType * 10000) / 100 || 0) + " %": "0 %"
 
     position["Z Spread"] = Math.round(position["Z Spread"] * 1000000) / 1000000 || 0;
     position["Entry Yield"] = position["Entry Yield"] ? Math.round(position["Entry Yield"] * 100) / 100 + " %" : "0 %";
@@ -280,12 +280,15 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
   let dayFXGross = Math.round((dayfx / fund.nav) * 100000) / 1000;
 
   let mtdFXGross = Math.round((mtdfx / fund.nav) * 100000) / 1000;
-  let mtdExpensesAmount = -(fund.expenses / 10000) * +fund.nav;
-  let mtdplPercentage = mtdpl / fund.nav - fund.expenses / 10000;
+  let numOfDaysUnitlEndOfMonth = daysSinceBeginningOfMonth(date);
+  let mtdExpenses = (-(fund.expenses / 10000) * numOfDaysUnitlEndOfMonth.diffDays) / numOfDaysUnitlEndOfMonth.numOfDaysInMonth;
+  let mtdExpensesAmount = mtdExpenses * +fund.nav;
+  // console.log({ mtdExpensesAmount, mtdExpenses }, numOfDaysUnitlEndOfMonth);
+  let mtdplPercentage = mtdpl / fund.nav;
   let shadawYTDNAV = (fund["share price"] - fundDetailsYTD["share price"]) / fundDetailsYTD["share price"];
-  let shadawMTDNAV = +fund.nav + (+mtdpl - (fund.expenses / 10000) * +fund.nav);
+  let shadawMTDNAV = +fund.nav + (+mtdpl + mtdExpenses * +fund.nav);
 
-  let ytdNet = Math.round((shadawYTDNAV + mtdplPercentage) * 100000) / 1000;
+  let ytdNet = Math.round((shadawYTDNAV + mtdplPercentage + mtdExpenses) * 100000) / 1000;
   let fundDetails = {
     nav: fund.nav,
     holdbackRatio: fund.holdBackRatio,
@@ -293,8 +296,8 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     month: fund.month,
     borrowAmount: fund["borrowing amount"],
 
-    mtdplPercentage: padInteger(mtdplPercentage * 100),
-    mtdpl: Math.round(mtdpl + mtdExpensesAmount * 1000) / 1000,
+    mtdplPercentage: padInteger((mtdplPercentage + mtdExpenses) * 100),
+    mtdpl: Math.round((mtdpl + mtdExpensesAmount) * 1000) / 1000,
     mtdrlzd: Math.round(mtdrlzd * 1000) / 1000,
     mtdurlzd: Math.round(mtdurlzd * 1000) / 1000,
     mtdint: Math.round(mtdint * 1000) / 1000,
@@ -370,7 +373,9 @@ export function assignColorAndSortParamsBasedOnAssetClass({
   assetClassNAVPercentage,
   assetClassGMVPercentage,
   assetClassLMVPercentage,
+  globalHedgeTable,
 }: {
+  globalHedgeTable: any;
   countryNAVPercentage: any;
   sectorNAVPercentage: any;
   strategyNAVPercentage: any;
@@ -475,7 +480,10 @@ export function assignColorAndSortParamsBasedOnAssetClass({
     } else if (Math.round(groupedByLocation[locationCode].order) == assetClassOrder.CDS) {
       groupedByLocation[locationCode].color = "#CE93D8";
       groupedByLocation[locationCode].groupMacro = "CDS";
-
+      for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
+        console.log({ globalHedge: groupedByLocation[locationCode].data[index]["BB Ticker"] });
+        sumTable({ table: globalHedgeTable, data: groupedByLocation[locationCode].data[index], view: view, param: "CDS", subtotal: false, subtotalParam: "" });
+      }
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {}
     } else if (Math.round(groupedByLocation[locationCode].order) == assetClassOrder.UST_GLOBAL) {
       groupedByLocation[locationCode].color = "#E8F5E9";
@@ -486,9 +494,11 @@ export function assignColorAndSortParamsBasedOnAssetClass({
         let couponRate: any = groupedByLocation[locationCode].data[index]["Coupon Rate"];
         let notional = groupedByLocation[locationCode].data[index]["Notional Amount"];
         let issue: any = groupedByLocation[locationCode].data[index]["BB Ticker"];
+        console.log({ globalHedge: groupedByLocation[locationCode].data[index]["BB Ticker"] });
         if (notional < 0) {
           sumTable({ table: ustTableByCoupon, data: groupedByLocation[locationCode].data[index], view: view, param: couponRate, subtotal: false, subtotalParam: "" });
           sumTable({ table: ustTable, data: groupedByLocation[locationCode].data[index], view: view, param: duration, subtotal: true, subtotalParam: issue });
+          sumTable({ table: globalHedgeTable, data: groupedByLocation[locationCode].data[index], view: view, param: "UST", subtotal: false, subtotalParam: "" });
         }
       }
     } else if (Math.round(groupedByLocation[locationCode].order) == assetClassOrder.Illiquid) {
@@ -1364,6 +1374,10 @@ export function groupAndSortByLocationAndTypeDefineTables({
   let rvPairTable: any = {
     Total: new AggregatedData(),
   };
+
+  let globalHedgeTable: any = {
+    Total: new AggregatedData(),
+  };
   let tickerTable: any = {};
   const groupedByLocation = formattedPortfolio.reduce((group: any, item: any) => {
     const { Location } = item;
@@ -1410,7 +1424,7 @@ export function groupAndSortByLocationAndTypeDefineTables({
     longShort: longShort,
     durationSummary: durationSummary,
     issuerInformation: issuerInformation,
-
+    globalHedgeTable: globalHedgeTable,
     countryNAVPercentage: countryNAVPercentage,
     sectorNAVPercentage: sectorNAVPercentage,
     strategyNAVPercentage: strategyNAVPercentage,
@@ -1511,6 +1525,7 @@ export function groupAndSortByLocationAndTypeDefineTables({
     ustTableByCoupon: ustTableByCoupon,
     rvPairTable: rvPairTable,
     tickerTable: tickerTable,
+    globalHedgeTable: globalHedgeTable,
   };
 }
 

@@ -28,7 +28,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Current Spread (T)",
     "Spread (Z)",
     "Entry Spread (T)",
-    "Entry Price",
+    "Last Entry Price",
     "Entry Yield",
     "Day P&L (USD)",
     "Day Price Move",
@@ -120,7 +120,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "Asset Class": "Asset Class",
     "Call Date": "Call Date",
     Location: "Location",
-    "Entry Price": "Entry Price",
+    "Last Entry Price": "Entry Price",
     "Previous Mark": "Previous Mark",
     "BB Ticker": "BB Ticker",
     "Notional Amount": "Notional Amount",
@@ -200,7 +200,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     id: "id",
   };
 
-  let twoDigits = [`${formatMarkDate(dates.lastMonth)}`, `${formatMarkDate(dates.yesterday)}`, `Mid ${formatMarkDate(dates.today)}`, `Yesterday's Mid ${formatMarkDate(dates.yesterday)}`, "Bid", "Ask", "Duration", "Average Cost", "Entry Price", "Previous Mark", "Day Price Move", "MTD Price Move", "3-Day Price Move", "MTD Price"];
+  let twoDigits = [`${formatMarkDate(dates.lastMonth)}`, `${formatMarkDate(dates.yesterday)}`, `Mid ${formatMarkDate(dates.today)}`, `Yesterday's Mid ${formatMarkDate(dates.yesterday)}`, "Bid", "Ask", "Duration", "Average Cost", "Last Entry Price", "Previous Mark", "Day Price Move", "MTD Price Move", "3-Day Price Move", "MTD Price"];
 
   // titlesValues[formatMarkDate(dates.lastMonth)] = "MTD Mark";
   // titlesValues[formatMarkDate(dates.yesterday)] = "Previous Mark";

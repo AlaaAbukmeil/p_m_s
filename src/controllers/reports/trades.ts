@@ -314,10 +314,9 @@ export async function insertTradesData(dataInput: CentralizedTradeInDB[], tableN
         trade.broker_email_status,
         trade.id,
         trade.portfolio_id,
-        trade.front_office_check,
+        true,
         trade.front_office_note,
       ]);
-      console.log({ resultInsertTrade: result });
     }
 
     await client.query("COMMIT");

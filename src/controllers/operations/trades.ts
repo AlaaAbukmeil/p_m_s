@@ -79,7 +79,6 @@ export async function getTrade(tradeType: "vcons" | "ib" | "emsx" | "written_blo
 export async function editTrade(editedTrade: any, tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs", portfolioId: string) {
   try {
     let tradeInfo: CentralizedTrade | any = await getTrade(tradeType, editedTrade["Id"], portfolioId);
-    console.log({ tradeInfo });
     let centralizedBlotKeys = Object.keys(tradeInfo);
     if (tradeInfo) {
       let changes = 0;

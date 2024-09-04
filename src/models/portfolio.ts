@@ -479,6 +479,10 @@ export interface Analysis {
     Total: AggregatedData;
   };
   tickerTable: { [key: string]: "" };
+  globalHedgeTable: {
+    [key: string]: AggregatedData;
+    Total: AggregatedData;
+  };
 }
 
 export interface Indexing {

@@ -609,3 +609,20 @@ export function getLatestDateYYYYMM(dates: string[], log = false): string {
     return current;
   });
 }
+export function daysSinceBeginningOfMonth(date: any) {
+  const today = new Date(date);
+  const year = today.getFullYear();
+  const month = today.getMonth();
+
+  // Get the first day of the next month
+  const firstDaythisMonth = new Date(year, month, 1).getTime();
+  let numOfDaysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // Calculate the difference in time
+  const diffTime = today.getTime() - firstDaythisMonth + 1;
+
+  // Convert time difference from milliseconds to days
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  return { diffDays, numOfDaysInMonth };
+}
