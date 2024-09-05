@@ -176,7 +176,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     position["Accrued Int. Since Inception (BC)"] = calculateAccruedSinceInception(position["Interest"], position["Coupon Rate"] / 100, position["Coupon Duration"], position["ISIN"], date) * usdRatio;
 
     position["Total Gain/ Loss (USD)"] = Math.round(position["Capital Gain/ Loss since Inception (Live Position)"] + position["Accrued Int. Since Inception (BC)"]) || 0;
-    position["% of Total Gain/ Loss since Inception (Live Position)"] = position["Cost (BC)"] ? (Math.round(((position["Total Gain/ Loss (USD)"] + position["Cost (BC)"]) / position["Cost (BC)"] - 1) * shortLongType * 10000) / 100 || 0) + " %": "0 %"
+    position["% of Total Gain/ Loss since Inception (Live Position)"] = position["Cost (BC)"] ? (Math.round(((position["Total Gain/ Loss (USD)"] + position["Cost (BC)"]) / position["Cost (BC)"] - 1) * shortLongType * 10000) / 100 || 0) + " %" : "0 %";
 
     position["Z Spread"] = Math.round(position["Z Spread"] * 1000000) / 1000000 || 0;
     position["Entry Yield"] = position["Entry Yield"] ? Math.round(position["Entry Yield"] * 100) / 100 + " %" : "0 %";
@@ -282,6 +282,8 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
   let mtdFXGross = Math.round((mtdfx / fund.nav) * 100000) / 1000;
   let numOfDaysUnitlEndOfMonth = daysSinceBeginningOfMonth(date);
   let mtdExpenses = (-(fund.expenses / 10000) * numOfDaysUnitlEndOfMonth.diffDays) / numOfDaysUnitlEndOfMonth.numOfDaysInMonth;
+  
+  
   let mtdExpensesAmount = mtdExpenses * +fund.nav;
   // console.log({ mtdExpensesAmount, mtdExpenses }, numOfDaysUnitlEndOfMonth);
   let mtdplPercentage = mtdpl / fund.nav;
@@ -481,7 +483,6 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       groupedByLocation[locationCode].color = "#CE93D8";
       groupedByLocation[locationCode].groupMacro = "CDS";
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {
-        console.log({ globalHedge: groupedByLocation[locationCode].data[index]["BB Ticker"] });
         sumTable({ table: globalHedgeTable, data: groupedByLocation[locationCode].data[index], view: view, param: "CDS", subtotal: false, subtotalParam: "" });
       }
       for (let index = 0; index < groupedByLocation[locationCode].data.length; index++) {}
@@ -494,7 +495,6 @@ export function assignColorAndSortParamsBasedOnAssetClass({
         let couponRate: any = groupedByLocation[locationCode].data[index]["Coupon Rate"];
         let notional = groupedByLocation[locationCode].data[index]["Notional Amount"];
         let issue: any = groupedByLocation[locationCode].data[index]["BB Ticker"];
-        console.log({ globalHedge: groupedByLocation[locationCode].data[index]["BB Ticker"] });
         if (notional < 0) {
           sumTable({ table: ustTableByCoupon, data: groupedByLocation[locationCode].data[index], view: view, param: couponRate, subtotal: false, subtotalParam: "" });
           sumTable({ table: ustTable, data: groupedByLocation[locationCode].data[index], view: view, param: duration, subtotal: true, subtotalParam: issue });
@@ -526,6 +526,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       groupUSDMarketValue = 0,
       groupRating = -99,
       groupNotional = 0,
+      groupDayInt = 0,
       groupBBTicker = "",
       groupSpreadTZ,
       groupEntrySpreadTZ;
@@ -555,6 +556,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       let mtdPriceMove = parseFloat(groupedByLocation[locationCode].data[index]["MTD Price Move"]) || 0;
 
       let notional = parseFloat(groupedByLocation[locationCode].data[index]["Notional Amount"]) || 0;
+      let dayInt = parseFloat(groupedByLocation[locationCode].data[index]["Day Int. (USD)"]) || 0;
       let ratingScore = groupedByLocation[locationCode].data[index]["Rating Score"];
       let usdMarketValue;
       let dayPl;
@@ -681,6 +683,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
 
       groupRating = groupRating < ratingScore ? ratingScore : groupRating;
       groupNotional += notional;
+      groupDayInt += dayInt;
 
       groupedByLocation[locationCode]["DV01 Dollar Value Impact"] += dv01DollarValueImpact;
 
@@ -738,6 +741,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
 
     groupedByLocation[locationCode].groupMTDPl = groupMTDPl;
     groupedByLocation[locationCode].groupNotional = groupNotional;
+    groupedByLocation[locationCode].groupDayInt = groupDayInt;
 
     groupedByLocation[locationCode].groupEntrySpreadTZ = groupEntrySpreadTZ;
     groupedByLocation[locationCode].groupSpreadTZ = groupSpreadTZ;
@@ -1025,6 +1029,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
           "Day P&L (USD)": groupedByLocation[locationCode].groupDayPl,
           "MTD P&L (USD)": groupedByLocation[locationCode].groupMTDPl,
           "Notional Amount": groupedByLocation[locationCode].groupNotional,
+          "Day Int. (USD)": groupedByLocation[locationCode].groupDayInt,
+
           ISIN: groupedByLocation[locationCode]["ISIN"],
           Pin: groupedByLocation[locationCode]["Pin"],
           id: groupedByLocation[locationCode]["id"],
@@ -1043,6 +1049,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
           }
           macro["RV"]["USD Market Value"] += groupedByLocation[locationCode].groupUSDMarketValue;
           macro["RV"]["Notional Amount"] += groupedByLocation[locationCode].groupNotional;
+          macro["RV"]["Day Int. (USD)"] += groupedByLocation[locationCode].groupDayInt;
+
           macro["RV"]["DV01"] += groupedByLocation[locationCode].groupDV01Sum;
           macro["RV"]["CR01"] += groupedByLocation[locationCode].groupCR01Sum;
 
@@ -1066,6 +1074,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
 
           macro["IG"]["Day P&L (USD)"] += groupedByLocation[locationCode].groupDayPl;
           macro["IG"]["MTD P&L (USD)"] += groupedByLocation[locationCode].groupMTDPl;
+          macro["IG"]["Day Int. (USD)"] += groupedByLocation[locationCode].groupDayInt;
         } else if (groupedByLocation[locationCode].groupMacro == "HY") {
           if (macro["HY"]["Row Index"] < 0 && groupedByLocation[locationCode].order) {
             macro["HY"]["Row Index"] = portfolio.length + rowIndexAdditive;
@@ -1081,6 +1090,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
 
           macro["HY"]["Day P&L (USD)"] += groupedByLocation[locationCode].groupDayPl;
           macro["HY"]["MTD P&L (USD)"] += groupedByLocation[locationCode].groupMTDPl;
+          macro["HY"]["Day Int. (USD)"] += groupedByLocation[locationCode].groupDayInt;
         } else if (groupedByLocation[locationCode].groupMacro == "CURR + FUT") {
           if (macro["CURR + FUT"]["Row Index"] < 0 && groupedByLocation[locationCode].order) {
             macro["CURR + FUT"]["Row Index"] = portfolio.length + rowIndexAdditive;
@@ -1096,6 +1106,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
 
           macro["CURR + FUT"]["Day P&L (USD)"] += groupedByLocation[locationCode].groupDayPl;
           macro["CURR + FUT"]["MTD P&L (USD)"] += groupedByLocation[locationCode].groupMTDPl;
+          macro["CURR + FUT"]["Day Int. (USD)"] += groupedByLocation[locationCode].groupDayInt;
         } else if (groupedByLocation[locationCode].groupMacro == "CDS") {
           if (macro["CDS"]["Row Index"] < 0 && groupedByLocation[locationCode].order) {
             macro["CDS"]["Row Index"] = portfolio.length + rowIndexAdditive;
@@ -1111,6 +1122,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
 
           macro["CDS"]["Day P&L (USD)"] += groupedByLocation[locationCode].groupDayPl;
           macro["CDS"]["MTD P&L (USD)"] += groupedByLocation[locationCode].groupMTDPl;
+          macro["CDS"]["Day Int. (USD)"] += groupedByLocation[locationCode].groupDayInt;
         } else if (groupedByLocation[locationCode].groupMacro == "Global Hedge") {
           if (macro["Global Hedge"]["Row Index"] < 0 && groupedByLocation[locationCode].order) {
             macro["Global Hedge"]["Row Index"] = portfolio.length + rowIndexAdditive;
@@ -1126,6 +1138,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
 
           macro["Global Hedge"]["Day P&L (USD)"] += groupedByLocation[locationCode].groupDayPl;
           macro["Global Hedge"]["MTD P&L (USD)"] += groupedByLocation[locationCode].groupMTDPl;
+          macro["Global Hedge"]["Day Int. (USD)"] += groupedByLocation[locationCode].groupDayInt;
         } else if (groupedByLocation[locationCode].groupMacro == "Rlzd") {
           if (macro["Rlzd"]["Row Index"] < 0 && groupedByLocation[locationCode].order) {
             macro["Rlzd"]["Row Index"] = portfolio.length + rowIndexAdditive;
@@ -1141,6 +1154,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
 
           macro["Rlzd"]["Day P&L (USD)"] += groupedByLocation[locationCode].groupDayPl;
           macro["Rlzd"]["MTD P&L (USD)"] += groupedByLocation[locationCode].groupMTDPl;
+          macro["Rlzd"]["Day Int. (USD)"] += groupedByLocation[locationCode].groupDayInt;
         }
       } else if (portfolioViewType == "exposure") {
         newObject = {
@@ -1161,6 +1175,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
 
           "MTD P&L (USD)": groupedByLocation[locationCode].groupMTDPl,
           "Notional Amount": groupedByLocation[locationCode].groupNotional,
+          "Day Int. (USD)": groupedByLocation[locationCode].groupDayInt,
+
           ISIN: groupedByLocation[locationCode]["ISIN"],
           Pin: groupedByLocation[locationCode]["Pin"],
         };
@@ -1182,6 +1198,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
 
           macro["Global Hedge"]["Day P&L (USD)"] += groupedByLocation[locationCode].groupDayPl;
           macro["Global Hedge"]["MTD P&L (USD)"] += groupedByLocation[locationCode].groupMTDPl;
+          macro["Global Hedge"]["Day Int. (USD)"] += groupedByLocation[locationCode].groupDayInt;
         } else if (locationCode == "Rate Sensitive" || locationCode == "Rate Insensitive") {
           if (!nonHedgeIndex) {
             nonHedgeIndex = portfolio.length + 1;
@@ -1196,6 +1213,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
 
           macro["Non-Hedge Bonds"]["Day P&L (USD)"] += groupedByLocation[locationCode].groupDayPl;
           macro["Non-Hedge Bonds"]["MTD P&L (USD)"] += groupedByLocation[locationCode].groupMTDPl;
+          macro["Non-Hedge Bonds"]["Day Int. (USD)"] += groupedByLocation[locationCode].groupDayInt;
         } else {
           if (!rvIndex) {
             rvIndex = portfolio.length + 2;
@@ -1210,6 +1228,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
 
           macro["RV"]["Day P&L (USD)"] += groupedByLocation[locationCode].groupDayPl;
           macro["RV"]["MTD P&L (USD)"] += groupedByLocation[locationCode].groupMTDPl;
+          macro["RV"]["Day Int. (USD)"] += groupedByLocation[locationCode].groupDayInt;
         }
       } else if (view == "back office") {
         newObject = {
@@ -1229,6 +1248,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
 
           "MTD P&L (BC)": groupedByLocation[locationCode].groupMTDPl,
           "Notional Amount": groupedByLocation[locationCode].groupNotional,
+          "Day Int. (BC)": groupedByLocation[locationCode].groupDayInt,
         };
 
         if (groupedByLocation[locationCode].groupSpreadTZ || groupedByLocation[locationCode].groupSpreadTZ == 0) {

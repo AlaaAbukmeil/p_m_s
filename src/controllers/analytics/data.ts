@@ -2,7 +2,6 @@ import { InformationInDB } from "../../models/positionsInformation";
 import { insertEditLogs } from "../operations/logs";
 import { positionsInfomrationPool } from "../operations/psql/operation";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
-import { client } from "../userManagement/auth";
 
 export async function insertPositionsInfo(positions: InformationInDB[]): Promise<void> {
   const connection = await positionsInfomrationPool.connect();

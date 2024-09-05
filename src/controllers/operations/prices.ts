@@ -1,6 +1,5 @@
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { formatUpdatedPositions, getCollectionName } from "../reports/tools";
-import { client } from "../userManagement/auth";
 import { formatDateWorld } from "../common";
 import { readPricingSheet } from "./readExcel";
 import { getPortfolio, insertPositionsInPortfolio } from "./positions";
@@ -141,7 +140,7 @@ export async function updatePricesPortfolio(path: string, link: string, portfoli
               object["Bid"] = row["Today's Bid"];
               object["Ask"] = row["Today's Ask"];
             } else if (divider == 100) {
-              determineBestPrice({ brokerBidOnePrice: row["Today's Bid"], brokerBidTwoPrice: row["Broker 2 Bid"], brokerBidThreePrice: row["Broker 2 Bid"], bgnBidPrice: row["Bloomberg Bid Test"], ticker: row["BB Ticker"], brokerAskOnePrice: row["Today's Ask"], brokerAskTwoPrice: row["Broker 2 Ask"], brokerAskThreePrice: row["Broker 2 Ask"], bgnAskPrice: row["Bloomberg Ask Test"], errors, object });
+              determineBestPrice({ brokerBidOnePrice: row["Today's Bid"], brokerBidTwoPrice: row["Broker 2 Bid"], brokerBidThreePrice: row["Broker 2 Bid"], bgnBidPrice: row["Today's Bid"], ticker: row["BB Ticker"], brokerAskOnePrice: row["Today's Ask"], brokerAskTwoPrice: row["Broker 2 Ask"], brokerAskThreePrice: row["Broker 2 Ask"], bgnAskPrice: row["Today's Ask"], errors, object });
             }
             object["Mid"] = divider == 1 ? parseFloat(row["Today's Mid"]) : (object["Bid"] + object["Ask"]) / 2;
             console.log({ mid: object["Mid"], ask: object["Ask"], bid: object["Bid"], ticker: object["BB Ticker"], location: object["Location"] });

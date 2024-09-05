@@ -629,6 +629,7 @@ export class AggregateRow {
   "MTD P&L (USD)": number;
   "Notional Amount": number;
   "Row Index": number;
+  "Day Int. (USD)": number;
 
   constructor(title: string) {
     this["Category"] = title;
@@ -643,6 +644,8 @@ export class AggregateRow {
     this["YTD Int. (USD)"] = 0;
     this["MTD P&L (USD)"] = 0;
     this["Notional Amount"] = 0;
+    this["Day Int. (USD)"] = 0;
+
     this["Row Index"] = -1;
   }
 }

@@ -4,7 +4,6 @@ import { formatDateRlzdDaily, getAllDatesSinceLastMonthLastDay, getLastDayOfMont
 import { calculateRlzd } from "../../reports/portfolios";
 import { getAllCollectionNames, parseBondIdentifier } from "../../reports/tools";
 import { getRlzdTrades } from "../../reports/trades";
-import { client } from "../../userManagement/auth";
 
 export async function getCollectionsInRange(start: any, end: any, portfolioId: string): Promise<any> {
   let collections = await getAllCollectionNames(portfolioId);
@@ -118,31 +117,31 @@ function sumParameter(analytics: AnalyticsSample | any, { dayUnrlzd, dayRlzd, da
   analytics[param].mtdPNLOfNAV = (analytics[param].mtdPNLOfNAV || 0) + mtdPNL / nav;
 }
 
-export async function updateAnalytics(analytics: any, name: string) {
-  const database = client.db("analytics");
-  const collection = database.collection("compare");
-  await collection.findOneAndUpdate(
-    { name: name }, // Filter to find the document with the matching name
-    { $set: analytics }, // Update the document with the new analytics data
-    { upsert: true } // Insert a new document if no matching document is found
-  );
-}
+// export async function updateAnalytics(analytics: any, name: string) {
+//   const database = client.db("analytics");
+//   const collection = database.collection("compare");
+//   await collection.findOneAndUpdate(
+//     { name: name }, // Filter to find the document with the matching name
+//     { $set: analytics }, // Update the document with the new analytics data
+//     { upsert: true } // Insert a new document if no matching document is found
+//   );
+// }
 
-export async function getAnalytics(from: number, to: number) {
-  const database = client.db("analytics");
-  const collection = database.collection("compare");
-  const query = {
-    timestamp: {
-      $gte: from, // Greater than or equal to 'from'
-      $lte: to, // Less than or equal to 'to'
-    },
-  };
+// export async function getAnalytics(from: number, to: number) {
+//   const database = client.db("analytics");
+//   const collection = database.collection("compare");
+//   const query = {
+//     timestamp: {
+//       $gte: from, // Greater than or equal to 'from'
+//       $lte: to, // Less than or equal to 'to'
+//     },
+//   };
 
-  // Fetch the documents that match the query
-  const result = await collection.find(query).sort({ timestamp: 1 }).toArray();
+//   // Fetch the documents that match the query
+//   const result = await collection.find(query).sort({ timestamp: 1 }).toArray();
 
-  return result;
-}
+//   return result;
+// }
 
 export function extractAnalytics(analytics: any, conditions: any, notOperation = "false", type = "pnl") {
   let final: any = {};

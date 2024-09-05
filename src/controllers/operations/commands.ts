@@ -1,5 +1,4 @@
 import { ObjectId } from "mongodb";
-import { client } from "../userManagement/auth";
 import { automationPool } from "./psql/operation";
 
 export async function editFactSheetDisplay(data: { command: "view"; disabled: boolean }): Promise<any> {

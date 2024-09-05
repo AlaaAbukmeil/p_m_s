@@ -4,7 +4,6 @@ import { CentralizedTrade } from "../../../models/trades";
 import { convertExcelDateToJSDate, formatDateUS, getTradeDateYearTrades, swapMonthDay } from "../../common";
 import { getAverageCost } from "../../reports/tools";
 import { getRlzdTrades } from "../../reports/trades";
-import { client } from "../../userManagement/auth";
 import { parseYYYYMMDDAndReturnMonth } from "../tools";
 
 export function getMtdMarkAndMtdNotional(portfolio: PositionBeforeFormatting[] | any[]) {

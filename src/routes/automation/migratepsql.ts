@@ -2,11 +2,10 @@ import { Router } from "express";
 import { Request, Response, NextFunction } from "express";
 
 import { uploadToBucket } from "../../controllers/userManagement/tools";
-import { factsheetPool, formatEditLogs, formatFactSheet, formatFundMTD, formatLinks, formatNewIssues, formatPositions, formatTrades, formatUsers, insertFactSheetData, insertFundMTDData, insertIndexingData, insertLinksData, insertLogsData, insertNewIssuesData, insertPositionsData, insertPositionsPortfolioData, insertUsersData, migrateFactSheetData, migrateInformationDB, testPsqlTime } from "../../controllers/operations/psql/operation";
+import { factsheetPool, formatEditLogs, formatFactSheet, formatFundMTD, formatLinks, formatNewIssues, formatPositions, formatTrades, formatUsers, insertFactSheetData, insertFundMTDData, insertIndexingData, insertLinksData, insertLogsData, insertNewIssuesData, insertPositionsData, insertPositionsPortfolioData, insertUsersData, migrateFactSheetData, testPsqlTime } from "../../controllers/operations/psql/operation";
 import { findTrade } from "../../controllers/reports/trades";
 import { getDateTimeInMongoDBCollectionFormat } from "../../controllers/reports/common";
 import { insertEditLogs } from "../../controllers/operations/logs";
-import { client } from "../../controllers/userManagement/auth";
 import { Indexing } from "../../models/portfolio";
 import { getAllCollectionNames, getEarliestCollectionName } from "../../controllers/reports/tools";
 import { getCollectionsInRange } from "../../controllers/analytics/compare/historicalData";

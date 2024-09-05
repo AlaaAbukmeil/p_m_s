@@ -107,6 +107,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "CR01 Dollar Value Impact Test",
     "CR01 Dollar Value Impact Test Color",
     "id",
+    "Day Int. (USD)",
   ];
 
   let titlesValues: any = {

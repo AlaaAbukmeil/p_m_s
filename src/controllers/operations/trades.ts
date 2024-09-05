@@ -1,5 +1,4 @@
 import { ObjectId } from "mongodb";
-import { client } from "../userManagement/auth";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { CentralizedTrade, CentralizedTradeInDB, NewIssue } from "../../models/trades";
 import { insertEditLogs } from "./logs";
@@ -255,7 +254,7 @@ export async function modifyTradesDueToRecalculate(trades: any, tradeType: "vcon
   }
 }
 
-export async function getAllTrades(from: number, to: number, portfolioId: string, tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs" | "" = ""): Promise<CentralizedTrade[]> {
+export async function getAllTrades(from: number, to: number, portfolioId: string, tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs" | "canceled_vcons" | "" = ""): Promise<CentralizedTrade[]> {
   const client = await tradesPool.connect();
 
   try {

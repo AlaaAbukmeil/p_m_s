@@ -17,13 +17,13 @@ const { MongoClient, ServerApiVersion } = require("mongodb");
 const saltRounds: any = process.env.SALT_ROUNDS;
 const { v4: uuidv4 } = require("uuid");
 
-export const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
-});
+// export const client = new MongoClient(uri, {
+//   serverApi: {
+//     version: ServerApiVersion.v1,
+//     strict: true,
+//     deprecationErrors: true,
+//   },
+// });
 
 mongoose.connect(uri, {
   useNewUrlParser: true,

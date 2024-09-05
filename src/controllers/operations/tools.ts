@@ -1,4 +1,3 @@
-import { client } from "../userManagement/auth";
 import { bucket, bucketPublic, formatDateUS, generateRandomString } from "../common";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { insertEditLogs } from "./logs";

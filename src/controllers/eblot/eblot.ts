@@ -3,7 +3,6 @@ import { convertTradesSQLToCentralized } from "../db/convert";
 import { insertEditLogs } from "../operations/logs";
 import { tradesPool } from "../operations/psql/operation";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
-import { client } from "../userManagement/auth";
 
 export async function getNewTrades(portfolioId: string): Promise<CentralizedTrade[]> {
   const client = await tradesPool.connect();

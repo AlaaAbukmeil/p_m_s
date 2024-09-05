@@ -5,7 +5,6 @@ import { getSettlementDateYear } from "../reports/tools";
 import { getSecurityInPortfolioWithoutLocationForVcon } from "./graphApiConnect";
 import { uri } from "../common";
 import { readEmsxEBlot, readIBEblot, uploadToGCloudBucket } from "../operations/readExcel";
-import { client } from "../userManagement/auth";
 import { CentralizedTrade, Vcon } from "../../models/trades";
 import { formatDateNomura } from "../operations/tools";
 const xlsx = require("xlsx");

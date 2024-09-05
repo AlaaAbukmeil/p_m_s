@@ -1,6 +1,5 @@
 import { parse } from "path";
 import { dateWithNoDay } from "../common";
-import { client } from "../userManagement/auth";
 import { getDateTimeInMongoDBCollectionFormat } from "./common";
 import { getPortfolioWithAnalytics } from "./portfolios";
 import { calculateAnnualizedReturn, deleteUnnecessaryValues, getMonthName, getSampleStandardDeviation, getStatistics, sortObjectByValues, transformData, updateStats } from "./tools";

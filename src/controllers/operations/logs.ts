@@ -1,4 +1,3 @@
-import { client } from "../userManagement/auth";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { errorEmailALert } from "./emails";
 import { ObjectId } from "mongodb";

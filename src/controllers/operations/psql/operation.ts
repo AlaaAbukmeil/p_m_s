@@ -7,7 +7,6 @@ import { InformationInDB } from "../../../models/positionsInformation";
 import { CentralizedTrade, CentralizedTradeInDB } from "../../../models/trades";
 import { getDateTimeInMongoDBCollectionFormat } from "../../reports/common";
 import { getFactSheetData } from "../../reports/factSheet";
-import { client } from "../../userManagement/auth";
 
 require("dotenv").config();
 
@@ -126,14 +125,14 @@ export async function testPsqlTime() {
   }
 }
 
-export async function migrateInformationDB(db: string, collectionName: string, query: any) {
-  const database = client.db(db);
-  const collection = database.collection(collectionName);
+// export async function migrateInformationDB(db: string, collectionName: string, query: any) {
+//   const database = client.db(db);
+//   const collection = database.collection(collectionName);
 
-  const existingPosition = await collection.find(query).toArray();
+//   const existingPosition = await collection.find(query).toArray();
 
-  return existingPosition;
-}
+//   return existingPosition;
+// }
 
 export function formatPositions(data: any): InformationInDB[] {
   let result: InformationInDB[] = [];
