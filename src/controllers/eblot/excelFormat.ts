@@ -3,7 +3,6 @@ require("dotenv").config();
 import { getTradeDateYearTrades, formatDateUS, convertExcelDateToJSDate, convertExcelDateToJSDateTime, generateRandomString, generateSignedUrl } from "../common";
 import { getSettlementDateYear } from "../reports/tools";
 import { getSecurityInPortfolioWithoutLocationForVcon } from "./graphApiConnect";
-import { uri } from "../common";
 import { readEmsxEBlot, readIBEblot, uploadToGCloudBucket } from "../operations/readExcel";
 import { CentralizedTrade, Vcon } from "../../models/trades";
 import { formatDateNomura } from "../operations/tools";

@@ -1,7 +1,6 @@
 require("dotenv").config();
 
 import { ObjectId } from "mongodb";
-import { uri } from "../common";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { insertEditLogs } from "../operations/logs";
 import { copyFileSync } from "fs";
@@ -25,9 +24,9 @@ const { v4: uuidv4 } = require("uuid");
 //   },
 // });
 
-mongoose.connect(uri, {
-  useNewUrlParser: true,
-});
+// mongoose.connect(uri, {
+//   useNewUrlParser: true,
+// });
 
 const SibApiV3Sdk = require("sib-api-v3-sdk");
 SibApiV3Sdk.ApiClient.instance.authentications["api-key"].apiKey = process.env.SEND_IN_BLUE_API_KEY;

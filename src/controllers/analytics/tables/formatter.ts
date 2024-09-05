@@ -282,8 +282,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
   let mtdFXGross = Math.round((mtdfx / fund.nav) * 100000) / 1000;
   let numOfDaysUnitlEndOfMonth = daysSinceBeginningOfMonth(date);
   let mtdExpenses = (-(fund.expenses / 10000) * numOfDaysUnitlEndOfMonth.diffDays) / numOfDaysUnitlEndOfMonth.numOfDaysInMonth;
-  
-  
+
   let mtdExpensesAmount = mtdExpenses * +fund.nav;
   // console.log({ mtdExpensesAmount, mtdExpenses }, numOfDaysUnitlEndOfMonth);
   let mtdplPercentage = mtdpl / fund.nav;
@@ -420,7 +419,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
   let assetClassOrder = view == "exposure" ? assetClassOrderExposure : assetClassOrderFrontOffice;
   for (let locationCode in groupedByLocation) {
     groupedByLocation[locationCode].order = assignAssetClass(locationCode, groupedByLocation[locationCode].data, assetClassOrder, view);
-    if (Math.round(groupedByLocation[locationCode].order) == assetClassOrder.RV) {
+    if (parseInt(groupedByLocation[locationCode].order) == assetClassOrder.RV) {
       groupedByLocation[locationCode].color = "#FEEBED";
       groupedByLocation[locationCode].groupMacro = "RV";
 

@@ -3,7 +3,7 @@ require("dotenv").config();
 
 const jwt = require("jsonwebtoken");
 
-export const uri = "mongodb+srv://" + process.env.MONGODBUSERNAME + ":" + process.env.NEWMONGODBPASSWORD + "@app.ywfxr8w.mongodb.net/?retryWrites=true&w=majority";
+// export const uri = "mongodb+srv://" + process.env.MONGODBUSERNAME + ":" + process.env.NEWMONGODBPASSWORD + "@app.ywfxr8w.mongodb.net/?retryWrites=true&w=majority";
 export const platform = "https://admin.triadacapital.com/reset-password?sent=none";
 export const bucket = "https://storage.cloud.google.com/app-backend-414212.appspot.com";
 export const bucketPublic = "https://storage.googleapis.com/public_triada_admin";
