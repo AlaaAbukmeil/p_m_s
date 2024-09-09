@@ -1,9 +1,10 @@
 import { parse } from "path";
 import { AnalyticsSample } from "../../../models/analytics";
-import { formatDateRlzdDaily, getAllDatesSinceLastMonthLastDay, getLastDayOfMonth, monthlyRlzdDate } from "../../reports/common";
+import { formatDateRlzdDaily, getAllDatesSinceLastMonthLastDay, getDateTimeInMongoDBCollectionFormat, getLastDayOfMonth, monthlyRlzdDate } from "../../reports/common";
 import { calculateRlzd } from "../../reports/portfolios";
 import { getAllCollectionNames, parseBondIdentifier } from "../../reports/tools";
 import { getRlzdTrades } from "../../reports/trades";
+import { analyticsPool } from "../../operations/psql/operation";
 
 export async function getCollectionsInRange(start: any, end: any, portfolioId: string): Promise<any> {
   let collections = await getAllCollectionNames(portfolioId);
@@ -117,31 +118,47 @@ function sumParameter(analytics: AnalyticsSample | any, { dayUnrlzd, dayRlzd, da
   analytics[param].mtdPNLOfNAV = (analytics[param].mtdPNLOfNAV || 0) + mtdPNL / nav;
 }
 
-// export async function updateAnalytics(analytics: any, name: string) {
-//   const database = client.db("analytics");
-//   const collection = database.collection("compare");
-//   await collection.findOneAndUpdate(
-//     { name: name }, // Filter to find the document with the matching name
-//     { $set: analytics }, // Update the document with the new analytics data
-//     { upsert: true } // Insert a new document if no matching document is found
-//   );
-// }
+export async function updateAnalytics(analytics: any, name: string, portfolioId: string): Promise<void> {
+  const client = await analyticsPool.connect();
+  try {
+    const query = `
+      INSERT INTO public.analytics (name, data, portfolio_id, timestamp)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (name, portfolio_id)
+      DO UPDATE SET 
+        data = $2,
+        timestamp = $4;
+    `;
+    const values = [name, JSON.stringify(analytics), portfolioId, analytics.timestamp];
 
-// export async function getAnalytics(from: number, to: number) {
-//   const database = client.db("analytics");
-//   const collection = database.collection("compare");
-//   const query = {
-//     timestamp: {
-//       $gte: from, // Greater than or equal to 'from'
-//       $lte: to, // Less than or equal to 'to'
-//     },
-//   };
+    await client.query(query, values);
+  } catch (error: any) {
+    console.log({ errorUpdateAnalytics: error });
+  } finally {
+    client.release();
+  }
+}
 
-//   // Fetch the documents that match the query
-//   const result = await collection.find(query).sort({ timestamp: 1 }).toArray();
+export async function getAnalytics(from: number, to: number, portfolioId: string): Promise<any[]> {
+  const client = await analyticsPool.connect();
+  try {
+    const query = `
+      SELECT *
+      FROM public.analytics
+      WHERE timestamp >= $1 AND timestamp <= $2 AND portfolio_id = $3
+      ORDER BY timestamp ASC;
+    `;
+    const values = [from, to, portfolioId];
 
-//   return result;
-// }
+    const result = await client.query(query, values);
+    return result.rows;
+  } catch (error: any) {
+    console.log({ getAnalytics: error });
+    return [];
+  } finally {
+    client.release();
+  }
+}
 
 export function extractAnalytics(analytics: any, conditions: any, notOperation = "false", type = "pnl") {
   let final: any = {};
@@ -157,8 +174,8 @@ export function extractAnalytics(analytics: any, conditions: any, notOperation =
   let isinInformation: any = [];
 
   for (let index = 0; index < analytics.length; index++) {
-    let document = analytics[index];
-    let name = document.name;
+    let document = analytics[index].data;
+    let name = analytics[index].name;
     Object.keys(document.strategy).forEach((key) => strategies.add(key));
     Object.keys(document.country).forEach((key) => countries.add(key));
     Object.keys(document.sector).forEach((key) => sectors.add(key));
@@ -170,7 +187,7 @@ export function extractAnalytics(analytics: any, conditions: any, notOperation =
     Object.keys(document.isinNames).forEach((key) => isinNames.push({ value: key, label: document.isinNames[key]["ISIN"] }));
     Object.keys(document.isinNames).forEach((key) => isinInformation.push(document.isinNames[key]));
 
-    let data = {};
+    let data: any = {};
     if (notOperation == "false") {
       if (type == "pnl") {
         checkAnalyticsConditions(document, conditions, data, name);
@@ -191,7 +208,7 @@ export function extractAnalytics(analytics: any, conditions: any, notOperation =
         substractParams(data, tempData);
       }
     }
-
+    data.mtdExpensesAmount = document.mtdExpensesAmount;
     final[name] = data;
   }
   strategies = Array.from(strategies).sort();

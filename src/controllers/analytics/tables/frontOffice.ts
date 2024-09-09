@@ -254,7 +254,7 @@ export function formatFrontOfficeTable({ portfolio, date, fund, dates, sort, sig
   }
 
   let analyzedPortfolio = groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio: formatted, nav: formattedPortfolio.fundDetails.nav, sort: sort, sign: sign, view: view, currencies: formattedPortfolio.currencies, format: "summary", sortBy: sortBy, fundDetails: formattedPortfolio.fundDetails, date: date });
-  return { portfolio: analyzedPortfolio.portfolio, fundDetails: formattedPortfolio.fundDetails, analysis: analyzedPortfolio };
+  return { portfolio: analyzedPortfolio.portfolio, fundDetails: formattedPortfolio.fundDetails, analysis: analyzedPortfolio, mtdExpensesAmount: formattedPortfolio.mtdExpensesAmount };
 }
 export function getTopWorst(groupedByLocation: any, sortBy: "pl" | null | "price move") {
   let entries = Object.entries(groupedByLocation).map(([key, value]: any) => ({

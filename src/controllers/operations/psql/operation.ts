@@ -24,7 +24,7 @@ function createPool(databaseName: string) {
     port: process.env.PSQL_PORT,
     database: databaseName,
     password: process.env.PSQL_PASSWORD,
-    max: 200,
+    max: 2000,
   });
 }
 
@@ -33,6 +33,8 @@ export const positionsInfomrationPool = createPool("positions_information");
 export const authPool = createPool("auth");
 export const tradesPool = createPool("trades");
 export const fundMTDPool = createPool("fund_info_mtd");
+export const analyticsPool = createPool("analytics");
+
 export const logsPool = createPool("logs");
 export const indexPool = createPool("portfolio_index");
 export const pinnedPool = createPool("pinned");

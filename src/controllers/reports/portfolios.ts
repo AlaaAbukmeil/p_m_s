@@ -1,4 +1,3 @@
-
 import { getAllDatesSinceLastMonthLastDay, getAllDatesSinceLastYearLastDay, getDateTimeInMongoDBCollectionFormat, getDaysBetween, getEarliestDateKeyAndValue, getLastDayOfMonth, monthlyRlzdDate, nextMonthlyRlzdDate } from "./common";
 import { getFundDetails } from "../operations/fund";
 
@@ -12,7 +11,15 @@ import { getRlzdTrades, getRlzdTradesWithTrades, getTradesMTD } from "./trades";
 import { insertEditLogs } from "../operations/logs";
 import { CentralizedTrade } from "../../models/trades";
 
-export async function getPortfolioWithAnalytics(date: string, sort: string, sign: number, conditions: any = null, view: "front office" | "back office" | "exposure" | "fact sheet", sortBy: "pl" | "price move" | null, portfolioId: string): Promise<{ portfolio: FinalPositionBackOffice[]; fundDetails: FundMTD; analysis: any; uploadTradesDate: any; updatePriceDate: number; collectionName: string; error: null } | { fundDetails: FundExposureOnlyMTD; analysis: any; error: null } | { error: string }> {
+export async function getPortfolioWithAnalytics(
+  date: string,
+  sort: string,
+  sign: number,
+  conditions: any = null,
+  view: "front office" | "back office" | "exposure" | "fact sheet",
+  sortBy: "pl" | "price move" | null,
+  portfolioId: string
+): Promise<{ portfolio: FinalPositionBackOffice[]; fundDetails: FundMTD; analysis: any; uploadTradesDate: any; updatePriceDate: number; collectionName: string; error: null } | { fundDetails: FundExposureOnlyMTD; analysis: any; error: null; mtdExpensesAmount: number } | { error: string }> {
   let timestamp = new Date().getTime();
   let allCollectionNames = await getAllCollectionNames(portfolioId);
   let timestamp_5 = new Date().getTime();
@@ -156,7 +163,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
     let final_timestamp = new Date().getTime();
     console.log("final: ", (final_timestamp - timestamp) / 1000 + " seconds");
 
-    return { fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, error: null };
+    return { fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, error: null, mtdExpensesAmount: 0 };
   } else {
     if (view == "front office" || view == "exposure") {
       portfolioFormattedSorted = formatFrontOfficeTable({ portfolio: documents, date: date, fund: fund, dates: dates, sort: sort, sign: sign, conditions: conditions, fundDetailsYTD: fundDetailsYTD, sortBy: sortBy, view: view, ytdinterest: ytdinterest });
@@ -168,7 +175,7 @@ export async function getPortfolioWithAnalytics(date: string, sort: string, sign
     let final_timestamp = new Date().getTime();
     console.log("final: ", (final_timestamp - timestamp) / 1000 + " seconds");
 
-    return { portfolio: finalDocuments, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: dayParamsWithLatestUpdates.lastUploadTradesDate, updatePriceDate: dayParamsWithLatestUpdates.lastUpdatePricesDate, collectionName: earliestPortfolioName.predecessorDate, error: null };
+    return { portfolio: finalDocuments, fundDetails: fundDetails, analysis: portfolioFormattedSorted.analysis, uploadTradesDate: dayParamsWithLatestUpdates.lastUploadTradesDate, updatePriceDate: dayParamsWithLatestUpdates.lastUpdatePricesDate, collectionName: earliestPortfolioName.predecessorDate, error: null, mtdExpensesAmount: portfolioFormattedSorted.mtdExpensesAmount };
   }
 }
 
@@ -197,7 +204,7 @@ export function getDayParams(portfolio: PositionBeforeFormatting[], previousDayP
       }
 
       if (!portfolio[index]["Strategy"]) {
-        portfolio[index]["Strategy"] = portfolio[index]["BB Ticker"].toLowerCase().includes("perp") ? "CE" : "VI";
+        portfolio[index]["Strategy"] = portfolio[index]["Notional Amount"] < 0 ? "Hedge" : portfolio[index]["BB Ticker"].toLowerCase().includes("perp") ? "CE" : "VI";
       }
 
       if (portfolio[index]["Notional Amount"] < 0) {

@@ -16,7 +16,7 @@ export async function getLinks(): Promise<any> {
     const client = await authPool.connect();
 
     try {
-      const res = await client.query("SELECT * FROM public.auth_links");
+      const res = await client.query("SELECT * FROM public.auth_links ORDER BY created_on ASC");
       return res.rows;
     } finally {
       client.release();

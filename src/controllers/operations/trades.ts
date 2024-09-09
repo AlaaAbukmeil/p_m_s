@@ -74,6 +74,31 @@ export async function getTrade(tradeType: "vcons" | "ib" | "emsx" | "written_blo
     client.release();
   }
 }
+export async function getTradeByTriadaId(tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs", tradeId: string, portfolioId: string) {
+  const client = await tradesPool.connect();
+  try {
+    const query = `
+    SELECT *
+    FROM public.trades_${tradeType}
+    WHERE triada_trade_id::text LIKE $1 AND portfolio_id = $2;
+`;
+    const { rows } = await client.query(query, [tradeId, portfolioId]);
+    let trades: any = convertTradesSQLToCentralized(rows, "uploaded_to_app");
+
+    return trades[0];
+  } catch (error) {
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.error(error);
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    await insertEditLogs([errorMessage], "errors", dateTime, "getTrade", "controllers/operations/trades.ts");
+
+    // Handle any errors that occurred during the operation
+    console.error("An error occurred while retrieving data from MongoDB:", error);
+  } finally {
+    client.release();
+  }
+}
 
 export async function editTrade(editedTrade: any, tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs", portfolioId: string) {
   try {

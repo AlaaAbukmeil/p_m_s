@@ -6,8 +6,8 @@ import { getEarliestCollectionName, parseBondIdentifierNomura } from "../../repo
 import { getHistoricalPortfolio } from "../positions";
 import { readNomuraCashReport } from "../readExcel";
 import { formatDateToIso, parseYYYYMMDDAndReturnMonth } from "../tools";
-import { getTrade } from "../trades";
-import { convertNomuraDateToAppTradeDate, getMtdMarkAndMtdNotional, getPositionAggregated, getProcceeds, getRlzdPNLNomuraProceeds, sumUpCouponPaymentRecords,switchCorrectedTrades } from "./tools";
+import { getTrade, getTradeByTriadaId } from "../trades";
+import { convertNomuraDateToAppTradeDate, getMtdMarkAndMtdNotional, getPositionAggregated, getProcceeds, getRlzdPNLNomuraProceeds, sumUpCouponPaymentRecords, switchCorrectedTrades } from "./tools";
 
 export async function reconcileMUFG(MUFGData: MufgReconcileUpload[], portfolioInput: PositionInDB[]) {
   try {
@@ -211,7 +211,6 @@ export function updatePortfolioBasedOnIsin(portfolio: PositionInDB[]): {
 export async function reconcileNomuraCash({ path, collectionDate, start, end, portfolioId }: { path: string; collectionDate: string; start: number; end: number; portfolioId: string }) {
   try {
     let data = await readNomuraCashReport(path);
-
     if (data.error) {
       return data;
     } else {
@@ -251,7 +250,7 @@ export async function reconcileNomuraCash({ path, collectionDate, start, end, po
       let couponPaymentsNomura = checkIfCouponPaymentsAreSettleted(couponPaymentRecords, finalPortfolioWithPositionsThatWillPay, collectionDate);
 
       let couponPaymentsApp = checkPositionsThatShouldPayButDoNotExistInNomura(finalPortfolioWithPositionsThatWillPay, couponPaymentsNomura.isinsFound, collectionDate);
-
+      console.log({ buySellCorrectRecords: buySellCorrectRecords.length });
       let tradesCheck = await checkNomuraTradesWithVcon(buySellRecords, portfolioId);
 
       return { fxInterest, redeemped, couponPayments: [...couponPaymentsApp, ...couponPaymentsNomura.result], tradesCheck, error: null };
@@ -469,7 +468,8 @@ async function checkNomuraTradesWithVcon(nomuraTrades: NomuraCashReconcileFileUp
   for (let index = 0; index < nomuraTrades.length; index++) {
     let trade = nomuraTrades[index];
     let triadaId = trade["Client Trade Ref"];
-    let tradesApp = await getTrade("vcons", triadaId, portfolioId);
+    let tradesApp = (await getTradeByTriadaId("vcons", triadaId, portfolioId)) || [];
+    console.log({ tradesApp });
     if (tradesApp.length) {
       let tradeApp = tradesApp[0];
       let ticker = tradeApp["BB Ticker"];

@@ -1,5 +1,5 @@
 import { NextFunction, Router, query } from "express";
-import { breakdown, extractAnalytics, getCollectionsInRange } from "../../controllers/analytics/compare/historicalData";
+import { breakdown, extractAnalytics, getAnalytics, getCollectionsInRange, updateAnalytics } from "../../controllers/analytics/compare/historicalData";
 import { getPortfolioWithAnalytics } from "../../controllers/reports/portfolios";
 import { verifyToken } from "../../controllers/common";
 import { uploadToBucket } from "../../controllers/userManagement/tools";
@@ -8,27 +8,27 @@ const analyticsRouter = Router();
 
 analyticsRouter.get("/compare", uploadToBucket.any(), verifyToken, async (req: Request | any, res: Response | any, next: NextFunction) => {
   try {
-    // let start = new Date(req.query.start).getTime();
-    // let end = new Date(req.query.end).getTime();
+    let start = new Date(req.query.start).getTime();
+    let end = new Date(req.query.end).getTime();
 
-    // let type = req.query.type || "pnl";
-    // let notOperation = req.query.notOperation || "false";
-    // let conditions: any = req.query;
-    // delete conditions.type;
-    // delete conditions.notOperation;
-    // delete conditions.start;
-    // delete conditions.end;
+    let type = req.query.type || "pnl";
+    let notOperation = req.query.notOperation || "false";
+    let conditions: any = req.query;
+    delete conditions.type;
+    delete conditions.notOperation;
+    delete conditions.start;
+    delete conditions.end;
 
-    // if (Object.keys(conditions).length == 0) {
-    //   conditions = {};
-    //   conditions.portfolio = "portfolio";
-    // }
+    if (Object.keys(conditions).length == 0) {
+      conditions = {};
+      conditions.portfolio = "portfolio";
+    }
 
-    // let analytics = await getAnalytics(start, end);
-
-    // analytics = extractAnalytics(analytics, conditions, notOperation, type);
+    let analytics = await getAnalytics(start, end, "portfolio_main");
+    console.log({ analytics:analytics[0].data });
+    let extracted = extractAnalytics(analytics, conditions, notOperation, type);
     // let update = await insertPositionsInfo(analytics.isinInformation);
-    res.send(200);
+    res.send(extracted);
   } catch (error: any) {
     console.log(error);
     res.send({ error: error.toString() });
@@ -51,9 +51,10 @@ analyticsRouter.post("/update-compare", uploadToBucket.any(), async (req: Reques
 
       analytics.timestamp = new Date(analytics.name + " 23:59").getTime();
       analytics.lastUpdatedTime = new Date();
+      analytics.mtdExpensesAmount = report.mtdExpensesAmount;
 
       console.log(analytics.name);
-      // await updateAnalytics(analytics, analytics.name);
+      await updateAnalytics(analytics, analytics.name, "portfolio_main");
     }
 
     res.send(list);

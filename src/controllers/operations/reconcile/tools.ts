@@ -130,7 +130,7 @@ export function getPositionAggregated(isin: string, portfolio: PositionInDB[], d
       if (position["Coupon Frequency"]) {
         couponFrequency = position["Coupon Frequency"];
       }
-      notional += position["Notional Amount"];
+      notional += +position["Notional Amount"];
       locations += position["Location"] + " ";
       ticker = position["BB Ticker"];
       if (position["Security Description"]) {

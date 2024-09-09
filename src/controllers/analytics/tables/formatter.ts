@@ -8,7 +8,7 @@ import { getTopWorst } from "./frontOffice";
 import { adjustMarginMultiplier, nomuraRuleMargin } from "../cash/rules";
 import { sumTable } from "./riskTables";
 
-export function formatGeneralTable({ portfolio, date, fund, dates, conditions, fundDetailsYTD, ytdinterest }: { portfolio: PositionBeforeFormatting[]; date: any; fund: FundDetails; dates: any; conditions: any; fundDetailsYTD: FundDetails; ytdinterest: any }): { portfolio: PositionGeneralFormat[]; fundDetails: FundMTD; currencies: any } {
+export function formatGeneralTable({ portfolio, date, fund, dates, conditions, fundDetailsYTD, ytdinterest }: { portfolio: PositionBeforeFormatting[]; date: any; fund: FundDetails; dates: any; conditions: any; fundDetailsYTD: FundDetails; ytdinterest: any }): { portfolio: PositionGeneralFormat[]; fundDetails: FundMTD; currencies: any; mtdExpensesAmount: number } {
   let currencies: any = {};
   let dv01Sum = 0;
   let mtdpl = 0,
@@ -284,9 +284,11 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
   let mtdExpenses = (-(fund.expenses / 10000) * numOfDaysUnitlEndOfMonth.diffDays) / numOfDaysUnitlEndOfMonth.numOfDaysInMonth;
 
   let mtdExpensesAmount = mtdExpenses * +fund.nav;
-  // console.log({ mtdExpensesAmount, mtdExpenses }, numOfDaysUnitlEndOfMonth);
+
+  // console.log({ mtdExpensesAmount, mtdExpenses, mtdpl }, numOfDaysUnitlEndOfMonth);
   let mtdplPercentage = mtdpl / fund.nav;
   let shadawYTDNAV = (fund["share price"] - fundDetailsYTD["share price"]) / fundDetailsYTD["share price"];
+
   let shadawMTDNAV = +fund.nav + (+mtdpl + mtdExpenses * +fund.nav);
 
   let ytdNet = Math.round((shadawYTDNAV + mtdplPercentage + mtdExpenses) * 100000) / 1000;
@@ -333,7 +335,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     ytdEstIntPercentage: Math.round((ytdEstInt / fund.nav) * 100000) / 1000 || 0,
   };
   let updatedPortfolio: PositionGeneralFormat[] | any = portfolio;
-  return { portfolio: updatedPortfolio, fundDetails: fundDetails, currencies: currencies };
+  return { portfolio: updatedPortfolio, fundDetails: fundDetails, currencies: currencies, mtdExpensesAmount };
 }
 
 export function assignColorAndSortParamsBasedOnAssetClass({
@@ -557,6 +559,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       let notional = parseFloat(groupedByLocation[locationCode].data[index]["Notional Amount"]) || 0;
       let dayInt = parseFloat(groupedByLocation[locationCode].data[index]["Day Int. (USD)"]) || 0;
       let ratingScore = groupedByLocation[locationCode].data[index]["Rating Score"];
+      let currency = groupedByLocation[locationCode].data[index]["Currency"];
       let usdMarketValue;
       let dayPl;
       let monthPl;
@@ -642,7 +645,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
         longShort["Short"].notionalSum += usdMarketValue;
       }
 
-      if (type == "BND" && notional > 0 && strategy == "RV") {
+      if (type == "BND" && notional > 0 && (strategy == "RV" || currency != "USD")) {
         if (!groupSpreadTZ) {
           groupSpreadTZ = 0;
         }
@@ -651,7 +654,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
           groupEntrySpreadTZ = 0;
         }
         groupEntrySpreadTZ += entryYtw;
-      } else if ((type == "UST" || notional < 0) && strategy == "RV") {
+      } else if (((type == "UST" || notional < 0) && strategy == "RV") || currency != "USD") {
         if (!groupSpreadTZ) {
           groupSpreadTZ = 0;
         }

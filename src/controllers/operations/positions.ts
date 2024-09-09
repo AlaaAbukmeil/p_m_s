@@ -8,7 +8,7 @@ import { modifyTradesDueToRecalculate, updateMatchedVcons } from "./trades";
 import { insertEditLogs } from "./logs";
 import { swapMonthDay } from "../common";
 import { PositionBeforeFormatting, PositionInDB, PositionInSQLDB } from "../../models/portfolio";
-import {  indexPool, pinnedPool, portfolioPool } from "./psql/operation";
+import { indexPool, pinnedPool, portfolioPool } from "./psql/operation";
 import { CentralizedTradeInDB } from "../../models/trades";
 import { getSQLIndexFormat } from "./tools";
 import { insertNewIndex } from "./indexing";
@@ -470,14 +470,14 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
       let title = editedPositionTitles[indexTitle];
       if (!unEditableParams.includes(title) && editedPosition[title] != "") {
         if (title == "Notional Amount") {
-          if (editedPosition["Event Type"] == "Sink Factor") {
+          if (editedPosition["Event Type"] == "sink_factor") {
             let sinkFactorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
 
             positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
             positionInPortfolio["Interest"][sinkFactorDate] = parseFloat(editedPosition[title]);
 
             changes.push(`Notional Amount Changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]} on ${sinkFactorDate} (sink factor)`);
-          } else if (editedPosition["Event Type"] == "Pay In Kind") {
+          } else if (editedPosition["Event Type"] == "pay_in_kind") {
             let payInKindFactorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
 
             positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
@@ -485,14 +485,14 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
 
             changes.push(`Notional Amount Changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]} on ${payInKindFactorDate}`);
             positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
-          } else if (editedPosition["Event Type"] == "Settlement Edit") {
+          } else if (editedPosition["Event Type"] == "edit_position") {
             let factorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
 
             positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
             positionInPortfolio["Interest"][factorDate] = parseFloat(editedPosition[title]);
 
             changes.push(`Notional Amount Changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]} on ${factorDate}`);
-          } else if (editedPosition["Event Type"] == "Redeemped") {
+          } else if (editedPosition["Event Type"] == "redemption") {
             let factorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
             positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
             positionInPortfolio["Interest"][factorDate] = parseFloat(editedPosition[title]) - parseFloat(positionInPortfolio["Notional Amount"]);
@@ -524,6 +524,7 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
     await insertEditLogs(changes, editedPosition["Event Type"], dateTime, editedPosition["Edit Note"], positionInPortfolio["BB Ticker"] + " " + positionInPortfolio["Location"]);
     let snapShotName = getSQLIndexFormat(`portfolio-${earliestPortfolioName.predecessorDate}`, portfolioId);
     let action = await insertPositionsInPortfolio([positionInPortfolio], portfolioId, snapShotName);
+    console.log({ positionInPortfolio,editedPosition });
     if (action) {
       return { status: 200 };
     } else {
@@ -1029,4 +1030,3 @@ export function updatePositionsBasedOnTrade(data: CentralizedTrade[], portfolio:
     }
   }
 }
-
