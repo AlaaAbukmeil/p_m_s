@@ -533,9 +533,14 @@ export function assignAssetClass(locationCode: string, group: any, assetClassOrd
     }
     let position: PositionAfterFormating = group[0];
     let duration = parseFloat(position["Duration"]) / 100;
+    let rlzdTimestamp = position["Last Day Since Realizd"];
 
     if (rlzd == 2) {
-      return assetClassOrder.RLZD;
+      let extra = 0;
+      if (rlzdTimestamp) {
+        extra = new Date(rlzdTimestamp).getTime() / (-10000 * 24 * 60 * 60 * 1000);
+      }
+      return assetClassOrder.RLZD + extra;
     }
     if (assetClass == "IG") {
       return assetClassOrder.IG;

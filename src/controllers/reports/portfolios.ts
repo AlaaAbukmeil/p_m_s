@@ -85,6 +85,7 @@ export async function getPortfolioWithAnalytics(
 
   let previousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeToday.predecessorDate, portfolioId);
   let previousPreviousDayPortfolio = await getHistoricalPortfolio(lastDayBeforeYesterday.predecessorDate, portfolioId);
+  console.log("3-day analytics referencce", lastDayBeforeYesterday.predecessorDate);
 
   let timestamp_2 = new Date().getTime();
 
@@ -310,10 +311,8 @@ export function getDayURlzdInt(portfolio: any, date: any) {
     let todayPrice: any = parseFloat(position["Mid"]);
     portfolio[index]["Day URlzd"] = portfolio[index]["Type"] == "CDS" ? ((parseFloat(todayPrice) - parseFloat(yesterdayPrice)) * portfolio[index]["Notional Amount"]) / portfolio[index]["Original Face"] : (parseFloat(todayPrice) - parseFloat(yesterdayPrice)) * portfolio[index]["Notional Amount"] || 0;
 
-    if (portfolio[index]["Day URlzd"] == 0) {
+    if (portfolio[index]["Day URlzd"] == undefined || portfolio[index]["Day URlzd"] == null) {
       portfolio[index]["Day URlzd"] = 0;
-    } else if (!portfolio[index]["Day URlzd"]) {
-      portfolio[index]["Day URlzd"] = "0";
     }
 
     let settlementDates = Object.keys(interestInfo);
@@ -394,7 +393,7 @@ export function getMTDURlzdInt(portfolio: any, date: any, mtdTrades: Centralized
       portfolio[index]["Average Cost MTD"] = portfolio[index]["MTD Mark"];
     }
 
-    portfolio[index]["MTD URlzd"] = portfolio[index]["Type"] == "CDS" ? ((todayPrice - portfolio[index]["Average Cost MTD"]) * portfolio[index]["Notional Amount"]) / portfolio[index]["Original Face"] : (todayPrice - portfolio[index]["Average Cost MTD"]) * portfolio[index]["Notional Amount"];
+    portfolio[index]["MTD URlzd"] = portfolio[index]["Type"] == "CDS" ? ((todayPrice - portfolio[index]["MTD Mark"]) * portfolio[index]["Notional Amount"]) / portfolio[index]["Original Face"] : (todayPrice - portfolio[index]["MTD Mark"]) * portfolio[index]["Notional Amount"];
 
     if (portfolio[index]["MTD URlzd"] == 0) {
       portfolio[index]["MTD URlzd"] = 0;

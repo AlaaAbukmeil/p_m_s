@@ -57,6 +57,7 @@ export interface PositionAfterFormating {
 
   Pin: "pinned" | "not_pinned";
   "Security Description": string;
+  "Last Day Since Realizd": string;
 }
 
 export interface PinnedPosition {

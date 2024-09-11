@@ -299,8 +299,12 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     month: fund.month,
     borrowAmount: fund["borrowing amount"],
 
-    mtdplPercentage: padInteger((mtdplPercentage + mtdExpenses) * 100),
-    mtdpl: Math.round((mtdpl + mtdExpensesAmount) * 1000) / 1000,
+    mtdplPercentage: padInteger(mtdplPercentage * 100),
+    mtdplNetPercentage: padInteger((mtdplPercentage + mtdExpenses) * 100),
+
+    mtdpl: Math.round(mtdpl * 1000) / 1000,
+    mtdplNet: Math.round((mtdpl + mtdExpensesAmount) * 1000) / 1000,
+
     mtdrlzd: Math.round(mtdrlzd * 1000) / 1000,
     mtdurlzd: Math.round(mtdurlzd * 1000) / 1000,
     mtdint: Math.round(mtdint * 1000) / 1000,
@@ -925,16 +929,16 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
       if (sort !== "groupBBTicker") {
         locationCodes = Object.entries(groupedByLocation)
           .sort((a: any, b: any) => {
-            if (a[1]["groupUSDMarketValue"] === 0) return 1;
-            if (b[1]["groupUSDMarketValue"] === 0) return -1;
+            // if (a[1]["groupUSDMarketValue"] === 0) return 1;
+            // if (b[1]["groupUSDMarketValue"] === 0) return -1;
             return sign === -1 ? a[1][sort] - b[1][sort] : b[1][sort] - a[1][sort];
           })
           .map((entry) => entry[0]);
       } else {
         locationCodes = Object.entries(groupedByLocation)
           .sort((a: any, b: any) => {
-            if (a[1]["groupUSDMarketValue"] === 0) return 1;
-            if (b[1]["groupUSDMarketValue"] === 0) return -1;
+            // if (a[1]["groupUSDMarketValue"] === 0) return 1;
+            // if (b[1]["groupUSDMarketValue"] === 0) return -1;
 
             return sign === -1 ? b[1][sort].localeCompare(a[1][sort]) : a[1][sort].localeCompare(b[1][sort]);
           })
