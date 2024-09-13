@@ -412,6 +412,38 @@ export async function readPricingSheet(path: string) {
     return reformedData;
   }
 }
+export async function readExcel(path: string) {
+  const response = await axios.get(path, { responseType: "arraybuffer" });
+
+  /* Parse the data */
+  const workbook = xlsx.read(response.data, { type: "buffer" });
+
+  /* Get first worksheet */
+  const worksheetName = workbook.SheetNames[0];
+
+  const worksheet = workbook.Sheets[worksheetName];
+
+  /* Convert worksheet to JSON */
+  // const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: ''});
+
+  // Read data
+
+  const data = xlsx.utils.sheet_to_json(worksheet, {
+    defval: "",
+    range: "A1:AV500",
+  });
+  let keys = Object.keys(data[0]);
+  let reformedData: any = [];
+  for (let index = 0; index < data.length; index++) {
+    let object: any = {};
+    for (let keyIndex = 0; keyIndex < keys.length; keyIndex++) {
+      let key = keys[keyIndex].trim();
+      object[key] = data[index][keys[keyIndex]];
+    }
+    reformedData.push(object);
+  }
+  return reformedData;
+}
 export async function readNomuraCashReport(path: string): Promise<{ error: string; records: [] } | { error: null; records: NomuraCashReconcileFileUpload[] }> {
   try {
     const response = await axios.get(path, { responseType: "arraybuffer" });

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { bucket, formatDateFile, generateSignedUrl, verifyToken } from "../../controllers/common";
 import { Request, Response, NextFunction } from "express";
 import { deletePosition, editPosition, insertFXPosition, pinPosition, readCalculatePosition, updatePositionPortfolio } from "../../controllers/operations/positions";
-import { readCentralizedEBlot, readMUFGPrices, readPricingSheet, uploadArrayAndReturnFilePath } from "../../controllers/operations/readExcel";
+import { readCentralizedEBlot, readExcel, readMUFGPrices, readPricingSheet, uploadArrayAndReturnFilePath } from "../../controllers/operations/readExcel";
 import { checkLivePositions, updatePreviousPricesPortfolioMUFG, updatePricesPortfolio } from "../../controllers/operations/prices";
 import { getAllTradesForSpecificPosition } from "../../controllers/operations/trades";
 import { getEditLogs } from "../../controllers/operations/logs";
@@ -207,6 +207,13 @@ positionsRouter.post("/update-previous-prices", verifyToken, uploadToBucket.any(
   } catch (error) {
     res.send({ error: "fatal error" });
   }
+});
+positionsRouter.post("/process-excel", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  const fileName = req.files[0].filename;
+  const path = await generateSignedUrl(fileName);
+  let link = bucket + "/" + fileName + "?authuser=2";
+  let action: any = await readExcel(path);
+  console.log({ action });
 });
 
 export default positionsRouter;

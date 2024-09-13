@@ -10,6 +10,7 @@ import { formatBackOfficeTable, formatFactSheetStatsTable } from "../analytics/t
 import { getRlzdTrades, getRlzdTradesWithTrades, getTradesMTD } from "./trades";
 import { insertEditLogs } from "../operations/logs";
 import { CentralizedTrade } from "../../models/trades";
+import { PositionAfterFormating } from "../../models/position";
 
 export async function getPortfolioWithAnalytics(
   date: string,
@@ -121,9 +122,9 @@ export async function getPortfolioWithAnalytics(
       return position;
     }
   });
+  documents = getMTDParams(documents, lastMonthPortfolio, earliestPortfolioName.predecessorDate);
   documents = getDayParams(documents, previousDayPortfolio, lastDayBeforeToday.predecessorDate, false);
   documents = getDayParams(documents, previousPreviousDayPortfolio, lastDayBeforeYesterday.predecessorDate, true);
-  documents = getMTDParams(documents, lastMonthPortfolio, earliestPortfolioName.predecessorDate);
 
   let timestamp_3 = new Date().getTime();
   let mtdTrades: CentralizedTrade[] = await getTradesMTD(date);
@@ -180,7 +181,7 @@ export async function getPortfolioWithAnalytics(
   }
 }
 
-export function getDayParams(portfolio: PositionBeforeFormatting[], previousDayPortfolio: any, dateInput: any, threeDayAnalytics = false) {
+export function getDayParams(portfolio: PositionBeforeFormatting[] | any, previousDayPortfolio: any, dateInput: any, threeDayAnalytics = false) {
   // try {
 
   for (let index = 0; index < portfolio.length; index++) {
@@ -211,9 +212,16 @@ export function getDayParams(portfolio: PositionBeforeFormatting[], previousDayP
       if (portfolio[index]["Notional Amount"] < 0) {
         portfolio[index]["Asset Class"] = "Hedge";
       }
+      portfolio[index]["Entry Price"] = portfolio[index]["Entry Price"] ? portfolio[index]["Entry Price"] : {};
+      let latestEntryPrices = getLatestDateYYYYMM(Object.keys(portfolio[index]["Entry Price"]));
+      let entryPrice = portfolio[index]["Entry Price"] ? (portfolio[index]["Entry Price"][latestEntryPrices] ? portfolio[index]["Entry Price"][latestEntryPrices] : portfolio[index]["MTD Mark"]) : portfolio[index]["MTD Mark"];
+      portfolio[index]["Entry Price"] = entryPrice;
 
       if (!portfolio[index]["Previous Mark"]) {
-        portfolio[index]["Previous Mark"] = portfolio[index]["Mid"];
+        if (portfolio[index]["Notional Amount"] != 0) {
+          console.log("position should start today " + portfolio[index]["BB Ticker"]);
+        }
+        portfolio[index]["Previous Mark"] = entryPrice ? entryPrice : portfolio[index]["Mid"];
         portfolio[index]["Notes"] = portfolio[index]["Notes"] ? portfolio[index]["Notes"] : "";
         portfolio[index]["Notes"] += " Previous Mark X ";
       }
@@ -259,7 +267,7 @@ export function getMTDParams(portfolio: any, lastMonthPortfolio: any, dateInput:
 
         if (lastMonthPosition["ISIN"] == position["ISIN"] && parseFloat(lastMonthPosition["Mid"])) {
           portfolio[index]["MTD Mark"] = lastMonthPosition["Mid"];
-          portfolio[index]["MTD FX"] = lastMonthPosition["FX Rate"] ? lastMonthPosition["FX Rate"] : lastMonthPosition["holdPortfXrate"] ? lastMonthPosition["holdPortfXrate"] : portfolio[index]["Previous Rate"];
+          portfolio[index]["MTD FX"] = lastMonthPosition["FX Rate"] ? lastMonthPosition["FX Rate"] : portfolio[index]["Previous Rate"];
         }
         if (lastMonthPosition["ISIN"] == position["ISIN"] && lastMonthPosition["Location"] == position["Location"]) {
           portfolio[index]["MTD Notional"] = lastMonthPosition["Notional Amount"];
@@ -295,12 +303,11 @@ export function getDayURlzdInt(portfolio: any, date: any) {
     let quantityGeneratingInterest = position["Notional Amount"];
 
     let interestInfo = position["Interest"] || {};
-    let yesterdayPrice;
-    if (position["Previous Mark"]) {
-      yesterdayPrice = position["Previous Mark"];
-    } else {
-      yesterdayPrice = position["Mid"];
+    let yesterdayPrice = position["Previous Mark"];
+    if(!yesterdayPrice){
+      console.log("huge error: ", position["BB Ticker"])
     }
+
     if (position["Last Upload Trade"] > lastUploadTradesDate) {
       lastUploadTradesDate = parseFloat(position["Last Upload Trade"]);
     }
@@ -461,10 +468,6 @@ export function getPL(portfolio: any, date: any) {
     portfolio[index]["Day P&L"] = parseFloat(portfolio[index]["Day Int."]) + parseFloat(portfolio[index]["Day Rlzd"]) + parseFloat(portfolio[index]["Day URlzd"]) ? parseFloat(portfolio[index]["Day Int."]) + parseFloat(portfolio[index]["Day Rlzd"]) + parseFloat(portfolio[index]["Day URlzd"]) : 0;
     portfolio[index]["MTD P&L"] = parseFloat(portfolio[index]["MTD Rlzd"]) + (parseFloat(portfolio[index]["MTD URlzd"]) || 0) + parseFloat(portfolio[index]["MTD Int."]) || 0;
     portfolio[index]["YTD P&L"] = (parseFloat(portfolio[index]["YTD Rlzd"]) || 0) + (parseFloat(portfolio[index]["YTD URlzd"]) || 0) + parseFloat(portfolio[index]["YTD Int."]) || 0;
-    portfolio[index]["Entry Price"] = portfolio[index]["Entry Price"] ? portfolio[index]["Entry Price"] : {};
-    let latestEntryPrices = getLatestDateYYYYMM(Object.keys(portfolio[index]["Entry Price"]));
-
-    portfolio[index]["Entry Price"] = portfolio[index]["Entry Price"] ? (portfolio[index]["Entry Price"][latestEntryPrices] ? portfolio[index]["Entry Price"][latestEntryPrices] : portfolio[index]["MTD Mark"]) : portfolio[index]["MTD Mark"];
   }
   return portfolio;
 }

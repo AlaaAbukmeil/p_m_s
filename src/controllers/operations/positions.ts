@@ -524,7 +524,7 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
     await insertEditLogs(changes, editedPosition["Event Type"], dateTime, editedPosition["Edit Note"], positionInPortfolio["BB Ticker"] + " " + positionInPortfolio["Location"]);
     let snapShotName = getSQLIndexFormat(`portfolio-${earliestPortfolioName.predecessorDate}`, portfolioId);
     let action = await insertPositionsInPortfolio([positionInPortfolio], portfolioId, snapShotName);
-    console.log({ positionInPortfolio,editedPosition });
+    console.log({ positionInPortfolio, editedPosition });
     if (action) {
       return { status: 200 };
     } else {
@@ -869,7 +869,7 @@ export function updatePositionsBasedOnTrade(data: CentralizedTrade[], portfolio:
 
     let couponDaysYear = row["BB Ticker"].split(" ")[0] == "T" || row["BB Ticker"].includes("U.S") ? 365.0 : 360.0;
     let previousQuantity = 0;
-    let operation = row["B/S"] == "B" ? 1 : -1;
+    let operation = row["B/S"] == "B" && row["Trade Type"] != "cds_gs" ? 1 : -1;
     let divider = row["Trade Type"].includes("vcon") ? 100 : 1;
 
     let currentPrice: any = row["Price"] / divider;
