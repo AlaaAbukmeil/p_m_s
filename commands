@@ -3,3 +3,8 @@ sudo systemctl stop postgresql@15-main
 permissions
 sudo chown -R postgres:postgres /mnt/disks/first-disk-10-gb/main
 sudo chmod 700 /mnt/disks/first-disk-10-gb/main
+pm2 start yarn --name "eblotapi-production" --max-restarts 10 --restart-delay 3000 -- run start
+pm2 restart eblotapi-production
+pm2 reload eblotapi-production --update-env
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/vm_triada
