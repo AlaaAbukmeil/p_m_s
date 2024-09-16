@@ -128,13 +128,13 @@ export async function updatePricesPortfolio(path: string, link: string, portfoli
           for (let index = 0; index < positions.length; index++) {
             let object = positions[index];
             if (isNaN(row["Today's Mid"]) || row["Today's Mid"].toString().includes("N/A") || !parseFloat(row["Today's Mid"])) {
-              return { error: `${object["BB Ticker"]}' price has error, please review prices` };
+              return { error: `${object["BB Ticker"]}' mid price has error, please review prices. value = ${row["Today's Mid"]}` };
             }
-            if (isNaN(row["Today's Ask"]) || row["Today's Ask"].toString().includes("N/A") || (!parseFloat(row["Today's Ask"]) && divider != 100)) {
-              return { error: `${object["BB Ticker"]}' price has error, please review prices` };
+            if (isNaN(row["Today's Ask"]) || row["Today's Ask"].toString().includes("N/A") || (!parseFloat(row["Today's Ask"]) && divider == 100)) {
+              return { error: `${object["BB Ticker"]}' ask price has error, please review prices. value = ${row["Today's Ask"]}` };
             }
-            if (isNaN(row["Today's Bid"]) || row["Today's Bid"].toString().includes("N/A") || (!parseFloat(row["Today's Bid"]) && divider != 100)) {
-              return { error: `${object["BB Ticker"]}' price has error, please review prices` };
+            if (isNaN(row["Today's Bid"]) || row["Today's Bid"].toString().includes("N/A") || (!parseFloat(row["Today's Bid"]) && divider == 100)) {
+              return { error: `${object["BB Ticker"]}' bid price has error, please review prices. value = ${row["Today's Bid"]}` };
             }
             if (divider == 1) {
               object["Bid"] = row["Today's Bid"];
