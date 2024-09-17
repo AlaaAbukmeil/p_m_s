@@ -5,7 +5,7 @@ import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { insertEditLogs } from "../operations/logs";
 import { copyFileSync } from "fs";
 import { generateRandomIntegers, sendEmailToResetPassword, sendWelcomeEmail } from "./tools";
-import { authPool } from "../operations/psql/operation";
+import { authPool, contactPool } from "../operations/psql/operation";
 import { UserAuth } from "../../models/auth";
 
 const mongoose = require("mongoose");
@@ -242,6 +242,37 @@ export async function getAllUsers(): Promise<any[]> {
     throw new Error(`Failed to fetch users: ${error.message}`);
   }
 }
+export async function getAllContacts(type: string): Promise<any[]> {
+  try {
+    const client = await contactPool.connect();
+
+    try {
+      if (type == "companies") {
+        const query = `
+        SELECT * FROM public.${type} 
+        ORDER BY 
+          (company_name IS NULL OR company_name = '') ASC, 
+          company_name ASC;
+      `;
+        const result = await client.query(query);
+        return result.rows;
+      } else {
+        const query = `
+  SELECT * FROM public.${type} 
+  ORDER BY 
+    (first_name IS NULL OR first_name = '') ASC, 
+    first_name ASC;
+`;
+        const result = await client.query(query);
+        return result.rows;
+      }
+    } finally {
+      client.release();
+    }
+  } catch (error: any) {
+    throw new Error(`Failed to fetch users: ${error.message}`);
+  }
+}
 
 export async function checkUserRight(email: string, accessRole: string, shareClass: string): Promise<boolean> {
   const client = await authPool.connect();
@@ -346,6 +377,59 @@ export async function editUser(editedUser: any): Promise<any> {
     client.release();
   }
 }
+export async function editContact(editedContact: any): Promise<any> {
+  const client = await contactPool.connect();
+  const tableTitlesPeople = ["first_name", "last_name", "city", "company_name", "country", "description", "email", "job_title", "phone_number", "website_url", "associated_company", "associated_note"];
+  const tableTitlesCompanies = ["company_name", "associated_contact", "city", "company_domain_name", "country_region", "linkedin_bio", "phone_number", "description", "annual_revenue", "linkedin_company_page", "number_of_employees", "postal_code", "state_region", "street_address", "time_zone", "website_url", "contact_with_primary_company"];
+
+  try {
+    const contactInfo = await getContact(editedContact.id, editedContact.type);
+    console.log({ contactInfo });
+    if (contactInfo) {
+      const userKeys = editedContact.type === "people" ? tableTitlesPeople : tableTitlesCompanies;
+      let changes = 0;
+      const changesText = [];
+
+      for (const key of userKeys) {
+        if (editedContact[key] !== "" && editedContact[key] !== undefined) {
+          changesText.push(`${key} changed from ${contactInfo[key]} to ${editedContact[key]}`);
+          contactInfo[key] = editedContact[key];
+          changes++;
+        }
+      }
+
+      if (changes === 0) {
+        return { error: "The contact is still the same." };
+      }
+
+      const updateQuery = `
+        UPDATE public.${editedContact.type}
+        SET ${userKeys.map((key, index) => `${key} = $${index + 1}`).join(", ")}
+        WHERE id = $${userKeys.length + 1};
+      `;
+
+      const values = [...userKeys.map((key) => contactInfo[key]), editedContact.id];
+
+      const result = await client.query(updateQuery, values);
+
+      if (result.rowCount > 0) {
+        return { error: null };
+      } else {
+        return { error: "Unexpected error, please contact Triada team." };
+      }
+    } else {
+      return { error: "Contact does not exist, please refresh the page!" };
+    }
+  } catch (error: any) {
+    const dateTime = new Date().toISOString();
+    console.error(error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    await insertEditLogs([errorMessage], "errors", dateTime, "editContact", "src/controllers/auth.ts");
+  } finally {
+    client.release();
+  }
+}
 
 export async function getUser(userId: string): Promise<any> {
   const client = await authPool.connect();
@@ -356,6 +440,25 @@ export async function getUser(userId: string): Promise<any> {
       WHERE id = $1
     `;
     const result = await client.query(userQuery, [userId]);
+
+    // Return the first result if available
+    return result.rows[0] || null;
+  } catch (error) {
+    console.error("An error occurred while retrieving data from PostgreSQL:", error);
+    return null;
+  } finally {
+    client.release();
+  }
+}
+export async function getContact(contactId: string, type: string): Promise<any> {
+  const client = await contactPool.connect();
+
+  try {
+    const userQuery = `
+      SELECT * FROM public.${type}
+      WHERE id = $1
+    `;
+    const result = await client.query(userQuery, [contactId]);
 
     // Return the first result if available
     return result.rows[0] || null;
@@ -455,6 +558,7 @@ export async function addUser({ email, name, access_role_instance, access_role_p
     client.release();
   }
 }
+
 export function checkPasswordStrength(password: any) {
   // Regular expressions to check for different character types
   const hasUppercase = /[A-Z]/.test(password);
@@ -510,6 +614,69 @@ export async function updateUser(userInfo: any, newFileNames: any): Promise<any>
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
     await insertEditLogs([errorMessage], "errors", dateTime, "updateUser", "src/controllers/auth.ts");
+  } finally {
+    client.release();
+  }
+}
+export async function addContact(newContact: any): Promise<any> {
+  const client = await contactPool.connect();
+  const tableTitlesPeople = ["first_name", "last_name", "city", "company_name", "country", "description", "email", "job_title", "phone_number", "website_url", "associated_company", "associated_note"];
+  const tableTitlesCompanies = ["company_name", "associated_contact", "city", "company_domain_name", "country", "linkedin_bio", "phone_number", "description", "annual_revenue", "linkedin_company_page", "number_of_employees", "postal_code", "state_region", "street_address", "time_zone", "website_url", "contact_with_primary_company"];
+
+  try {
+    await client.query("BEGIN");
+
+    const userKeys = newContact.type === "people" ? tableTitlesPeople : tableTitlesCompanies;
+    const columns = userKeys.join(", ");
+    const placeholders = userKeys.map((_, index) => `$${index + 1}`).join(", ");
+
+    const insertQuery = `
+      INSERT INTO public.${newContact.type} (${columns})
+      VALUES (${placeholders});
+    `;
+
+    const values = userKeys.map((key) => newContact[key] || null);
+
+    const result = await client.query(insertQuery, values);
+    await client.query("COMMIT");
+
+    if (result.rowCount > 0) {
+      return { error: null };
+    } else {
+      return { error: "Unexpected error, please contact Triada team." };
+    }
+  } catch (error: any) {
+    await client.query("ROLLBACK");
+    const dateTime = new Date().toISOString();
+    console.error(error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    await insertEditLogs([errorMessage], "errors", dateTime, "addContact", "src/controllers/auth.ts");
+  } finally {
+    client.release();
+  }
+}
+export async function deleteContact(contactId: number, contactType: string): Promise<any> {
+  const client = await contactPool.connect();
+  try {
+    const deleteQuery = `
+      DELETE FROM public.${contactType}
+      WHERE id = $1;
+    `;
+
+    const result = await client.query(deleteQuery, [contactId]);
+
+    if (result.rowCount > 0) {
+      return { error: null };
+    } else {
+      return { error: "Contact does not exist or could not be deleted." };
+    }
+  } catch (error: any) {
+    const dateTime = new Date().toISOString();
+    console.error(error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    await insertEditLogs([errorMessage], "errors", dateTime, "deleteContact", "src/controllers/auth.ts");
   } finally {
     client.release();
   }

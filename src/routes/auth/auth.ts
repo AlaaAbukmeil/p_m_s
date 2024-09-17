@@ -1,10 +1,10 @@
-import { addUser, checkIfUserExists, checkLinkRight, checkPasswordStrength, checkUserRight, deleteUser, editUser, getAllUsers, getUserByEmail, registerUser, resetPassword, sendResetPasswordRequest, updateUser } from "../controllers/userManagement/auth";
-import { bucketPublic, bucketPublicBucket, generateSignedUrl, verifyToken, verifyTokenFactSheetMember } from "../controllers/common";
+import { addUser, checkIfUserExists, checkLinkRight, checkPasswordStrength, checkUserRight, deleteUser, editUser, getAllUsers, getUserByEmail, registerUser, resetPassword, sendResetPasswordRequest, updateUser } from "../../controllers/userManagement/auth";
+import { bucketPublic, bucketPublicBucket, generateSignedUrl, verifyToken, verifyTokenFactSheetMember } from "../../controllers/common";
 import { CookieOptions, NextFunction, Router } from "express";
 import { Request, Response } from "express";
-import { getDateTimeInMongoDBCollectionFormat } from "../controllers/reports/common";
-import { numberOfNewTrades } from "../controllers/operations/trades";
-import { bucketPublicTest, multerTest, uploadToBucket } from "../controllers/userManagement/tools";
+import { getDateTimeInMongoDBCollectionFormat } from "../../controllers/reports/common";
+import { numberOfNewTrades } from "../../controllers/operations/trades";
+import { bucketPublicTest, multerTest, uploadToBucket } from "../../controllers/userManagement/tools";
 const authRouter = Router();
 
 authRouter.get("/auth", uploadToBucket.any(), verifyTokenFactSheetMember, async (req: any, res: Response, next: NextFunction) => {

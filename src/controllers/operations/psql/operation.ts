@@ -7,6 +7,7 @@ import { InformationInDB } from "../../../models/positionsInformation";
 import { CentralizedTrade, CentralizedTradeInDB } from "../../../models/trades";
 import { getDateTimeInMongoDBCollectionFormat } from "../../reports/common";
 import { getFactSheetData } from "../../reports/factSheet";
+import { changeHubspotContactCompanyToSqlForm, changeHubspotContactPeopleToSqlForm } from "../processData";
 
 require("dotenv").config();
 
@@ -37,6 +38,8 @@ export const analyticsPool = createPool("analytics");
 
 export const logsPool = createPool("logs");
 export const indexPool = createPool("portfolio_index");
+export const contactPool = createPool("contacts");
+
 export const pinnedPool = createPool("pinned");
 export const automationPool = createPool("automation");
 export const portfolioPool = createPool("portfolio");
@@ -278,7 +281,7 @@ export function formatUsers(data: any): UserAuth[] {
       id: id,
       files: element["files"],
       reset_code: element["resetCode"],
-      route: ""
+      route: "",
     };
     result.push(object);
   }
@@ -348,7 +351,7 @@ export function formatLinks(data: any): UserAuth[] {
       id: id,
       files: null,
       reset_code: null,
-      route:element["route"]
+      route: element["route"],
     };
     if (element["email"]) {
       result.push(object);
@@ -429,7 +432,6 @@ export function formatTrades(data: any[], tradeType: string): CentralizedTradeIn
   }
   return result;
 }
-
 
 export function formatFundMTD(data: any[]): FundDetailsInDB[] {
   let result: FundDetailsInDB[] = [];
@@ -550,8 +552,6 @@ export async function insertIndexingData(dataInput: Indexing[]) {
   }
 }
 
-
-
 export async function insertPositionsPortfolioData(dataInput: PositionInSQLDB[], portfolioId: string, snapShot: string) {
   const client = await portfolioPool.connect();
   try {
@@ -654,6 +654,74 @@ export async function insertPositionsPortfolioData(dataInput: PositionInSQLDB[],
   } catch (err: any) {
     await client.query("ROLLBACK");
     console.error("Error inserting", err);
+  } finally {
+    client.release();
+  }
+}
+
+export async function insertCompanyData(dataInput: any[]) {
+  const client = await contactPool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const insertQuery = `
+  INSERT INTO public.companies (
+    annual_revenue, city, company_domain_name,
+    company_name, country_region, description,
+    linkedin_bio, linkedin_company_page, number_of_employees,
+    phone_number, postal_code, state_region,
+    street_address, time_zone, website_url,
+    contact_with_primary_company, associated_contact
+  )
+  VALUES (
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+    $11, $12, $13, $14, $15, $16, $17
+  );`;
+
+    const formattedData = changeHubspotContactCompanyToSqlForm(dataInput);
+
+    for (const element of formattedData) {
+      await client.query(insertQuery, [element.annual_revenue, element.city, element.company_domain_name, element.company_name, element.country_region, element.description, element.linkedin_bio, element.linkedin_company_page, element.number_of_employees, element.phone_number, element.postal_code, element.state_region, element.street_address, element.time_zone, element.website_url, element.contact_with_primary_company, element.associated_contact]);
+    }
+
+    await client.query("COMMIT");
+    console.log("Company data added");
+  } catch (err: any) {
+    await client.query("ROLLBACK");
+    console.error("Error inserting", err.stack);
+  } finally {
+    client.release();
+  }
+}
+
+export async function insertPeopleData(dataInput: any[]) {
+  const client = await contactPool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const insertQuery = `
+  INSERT INTO public.people (
+    first_name, last_name, city,
+    company_name, country, description,
+    email, job_title, phone_number,
+    website_url, associated_company, associated_note
+  )
+  VALUES (
+    $1, $2, $3, $4, $5, $6,
+    $7, $8, $9, $10, $11, $12
+  );`;
+
+    const formattedData = changeHubspotContactPeopleToSqlForm(dataInput);
+
+    for (const element of formattedData) {
+      await client.query(insertQuery, [element.first_name, element.last_name, element.city, element.company_name, element.country, element.description, element.email, element.job_title, element.phone_number, element.website_url, element.associated_company, element.associated_note]);
+    }
+
+    await client.query("COMMIT");
+    console.log("People data added");
+  } catch (err: any) {
+    await client.query("ROLLBACK");
+    console.error("Error inserting", err.stack);
   } finally {
     client.release();
   }

@@ -8,7 +8,7 @@ import { getAllTradesForSpecificPosition } from "../../controllers/operations/tr
 import { getEditLogs } from "../../controllers/operations/logs";
 import { getCollectionDays } from "../../controllers/operations/tools";
 import { uploadToBucket } from "../../controllers/userManagement/tools";
-import { factsheetPool } from "../../controllers/operations/psql/operation";
+import { factsheetPool, insertCompanyData, insertPeopleData } from "../../controllers/operations/psql/operation";
 import { getAllCollectionNames } from "../../controllers/reports/tools";
 
 const positionsRouter = Router();
@@ -211,9 +211,11 @@ positionsRouter.post("/update-previous-prices", verifyToken, uploadToBucket.any(
 positionsRouter.post("/process-excel", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   const fileName = req.files[0].filename;
   const path = await generateSignedUrl(fileName);
-  let link = bucket + "/" + fileName + "?authuser=2";
   let action: any = await readExcel(path);
-  console.log({ action });
+  let insert = await insertPeopleData(action);
+
+  console.log({ insert });
+  res.send({ error: null });
 });
 
 export default positionsRouter;

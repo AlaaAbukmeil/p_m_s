@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 //jshint esversion:6
-const auth_1 = __importDefault(require("./routes/auth"));
+const auth_1 = __importDefault(require("./routes/auth/auth"));
 const formatter_1 = __importDefault(require("./routes/formatter"));
 const reports_1 = __importDefault(require("./routes/reports/reports"));
 const positions_1 = __importDefault(require("./routes/operations/positions"));
@@ -16,6 +16,7 @@ const links_1 = __importDefault(require("./routes/operations/links"));
 const compare_1 = __importDefault(require("./routes/analytics/compare"));
 const logs_1 = __importDefault(require("./routes/automation/logs"));
 const migratepsql_1 = __importDefault(require("./routes/automation/migratepsql"));
+const contacts_1 = __importDefault(require("./routes/auth/contacts"));
 require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -58,6 +59,7 @@ app.use("/api/web/", links_1.default);
 app.use("/api/web/", compare_1.default);
 app.use("/api/web/", logs_1.default);
 app.use("/api/web/", migratepsql_1.default);
+app.use("/api/web/", contacts_1.default);
 app.use(apiLimiter);
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, function () { });

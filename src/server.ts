@@ -1,5 +1,5 @@
 //jshint esversion:6
-import authRouter from "./routes/auth";
+import authRouter from "./routes/auth/auth";
 import formatterRouter from "./routes/formatter";
 import router from "./routes/reports/reports";
 import positionsRouter from "./routes/operations/positions";
@@ -11,6 +11,7 @@ import linksRouter from "./routes/operations/links";
 import analyticsRouter from "./routes/analytics/compare";
 import logRouter from "./routes/automation/logs";
 import migrateRouter from "./routes/automation/migratepsql";
+import authContactRouter from "./routes/auth/contacts";
 require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -63,6 +64,7 @@ app.use("/api/web/", linksRouter);
 app.use("/api/web/", analyticsRouter);
 app.use("/api/web/", logRouter);
 app.use("/api/web/", migrateRouter);
+app.use("/api/web/", authContactRouter);
 
 app.use(apiLimiter);
 
