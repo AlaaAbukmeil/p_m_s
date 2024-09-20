@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 import { NavBreakdown } from "./tools";
-import { AggregatedData } from "../controllers/analytics/tools";
+import { AggregateRow, AggregatedData } from "../controllers/analytics/tools";
 
 export interface RlzdTrades {
   price: string;
@@ -485,9 +485,29 @@ export interface Analysis {
     [key: string]: AggregatedData;
     Total: AggregatedData;
   };
+  IntStats: undefined | IntStatsType;
 }
 
 export interface Indexing {
   portfolio_id: string;
   portfolio_document_ids: { timestamp: number; name: string }[];
+}
+export interface IntStatsType {
+  Portfolio: { day: { positive: number; negative: number; sum: number }; mtd: { positive: number; negative: number; sum: number } };
+  RV: { day: { positive: number; negative: number; sum: number }; mtd: { positive: number; negative: number; sum: number } };
+  IG: { day: { positive: number; negative: number; sum: number }; mtd: { positive: number; negative: number; sum: number } };
+  HY: { day: { positive: number; negative: number; sum: number }; mtd: { positive: number; negative: number; sum: number } };
+  "CURR + FUT": { day: { positive: number; negative: number; sum: number }; mtd: { positive: number; negative: number; sum: number } };
+  CDS: { day: { positive: number; negative: number; sum: number }; mtd: { positive: number; negative: number; sum: number } };
+  "Global Hedge": { day: { positive: number; negative: number; sum: number }; mtd: { positive: number; negative: number; sum: number } };
+}
+export interface MacroStats {
+  RV: AggregateRow;
+  IG: AggregateRow;
+  HY: AggregateRow;
+  "CURR + FUT": AggregateRow;
+  CDS: AggregateRow;
+  "Non-Hedge Bonds": AggregateRow;
+  "Global Hedge": AggregateRow;
+  Rlzd: AggregateRow;
 }

@@ -1,4 +1,4 @@
-import { PositionBeforeFormatting } from "../../models/portfolio";
+import { FundDetails, FundMTD, IntStatsType, PositionBeforeFormatting } from "../../models/portfolio";
 import { PositionAfterFormating } from "../../models/position";
 import { isNotNullOrUndefined, parsePercentage } from "../common";
 
@@ -696,4 +696,13 @@ export function isNotInteger(value: any) {
 }
 export function isInteger(value: any) {
   return !isNaN(parseInt(value, 10));
+}
+
+export function getStatsPercentageOfFund(IntStats: IntStatsType | any, fundDetails: FundMTD) {
+  for (let key in IntStats) {
+    IntStats[key].day.sumOfLMV = (IntStats[key].day.sum / fundDetails.lmv) * 100;
+    IntStats[key].day.sumOfNAV = (IntStats[key].day.sum / fundDetails.nav) * 100;
+    IntStats[key].mtd.sumOfLMV = (IntStats[key].mtd.sum / fundDetails.lmv) * 100;
+    IntStats[key].mtd.sumOfNAV = (IntStats[key].mtd.sum / fundDetails.nav) * 100;
+  }
 }
