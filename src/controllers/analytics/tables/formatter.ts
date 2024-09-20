@@ -297,7 +297,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     holdbackRatio: fund.holdBackRatio,
     shadawNAV: Math.round(shadawMTDNAV),
     month: fund.month,
-    borrowAmount: fund["borrowing amount"],
+    borrowAmount: lmv - +fund.nav,
 
     mtdplPercentage: padInteger(mtdplPercentage * 100),
     mtdplNetPercentage: padInteger((mtdplPercentage + mtdExpenses) * 100),

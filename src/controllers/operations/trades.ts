@@ -149,7 +149,8 @@ export async function editTrade(editedTrade: any, tradeType: "vcons" | "ib" | "e
       settlement_venue = $23,
       primary_market = $24,
       nomura_upload_status = $25,
-      front_office_check = $26
+      front_office_check = $26,
+      front_office_note = $28,
       WHERE id = $27;
   `;
 
@@ -183,6 +184,8 @@ export async function editTrade(editedTrade: any, tradeType: "vcons" | "ib" | "e
         newTradeInSQL.front_office_check,
 
         newTradeInSQL.id,
+        newTradeInSQL.front_office_note,
+
       ];
 
       const client = await tradesPool.connect();
@@ -212,7 +215,7 @@ export async function editTrade(editedTrade: any, tradeType: "vcons" | "ib" | "e
     console.error(error);
     let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
-    await insertEditLogs([errorMessage], "errors", dateTime, "editTrade", "controllers/operations/trades.ts");
+    await insertEditLogs([errorMessage], "errors", dateTime, "edit_trade", "controllers/operations/trades.ts");
     console.log(error);
     return { error: error };
   }

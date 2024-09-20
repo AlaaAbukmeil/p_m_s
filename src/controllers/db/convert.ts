@@ -153,6 +153,7 @@ export function formatPositionsTOSQL(positions: PositionInDB[]) {
       cost_mtd: pos["Cost MTD"] || {},
       security_description: safeString(pos["Security Description"]),
       type: pos["Type"],
+      tax: pos["Tax"],
     };
   });
 
@@ -217,6 +218,7 @@ export function formatPositionsApp(positions: PositionInSQLDB[]): PositionInDB[]
       "Next Settle Date": pos.next_settle_date,
       "Cost MTD": pos.cost_mtd,
       "Security Description": pos.security_description,
+      Tax: pos.tax,
     };
   });
   return result;

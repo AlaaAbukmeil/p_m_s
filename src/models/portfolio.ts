@@ -100,6 +100,7 @@ export interface PositionInDB {
   "Cost MTD": { [key: string]: number };
 
   "Security Description": string;
+  Tax: number;
 }
 
 // TypeScript interface for the transformed data structure
@@ -159,6 +160,7 @@ export interface PositionInSQLDB {
   next_settle_date: string;
   cost_mtd: { [key: string]: number }; // JSON string of object
   security_description: string;
+  tax: number;
 }
 
 export interface PositionBeforeFormatting extends PositionInDB {

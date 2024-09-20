@@ -248,7 +248,8 @@ export async function insertPositionsInPortfolio(positions: PositionBeforeFormat
           next_settle_date = $52,
           cost_mtd = $53,
           security_description = $54,
-          type = $55
+          type = $55,
+          tax = $56
         WHERE isin = $5 AND location = $4
         RETURNING *
       )
@@ -261,11 +262,11 @@ export async function insertPositionsInPortfolio(positions: PositionBeforeFormat
         moodys_outlook, bbg_composite_rating, sp_bond_rating, sp_outlook, oas, original_face,
         sector, strategy, ytm, ytw, z_spread, notes, coupon_duration, asset_class, pin,
         issuers_country, coupon_frequency, previous_settle_date, next_settle_date, cost_mtd,
-        security_description, type
+        security_description, type, tax
       )
       SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
              $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38,
-             $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55
+             $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56
       WHERE NOT EXISTS (
         SELECT 1 FROM updated
       );
@@ -328,6 +329,7 @@ export async function insertPositionsInPortfolio(positions: PositionBeforeFormat
         JSON.stringify(element.cost_mtd),
         element.security_description,
         element.type,
+        element.tax,
       ]);
     }
     await client.query("COMMIT");
@@ -362,7 +364,66 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
 
     let positionInPortfolio: any = {};
 
-    let editedPositionTitles = Object.keys(editedPosition);
+    let editedPositionTitles = [
+      "Type",
+      "Strategy",
+      "Location",
+      "Currency",
+      "BB Ticker",
+      "Maturity",
+      "Call Date",
+      "Notional Amount",
+
+      "Issuer",
+
+      "Broker",
+
+      "Mid",
+      "Bid",
+      "Ask",
+      "FX Rate",
+      "YTM",
+
+      "Sector",
+      "Country",
+      "Issuer's Country",
+
+      "Original Face",
+      "Coupon Rate",
+      "Coupon Duration",
+      "Coupon Frequency",
+
+      "Asset Class",
+
+      "DV01",
+      "OAS",
+      "Spread Change",
+      "OAS W Change",
+
+      "Z Spread",
+      "Average Cost",
+      "ISIN",
+      "BBG Composite Rating",
+      "S&P Bond Rating",
+      "S&P Outlook",
+      "Moody's Bond Rating",
+      "Moody's Outlook",
+      "Fitch Bond Rating",
+      "Fitch Outlook",
+      "CUSIP",
+      "Bloomberg ID",
+      "Bloomberg Mid BGN",
+
+      "YTW",
+
+      "CR01",
+      "Previous Settle Date",
+      "Next Settle Date",
+      "Tax",
+
+      "Notes",
+      "Security Description",
+    ];
 
     let id = editedPosition["id"];
     let unEditableParams = [
@@ -524,7 +585,7 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
     await insertEditLogs(changes, editedPosition["Event Type"], dateTime, editedPosition["Edit Note"], positionInPortfolio["BB Ticker"] + " " + positionInPortfolio["Location"]);
     let snapShotName = getSQLIndexFormat(`portfolio-${earliestPortfolioName.predecessorDate}`, portfolioId);
     let action = await insertPositionsInPortfolio([positionInPortfolio], portfolioId, snapShotName);
-    console.log({ positionInPortfolio, editedPosition });
+    console.log({ positionInPortfolio });
     if (action) {
       return { status: 200 };
     } else {
