@@ -2,7 +2,7 @@ import { getAllDatesSinceLastMonthLastDay, getAllDatesSinceLastYearLastDay, getD
 import { getFundDetails } from "../operations/fund";
 
 import { formatDateUS, getTradeDateYearTrades } from "../common";
-import { getAllCollectionNames, getEarliestCollectionName, getLatestDateYYYYMM, parseBondIdentifier, remainingDaysInYear } from "./tools";
+import { getAllCollectionNames, getEarliestCollectionName, getLatestDateYYYYMM, parseBondIdentifier, remainingDaysInYear, sortDateKeys } from "./tools";
 import { getHistoricalPortfolio, getPinnedPositions } from "../operations/positions";
 import { FinalPositionBackOffice, FundExposureOnlyMTD, FundMTD, PositionBeforeFormatting, PositionInDB, RlzdTrades } from "../../models/portfolio";
 import { formatFrontOfficeTable } from "../analytics/tables/frontOffice";
@@ -301,11 +301,11 @@ export function getDayURlzdInt(portfolio: any, date: any) {
     let position = portfolio[index];
     portfolio[index]["Principal"] = 0;
     let quantityGeneratingInterest = position["Notional Amount"];
-
+    portfolio[index]["Interest"] = sortDateKeys(portfolio[index]["Interest"]);
     let interestInfo = position["Interest"] || {};
     let yesterdayPrice = position["Previous Mark"];
-    if(!yesterdayPrice){
-      console.log("huge error: ", position["BB Ticker"])
+    if (!yesterdayPrice) {
+      console.log("huge error: ", position["BB Ticker"]);
     }
 
     if (position["Last Upload Trade"] > lastUploadTradesDate) {

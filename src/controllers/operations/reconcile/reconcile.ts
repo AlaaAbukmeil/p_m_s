@@ -1,12 +1,13 @@
 import { PositionBeforeFormatting, PositionInDB } from "../../../models/portfolio";
 import { MufgReconcileUpload, NomuraCashReconcileFileUpload, NomuraPositonReconcileUpload, NomuraReconcileCashOutput, NomuraReconcileCashOutputCoupon, NomuraReconcileCashOutputRedeemption } from "../../../models/reconcile";
+import { CentralizedTrade } from "../../../models/trades";
 import { getAllDatesSinceLastMonthLastDay, getDateTimeInMongoDBCollectionFormat } from "../../reports/common";
 import { getMTDParams, getPortfolioOnSpecificDate } from "../../reports/portfolios";
 import { getEarliestCollectionName, parseBondIdentifierNomura } from "../../reports/tools";
 import { getHistoricalPortfolio } from "../positions";
 import { readNomuraCashReport } from "../readExcel";
 import { formatDateToIso, parseYYYYMMDDAndReturnMonth } from "../tools";
-import { getTrade, getTradeByTriadaId } from "../trades";
+import { getAllTrades, getTrade, getTradeByTriadaId } from "../trades";
 import { convertNomuraDateToAppTradeDate, getMtdMarkAndMtdNotional, getPositionAggregated, getProcceeds, getRlzdPNLNomuraProceeds, sumUpCouponPaymentRecords, switchCorrectedTrades } from "./tools";
 
 export async function reconcileMUFG(MUFGData: MufgReconcileUpload[], portfolioInput: PositionInDB[]) {
@@ -250,8 +251,8 @@ export async function reconcileNomuraCash({ path, collectionDate, start, end, po
       let couponPaymentsNomura = checkIfCouponPaymentsAreSettleted(couponPaymentRecords, finalPortfolioWithPositionsThatWillPay, collectionDate);
 
       let couponPaymentsApp = checkPositionsThatShouldPayButDoNotExistInNomura(finalPortfolioWithPositionsThatWillPay, couponPaymentsNomura.isinsFound, collectionDate);
-      console.log({ buySellCorrectRecords: buySellCorrectRecords.length });
-      let tradesCheck = await checkNomuraTradesWithVcon(buySellRecords, portfolioId);
+      let allTrades = await getAllTrades(start, end, "portfolio_main", "vcons");
+      let tradesCheck = await checkNomuraTradesWithVcon(buySellRecords, portfolioId, allTrades);
 
       return { fxInterest, redeemped, couponPayments: [...couponPaymentsApp, ...couponPaymentsNomura.result], tradesCheck, error: null };
     }
@@ -463,15 +464,13 @@ export function calculateNomuraMTDRlzdPNL(portfolio: PositionBeforeFormatting[] 
   return result;
 }
 
-async function checkNomuraTradesWithVcon(nomuraTrades: NomuraCashReconcileFileUpload[], portfolioId: string) {
+async function checkNomuraTradesWithVcon(nomuraTrades: NomuraCashReconcileFileUpload[], portfolioId: string, allTrades: CentralizedTrade[]) {
   let results: { Ticker: string; "Trade Date App": string; "Settle Date App": string; "Notional Amount App": number; "Notional Amount Nomura": number; "App Price": number; "Nomura Price": number; Result: string }[] = [];
   for (let index = 0; index < nomuraTrades.length; index++) {
     let trade = nomuraTrades[index];
-    let triadaId = trade["Client Trade Ref"];
-    let tradesApp = (await getTradeByTriadaId("vcons", triadaId, portfolioId)) || [];
-    console.log({ tradesApp });
-    if (tradesApp.length) {
-      let tradeApp = tradesApp[0];
+    let triadaId = trade["Client Trade Ref"].toString().toLowerCase();
+    let tradeApp = allTrades.find((trade: CentralizedTrade, index: number) => trade["Triada Trade Id"].toString().toLowerCase().includes(triadaId));
+    if (tradeApp) {
       let ticker = tradeApp["BB Ticker"];
       let result = "";
 

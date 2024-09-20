@@ -20,6 +20,27 @@ export function getAverageCost(currentQuantity: number, previousQuantity: number
     return averageCost;
   }
 }
+export function sortDateKeys(obj: any) {
+  const parseDate = (dateStr: any) => {
+    const [month, day, year] = dateStr.split("/");
+    // Convert 2-digit year to 4-digit year
+    const fullYear = year.length === 2 ? "20" + year : year;
+    return new Date(fullYear, month - 1, day).getTime();
+  };
+
+  const sortedKeys = Object.keys(obj).sort((a, b) => {
+    const dateA = parseDate(a);
+    const dateB = parseDate(b);
+    return dateA - dateB;
+  });
+
+  const sortedObj: any = {};
+  for (const key of sortedKeys) {
+    sortedObj[key] = obj[key];
+  }
+
+  return sortedObj;
+}
 
 export function settlementDatePassed(settlementDate: string, ticker: string) {
   let parts: any = settlementDate.split("/");

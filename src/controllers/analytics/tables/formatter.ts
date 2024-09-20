@@ -1014,7 +1014,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         if (groupedByLocation[locationCode].data[groupPositionIndex]["Pin"] == "not_pinned") {
           groupedByLocation[locationCode]["Pin"] = "not_pinned";
         }
-        if (groupedByLocation[locationCode].data[groupPositionIndex]["Duration"] < 0) {
+        if (groupedByLocation[locationCode].data[groupPositionIndex]["Duration"] < 0 || (groupedByLocation[locationCode].data[groupPositionIndex]["Duration"] <= 0 && groupedByLocation[locationCode].data[groupPositionIndex]["Type"] == "BND")) {
           groupedByLocation[locationCode].data[groupPositionIndex]["Color"] = "red";
           groupedByLocation[locationCode].data[groupPositionIndex]["Duration"] = 0;
         }
@@ -1080,14 +1080,14 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
             IntStats["RV"].day.negative += groupedByLocation[locationCode].groupDayInt;
           }
           IntStats["RV"].day.sum += groupedByLocation[locationCode].groupDayInt;
-          
+
           if (groupedByLocation[locationCode].groupMTDIntSum >= 0) {
             IntStats["RV"].mtd.positive += groupedByLocation[locationCode].groupMTDIntSum;
           } else {
             IntStats["RV"].mtd.negative += groupedByLocation[locationCode].groupMTDIntSum;
           }
           IntStats["RV"].mtd.sum += groupedByLocation[locationCode].groupMTDIntSum;
-          console.log({"testRv": IntStats["RV"]})
+          console.log({ testRv: IntStats["RV"] });
         } else if (groupedByLocation[locationCode].groupMacro == "IG") {
           if (macro["IG"]["Row Index"] < 0 && groupedByLocation[locationCode].order) {
             macro["IG"]["Row Index"] = portfolio.length + rowIndexAdditive;
