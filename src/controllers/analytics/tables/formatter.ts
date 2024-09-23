@@ -3,7 +3,7 @@ import { formatDateUS, parsePercentage } from "../../common";
 import { calculateAccruedSinceInception } from "../../reports/portfolios";
 import { daysSinceBeginningOfMonth, parseBondIdentifier } from "../../reports/tools";
 import { getCountrySectorStrategySum } from "./statistics";
-import { sortObjectBasedOnKey, oasWithChange, checkPosition, yearsUntil, getDuration, AggregatedData, assignAssetClass, getDurationBucket, assetClassOrderFrontOffice, assetClassOrderExposure, rateSensitive, toTitleCase, AggregateRow, getStandardRating, classifyCountry, padInteger, isRatingHigherThanBBBMinus, isNotInteger, getStatsPercentageOfFund } from "../tools";
+import { sortObjectBasedOnKey, oasWithChange, checkPosition, yearsUntil, getDuration, AggregatedData, assignAssetClass, getDurationBucket, assetClassOrderFrontOffice, assetClassOrderExposure, rateSensitive, toTitleCase, AggregateRow, getStandardRating, classifyCountry, padInteger, isRatingHigherThanBBBMinus, isNotInteger, getStatsPercentageOfFund, isNotFirstMondayOfMonth } from "../tools";
 import { getTopWorst } from "./frontOffice";
 import { adjustMarginMultiplier, nomuraRuleMargin } from "../cash/rules";
 import { sumTable } from "./riskTables";
@@ -128,7 +128,6 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
 
     position["Cost (LC)"] = Math.round((position["Average Cost"] / bondDivider) * position["Notional Amount"] * holdBackRatio);
     position["Cost MTD (LC)"] = position["Cost MTD"];
-
     position["Day Int. (LC)"] = Math.round(position["Day Int."] * holdBackRatio);
     position["Day Rlzd (LC)"] = Math.round(position["Day Rlzd"] * holdBackRatio);
     position["Day URlzd (LC)"] = Math.round(position["Day URlzd"] * holdBackRatio);
@@ -1087,7 +1086,6 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
             IntStats["RV"].mtd.negative += groupedByLocation[locationCode].groupMTDIntSum;
           }
           IntStats["RV"].mtd.sum += groupedByLocation[locationCode].groupMTDIntSum;
-          console.log({ testRv: IntStats["RV"] });
         } else if (groupedByLocation[locationCode].groupMacro == "IG") {
           if (macro["IG"]["Row Index"] < 0 && groupedByLocation[locationCode].order) {
             macro["IG"]["Row Index"] = portfolio.length + rowIndexAdditive;
