@@ -11,6 +11,7 @@ import { getRlzdTrades, getRlzdTradesWithTrades, getTradesMTD } from "./trades";
 import { insertEditLogs } from "../operations/logs";
 import { CentralizedTrade } from "../../models/trades";
 import { PositionAfterFormating } from "../../models/position";
+import { isNotFirstMondayOfMonth } from "../analytics/tools";
 
 export async function getPortfolioWithAnalytics(
   date: string,
@@ -296,6 +297,8 @@ export function getMTDParams(portfolio: any, lastMonthPortfolio: any, dateInput:
 export function getDayURlzdInt(portfolio: any, date: any) {
   let lastUploadTradesDate = 0,
     lastUpdatePricesDate = 0;
+  let weekend = isNotFirstMondayOfMonth();
+
   let daysRemaining = remainingDaysInYear(date);
   for (let index = 0; index < portfolio.length; index++) {
     let position = portfolio[index];
@@ -333,8 +336,7 @@ export function getDayURlzdInt(portfolio: any, date: any) {
       }
     }
     let couponDaysYear = parseFloat(portfolio[index]["Coupon Duration"]) || 360;
-
-    portfolio[index]["Day Int."] = (parseFloat(quantityGeneratingInterest) * (portfolio[index]["Coupon Rate"] / 100.0)) / couponDaysYear;
+    portfolio[index]["Day Int."] = ((parseFloat(quantityGeneratingInterest) * (portfolio[index]["Coupon Rate"] / 100.0)) / couponDaysYear) * (weekend ? 3 : 1);
     portfolio[index]["30-Day Int. EST"] = ((parseFloat(position["Notional Amount"]) * (portfolio[index]["Coupon Rate"] / 100.0)) / couponDaysYear) * 30;
     portfolio[index]["365-Day Int. EST"] = ((parseFloat(position["Notional Amount"]) * (portfolio[index]["Coupon Rate"] / 100.0)) / couponDaysYear) * daysRemaining || 0;
 

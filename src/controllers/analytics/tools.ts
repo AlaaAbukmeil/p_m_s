@@ -706,3 +706,15 @@ export function getStatsPercentageOfFund(IntStats: IntStatsType | any, fundDetai
     IntStats[key].mtd.sumOfNAV = (IntStats[key].mtd.sum / fundDetails.nav) * 100;
   }
 }
+export function isNotFirstMondayOfMonth() {
+  const today = new Date();
+
+  // Check if it's Monday (0 is Sunday, 1 is Monday)
+  const isMonday = today.getDay() === 1;
+
+  // Check if it's not the first Monday of the month
+  const dayOfMonth = today.getDate();
+  const isNotFirstMonday = dayOfMonth > 7;
+
+  return isMonday && isNotFirstMonday;
+}
