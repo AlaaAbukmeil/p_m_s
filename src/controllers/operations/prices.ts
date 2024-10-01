@@ -183,10 +183,10 @@ export async function updatePricesPortfolio(path: string, link: string, portfoli
                 maturityType = "month/day";
               }
             }
-            if (!row["Previous Settle Date"].includes("N/A") && !row["Previous Settle Date"].includes("#")) {
+            if (!row["Previous Settle Date"].includes("N/A") && !row["Previous Settle Date"].includes("#") && row["Previous Settle Date"]) {
               previousSettleDate[row["ISIN"]] = row["Previous Settle Date"];
             }
-            if (!row["Next Settle Date"].includes("N/A") && !row["Next Settle Date"].includes("#")) {
+            if (!row["Next Settle Date"].includes("N/A") && !row["Next Settle Date"].includes("#") && row["Next Settle Date"]) {
               nextSettleDate[row["ISIN"]] = row["Next Settle Date"];
             }
 

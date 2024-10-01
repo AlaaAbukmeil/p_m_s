@@ -96,6 +96,7 @@ positionsRouter.post("/fx-add-position", verifyToken, uploadToBucket.any(), asyn
 
 positionsRouter.post("/pin-position", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
   try {
+    console.log({ body: req.body });
     let action = await pinPosition(req.body);
     res.sendStatus(200);
   } catch (error) {

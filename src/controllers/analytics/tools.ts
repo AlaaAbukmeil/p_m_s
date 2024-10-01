@@ -538,7 +538,7 @@ export function assignAssetClass(locationCode: string, group: any, assetClassOrd
     if (rlzd == 2) {
       let extra = 0;
       if (rlzdTimestamp) {
-        extra = new Date(rlzdTimestamp).getTime() / (-10000 * 24 * 60 * 60 * 1000);
+        extra = new Date(rlzdTimestamp).getTime() / (-100000 * 24 * 60 * 60 * 1000);
       }
       return assetClassOrder.RLZD + extra;
     }
@@ -706,15 +706,17 @@ export function getStatsPercentageOfFund(IntStats: IntStatsType | any, fundDetai
     IntStats[key].mtd.sumOfNAV = (IntStats[key].mtd.sum / fundDetails.nav) * 100;
   }
 }
-export function isNotFirstMondayOfMonth() {
-  const today = new Date();
+export function isNotFirstMondayOfMonth(date:any) {
+  const today = new Date(date);
 
   // Check if it's Monday (0 is Sunday, 1 is Monday)
   const isMonday = today.getDay() === 1;
-
   // Check if it's not the first Monday of the month
   const dayOfMonth = today.getDate();
-  const isNotFirstMonday = dayOfMonth > 3;
-
-  return isMonday && isNotFirstMonday;
+  if (isMonday) {
+    let numOfDays = Math.min(dayOfMonth, 3);
+    return numOfDays;
+  } else {
+    return 1;
+  }
 }

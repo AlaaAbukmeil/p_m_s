@@ -115,6 +115,7 @@ export function getPositionAggregated(isin: string, portfolio: PositionInDB[], d
   let frequency = 2;
   let previousSettleDate = "";
   let previousSettleDateTimestamp = -Infinity;
+  let taxRate = null;
 
   let found = false;
   let note = "";
@@ -125,6 +126,9 @@ export function getPositionAggregated(isin: string, portfolio: PositionInDB[], d
       found = true;
       if (position["Currency"]) {
         currency = position["Currency"];
+      }
+      if (position["Tax"]) {
+        taxRate = position["Tax"];
       }
 
       if (position["Coupon Frequency"]) {
@@ -154,7 +158,7 @@ export function getPositionAggregated(isin: string, portfolio: PositionInDB[], d
     }
   }
   let couponPayment = totalSettled * coupon * (1 / frequency);
-  return { totalSettled, ticker, found, coupon: coupon * 100, frequency, previousSettleDate, couponPayment, note, isin, locations, notional, currency, couponFrequency };
+  return { totalSettled, ticker, found, coupon: coupon * 100, frequency, previousSettleDate, couponPayment, note, isin, locations, notional, currency, couponFrequency, taxRate };
 }
 export function sumUpCouponPaymentRecords(couponPaymentRecords: NomuraCashReconcileFileUpload[]): { [key: string]: { sum: number; ticker: string; message: string; settleDate: string; tradeDate: string; currency: string } } {
   let result: { [key: string]: { sum: number; ticker: string; message: string; tradeDate: string; settleDate: string; currency: string } } = {};

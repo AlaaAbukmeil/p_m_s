@@ -297,7 +297,7 @@ export function getMTDParams(portfolio: any, lastMonthPortfolio: any, dateInput:
 export function getDayURlzdInt(portfolio: any, date: any) {
   let lastUploadTradesDate = 0,
     lastUpdatePricesDate = 0;
-  let weekend = isNotFirstMondayOfMonth();
+  let weekend = isNotFirstMondayOfMonth(date);
 
   let daysRemaining = remainingDaysInYear(date);
   for (let index = 0; index < portfolio.length; index++) {
@@ -336,7 +336,7 @@ export function getDayURlzdInt(portfolio: any, date: any) {
       }
     }
     let couponDaysYear = parseFloat(portfolio[index]["Coupon Duration"]) || 360;
-    portfolio[index]["Day Int."] = ((parseFloat(quantityGeneratingInterest) * (portfolio[index]["Coupon Rate"] / 100.0)) / couponDaysYear) * (weekend ? 3 : 1);
+    portfolio[index]["Day Int."] = ((parseFloat(quantityGeneratingInterest) * (portfolio[index]["Coupon Rate"] / 100.0)) / couponDaysYear) * weekend;
     portfolio[index]["30-Day Int. EST"] = ((parseFloat(position["Notional Amount"]) * (portfolio[index]["Coupon Rate"] / 100.0)) / couponDaysYear) * 30;
     portfolio[index]["365-Day Int. EST"] = ((parseFloat(position["Notional Amount"]) * (portfolio[index]["Coupon Rate"] / 100.0)) / couponDaysYear) * daysRemaining || 0;
 

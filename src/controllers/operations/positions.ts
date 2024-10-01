@@ -423,6 +423,7 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
 
       "Notes",
       "Security Description",
+      "Entry Yield"
     ];
 
     let id = editedPosition["id"];
@@ -529,7 +530,8 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
     }
     for (let indexTitle = 0; indexTitle < editedPositionTitles.length; indexTitle++) {
       let title = editedPositionTitles[indexTitle];
-      if (!unEditableParams.includes(title) && editedPosition[title] != "") {
+      if (!unEditableParams.includes(title) && editedPosition[title] != "" && editedPosition[title]) {
+        console.log({ title });
         if (title == "Notional Amount") {
           if (editedPosition["Event Type"] == "sink_factor") {
             let sinkFactorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
@@ -565,8 +567,8 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
             positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
           }
         } else if ((title == "Mid" || title == "Ask" || title == "Bid" || title == "Average Cost" || title == "Entry Price") && editedPosition[title] != "") {
-          if (!positionInPortfolio["Type"]) {
-            positionInPortfolio["Type"] = positionInPortfolio["BB Ticker"].split(" ")[0] == "T" || positionInPortfolio["Issuer"] == "US TREASURY N/B" ? "UST" : "BND";
+          if (!positionInPortfolio["Type"] && positionInPortfolio["BB Ticker"]) {
+            positionInPortfolio["Type"] = positionInPortfolio["BB Ticker"].toString().split(" ")[0] == "T" || positionInPortfolio["Issuer"] == "US TREASURY N/B" ? "UST" : "BND";
           }
 
           if (positionInPortfolio["Type"] == "BND" || positionInPortfolio["Type"] == "UST") {
@@ -585,9 +587,8 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
     await insertEditLogs(changes, editedPosition["Event Type"], dateTime, editedPosition["Edit Note"], positionInPortfolio["BB Ticker"] + " " + positionInPortfolio["Location"]);
     let snapShotName = getSQLIndexFormat(`portfolio-${earliestPortfolioName.predecessorDate}`, portfolioId);
     let action = await insertPositionsInPortfolio([positionInPortfolio], portfolioId, snapShotName);
-    console.log({ positionInPortfolio });
     if (action) {
-      return { status: 200 };
+    return { status: 200 };
     } else {
       return { error: "fatal error" };
     }

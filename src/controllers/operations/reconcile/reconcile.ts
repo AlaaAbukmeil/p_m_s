@@ -367,6 +367,7 @@ export function checkIfCouponPaymentsAreSettleted(couponPaymentRecords: NomuraCa
         "Nomura Cash Coupon Settlement Date": payments[isin].settleDate,
         "Nomura Cash Coupon Settlement Amount “REC”": nomuraSum,
         "Triada Expected Cash Payment Amount": appSum,
+        "Tax Rate": 0,
         Difference: difference,
         Result: difference == 0 ? "SUCCESS" : message + " && " + note,
       };
@@ -433,6 +434,7 @@ export function checkPositionsThatShouldPayButDoNotExistInNomura(portfolio: Posi
           "Nomura Cash Coupon Settlement Date": "",
           "Nomura Cash Coupon Settlement Amount “REC”": nomuraSum,
           "Triada Expected Cash Payment Amount": appSum,
+          "Tax Rate": aggregates.taxRate,
           Difference: difference,
           Result: difference == 0 ? "SUCCESS" : message + " && " + note,
         };

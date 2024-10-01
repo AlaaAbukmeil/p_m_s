@@ -284,7 +284,6 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
 
   let mtdExpensesAmount = mtdExpenses * +fund.nav;
 
-  // console.log({ mtdExpensesAmount, mtdExpenses, mtdpl }, numOfDaysUnitlEndOfMonth);
   let mtdplPercentage = mtdpl / fund.nav;
   let shadawYTDNAV = (fund["share price"] - fundDetailsYTD["share price"]) / fundDetailsYTD["share price"];
 
@@ -533,6 +532,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       groupDayInt = 0,
       groupBBTicker = "",
       groupSpreadTZ,
+      groupThreeDayPriceMove = Infinity,
       groupEntrySpreadTZ;
 
     groupedByLocation[locationCode]["DV01 Dollar Value Impact"] = 0;
@@ -588,6 +588,7 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       let region = groupedByLocation[locationCode].data[index]["Region"];
       let marketType = groupedByLocation[locationCode].data[index]["Market Type"];
       let assetClass = groupedByLocation[locationCode].data[index]["Asset Class"];
+      let threeDayPrice = groupedByLocation[locationCode].data[index]["3-Day Price Move"];
 
       if (view == "front office" || view == "exposure") {
         usdMarketValue = parseFloat(groupedByLocation[locationCode].data[index]["USD Market Value"]) || 0;
@@ -666,6 +667,9 @@ export function assignColorAndSortParamsBasedOnAssetClass({
           groupEntrySpreadTZ = 0;
         }
         groupEntrySpreadTZ -= entryYtw;
+      }
+      if (type == "BND" || type == "UST") {
+        groupThreeDayPriceMove = Math.min(groupThreeDayPriceMove, threeDayPrice);
       }
 
       groupDayPl += dayPl;
@@ -750,6 +754,11 @@ export function assignColorAndSortParamsBasedOnAssetClass({
 
     groupedByLocation[locationCode].groupEntrySpreadTZ = groupEntrySpreadTZ;
     groupedByLocation[locationCode].groupSpreadTZ = groupSpreadTZ;
+    if (groupThreeDayPriceMove != Infinity) {
+      groupedByLocation[locationCode].groupThreeDayPriceMove = groupThreeDayPriceMove;
+    } else {
+      groupedByLocation[locationCode].groupThreeDayPriceMove = 0;
+    }
   }
 }
 
@@ -872,7 +881,7 @@ export function getMacroStats({
   }
 }
 
-export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLocation, sort, sign, view }: { portfolio: any; groupedByLocation: any; sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDayPriceMoveSum" | "groupMTDPriceMoveSum" | "groupBBTicker"; sign: any; view: "front office" | "back office" | "exposure" }) {
+export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLocation, sort, sign, view }: { portfolio: any; groupedByLocation: any; sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDayPriceMoveSum" | "groupMTDPriceMoveSum" | "groupBBTicker" | "groupThreeDayPriceMove"; sign: any; view: "front office" | "back office" | "exposure" }) {
   try {
     sign = parseFloat(sign);
     if (sort == "order") {
@@ -1044,6 +1053,7 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
           "MTD P&L (USD)": groupedByLocation[locationCode].groupMTDPl,
           "Notional Amount": groupedByLocation[locationCode].groupNotional,
           "Day Int. (USD)": groupedByLocation[locationCode].groupDayInt,
+          "3-Day Price Move": groupedByLocation[locationCode].groupThreeDayPriceMove,
 
           ISIN: groupedByLocation[locationCode]["ISIN"],
           Pin: groupedByLocation[locationCode]["Pin"],
