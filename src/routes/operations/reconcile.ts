@@ -6,6 +6,7 @@ import { reconcileMUFG, reconcileNomura, reconcileNomuraCash } from "../../contr
 import { getPortfolioOnSpecificDate, getPrincipal } from "../../controllers/reports/portfolios";
 import { monthlyRlzdDate } from "../../controllers/reports/common";
 import { uploadToBucket } from "../../controllers/userManagement/tools";
+import { cashFlowExpected } from "../../controllers/operations/reconcile/cashFlow";
 
 const reconcileRouter = Router();
 
@@ -85,7 +86,6 @@ reconcileRouter.post("/reconcile-cash", verifyToken, uploadToBucket.any(), async
     const fileName = req.files[0].filename;
     const path = await generateSignedUrl(fileName);
     let collectionDate = req.body.collectionDate;
-    let link = bucket + "/" + fileName + "?authuser=2";
     let start = new Date(req.body.timestamp_start).getTime();
     let end = new Date(req.body.timestamp_end).getTime();
     let portfolioId = "portfolio_main";
@@ -95,6 +95,22 @@ reconcileRouter.post("/reconcile-cash", verifyToken, uploadToBucket.any(), async
       res.send({ error: action.error });
     } else {
       let link = await uploadArrayAndReturnFilePathTwoDifferentWorkbooks({ fxInterest: action.fxInterest, redeemped: action.redeemped, couponPayments: action.couponPayments, tradesCheck: action.tradesCheck, pathName: `nomura_cash_reconcile_${collectionDate}`, folderName: "reconcile_cash", type: "xlsx" });
+      let downloadEBlotName = bucket + link + "?authuser=2";
+      res.send(downloadEBlotName);
+    }
+  } catch (error: any) {
+    res.send({ error: error.toString() });
+  }
+});
+
+reconcileRouter.post("/cash-flow", verifyToken, uploadToBucket.any(), async (req: Request | any, res: Response, next: NextFunction) => {
+  try {
+    let collectionDate = req.body.collectionDate;
+    let action: any = await cashFlowExpected({ collectionDate });
+    if (action.error) {
+      res.send({ error: action.error });
+    } else {
+      let link = await uploadArrayAndReturnFilePath(action, `cash_flow_${collectionDate}`, "cash");
       let downloadEBlotName = bucket + link + "?authuser=2";
       res.send(downloadEBlotName);
     }
