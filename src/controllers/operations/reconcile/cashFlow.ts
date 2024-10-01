@@ -103,7 +103,7 @@ function getAllPossibleMonths(startMonth: number, frequency: number): string[] {
 }
 
 function formatCashFlow(object: { [key: number]: { redeemption: { [key: string]: number }; interest: { [key: string]: { previousSettleDate: string; nextSettleDate: string; interest: number } }; redeemptionSum: number; sum: number } }, prefixMonth: number, date: string) {
-  let year = parseInt(date.split("-")[0]);
+  let year = parseInt(date.split("/")[2]);
   let final: any = {};
   for (let month in object) {
     let name = getMonthName(parseInt(month) + prefixMonth, year);
@@ -134,33 +134,32 @@ function getMonthName(month: number, year: number): string {
     year++;
     month = month % 12;
   }
-  return monthNames[month - 1] + " " + year;
+  return monthNames[month - 1] + "_" + year;
 }
 function formatDataForExcel(data: {
-    [monthYear: string]: {
-      [securityName: string]: [number, number];
-    };
-  }): any[] {
-    const result: any[] = [];
-  
-    // Iterate through each month/year
-    Object.keys(data).forEach(monthYear => {
-      const securities = data[monthYear];
-      
-      // Iterate through each security in the month/year
-      Object.keys(securities).forEach(securityName => {
-        const [redemption, interest] = securities[securityName];
-        const total = redemption + interest;
-        
-        result.push({
-          "Month Year": monthYear,
-          "Security Name": securityName,
-          Redemption: redemption,
-          Interest: interest,
-          Total: total,
-        });
+  [monthYear: string]: {
+    [securityName: string]: [number, number];
+  };
+}): any[] {
+  const result: any[] = [];
+  // Iterate through each month/year
+  Object.keys(data).forEach((monthYear) => {
+    const securities = data[monthYear];
+
+    // Iterate through each security in the month/year
+    Object.keys(securities).forEach((securityName) => {
+      const [redemption, interest] = securities[securityName];
+      const total = redemption + interest;
+
+      result.push({
+        "Month Year": monthYear,
+        "Security Name": securityName,
+        Redemption: redemption,
+        Interest: interest,
+        Total: total,
       });
     });
-  
-    return result;
-  }
+  });
+
+  return result;
+}
