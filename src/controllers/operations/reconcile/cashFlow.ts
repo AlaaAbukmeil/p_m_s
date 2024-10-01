@@ -137,29 +137,30 @@ function getMonthName(month: number, year: number): string {
   return monthNames[month - 1] + " " + year;
 }
 function formatDataForExcel(data: {
-  [monthYear: string]: {
-    [securityName: string]: [number, number];
-  };
-}): any[] {
-  const result: any[] = [];
-
-  // Add header row
-
-  // Iterate through each month/year
-  for (const [monthYear, securities] of Object.entries(data)) {
-    // Iterate through each security in the month/year
-    for (const [securityName, [redemption, interest]] of Object.entries(securities)) {
-      const total = redemption + interest;
-      console.log({ monthYear });
-      result.push({
-        "Month Year": monthYear,
-        "Security Name": securityName,
-        Redemption: redemption,
-        Interest: interest,
-        Total: total,
+    [monthYear: string]: {
+      [securityName: string]: [number, number];
+    };
+  }): any[] {
+    const result: any[] = [];
+  
+    // Iterate through each month/year
+    Object.keys(data).forEach(monthYear => {
+      const securities = data[monthYear];
+      
+      // Iterate through each security in the month/year
+      Object.keys(securities).forEach(securityName => {
+        const [redemption, interest] = securities[securityName];
+        const total = redemption + interest;
+        
+        result.push({
+          "Month Year": monthYear,
+          "Security Name": securityName,
+          Redemption: redemption,
+          Interest: interest,
+          Total: total,
+        });
       });
-    }
+    });
+  
+    return result;
   }
-
-  return result;
-}
