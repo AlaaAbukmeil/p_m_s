@@ -23,6 +23,7 @@ export async function reconcileMUFG(MUFGData: MufgReconcileUpload[], portfolioIn
       if (!positionInPortfolio["Type"]) {
         positionInPortfolio["Type"] = positionInPortfolio["BB Ticker"].split(" ")[0] == "T" ? "UST" : "BND";
       }
+
       let bondDivider = positionInPortfolio["Type"] == "BND" || positionInPortfolio["Type"] == "UST" ? 100 : 1;
 
       let portfolioPositionQuantity = positionInPortfolio["ISIN"].includes("IB") ? parseFloat(positionInPortfolio["Notional Amount"]) / parseFloat(positionInPortfolio["Original Face"]) : parseFloat(positionInPortfolio["Principal"]);
@@ -35,8 +36,8 @@ export async function reconcileMUFG(MUFGData: MufgReconcileUpload[], portfolioIn
       bgnPrice = bgnPrice ? bgnPrice : 0;
       let mufgPrice = positionInMufg ? parseFloat(positionInMufg["Price"]) : 0;
 
-      let pnlBrokerMufg = mufgPrice ? ((portfolioPrice - mufgPrice) / (positionInPortfolio["Type"] == "BND" ? 100 : 1)) * portfolioPositionQuantity : 0;
-      let pnlBrokerBgn = bgnPrice ? Math.round(((portfolioPrice - bgnPrice) / (positionInPortfolio["Type"] == "BND" ? 100 : 1)) * portfolioPositionQuantity) : 0;
+      let pnlBrokerMufg = mufgPrice ? ((portfolioPrice - mufgPrice) / (positionInPortfolio["Type"] == "BND" || positionInPortfolio["Type"] == "UST" ? 100 : 1)) * portfolioPositionQuantity : 0;
+      let pnlBrokerBgn = bgnPrice ? Math.round(((portfolioPrice - bgnPrice) / (positionInPortfolio["Type"] == "BND" || positionInPortfolio["Type"] == "UST" ? 100 : 1)) * portfolioPositionQuantity) : 0;
 
       let formattedRow = {
         "BB Ticker": positionInPortfolio["BB Ticker"],

@@ -423,7 +423,7 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
 
       "Notes",
       "Security Description",
-      "Entry Yield"
+      "Entry Yield",
     ];
 
     let id = editedPosition["id"];
@@ -539,7 +539,7 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
             positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};
             positionInPortfolio["Interest"][sinkFactorDate] = parseFloat(editedPosition[title]);
 
-            changes.push(`Notional Amount Changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]} on ${sinkFactorDate} (sink factor)`);
+            changes.push(`Notional Amount Changed from ${positionInPortfolio["Notional Amount"]} to ${positionInPortfolio["Notional Amount"] - parseFloat(editedPosition[title])} on ${sinkFactorDate} (sink factor)`);
           } else if (editedPosition["Event Type"] == "pay_in_kind") {
             let payInKindFactorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
 
@@ -588,7 +588,7 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
     let snapShotName = getSQLIndexFormat(`portfolio-${earliestPortfolioName.predecessorDate}`, portfolioId);
     let action = await insertPositionsInPortfolio([positionInPortfolio], portfolioId, snapShotName);
     if (action) {
-    return { status: 200 };
+      return { status: 200 };
     } else {
       return { error: "fatal error" };
     }

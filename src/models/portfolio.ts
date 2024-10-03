@@ -502,6 +502,7 @@ export interface IntStatsType {
   "Global Hedge": { day: { positive: number; negative: number; sum: number }; mtd: { positive: number; negative: number; sum: number } };
 }
 export interface MacroStats {
+  Total: AggregateRow;
   RV: AggregateRow;
   IG: AggregateRow;
   HY: AggregateRow;

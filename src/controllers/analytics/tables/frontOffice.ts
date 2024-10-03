@@ -253,8 +253,7 @@ export function formatFrontOfficeTable({ portfolio, date, fund, dates, sort, sig
       formatted.push(formattedPosition);
     }
   }
-
-  let analyzedPortfolio = groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio: formatted, nav: formattedPortfolio.fundDetails.nav, sort: sort, sign: sign, view: view, currencies: formattedPortfolio.currencies, format: "summary", sortBy: sortBy, fundDetails: formattedPortfolio.fundDetails, date: date });
+  let analyzedPortfolio = groupAndSortByLocationAndTypeDefineTables({ formattedPortfolio: formatted, nav: formattedPortfolio.fundDetails.nav, sort: sort, sign: sign, view: view, currencies: formattedPortfolio.currencies, format: "summary", sortBy: sortBy, fundDetails: formattedPortfolio.fundDetails, date: date, filterCondition: formattedPortfolio.filterCondition });
   return { portfolio: analyzedPortfolio.portfolio, fundDetails: formattedPortfolio.fundDetails, analysis: analyzedPortfolio, mtdExpensesAmount: formattedPortfolio.mtdExpensesAmount };
 }
 export function getTopWorst(groupedByLocation: any, sortBy: "pl" | null | "price move") {

@@ -356,11 +356,11 @@ export function getPrincipal(portfolio: any) {
     let position = portfolio[index];
     portfolio[index]["Principal"] = 0;
     let interestInfo = position["Interest"] || {};
-
+ 
     let settlementDates = Object.keys(interestInfo);
     for (let indexSettlementDate = 0; indexSettlementDate < settlementDates.length; indexSettlementDate++) {
       let settlementDate = settlementDates[indexSettlementDate];
-      portfolio[index]["Principal"] += interestInfo[settlementDate];
+      portfolio[index]["Principal"] += parseFloat(interestInfo[settlementDate]);
     }
   }
   return { portfolio: portfolio };
