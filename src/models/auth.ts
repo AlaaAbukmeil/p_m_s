@@ -8,7 +8,7 @@ export interface UserAuth {
   reset_password: boolean | null;
   created_on: string;
   type: "user" | "link";
-
+  investor_id_mufg: string | null;
   name: string | null;
   link: string | null;
   expiration: string | null;

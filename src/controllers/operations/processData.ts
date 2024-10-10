@@ -39,3 +39,73 @@ export function changeHubspotContactPeopleToSqlForm(array: any) {
     };
   });
 }
+export function convertToSqlKeys(array: any[]): any[] {
+  const keyMap: { [key: string]: string } = {
+    'Capital': 'capital',
+    'idtradetype': 'id_trade_type',
+    'CashRoundedCapital': 'cash_rounded_capital',
+    'CashRoundedSettlementAmount': 'cash_rounded_settlement_amount',
+    'CashRoundedReceivablePayableAmount': 'cash_rounded_receivable_payable_amount',
+    'PurchasedPerfFeeFactor': 'purchased_perf_fee_factor',
+    'CostOfInvRedProceeds': 'cost_of_inv_red_proceeds',
+    'BillingCode': 'billing_code',
+    'IdTrade': 'id_trade',
+    'TradeTypeName': 'trade_type_name',
+    'TradeSubTypeName': 'trade_sub_type_name',
+    'Units': 'units',
+    'Sign': 'sign',
+    'TotalFees': 'total_fees',
+    'ValuationDate': 'valuation_date',
+    'TradeDate': 'trade_date',
+    'OrderTradeDate': 'order_trade_date',
+    'Valuation': 'valuation',
+    'GavPreFees': 'gav_pre_fees',
+    'Ask': 'ask',
+    'Bid': 'bid',
+    'TotalPerfFeeFactor': 'total_perf_fee_factor',
+    'ValuationPrecision': 'valuation_precision',
+    'UnitsPrecision': 'units_precision',
+    'UnitsDescription': 'units_description',
+    'TradeSettlementAmount': 'trade_settlement_amount',
+    'IdOrder': 'id_order',
+    'Method': 'method',
+    'ClassCurrency': 'class_currency',
+    'TradeTypeOrder': 'trade_type_order',
+    'TradeEstimate': 'trade_estimate',
+    'AdminClientMantraId': 'admin_client_mantra_id',
+    'PortfolioMantraId': 'portfolio_mantra_id',
+    'LegalEntityMantraId': 'legal_entity_mantra_id',
+    'LegalEntityDescription': 'legal_entity_description',
+    'ClassMantraId': 'class_mantra_id',
+    'ClassDescription': 'class_description',
+    'SubClassMantraId': 'sub_class_mantra_id',
+    'SubClassDescription': 'sub_class_description',
+    'NomineeMantraId': 'nominee_mantra_id',
+    'InvestorMantraId': 'investor_mantra_id',
+    'InvestorDescription': 'investor_description',
+    'InvestorName': 'investor_name',
+    'UnitsOnIntReports': 'units_on_int_reports'
+  };
+
+  return array.map((obj: any) => {
+    const newObj: any = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        const sqlKey = keyMap[key] || key.toLowerCase();
+        newObj[sqlKey] = obj[key];
+      }
+    }
+    return newObj;
+  });
+}
+export function removeNullBytes(obj: any): any {
+  const cleanObj: any = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (typeof value === 'string') {
+      cleanObj[key] = value.replace(/\x00/g, '');
+    } else {
+      cleanObj[key] = value;
+    }
+  }
+  return cleanObj;
+}

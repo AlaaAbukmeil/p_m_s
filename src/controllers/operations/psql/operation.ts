@@ -7,7 +7,7 @@ import { InformationInDB } from "../../../models/positionsInformation";
 import { CentralizedTrade, CentralizedTradeInDB } from "../../../models/trades";
 import { getDateTimeInMongoDBCollectionFormat } from "../../reports/common";
 import { getFactSheetData } from "../../reports/factSheet";
-import { changeHubspotContactCompanyToSqlForm, changeHubspotContactPeopleToSqlForm } from "../processData";
+import { changeHubspotContactCompanyToSqlForm, changeHubspotContactPeopleToSqlForm, convertToSqlKeys, removeNullBytes } from "../processData";
 
 require("dotenv").config();
 
@@ -39,6 +39,7 @@ export const analyticsPool = createPool("analytics");
 export const logsPool = createPool("logs");
 export const indexPool = createPool("portfolio_index");
 export const contactPool = createPool("contacts");
+export const investorTradesPool = createPool("investors_trades");
 
 export const pinnedPool = createPool("pinned");
 export const automationPool = createPool("automation");
@@ -282,6 +283,7 @@ export function formatUsers(data: any): UserAuth[] {
       files: element["files"],
       reset_code: element["resetCode"],
       route: "",
+      investor_id_mufg: null,
     };
     result.push(object);
   }
@@ -352,6 +354,7 @@ export function formatLinks(data: any): UserAuth[] {
       files: null,
       reset_code: null,
       route: element["route"],
+      investor_id_mufg: null,
     };
     if (element["email"]) {
       result.push(object);
@@ -719,6 +722,95 @@ export async function insertPeopleData(dataInput: any[]) {
 
     await client.query("COMMIT");
     console.log("People data added");
+  } catch (err: any) {
+    await client.query("ROLLBACK");
+    console.error("Error inserting", err.stack);
+  } finally {
+    client.release();
+  }
+}
+
+export async function insertInvestorsTradesData(dataInput: any[]) {
+  const client = await investorTradesPool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const insertQuery = `
+    INSERT INTO public.trades (
+      id_trade_type, capital, cash_rounded_capital,
+      cash_rounded_settlement_amount, cash_rounded_receivable_payable_amount,
+      purchased_perf_fee_factor, cost_of_inv_red_proceeds, billing_code,
+      id_trade, trade_type_name, trade_sub_type_name, units, sign,
+      total_fees, valuation_date, trade_date, order_trade_date,
+      valuation, gav_pre_fees, ask, bid, total_perf_fee_factor,
+      valuation_precision, units_precision, units_description,
+      trade_settlement_amount, id_order, method, class_currency,
+      trade_type_order, trade_estimate, admin_client_mantra_id,
+      portfolio_mantra_id, legal_entity_mantra_id, legal_entity_description,
+      class_mantra_id, class_description, sub_class_mantra_id,
+      sub_class_description, nominee_mantra_id, investor_mantra_id,
+      investor_description, investor_name, units_on_int_reports
+    )
+    VALUES (
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
+      $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+      $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44
+    );`;
+
+    const formattedData = convertToSqlKeys(dataInput);
+
+    for (let element of formattedData) {
+      element = removeNullBytes(element);
+      await client.query(insertQuery, [
+        element.id_trade_type,
+        element.capital,
+        element.cash_rounded_capital,
+        element.cash_rounded_settlement_amount,
+        element.cash_rounded_receivable_payable_amount,
+        element.purchased_perf_fee_factor,
+        element.cost_of_inv_red_proceeds,
+        element.billing_code,
+        element.id_trade,
+        element.trade_type_name,
+        element.trade_sub_type_name,
+        element.units,
+        element.sign,
+        element.total_fees,
+        element.valuation_date,
+        element.trade_date,
+        element.order_trade_date,
+        element.valuation,
+        element.gav_pre_fees,
+        element.ask,
+        element.bid,
+        element.total_perf_fee_factor,
+        element.valuation_precision,
+        element.units_precision,
+        element.units_description,
+        element.trade_settlement_amount,
+        element.id_order,
+        element.method,
+        element.class_currency,
+        element.trade_type_order,
+        element.trade_estimate,
+        element.admin_client_mantra_id,
+        element.portfolio_mantra_id,
+        element.legal_entity_mantra_id,
+        element.legal_entity_description,
+        element.class_mantra_id,
+        element.class_description,
+        element.sub_class_mantra_id,
+        element.sub_class_description,
+        element.nominee_mantra_id,
+        element.investor_mantra_id,
+        element.investor_description,
+        element.investor_name,
+        element.units_on_int_reports,
+      ]);
+    }
+
+    await client.query("COMMIT");
+    console.log("Trades data added");
   } catch (err: any) {
     await client.query("ROLLBACK");
     console.error("Error inserting", err.stack);

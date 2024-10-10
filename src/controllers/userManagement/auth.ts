@@ -331,7 +331,7 @@ export async function editUser(editedUser: any): Promise<any> {
     if (userInfo) {
       let beforeModify = { ...userInfo };
 
-      let userKeys = ["name", "access_role_instance", "share_class"];
+      let userKeys = ["name", "access_role_instance", "share_class", "investor_id_mufg"];
       let changes = 0;
       let changesText = [];
 
@@ -352,10 +352,10 @@ export async function editUser(editedUser: any): Promise<any> {
 
       const updateQuery = `
         UPDATE public.auth_users
-        SET name = $1, access_role_instance = $2, share_class = $3
-        WHERE id = $4;
+        SET name = $1, access_role_instance = $2, share_class = $3, investor_id_mufg = $4
+        WHERE id = $5;
       `;
-      const values = [userInfo.name, userInfo.access_role_instance, userInfo.share_class, userInfo.id];
+      const values = [userInfo.name, userInfo.access_role_instance, userInfo.share_class, userInfo.investor_id_mufg, userInfo.id];
 
       const result = await client.query(updateQuery, values);
 

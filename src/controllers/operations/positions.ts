@@ -1056,6 +1056,8 @@ export function updatePositionsBasedOnTrade(data: CentralizedTrade[], portfolio:
         object["Location"] = row["Location"].trim();
         object["Last Modified Date"] = new Date();
         object["BB Ticker"] = row["BB Ticker"];
+        object["Tax"] = 0;
+
 
         object["ISIN"] = row["ISIN"];
         object["Currency"] = currency;

@@ -8,7 +8,7 @@ import { getAllTradesForSpecificPosition } from "../../controllers/operations/tr
 import { getEditLogs } from "../../controllers/operations/logs";
 import { getCollectionDays } from "../../controllers/operations/tools";
 import { uploadToBucket } from "../../controllers/userManagement/tools";
-import { factsheetPool, insertCompanyData, insertPeopleData } from "../../controllers/operations/psql/operation";
+import { factsheetPool, insertCompanyData, insertInvestorsTradesData, insertPeopleData } from "../../controllers/operations/psql/operation";
 import { getAllCollectionNames } from "../../controllers/reports/tools";
 
 const positionsRouter = Router();
@@ -213,7 +213,7 @@ positionsRouter.post("/process-excel", verifyToken, uploadToBucket.any(), async 
   const fileName = req.files[0].filename;
   const path = await generateSignedUrl(fileName);
   let action: any = await readExcel(path);
-  let insert = await insertPeopleData(action);
+  let insert = await insertInvestorsTradesData(action);
 
   console.log({ insert });
   res.send({ error: null });
