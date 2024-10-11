@@ -5,8 +5,9 @@ import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 import { insertEditLogs } from "../operations/logs";
 import { copyFileSync } from "fs";
 import { generateRandomIntegers, sendEmailToResetPassword, sendWelcomeEmail } from "./tools";
-import { authPool, contactPool } from "../operations/psql/operation";
+import { authPool, contactPool, investorTradesPool } from "../operations/psql/operation";
 import { UserAuth } from "../../models/auth";
+import { InvestorTrades } from "../../models/investorTrades";
 
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
@@ -485,6 +486,26 @@ export async function getUserByEmail(email: string): Promise<any> {
   } catch (error) {
     console.error("An error occurred while retrieving data from PostgreSQL:", error);
     return null;
+  } finally {
+    client.release();
+  }
+}
+export async function getInvestorTrades(investorId: string): Promise<InvestorTrades[]> {
+  const client = await investorTradesPool.connect();
+
+  try {
+    const userQuery = `
+      SELECT * FROM public.trades
+      WHERE investor_mantra_id = $1;
+    `;
+    let { rows } = await client.query(userQuery, [BigInt(investorId)]);
+
+    // Return the first result if available
+
+    return rows.sort((a: any, b: any) => new Date(a["trade_date"]).getTime() - new Date(b["trade_date"]).getTime());
+  } catch (error) {
+    console.error("An error occurred while retrieving data from PostgreSQL:", error);
+    return [];
   } finally {
     client.release();
   }

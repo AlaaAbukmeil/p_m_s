@@ -1,10 +1,12 @@
-import { addUser, checkIfUserExists, checkLinkRight, checkPasswordStrength, checkUserRight, deleteUser, editUser, getAllUsers, getUserByEmail, registerUser, resetPassword, sendResetPasswordRequest, updateUser } from "../../controllers/userManagement/auth";
+import { addUser, checkIfUserExists, checkLinkRight, checkPasswordStrength, checkUserRight, deleteUser, editUser, getAllUsers, getInvestorTrades, getUserByEmail, registerUser, resetPassword, sendResetPasswordRequest, updateUser } from "../../controllers/userManagement/auth";
 import { bucketPublic, bucketPublicBucket, generateSignedUrl, verifyToken, verifyTokenFactSheetMember } from "../../controllers/common";
 import { CookieOptions, NextFunction, Router } from "express";
 import { Request, Response } from "express";
 import { getDateTimeInMongoDBCollectionFormat } from "../../controllers/reports/common";
 import { numberOfNewTrades } from "../../controllers/operations/trades";
 import { bucketPublicTest, multerTest, uploadToBucket } from "../../controllers/userManagement/tools";
+import { calculateCumulativeRealizedPnLByClass, getMostRecentFactSheetData } from "../../controllers/userManagement/investorsTrades";
+import { getFactSheetData } from "../../controllers/reports/factSheet";
 const authRouter = Router();
 
 authRouter.get("/auth", uploadToBucket.any(), verifyTokenFactSheetMember, async (req: any, res: Response, next: NextFunction) => {
@@ -50,10 +52,31 @@ authRouter.get("/user", verifyTokenFactSheetMember, async (req: Request | any, r
       res.send(401);
     } else {
       let result = await getUserByEmail(selected);
+      let investorTrades = [],
+        pnl;
+      if (result["investor_id_mufg"]) {
+        investorTrades = await getInvestorTrades(result["investor_id_mufg"]);
+        const from2010: any = new Date("2010-01-01").getTime();
+        const now = new Date().getTime();
+        let data_main = await getFactSheetData("Triada", from2010, now, "a2");
+        let data_master = await getFactSheetData("Triada Master", from2010, now, "a2");
+        let data_main_object: any = {};
+        let data_master_object: any = {};
+        let last_date: any = data_main[data_main.length - 1].date;
 
-      res.send(result);
+        for (let entry of data_main) {
+          data_main_object[entry.date] = entry;
+        }
+        for (let entry of data_master) {
+          data_master_object[entry.date] = entry;
+        }
+        pnl = calculateCumulativeRealizedPnLByClass(investorTrades, data_main_object, data_master_object, last_date);
+      }
+
+      res.send({ result, pnl });
     }
   } catch (error) {
+    console.log([error]);
     res.send(404);
   }
 });

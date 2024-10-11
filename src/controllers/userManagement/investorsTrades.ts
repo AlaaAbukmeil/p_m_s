@@ -1,5 +1,8 @@
+import { FactSheetFundDataInDB } from "../../models/factSheet";
+import { FactSheetBenchMarkDataInDB } from "../../models/factSheet";
+import { InvestorTrades } from "../../models/investorTrades";
 import { insertEditLogs } from "../operations/logs";
-import { investorTradesPool } from "../operations/psql/operation";
+import { factsheetPool, investorTradesPool } from "../operations/psql/operation";
 import { getDateTimeInMongoDBCollectionFormat } from "../reports/common";
 
 export async function getInvestorsTrades() {
@@ -48,50 +51,50 @@ export async function editInvestorTrade(editedTrade: any) {
   try {
     let tradeInfo: any = await getInvestorTrade(editedTrade["id_trade"]);
     let centralizedBlotKeys: any = [
-        "investor_name",
-        "sub_class_description",
-    
-        "id_trade_type",
-        "capital",
-        "cash_rounded_capital",
-        "cash_rounded_settlement_amount",
-        "cash_rounded_receivable_payable_amount",
-        "purchased_perf_fee_factor",
-        "cost_of_inv_red_proceeds",
-        "billing_code",
-        "trade_type_name",
-        "trade_sub_type_name",
-        "units",
-        "sign",
-        "total_fees",
-        "valuation_date",
-        "trade_date",
-        "order_trade_date",
-        "valuation",
-        "gav_pre_fees",
-        "ask",
-        "bid",
-        "total_perf_fee_factor",
-        "valuation_precision",
-        "units_precision",
-        "units_description",
-        "trade_settlement_amount",
-        "method",
-        "class_currency",
-        "trade_type_order",
-        "trade_estimate",
-        "admin_client_mantra_id",
-        "portfolio_mantra_id",
-        "legal_entity_mantra_id",
-        "legal_entity_description",
-        "class_mantra_id",
-        "class_description",
-        "sub_class_mantra_id",
-        "nominee_mantra_id",
-        "investor_mantra_id",
-        "investor_description",
-        "units_on_int_reports",
-      ];
+      "investor_name",
+      "sub_class_description",
+
+      "id_trade_type",
+      "capital",
+      "cash_rounded_capital",
+      "cash_rounded_settlement_amount",
+      "cash_rounded_receivable_payable_amount",
+      "purchased_perf_fee_factor",
+      "cost_of_inv_red_proceeds",
+      "billing_code",
+      "trade_type_name",
+      "trade_sub_type_name",
+      "units",
+      "sign",
+      "total_fees",
+      "valuation_date",
+      "trade_date",
+      "order_trade_date",
+      "valuation",
+      "gav_pre_fees",
+      "ask",
+      "bid",
+      "total_perf_fee_factor",
+      "valuation_precision",
+      "units_precision",
+      "units_description",
+      "trade_settlement_amount",
+      "method",
+      "class_currency",
+      "trade_type_order",
+      "trade_estimate",
+      "admin_client_mantra_id",
+      "portfolio_mantra_id",
+      "legal_entity_mantra_id",
+      "legal_entity_description",
+      "class_mantra_id",
+      "class_description",
+      "sub_class_mantra_id",
+      "nominee_mantra_id",
+      "investor_mantra_id",
+      "investor_description",
+      "units_on_int_reports",
+    ];
     if (tradeInfo) {
       let changes = 0;
       let changesText = [];
@@ -126,7 +129,7 @@ export async function editInvestorTrade(editedTrade: any) {
   WHERE id_trade = $44;
 `;
 
-      const values =  [
+      const values = [
         tradeInfo.id_trade_type,
         tradeInfo.capital,
         tradeInfo.cash_rounded_capital,
@@ -206,27 +209,184 @@ export async function editInvestorTrade(editedTrade: any) {
   }
 }
 export async function deleteInvestorsTrade(tradeId: string) {
-    const client = await investorTradesPool.connect();
-    try {
-      const query = `
+  const client = await investorTradesPool.connect();
+  try {
+    const query = `
         DELETE FROM public.trades
         WHERE id_trade = $1;
       `;
-  
-      const result = await client.query(query, [tradeId]);
-  
-      if (result.rowCount === 0) {
-        return { error: `Trade does not exist!` };
-      } else {
-        console.log("deleted");
-        return { error: null };
-      }
-    } catch (error: any) {
-      console.error(`An error occurred while deleting the trade: ${error}`);
-      const dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
-      await insertEditLogs([error], "errors", dateTime, "deleteInvestorsTrade", `${tradeId}`);
-      return { error: error.toString() };
-    } finally {
-      client.release();
+
+    const result = await client.query(query, [tradeId]);
+
+    if (result.rowCount === 0) {
+      return { error: `Trade does not exist!` };
+    } else {
+      console.log("deleted");
+      return { error: null };
     }
+  } catch (error: any) {
+    console.error(`An error occurred while deleting the trade: ${error}`);
+    const dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    await insertEditLogs([error], "errors", dateTime, "deleteInvestorsTrade", `${tradeId}`);
+    return { error: error.toString() };
+  } finally {
+    client.release();
   }
+}
+
+export function calculateCumulativeRealizedPnLByClass(
+  trades: InvestorTrades[],
+  data_main: { [key: string]: FactSheetFundDataInDB },
+  data_master: { [key: string]: FactSheetFundDataInDB },
+  last_date: string
+): {
+  [className: string]: {
+    rlzdpnl: { [date: string]: number };
+    finalUnits: number;
+    unrlzd: number;
+    rlzd: number;
+  };
+} {
+  const result: {
+    [className: string]: {
+      rlzdpnl: { [date: string]: number };
+      unrlzdpnl: { [date: string]: number };
+      finalUnits: number;
+      unrlzd: number;
+      rlzd: number;
+    };
+  } = {};
+  const classPnL: { [className: string]: number } = {};
+  const classPosition: { [className: string]: number } = {};
+  const classAverageCost: { [className: string]: number } = {};
+
+  // Generate monthly checkpoints from June 2015 until now
+  const startDate = new Date(2014, 5, 1); // June 2015
+  const endDate = new Date(); // Current date
+  const monthlyCheckpoints = generateMonthlyCheckpoints(startDate, endDate);
+
+  // Sort trades by date
+  trades.sort((a, b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime());
+
+  // Initialize result for each class
+  trades.forEach((trade) => {
+    const { class_mantra_id: className } = trade;
+    if (!result[className]) {
+      result[className] = { rlzdpnl: {}, finalUnits: 0, unrlzd: 0, rlzd: 0, unrlzdpnl: {} };
+      classPnL[className] = 0;
+      classPosition[className] = 0;
+      classAverageCost[className] = 0;
+    }
+  });
+
+  // Initialize PnL for all checkpoints
+  Object.keys(result).forEach((className) => {
+    monthlyCheckpoints.forEach((checkpoint) => {
+      result[className].rlzdpnl[formatDate(checkpoint)] = 0;
+      result[className].unrlzdpnl[formatDate(checkpoint)] = 0;
+    });
+  });
+
+  // Process trades
+  monthlyCheckpoints.forEach((checkpoint, index) => {
+    const nextCheckpoint = monthlyCheckpoints[index + 1] || new Date(3000, 0, 1); // Far future date
+
+    const tradesInPeriod = trades.filter((trade) => {
+      const tradeDate = new Date(trade.trade_date);
+      return tradeDate >= checkpoint && tradeDate < nextCheckpoint;
+    });
+
+    tradesInPeriod.forEach((trade) => {
+      const amount = parseInt(trade.units);
+      const price = parseFloat(trade.valuation);
+      const sign = parseInt(trade.sign);
+      const { class_mantra_id: className } = trade;
+
+      if (sign > 0) {
+        // Buy
+        classPosition[className] += amount;
+        classAverageCost[className] = (classAverageCost[className] * (classPosition[className] - amount) + price * amount) / classPosition[className];
+      } else {
+        // Sell
+        const realizedPnL = amount * (price - classAverageCost[className]);
+        classPnL[className] += realizedPnL;
+        result[className].rlzd += realizedPnL;
+        classPosition[className] -= amount;
+      }
+      console.log({ className, amount, sign, id: trade.id_trade });
+      result[className].finalUnits += amount * sign;
+    });
+
+    // Update PnL for this checkpoint
+    Object.keys(result).forEach((className) => {
+      let shareClassKey = className.includes(" M ") ? className.split(" ")[2].toString().toLowerCase() : className.split(" ")[1].toString().toLowerCase();
+      let referenceData = className.includes(" M ") ? data_master : data_main;
+      let additional = className.includes(" M ") ? "m" : "";
+      result[className].rlzdpnl[formatDate(checkpoint)] = Number(classPnL[className].toFixed(2));
+      if (referenceData[formatDate(checkpoint)]) {
+        result[className].unrlzdpnl[formatDate(checkpoint)] = classPosition[className] * (referenceData[formatDate(checkpoint)].data[additional + shareClassKey] - Number(classAverageCost[className].toFixed(2)));
+      }
+    });
+  });
+
+  // Calculate unrealized PnL
+  for (let shareClass in result) {
+    let units = result[shareClass].finalUnits;
+    let shareClassKey = shareClass.includes(" M ") ? shareClass.split(" ")[2].toString().toLowerCase() : shareClass.split(" ")[1].toString().toLowerCase();
+
+    let referenceData = shareClass.includes(" M ") ? data_master : data_main;
+    let additional = shareClass.includes(" M ") ? "m" : "";
+    console.log({ shareclass: additional + shareClassKey, data: referenceData[last_date].data[additional + shareClassKey], classAverageCost });
+    result[shareClass].unrlzd = units * (referenceData[last_date].data[additional + shareClassKey] - classAverageCost[shareClass]);
+  }
+
+  return result;
+}
+
+function generateMonthlyCheckpoints(start: Date, end: Date): Date[] {
+  const checkpoints: Date[] = [];
+  let current = new Date(start);
+  while (current <= end) {
+    checkpoints.push(new Date(current));
+    current.setMonth(current.getMonth() + 1);
+  }
+  return checkpoints;
+}
+
+function formatDate(date: Date): string {
+  const month = date.getMonth() + 1; // getMonth() returns 0-11
+  const year = date.getFullYear();
+  return `${month.toString().padStart(2, "0")}/${year}`;
+}
+export async function getMostRecentFactSheetData(collectionName: any) {
+  // Connect to MongoDB
+  const client = await factsheetPool.connect();
+  let psqlFactSheetDBNames: any = {
+    "LEGATRUU Index": "bbg_global_aggregate",
+    "EMUSTRUU Index": "bbg_em_aggregate",
+    "BEUCTRUU Index": "bbg_em_asia",
+    "BEUYTRUU Index": "bbg_em_asia_hy",
+    "LG30TRUU Index": "bbg_global_hy",
+    "FIDITBD LX Equity": "fidelity_global_bond",
+    "PIMGLBA ID Equity": "pimco_global_bond",
+    "3 Month Treasury": "3_month_treasury",
+    Triada: "triada_main",
+    "Triada Master": "triada_master",
+    "BEBGTRUU Index": "bbg_em_global_hy",
+  };
+  try {
+    const query = `
+        SELECT *
+        FROM public.factsheet_${psqlFactSheetDBNames[collectionName]}
+        WHERE timestamp = (SELECT MAX(timestamp) FROM factsheet_triada_main);
+      `;
+
+    const result = await client.query(query, []);
+    const report = result.rows[0];
+    return report;
+  } catch (error) {
+    console.error("Failed in bulk operation:", error, collectionName);
+  } finally {
+    client.release();
+  }
+}
