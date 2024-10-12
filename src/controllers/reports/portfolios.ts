@@ -28,6 +28,7 @@ export async function getPortfolioWithAnalytics(
   console.log("To get all collections: ", (timestamp_5 - timestamp) / 1000 + " seconds");
 
   let earliestPortfolioName = getEarliestCollectionName(date, allCollectionNames);
+  console.log({ earliestPortfolioName });
   let timestamp_6 = new Date().getTime();
   console.log("To sort collections: ", (timestamp_6 - timestamp_5) / 1000 + " seconds");
 
@@ -356,7 +357,7 @@ export function getPrincipal(portfolio: any) {
     let position = portfolio[index];
     portfolio[index]["Principal"] = 0;
     let interestInfo = position["Interest"] || {};
- 
+
     let settlementDates = Object.keys(interestInfo);
     for (let indexSettlementDate = 0; indexSettlementDate < settlementDates.length; indexSettlementDate++) {
       let settlementDate = settlementDates[indexSettlementDate];

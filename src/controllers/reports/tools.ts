@@ -267,6 +267,8 @@ export function getEarliestCollectionName(originalDate: string, collections: { n
 
   let collectionNames: string[] = [];
   let closestPredecessorTimestamp = -Infinity;
+  let closestPredecessorName = "";
+
 
   for (const collection of collections) {
     const [_, year, month, day] = collection.name.split("-");
@@ -279,6 +281,8 @@ export function getEarliestCollectionName(originalDate: string, collections: { n
     const { timestamp } = collection;
     if (timestamp < inputTimestamp && timestamp > closestPredecessorTimestamp) {
       closestPredecessorTimestamp = timestamp;
+      closestPredecessorName = collectionDate;
+
     }
   }
 
@@ -286,7 +290,7 @@ export function getEarliestCollectionName(originalDate: string, collections: { n
     return { predecessorDate: "", collectionNames };
   }
 
-  const predecessorDate = new Date(closestPredecessorTimestamp);
+  const predecessorDate = new Date(closestPredecessorName);
   const formattedPredecessorDate = getDateTimeInMongoDBCollectionFormat(predecessorDate);
 
   return { predecessorDate: formattedPredecessorDate, collectionNames };

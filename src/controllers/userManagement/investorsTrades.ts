@@ -254,6 +254,7 @@ export function calculateCumulativeRealizedPnLByClass(
       finalUnits: number;
       unrlzd: number;
       rlzd: number;
+      averageCost: number;
     };
   } = {};
   const classPnL: { [className: string]: number } = {};
@@ -272,7 +273,7 @@ export function calculateCumulativeRealizedPnLByClass(
   trades.forEach((trade) => {
     const { class_mantra_id: className } = trade;
     if (!result[className]) {
-      result[className] = { rlzdpnl: {}, finalUnits: 0, unrlzd: 0, rlzd: 0, unrlzdpnl: {} };
+      result[className] = { rlzdpnl: {}, finalUnits: 0, unrlzd: 0, rlzd: 0, unrlzdpnl: {}, averageCost: 0 };
       classPnL[className] = 0;
       classPosition[className] = 0;
       classAverageCost[className] = 0;
@@ -313,7 +314,6 @@ export function calculateCumulativeRealizedPnLByClass(
         result[className].rlzd += realizedPnL;
         classPosition[className] -= amount;
       }
-      console.log({ className, amount, sign, id: trade.id_trade });
       result[className].finalUnits += amount * sign;
     });
 
@@ -326,6 +326,7 @@ export function calculateCumulativeRealizedPnLByClass(
       if (referenceData[formatDate(checkpoint)]) {
         result[className].unrlzdpnl[formatDate(checkpoint)] = classPosition[className] * (referenceData[formatDate(checkpoint)].data[additional + shareClassKey] - Number(classAverageCost[className].toFixed(2)));
       }
+      result[className].averageCost = classAverageCost[className];
     });
   });
 
@@ -336,7 +337,6 @@ export function calculateCumulativeRealizedPnLByClass(
 
     let referenceData = shareClass.includes(" M ") ? data_master : data_main;
     let additional = shareClass.includes(" M ") ? "m" : "";
-    console.log({ shareclass: additional + shareClassKey, data: referenceData[last_date].data[additional + shareClassKey], classAverageCost });
     result[shareClass].unrlzd = units * (referenceData[last_date].data[additional + shareClassKey] - classAverageCost[shareClass]);
   }
 
