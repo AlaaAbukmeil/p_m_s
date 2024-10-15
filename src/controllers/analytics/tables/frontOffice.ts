@@ -41,6 +41,7 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
 
     "Call Date",
     "Maturity",
+    "Rating Score",
     "BBG / S&P / Moody / Fitch Rating",
     "MTD P&L (USD)",
     "MTD Price Move",
@@ -96,7 +97,6 @@ export function formatSummaryPosition(position: any, fundDetails: any, dates: an
     "30-Day Int. EST",
     "365-Day Int. EST",
     "Day Int. (BC)",
-    "Rating Score",
     "Region",
     "Market Type",
 

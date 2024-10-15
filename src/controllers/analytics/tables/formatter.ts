@@ -3,7 +3,7 @@ import { formatDateUS, parsePercentage } from "../../common";
 import { calculateAccruedSinceInception } from "../../reports/portfolios";
 import { daysSinceBeginningOfMonth, parseBondIdentifier } from "../../reports/tools";
 import { getCountrySectorStrategySum } from "./statistics";
-import { sortObjectBasedOnKey, oasWithChange, checkPosition, yearsUntil, getDuration, AggregatedData, assignAssetClass, getDurationBucket, assetClassOrderFrontOffice, assetClassOrderExposure, rateSensitive, toTitleCase, AggregateRow, getStandardRating, classifyCountry, padInteger, isRatingHigherThanBBBMinus, isNotInteger, getStatsPercentageOfFund, isNotFirstMondayOfMonth } from "../tools";
+import { sortObjectBasedOnKey, oasWithChange, checkPosition, yearsUntil, getDuration, AggregatedData, assignAssetClass, getDurationBucket, assetClassOrderFrontOffice, assetClassOrderExposure, rateSensitive, toTitleCase, AggregateRow, getStandardRating, classifyCountry, padInteger, isRatingHigherThanBBBMinus, isNotInteger, getStatsPercentageOfFund, isNotFirstMondayOfMonth, bbgRating } from "../tools";
 import { getTopWorst } from "./frontOffice";
 import { adjustMarginMultiplier, nomuraRuleMargin } from "../cash/rules";
 import { sumTable } from "./riskTables";
@@ -535,6 +535,8 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       groupBBTicker = "",
       groupSpreadTZ,
       groupThreeDayPriceMove = Infinity,
+      groupYTW = Infinity,
+      groupScore = "NR",
       groupEntrySpreadTZ;
 
     groupedByLocation[locationCode]["DV01 Dollar Value Impact"] = 0;
@@ -674,6 +676,15 @@ export function assignColorAndSortParamsBasedOnAssetClass({
         groupThreeDayPriceMove = Math.min(groupThreeDayPriceMove, threeDayPrice);
       }
 
+      if (ytw) {
+        groupYTW = Math.min(groupYTW, ytw);
+      }
+      if (ratingScore) {
+        if (bbgRating(groupScore) < bbgRating(ratingScore) && notional) {
+          groupScore = ratingScore;
+        }
+      }
+
       groupDayPl += dayPl;
       groupMTDPl += monthPl;
       groupDV01Sum += dv01;
@@ -760,6 +771,12 @@ export function assignColorAndSortParamsBasedOnAssetClass({
       groupedByLocation[locationCode].groupThreeDayPriceMove = groupThreeDayPriceMove;
     } else {
       groupedByLocation[locationCode].groupThreeDayPriceMove = 0;
+    }
+    groupedByLocation[locationCode].groupScore = groupScore;
+    if (groupYTW != Infinity) {
+      groupedByLocation[locationCode].groupYTW = groupYTW;
+    } else {
+      groupedByLocation[locationCode].groupYTW = 0;
     }
   }
 }
@@ -883,7 +900,7 @@ export function getMacroStats({
   }
 }
 
-export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLocation, sort, sign, view, filterCondition }: { portfolio: any; groupedByLocation: any; sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDayPriceMoveSum" | "groupMTDPriceMoveSum" | "groupBBTicker" | "groupThreeDayPriceMove"; sign: any; view: "front office" | "back office" | "exposure"; filterCondition: boolean | undefined }) {
+export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLocation, sort, sign, view, filterCondition }: { portfolio: any; groupedByLocation: any; sort: "order" | "groupUSDMarketValue" | "groupDayPl" | "groupMTDPl" | "groupDV01Sum" | "groupDayPriceMoveSum" | "groupMTDPriceMoveSum" | "groupBBTicker" | "groupThreeDayPriceMove" | "groupScore" | "groupYTW" | any; sign: any; view: "front office" | "back office" | "exposure"; filterCondition: boolean | undefined }) {
   try {
     sign = parseFloat(sign);
     if (sort == "order") {
@@ -946,7 +963,15 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
         })
         .map((entry) => entry[0]);
     } else {
-      if (sort !== "groupBBTicker") {
+      if (sort == "groupScore") {
+        locationCodes = Object.entries(groupedByLocation)
+          .sort((a: any, b: any) => {
+            // if (a[1]["groupUSDMarketValue"] === 0) return 1;
+            // if (b[1]["groupUSDMarketValue"] === 0) return -1;
+            return sign === -1 ? bbgRating(a[1][sort]) - bbgRating(b[1][sort]) : bbgRating(b[1][sort]) - bbgRating(a[1][sort]);
+          })
+          .map((entry) => entry[0]);
+      } else if (sort !== "groupBBTicker") {
         locationCodes = Object.entries(groupedByLocation)
           .sort((a: any, b: any) => {
             // if (a[1]["groupUSDMarketValue"] === 0) return 1;
@@ -1041,7 +1066,6 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
             let dv01Ratio = groupedByLocation[locationCode].data[1]["DV01"] / groupedByLocation[locationCode].data[1]["Notional Amount"];
             let dv01Required = groupedByLocation[locationCode].data[0]["DV01"];
             comment = " || Deficit " + Math.round(Math.abs(dv01Required / dv01Ratio) - Math.abs(groupedByLocation[locationCode].data[1]["Notional Amount"])).toLocaleString();
-            console.log({ notionalRv: groupedByLocation[locationCode].groupDV01Sum }, comment);
           }
         }
         newObject = {
@@ -1069,6 +1093,8 @@ export function assignBorderAndCustomSortAggregateGroup({ portfolio, groupedByLo
           ISIN: groupedByLocation[locationCode]["ISIN"],
           Pin: groupedByLocation[locationCode]["Pin"],
           id: groupedByLocation[locationCode]["id"],
+          YTW: groupedByLocation[locationCode].groupYTW,
+          "Rating Score": groupedByLocation[locationCode].groupScore,
         };
 
         if (groupedByLocation[locationCode].groupSpreadTZ || groupedByLocation[locationCode].groupSpreadTZ == 0) {

@@ -118,6 +118,7 @@ export function getStandardRating(bbg: any, sp: any, moody: any, fitch: any) {
 }
 
 export function bbgRating(rating: string) {
+  rating = rating ? rating : "";
   const ratingsOrder = [
     "AAA",
     "AA+",
@@ -138,19 +139,19 @@ export function bbgRating(rating: string) {
     "CCC+",
     "CCC",
     "CCC-",
+    "NR",
     // Add more if there are other ratings
   ];
 
   const ratingIndex = ratingsOrder.indexOf(rating.toUpperCase());
-  const benchmarkIndex = ratingsOrder.indexOf("BBB-");
 
   // Check if the rating is valid
   if (ratingIndex === -1) {
-    return "";
+    return -9;
   }
 
   // If the rating index is less than the benchmark index, it's higher (since the array is sorted from highest to lowest)
-  return -benchmarkIndex;
+  return -ratingIndex;
 }
 
 export function moodyRating(rating: string) {
@@ -706,7 +707,7 @@ export function getStatsPercentageOfFund(IntStats: IntStatsType | any, fundDetai
     IntStats[key].mtd.sumOfNAV = (IntStats[key].mtd.sum / fundDetails.nav) * 100;
   }
 }
-export function isNotFirstMondayOfMonth(date:any) {
+export function isNotFirstMondayOfMonth(date: any) {
   const today = new Date(date);
 
   // Check if it's Monday (0 is Sunday, 1 is Monday)
