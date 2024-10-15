@@ -150,7 +150,7 @@ export async function editTrade(editedTrade: any, tradeType: "vcons" | "ib" | "e
       primary_market = $24,
       nomura_upload_status = $25,
       front_office_check = $26,
-      front_office_note = $28,
+      front_office_note = $28
       WHERE id = $27;
   `;
 
@@ -181,11 +181,9 @@ export async function editTrade(editedTrade: any, tradeType: "vcons" | "ib" | "e
         newTradeInSQL.settlement_venue,
         newTradeInSQL.primary_market,
         newTradeInSQL.nomura_upload_status,
-        newTradeInSQL.front_office_check,
-
+        newTradeInSQL.front_office_check || true,
         newTradeInSQL.id,
         newTradeInSQL.front_office_note,
-
       ];
 
       const client = await tradesPool.connect();
