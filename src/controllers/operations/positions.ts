@@ -365,6 +365,7 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
     let positionInPortfolio: any = {};
 
     let editedPositionTitles = [
+      "Pin",
       "Type",
       "Strategy",
       "Location",

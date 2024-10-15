@@ -53,7 +53,8 @@ authRouter.get("/user", verifyTokenFactSheetMember, async (req: Request | any, r
     } else {
       let result = await getUserByEmail(selected);
       let investorTrades = [],
-        pnl;
+        pnl,
+        lastDate;
       if (result["investor_id_mufg"]) {
         investorTrades = await getInvestorTrades(result["investor_id_mufg"]);
         const from2010: any = new Date("2010-01-01").getTime();
@@ -62,7 +63,7 @@ authRouter.get("/user", verifyTokenFactSheetMember, async (req: Request | any, r
         let data_master = await getFactSheetData("Triada Master", from2010, now, "a2");
         let data_main_object: any = {};
         let data_master_object: any = {};
-        let last_date: any = data_main[data_main.length - 1].date;
+        lastDate = data_main[data_main.length - 1].date;
 
         for (let entry of data_main) {
           data_main_object[entry.date] = entry;
@@ -70,10 +71,10 @@ authRouter.get("/user", verifyTokenFactSheetMember, async (req: Request | any, r
         for (let entry of data_master) {
           data_master_object[entry.date] = entry;
         }
-        pnl = calculateCumulativeRealizedPnLByClass(investorTrades, data_main_object, data_master_object, last_date);
+        pnl = calculateCumulativeRealizedPnLByClass(investorTrades, data_main_object, data_master_object, lastDate);
       }
 
-      res.send({ result, pnl });
+      res.send({ result, pnl, lastDate });
     }
   } catch (error) {
     console.log([error]);
