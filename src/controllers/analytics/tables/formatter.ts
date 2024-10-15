@@ -278,20 +278,19 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     }
   }
   let dayplPercentage = Math.round((daypl / fund.nav) * 100000) / 1000;
-  let dayFXGross = Math.round((dayfx / fund.nav) * 100000) / 1000;
+  let dayFX = Math.round((dayfx / fund.nav) * 100000) / 1000;
 
-  let mtdFXGross = Math.round((mtdfx / fund.nav) * 100000) / 1000;
+  let mtdFX = Math.round((mtdfx / fund.nav) * 100000) / 1000;
   let numOfDaysUnitlEndOfMonth = daysSinceBeginningOfMonth(date);
   let mtdExpenses = (-(fund.expenses / 10000) * numOfDaysUnitlEndOfMonth.diffDays) / numOfDaysUnitlEndOfMonth.numOfDaysInMonth;
 
   let mtdExpensesAmount = mtdExpenses * +fund.nav;
 
   let mtdplPercentage = mtdpl / fund.nav;
-  let shadawYTDNAV = (fund["share price"] - fundDetailsYTD["share price"]) / fundDetailsYTD["share price"];
 
   let shadawMTDNAV = +fund.nav + (+mtdpl + mtdExpenses * +fund.nav);
-
-  let ytdNet = Math.round((shadawYTDNAV + mtdplPercentage + mtdExpenses) * 100000) / 1000;
+  let ytdEstimate = (fund["share price"] * (mtdplPercentage + mtdExpenses + 1) - fundDetailsYTD["share price"]) / fundDetailsYTD["share price"];
+  let ytdNet = Math.round(ytdEstimate * 100000) / 1000;
   let fundDetails = {
     nav: fund.nav,
     holdbackRatio: fund.holdBackRatio,
@@ -310,14 +309,14 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     mtdint: Math.round(mtdint * 1000) / 1000,
     mtdfx: Math.round(mtdfx * 1000) / 1000,
     mtdintPercentage: Math.round((mtdint / fund.nav) * 100000) / 1000,
-    mtdFXGross: mtdFXGross,
+    mtdFX: mtdFX,
 
     ytdNet: padInteger(ytdNet),
     ytdint: Math.round(ytdinterest * 1000) / 1000,
     ytdintPercentage: Math.round((ytdinterest / fund.nav) * 100000) / 1000,
 
     dayplPercentage: padInteger(dayplPercentage),
-    dayFXGross: dayFXGross,
+    dayFX: dayFX,
     dayint: Math.round(dayint * 1000) / 1000,
     dayintPercentage: Math.round((dayint / fund.nav) * 100000) / 1000,
     daypl: Math.round(daypl * 1000) / 1000,

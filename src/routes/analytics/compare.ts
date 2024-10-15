@@ -1,9 +1,12 @@
 import { NextFunction, Router, query } from "express";
 import { breakdown, extractAnalytics, getAnalytics, getCollectionsInRange, updateAnalytics } from "../../controllers/analytics/compare/historicalData";
 import { getPortfolioWithAnalytics } from "../../controllers/reports/portfolios";
-import { verifyToken } from "../../controllers/common";
+import { bucket, verifyToken } from "../../controllers/common";
 import { uploadToBucket } from "../../controllers/userManagement/tools";
 import { insertPositionsInfo } from "../../controllers/analytics/data";
+import { FundDetails, FundMTD, IntStatsType, PositionBeforeFormatting } from "../../models/portfolio";
+import { uploadArrayAndReturnFilePath } from "../../controllers/operations/readExcel";
+
 const analyticsRouter = Router();
 
 analyticsRouter.get("/compare", uploadToBucket.any(), verifyToken, async (req: Request | any, res: Response | any, next: NextFunction) => {
@@ -26,7 +29,7 @@ analyticsRouter.get("/compare", uploadToBucket.any(), verifyToken, async (req: R
 
     let analytics = await getAnalytics(start, end, "portfolio_main");
     let extracted = extractAnalytics(analytics, conditions, notOperation, type);
-    
+
     // let update = await insertPositionsInfo(analytics.isinInformation);
     res.send(extracted);
   } catch (error: any) {
@@ -35,7 +38,7 @@ analyticsRouter.get("/compare", uploadToBucket.any(), verifyToken, async (req: R
   }
 });
 
-analyticsRouter.post("/update-compare", uploadToBucket.any(), async (req: Request | any, res: Response | any, next: NextFunction) => {
+analyticsRouter.post("/update-compare", uploadToBucket.any(), verifyToken, async (req: Request | any, res: Response | any, next: NextFunction) => {
   try {
     let start = new Date(req.body.start).getTime();
     let end = new Date(req.body.end).getTime();
@@ -64,4 +67,35 @@ analyticsRouter.post("/update-compare", uploadToBucket.any(), async (req: Reques
   }
 });
 
+analyticsRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response | any, next: NextFunction) => {
+  try {
+    let start = new Date(req.body.start).getTime();
+    let end = new Date(req.body.end).getTime();
+
+    let list = await getCollectionsInRange(start, end, "portfolio_main");
+    let excel = [];
+    for (let index = 0; index < list.length; index++) {
+      let date = list[index].split(" ")[0] + " 23:59";
+      let report: any = await getPortfolioWithAnalytics(date, "order", 1, {}, "back office", null, "portfolio_main");
+      let name = report.collectionName;
+      let fundDetails: FundMTD = report.fundDetails;
+      console.log({ fundDetails });
+      let objectPnl = {
+        "P&L Name Date": name,
+        "YTD P&L % NAV": fundDetails.ytdNet,
+        "MTD P&L % NAV": fundDetails.mtdplNetPercentage,
+        "MTD P&L USD": fundDetails.mtdpl,
+     
+      };
+      excel.push(objectPnl);
+    }
+    let url = await uploadArrayAndReturnFilePath(excel, "mtd_pnl", "test");
+    url = bucket + url + "?authuser=2";
+
+    res.send(url);
+  } catch (error: any) {
+    console.log(error);
+    res.send({ error: error.toString() });
+  }
+});
 export default analyticsRouter;

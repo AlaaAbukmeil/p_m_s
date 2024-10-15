@@ -21,40 +21,52 @@ export function getAverageCost(currentQuantity: number, previousQuantity: number
   }
 }
 export function sortDateKeys(obj: any) {
-  const parseDate = (dateStr: any) => {
-    const [month, day, year] = dateStr.split("/");
-    // Convert 2-digit year to 4-digit year
-    const fullYear = year.length === 2 ? "20" + year : year;
-    return new Date(fullYear, month - 1, day).getTime();
-  };
+  try {
+    const parseDate = (dateStr: any) => {
+      if (dateStr.split("/").length < 2) {
+        return 0;
+      }
+      const [month, day, year] = dateStr.split("/");
+      // Convert 2-digit year to 4-digit year
+      const fullYear = year.length === 2 ? "20" + year : year;
+      return new Date(fullYear, month - 1, day).getTime();
+    };
 
-  const sortedKeys = Object.keys(obj).sort((a, b) => {
-    const dateA = parseDate(a);
-    const dateB = parseDate(b);
-    return dateA - dateB;
-  });
+    const sortedKeys = Object.keys(obj).sort((a, b) => {
+      const dateA = parseDate(a);
+      const dateB = parseDate(b);
+      return dateA - dateB;
+    });
 
-  const sortedObj: any = {};
-  for (const key of sortedKeys) {
-    sortedObj[key] = obj[key];
+    const sortedObj: any = {};
+    for (const key of sortedKeys) {
+      sortedObj[key] = obj[key];
+    }
+
+    return sortedObj;
+  } catch (error: any) {
+    console.log(obj, error);
+    return obj;
   }
-
-  return sortedObj;
 }
 
 export function settlementDatePassed(settlementDate: string, ticker: string) {
-  let parts: any = settlementDate.split("/");
-  let year = parseInt(parts[2], 10);
-  year += year < 70 ? 2000 : 1900; // Adjust year
-  let inputDate = new Date(year, parts[0] - 1, parts[1]);
+  try {
+    let parts: any = settlementDate.split("/");
+    let year = parseInt(parts[2], 10);
+    year += year < 70 ? 2000 : 1900; // Adjust year
+    let inputDate = new Date(year, parts[0] - 1, parts[1]);
 
-  let today = new Date();
+    let today = new Date();
 
-  // Set the time of both dates to be the same
-  inputDate.setHours(0, 0, 0, 0);
-  today.setHours(0, 0, 0, 0);
+    // Set the time of both dates to be the same
+    inputDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
 
-  return today >= inputDate;
+    return today >= inputDate;
+  } catch (error: any) {
+    console.log(settlementDate, error, ticker);
+  }
 }
 export function remainingDaysInYear(inputDate: any) {
   inputDate = new Date(inputDate);
@@ -269,7 +281,6 @@ export function getEarliestCollectionName(originalDate: string, collections: { n
   let closestPredecessorTimestamp = -Infinity;
   let closestPredecessorName = "";
 
-
   for (const collection of collections) {
     const [_, year, month, day] = collection.name.split("-");
     const collectionDate = `${year}-${month}-${day.split(" ")[0]}`;
@@ -282,7 +293,6 @@ export function getEarliestCollectionName(originalDate: string, collections: { n
     if (timestamp < inputTimestamp && timestamp > closestPredecessorTimestamp) {
       closestPredecessorTimestamp = timestamp;
       closestPredecessorName = collectionDate;
-
     }
   }
 

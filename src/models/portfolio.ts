@@ -248,14 +248,14 @@ export interface FundMTD {
   mtdint: number;
   mtdfx: number;
   mtdintPercentage: number;
-  mtdFXGross: number;
-
+  mtdFX: number;
+  mtdplNetPercentage: number;
   ytdNet: number;
   ytdint: number;
   ytdintPercentage: number;
 
   dayplPercentage: number;
-  dayFXGross: number;
+  dayFX: number;
   dayint: number;
   dayintPercentage: number;
   daypl: number;

@@ -305,7 +305,7 @@ export function getDayURlzdInt(portfolio: any, date: any) {
     let position = portfolio[index];
     portfolio[index]["Principal"] = 0;
     let quantityGeneratingInterest = position["Notional Amount"];
-    portfolio[index]["Interest"] = sortDateKeys(portfolio[index]["Interest"]);
+    portfolio[index]["Interest"] = sortDateKeys(portfolio[index]["Interest"] || {});
     let interestInfo = position["Interest"] || {};
     let yesterdayPrice = position["Previous Mark"];
     if (!yesterdayPrice) {
