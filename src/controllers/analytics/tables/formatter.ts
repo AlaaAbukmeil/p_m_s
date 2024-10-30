@@ -26,7 +26,8 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
     ytdEstInt = 0,
     smv = 0,
     cr01Sum = 0,
-    filterCondition = false;
+    filterCondition = false,
+    euroLoanAmount = 0;
 
   for (let index = 0; index < portfolio.length; index++) {
     let position: any = portfolio[index];
@@ -234,6 +235,9 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
 
       position["MTD URlzd (LC)"] = 0;
       position["Day URlzd (LC)"] = 0;
+    }
+    if(position["Currency"] == "EUR"){
+      euroLoanAmount += position["USD Market Value"]
     }
     if (conditions) {
       let test = checkPosition(position, conditions);

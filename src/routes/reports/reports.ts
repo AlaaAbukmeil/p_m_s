@@ -1,10 +1,13 @@
 import { NextFunction, Router, Response, Request } from "express";
-import { verifyToken, generateRandomString, verifyTokenRiskMember, verifyTokenFactSheetMember } from "../../controllers/common";
+import { verifyToken, generateRandomString, verifyTokenRiskMember, verifyTokenFactSheetMember, bucket } from "../../controllers/common";
 import { getDateTimeInMongoDBCollectionFormat, getLastDayOfMonth, monthlyRlzdDate } from "../../controllers/reports/common";
 import { getPortfolioWithAnalytics } from "../../controllers/reports/portfolios";
 import { calculateBetaCorrelationBenchMarks, calculateMonthlyReturn, calculateOutPerformance, calculateOutPerformanceParam, calculateRatios, calculateRegression, calculateRiskRatios, getFactSheet, getFactSheetData, getTreasuryAnnulizedReturn, trimFactSheetData, uploadFSData } from "../../controllers/reports/factSheet";
 import { getFactSheetDisplay } from "../../controllers/operations/commands";
 import { uploadToBucket } from "../../controllers/userManagement/tools";
+import { getAllTrades } from "../../controllers/reports/trades";
+import { takeDateWithTimeAndReturnTimestamp } from "../../controllers/operations/tools";
+import { uploadArrayAndReturnFilePath } from "../../controllers/operations/readExcel";
 
 require("dotenv").config();
 let shareClasses = ["a2", "a3", "a4", "a5", "a6", "ma2", "ma3", "ma4", "ma6"];
@@ -157,7 +160,7 @@ router.get("/fact-sheet", uploadToBucket.any(), verifyTokenFactSheetMember, asyn
 
       let inception = await getFactSheet({ from: from2015, to: now, type, inception: true, mkt: false });
       let fiveYears = await getFactSheet({ from: from2015, to: to2020, type, inception: false, mkt: false });
-      let twoYears = await getFactSheet({ from: from2YearsAgo, to: now, type, inception: false, mkt: false });
+      let twoYears = await getFactSheet({ from: from2YearsAgo, to: now, type, inception: false, mkt: true });
       let chinaPeriod = await getFactSheet({ from: from2020, to: to2YearsAgo, type, inception: false, mkt: false });
       let lastDayOfThisMonth = getLastDayOfMonth(inception.lastDateTimestamp);
       console.log({ lastDayOfThisMonth });
@@ -226,8 +229,88 @@ router.get("/fact-sheet-mkt", uploadToBucket.any(), verifyTokenFactSheetMember, 
   }
 });
 // router.post("/test", async (req: Request, res: Response, next: NextFunction) => {
-//   uploadFSData(monthlyData, lg30truu, beuctruu, emustruu, legatruu);
-//   res.send(200);
+//   let start: any = new Date().getTime() - 12 * 30 * 24 * 60 * 60 * 1000;
+//   let end: any = new Date().getTime() + 1 * 24 * 60 * 60 * 1000;
+
+//   let originalTrades = await getAllTrades(start, end, "portfolio_main", "vcons");
+//   originalTrades = originalTrades.sort((a: any, b: any) => takeDateWithTimeAndReturnTimestamp(b["Trade Date"] + " " + b["Trade Time"]) - takeDateWithTimeAndReturnTimestamp(a["Trade Date"] + " " + a["Trade Time"]));
+
+//   let tradesObject: any = {};
+//   for (let index = 0; index < originalTrades.length; index++) {
+//     let isinAndLocation = originalTrades[index]["ISIN"] + originalTrades[index]["Location"];
+//     let buySell = originalTrades[index]["B/S"] == "B" ? -1 : 1;
+
+//     let notional = originalTrades[index]["Notional Amount"] * buySell;
+//     let pnl = originalTrades[index]["Settlement Amount"] * buySell;
+//     let price = originalTrades[index]["Price"];
+
+//     tradesObject[isinAndLocation] = tradesObject[isinAndLocation] ? tradesObject[isinAndLocation] : { changes: [], notional: 0, rlzdDate: "", trades: [], pnl: 0, entry: -1, exit: -1, bbTicker: "", isin: "", cusip: "", location: "" };
+//     tradesObject[isinAndLocation].notional += notional;
+//     tradesObject[isinAndLocation].pnl += pnl;
+//     tradesObject[isinAndLocation].trades.push(originalTrades[index]);
+//     tradesObject[isinAndLocation].changes.push(tradesObject[isinAndLocation].notional);
+
+//     if (tradesObject[isinAndLocation].entry == -1) {
+//       tradesObject[isinAndLocation].entry = price;
+//     }
+//     tradesObject[isinAndLocation].exit = price;
+//     tradesObject[isinAndLocation].bbTicker = originalTrades[index]["BB Ticker"];
+//     tradesObject[isinAndLocation].cusip = originalTrades[index]["Cuisp"];
+//     tradesObject[isinAndLocation].isin = originalTrades[index]["ISIN"];
+//     tradesObject[isinAndLocation].location = originalTrades[index]["Location"];
+
+//     if (tradesObject[isinAndLocation].notional == 0) {
+//       tradesObject[isinAndLocation].rlzdDate = originalTrades[index]["Trade Date"];
+//     }
+//   }
+//   let positions: any = [];
+//   for (let isin in tradesObject) {
+//     if (tradesObject[isin].pnl) {
+//       let position = {
+//         "BB Ticker": tradesObject[isin].bbTicker,
+//         Location: tradesObject[isin].location,
+//         ISIN: tradesObject[isin].isin,
+//         CUSIP: tradesObject[isin].cusip,
+//       };
+//       positions.push(position);
+//     }
+//   }
+//   let tradesExcel = await uploadArrayAndReturnFilePath(positions, "test", "trade_profit_nov");
+//   let downloadEBlotName = bucket + tradesExcel + "?authuser=2";
+//   res.send(downloadEBlotName);
+// });
+
+// router.post("/test", async (req: any, res: Response, next: NextFunction) => {
+//   try {
+//     let type = req.query.type;
+//     let shareClass = "a2";
+//     let accessRole = "admin";
+//     let disabled = await getFactSheetDisplay("view");
+
+//     if (accessRole == "member (factsheet report)" && !shareClass.includes(type)) {
+//       // console.log("fact sheet error", shareClass, type)
+//       res.sendStatus(401);
+//     } else {
+//       if (accessRole != "member (factsheet report)") {
+//         type = shareClasses.includes(type) ? type : "a2";
+//         disabled = false;
+//       }
+
+//       const now = new Date();
+//       const from2015: any = new Date("2015-04-01").getTime();
+
+//       let inception = await getFactSheet({ from: from2015, to: now, type, inception: true, mkt: false });
+//       // let data = inception.result.monthlyReturns.a2;
+//       // let volitality = []
+//       // for(let year in data){
+
+//       // }
+//       res.send({ inception: inception });
+//     }
+//   } catch (error: any) {
+//     console.log(error);
+//     res.send({ error: error.toString(), disabled: true });
+//   }
 // });
 
 export default router;

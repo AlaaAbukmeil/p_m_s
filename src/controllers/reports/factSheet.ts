@@ -324,7 +324,7 @@ export async function getFactSheetData(collectionName: any, from: any, to: any, 
     `;
 
     const result = await client.query(query, [startDate, endDate]);
-    const report = result.rows
+    const report = result.rows;
     return report;
   } catch (error) {
     console.error("Failed in bulk operation:", error, collectionName);
@@ -454,7 +454,6 @@ export function trimDate(data: any, benchmark = false, triada = false, masterTri
   }
   return final;
 }
-
 
 export function calculateOutPerformance({ benchmarks, data }: { benchmarks: any; data: any }) {
   let years = Object.keys(data);
@@ -795,7 +794,9 @@ export async function getFactSheet({ from, to, type, inception, mkt }: { from: a
   let treasuryAnnualRate: any = getTreasuryAnnulizedReturn(treasuryData, inception);
 
   let data = await getFactSheetData(db, from, to, type);
-
+  if (mkt) {
+    console.log({ data });
+  }
   if (!inception) {
     let lastDate = getMonthName(data[data.length - 1].date);
     let lastDateTimestamp = new Date(dateWithNoDay(data[data.length - 1].date));
@@ -868,7 +869,6 @@ export async function getFactSheet({ from, to, type, inception, mkt }: { from: a
       Triada: { annulizedReturn: result.annulizedReturn[type], maxDrawdown: result.maxDrawdown[type], normal: result.normal[type], negativeAnnualVolitality: result.negativeAnnualVolitality[type], beta: 1 },
     };
     let riskRatios = calculateRiskRatios({ benchmarks: benchmarksRiskRatios, treasuryAnnualRate: treasuryAnnualRate.annualizedReturn });
-
     let benchmarksRegression = {
       "BEUCTRUU Index": { results: result_beuctruu.returns["main"], annulizedReturn: result_beuctruu.annulizedReturn["main"], beta: betaCorrelation.betas["BEUCTRUU Index"], correlation: betaCorrelation.correlation["BEUCTRUU Index"], fundReturns: result_beuctruu.fundReturns.returnsHashTable.main },
       "EMUSTRUU Index": { results: result_emustruu.returns["main"], annulizedReturn: result_emustruu.annulizedReturn["main"], beta: betaCorrelation.betas["EMUSTRUU Index"], correlation: betaCorrelation.correlation["EMUSTRUU Index"], fundReturns: result_emustruu.fundReturns.returnsHashTable.main },

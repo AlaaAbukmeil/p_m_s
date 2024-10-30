@@ -179,6 +179,7 @@ export function oasWithChange(oas: any): any {
     return [parseFloat(oas) * 0.25, "25 % of spread"];
   }
 }
+
 export function padInteger(num: any) {
   // Convert integer to string
   let numStr = num;

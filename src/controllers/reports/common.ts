@@ -12,7 +12,6 @@ export function nextMonthlyRlzdDate(dateInput: string) {
   return `${year}/${month}`;
 }
 
-
 export function formatDateRlzdDaily(date: any) {
   date = new Date(date);
   let day = date.getDate().toString().padStart(2, "0"); // Pad with a zero if needed
@@ -44,7 +43,6 @@ export function getDateTimeInMongoDBCollectionFormat(date: any) {
   let formattedDateTime = year + "-" + month + "-" + day + " " + hours + ":" + minutes;
   return formattedDateTime;
 }
-
 
 export function mapDatetimeToSameDay(datetimeList: any, daytimeInput: any) {
   // Convert daytimeInput to a string in the "yyyy-mm-dd" format

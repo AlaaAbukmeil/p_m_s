@@ -300,7 +300,7 @@ export function getEarliestCollectionName(originalDate: string, collections: { n
     return { predecessorDate: "", collectionNames };
   }
 
-  const predecessorDate = new Date(closestPredecessorName);
+  const predecessorDate = new Date(closestPredecessorTimestamp);
   const formattedPredecessorDate = getDateTimeInMongoDBCollectionFormat(predecessorDate);
 
   return { predecessorDate: formattedPredecessorDate, collectionNames };

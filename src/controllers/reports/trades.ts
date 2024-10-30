@@ -353,3 +353,30 @@ export async function findTrade(tradeType: string, tradeTriadaId: string): Promi
     client.release();
   }
 }
+
+export async function getAllTrades(from: number, to: number, portfolioId: string, tradeType: "vcons" | "ib" | "emsx" | "written_blotter" | "cds_gs" | "canceled_vcons" | "" = ""): Promise<CentralizedTrade[]> {
+  const client = await tradesPool.connect();
+
+  try {
+    const query = `
+      SELECT *
+      FROM public.trades${tradeType ? "_" + tradeType : ""}
+      WHERE timestamp >= $1 AND timestamp <= $2 AND portfolio_id = $3;
+    `;
+
+    const { rows } = await client.query(query, [from, to, portfolioId]);
+    let trades: any = convertTradesSQLToCentralized(rows, "uploaded_to_app");
+  
+    return trades;
+  } catch (error: any) {
+    let dateTime = getDateTimeInMongoDBCollectionFormat(new Date());
+    console.error(error);
+    let errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+
+    await insertEditLogs([errorMessage], "Errors", dateTime, "getAllTrades", "controllers/eblot/eblot.ts");
+
+    return [];
+  } finally {
+    client.release();
+  }
+}

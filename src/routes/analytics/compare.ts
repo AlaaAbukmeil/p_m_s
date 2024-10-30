@@ -6,6 +6,8 @@ import { uploadToBucket } from "../../controllers/userManagement/tools";
 import { insertPositionsInfo } from "../../controllers/analytics/data";
 import { FundDetails, FundMTD, IntStatsType, PositionBeforeFormatting } from "../../models/portfolio";
 import { uploadArrayAndReturnFilePath } from "../../controllers/operations/readExcel";
+import { getIndexingData } from "../../controllers/operations/indexing";
+import { insertIndexingData } from "../../controllers/operations/psql/operation";
 
 const analyticsRouter = Router();
 
@@ -67,35 +69,58 @@ analyticsRouter.post("/update-compare", uploadToBucket.any(), verifyToken, async
   }
 });
 
-analyticsRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response | any, next: NextFunction) => {
-  try {
-    let start = new Date(req.body.start).getTime();
-    let end = new Date(req.body.end).getTime();
+// analyticsRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response | any, next: NextFunction) => {
+//   try {
+//     let start = new Date(req.body.start).getTime();
+//     let end = new Date(req.body.end).getTime();
 
-    let list = await getCollectionsInRange(start, end, "portfolio_main");
-    let excel = [];
-    for (let index = 0; index < list.length; index++) {
-      let date = list[index].split(" ")[0] + " 23:59";
-      let report: any = await getPortfolioWithAnalytics(date, "order", 1, {}, "back office", null, "portfolio_main");
-      let name = report.collectionName;
-      let fundDetails: FundMTD = report.fundDetails;
-      console.log({ fundDetails });
-      let objectPnl = {
-        "P&L Name Date": name,
-        "YTD P&L % NAV": fundDetails.ytdNet,
-        "MTD P&L % NAV": fundDetails.mtdplNetPercentage,
-        "MTD P&L USD": fundDetails.mtdpl,
-     
-      };
-      excel.push(objectPnl);
-    }
-    let url = await uploadArrayAndReturnFilePath(excel, "mtd_pnl", "test");
-    url = bucket + url + "?authuser=2";
+//     let list = await getCollectionsInRange(start, end, "portfolio_main");
+//     let excel = [];
+//     for (let index = 0; index < list.length; index++) {
+//       let date = list[index].split(" ")[0] + " 23:59";
+//       let report: any = await getPortfolioWithAnalytics(date, "order", 1, {}, "back office", null, "portfolio_main");
+//       let name = report.collectionName;
+//       let fundDetails: FundMTD = report.fundDetails;
+//       let objectPnl = {
+//         "P&L Name Date": name,
+//         "Day P&L % NAV": fundDetails.dayplPercentage,
+//         "MTD P&L % NAV": fundDetails.mtdplPercentage,
+//         "YTD P&L % NAV": fundDetails.ytdNet,
+//       };
+//       excel.push(objectPnl);
+//     }
+//     let url = await uploadArrayAndReturnFilePath(excel, "mtd_pnl", "test");
+//     url = bucket + url + "?authuser=2";
 
-    res.send(url);
-  } catch (error: any) {
-    console.log(error);
-    res.send({ error: error.toString() });
-  }
-});
+//     res.send(url);
+//   } catch (error: any) {
+//     console.log(error);
+//     res.send({ error: error.toString() });
+//   }
+// });
+
+// analyticsRouter.post("/test", uploadToBucket.any(), async (req: Request | any, res: Response | any, next: NextFunction) => {
+//   try {
+//     let allIndexes = await getIndexingData("portfolio_main");
+//     let newIndexingRow = {
+//       portfolio_id: "test",
+//       portfolio_document_ids: allIndexes,
+//     };
+
+//     for (let index = 0; index < allIndexes.length; index++) {
+//       if (allIndexes[index].name == "portfolio-2024-10-12 04:00") {
+//         allIndexes[index].timestamp = 1728648000000;
+//         allIndexes[index].name = "portfolio-2024-10-11 20:00";
+
+//       }
+//     }
+
+//     await insertIndexingData([newIndexingRow]);
+
+//     res.send(allIndexes);
+//   } catch (error: any) {
+//     console.log(error);
+//     res.send({ error: error.toString() });
+//   }
+// });
 export default analyticsRouter;
