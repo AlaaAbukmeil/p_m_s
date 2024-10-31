@@ -313,10 +313,10 @@ export function getDayURlzdInt(portfolio: any, date: any) {
     }
 
     if (position["Last Upload Trade"] > lastUploadTradesDate) {
-      lastUploadTradesDate = parseFloat(position["Last Upload Trade"]) - 8 * 60 * 60 * 1000;
+      lastUploadTradesDate = parseFloat(position["Last Upload Trade"]);
     }
     if (position["Last Price Update"] > lastUpdatePricesDate) {
-      lastUpdatePricesDate = parseFloat(position["Last Price Update"]) - 8 * 60 * 60 * 1000;
+      lastUpdatePricesDate = parseFloat(position["Last Price Update"]);
     }
 
     let todayPrice: any = parseFloat(position["Mid"]);
