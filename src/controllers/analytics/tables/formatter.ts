@@ -236,8 +236,8 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
       position["MTD URlzd (LC)"] = 0;
       position["Day URlzd (LC)"] = 0;
     }
-    if(position["Currency"] == "EUR"){
-      euroLoanAmount += position["USD Market Value"]
+    if (position["Currency"] == "EUR") {
+      euroLoanAmount += position["USD Market Value"];
     }
     if (conditions) {
       let test = checkPosition(position, conditions);
@@ -293,6 +293,7 @@ export function formatGeneralTable({ portfolio, date, fund, dates, conditions, f
   let mtdplPercentage = mtdpl / fund.nav;
 
   let shadawMTDNAV = +fund.nav + (+mtdpl + mtdExpenses * +fund.nav);
+  console.log({ now: fund["share price"], lastyear: fundDetailsYTD["share price"], mtd:mtdplPercentage + mtdExpenses + 1 });
   let ytdEstimate = (fund["share price"] * (mtdplPercentage + mtdExpenses + 1) - fundDetailsYTD["share price"]) / fundDetailsYTD["share price"];
   let ytdNet = Math.round(ytdEstimate * 100000) / 1000;
   let fundDetails = {

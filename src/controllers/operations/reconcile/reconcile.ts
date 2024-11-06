@@ -36,8 +36,8 @@ export async function reconcileMUFG(MUFGData: MufgReconcileUpload[], portfolioIn
       bgnPrice = bgnPrice ? bgnPrice : 0;
       let mufgPrice = positionInMufg ? parseFloat(positionInMufg["Price"]) : 0;
 
-      let pnlBrokerMufg = mufgPrice ? ((portfolioPrice - mufgPrice) / (positionInPortfolio["Type"] == "BND" || positionInPortfolio["Type"] == "UST" ? 100 : 1)) * portfolioPositionQuantity : 0;
-      let pnlBrokerBgn = bgnPrice ? Math.round(((portfolioPrice - bgnPrice) / (positionInPortfolio["Type"] == "BND" || positionInPortfolio["Type"] == "UST" ? 100 : 1)) * portfolioPositionQuantity) : 0;
+      let pnlBrokerMufg = mufgPrice ? ((mufgPrice - portfolioPrice) / (positionInPortfolio["Type"] == "BND" || positionInPortfolio["Type"] == "UST" ? 100 : 1)) * portfolioPositionQuantity : 0;
+      let pnlBrokerBgn = bgnPrice ? Math.round(((bgnPrice - portfolioPrice) / (positionInPortfolio["Type"] == "BND" || positionInPortfolio["Type"] == "UST" ? 100 : 1)) * portfolioPositionQuantity) : 0;
 
       let formattedRow = {
         "BB Ticker": positionInPortfolio["BB Ticker"],
