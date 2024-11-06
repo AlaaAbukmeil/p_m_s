@@ -136,6 +136,7 @@ export async function sendEmailToResetPassword(userEmail: string, verificationCo
               email: userEmail,
             },
           ],
+          cc: [{ email: "developer@triadacapital.com" }],
           htmlContent: "<!DOCTYPE html><html><body><p>Hello there, <br /> <br /> Your verification code is " + verificationCode + "<br /> <br /> If you have not asked to reset your Triada Capital account's password, please ignore this email. <br /><br /> Thank you!<br /><br /> Triada's Developement Team</p></body></html>",
           subject: "Reset Your Password",
         },
