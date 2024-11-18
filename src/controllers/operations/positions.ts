@@ -534,6 +534,7 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
       if (!unEditableParams.includes(title) && editedPosition[title] != "" && editedPosition[title]) {
         console.log({ title });
         if (title == "Notional Amount") {
+          console.log({event:editedPosition["Event Type"]})
           if (editedPosition["Event Type"] == "sink_factor") {
             let sinkFactorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
 
@@ -549,7 +550,7 @@ export async function editPosition(editedPosition: any, date: string, portfolioI
 
             changes.push(`Notional Amount Changed from ${positionInPortfolio["Notional Amount"]} to ${editedPosition[title]} on ${payInKindFactorDate}`);
             positionInPortfolio["Notional Amount"] = parseFloat(editedPosition[title]);
-          } else if (editedPosition["Event Type"] == "edit_position") {
+          } else if (editedPosition["Event Type"] == "settlement_position") {
             let factorDate = formatDateUS(new Date(editedPosition["Factor Date (if any)"]));
 
             positionInPortfolio["Interest"] = positionInPortfolio["Interest"] ? positionInPortfolio["Interest"] : {};

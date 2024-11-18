@@ -610,7 +610,7 @@ export let assetClassOrderExposure: any = {
   RLZD: 11,
 };
 
-export function rateSensitive(yieldInput: string, coupon: string, duration: string) {
+export function  rateSensitive(yieldInput: string, coupon: string, duration: string) {
   let yieldNum = parsePercentage(yieldInput);
   let couponNum = parsePercentage(coupon);
   let durationNum = parsePercentage(duration);
